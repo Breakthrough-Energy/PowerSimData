@@ -120,12 +120,21 @@ class Grid():
             self.genbus,
             self.genbus_aux.reset_index()[['GenMWMax', 'GenMWMin']]
         ], axis=1)
-        self.genbus.index.name = 'plantID'
         
         self.genbus["interconnect"] = "Eastern"
         self.genbus.loc[self.genbus.busID > 3000000,"interconnect"] = "Texas"
         self.genbus.loc[(self.genbus.busID > 2000000) & (self.genbus.busID < 3000000),
                      "interconnect"] = "Western"
+        
+        self.genbus['newPlantID'] = self.genbus.index
+        self.genbus.loc[self.genbus["interconnect"] == "Texas","newPlantID"] = \
+        range(3000000,3000000+sum(self.genbus["interconnect"] == "Texas"))
+        
+        self.genbus.loc[self.genbus["interconnect"] == "Western", "newPlantID"] = \
+        range(2000000,2000000+sum(self.genbus["interconnect"] == "Western"))
+        self.genbus.set_index('newPlantID',inplace = True)
+        
+        self.genbus.index.name = 'plantID'
 
     def _read_branches(self):
         """Read branches file and add data to `branches` pandas dataframe.
