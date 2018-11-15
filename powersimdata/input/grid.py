@@ -118,7 +118,7 @@ class Grid():
         )
         self.genbus = pd.concat([
             self.genbus,
-            self.genbus_aux.reset_index()[['GenMWMax', 'GenMWMin']]
+            self.genbus_aux.reset_index()[['AreaNum','GenMWMax', 'GenMWMin']]
         ], axis=1)
         
         self.genbus["interconnect"] = "Eastern"
@@ -134,7 +134,19 @@ class Grid():
         range(2000000,2000000+sum(self.genbus["interconnect"] == "Western"))
         self.genbus.set_index('newPlantID',inplace = True)
         
+        self.genbus.loc[self.genbus["interconnect"] == "Texas","AreaNum"] += \
+        300
+        
+        self.genbus.loc[self.genbus["interconnect"] == "Western", "AreaNum"] += \
+        200
+        
+        self.genbus['ZoneName'] = self.genbus.AreaNum.apply(
+            lambda AreaNum: self.load_zones.loc[AreaNum]
+        )
+        
         self.genbus.index.name = 'plantID'
+        
+        
 
     def _read_branches(self):
         """Read branches file and add data to `branches` pandas dataframe.
@@ -178,12 +190,20 @@ class Grid():
         self.branches.loc[(self.branches.fbus > 2000000) & (self.branches.fbus < 3000000),
                      "interconnect"] = "Western"
         
-
+    def _read_load_zones(self):
+        """Read load zone names
+        """
+        
+        self.load_zones = pd.read_csv(self.data_loc
+            + 'USAArea.csv',
+            header=None,
+            index_col=0,)
 
     def _read_network_files(self):
         """Read all network file.
         
         """
+        self._read_load_zones()
         self._read_sub()
         self._read_bus2sub()
         self._read_bus()
