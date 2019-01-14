@@ -4,8 +4,8 @@ from pathlib import Path
 from postreise.process.transferdata import TransferData
 
 
-class OutputData(object):
-    """Output Data class.
+class InputData(object):
+    """Input Data class.
         This class enables you to download data from the server as well as \ 
         from a local folder. The :meth:`~get_data` function will first look \ 
         locally if it can find the data requested. If it can't find locally \ 
@@ -30,14 +30,15 @@ class OutputData(object):
         """Get data either from server or from local directory.
 
         :param str scenario_name: name of scenario to get data from.
-        :param str field_name: *'PG'* or *'PF'* data.
-        :return: (*pandas*) --  data frame of PG or PF.
+        :param str field_name: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
+        :return: (*pandas*) --  data frame of demand, hydro, solar or wind.
         :raises FileNotFoundError: file found neither locally nor on the \ 
             server.
-        :raises NameError: If type not *'PG'* or *'PF'*.
+        :raises NameError: If type not *'demand'*, *'hydro'*, *'solar'* or \ 
+            *'wind'*.
         """
-        if field_name not in ['PG', 'PF']:
-            raise NameError('Can only get PG or PF data.')
+        if field_name not in ['demand', 'hydro', 'solar', 'wind']:
+            raise NameError('Can only get demand, hydro, solar or wind data.')
         try:
             p_out = pd.read_pickle(
                 self.data_dir + scenario_name + '_' + field_name + '.pkl'
@@ -55,6 +56,6 @@ class OutputData(object):
                 os.makedirs(self.data_dir)
             print('Saving file localy.')
             p_out.to_pickle(
-                self.data_dir + scenario_name + '_' +field_name + '.pkl')
-        
+                self.data_dir + scenario_name + '_' + field_name + '.pkl')
+
         return p_out
