@@ -19,7 +19,7 @@ class OutputData(object):
 
         self.data_dir = data_dir
         self.TD = TransferData()
-        # Check if data can be found localy
+        # Check if data can be found locally
         if not data_dir:
             home_dir = str(Path.home())
             self.data_dir = os.path.join(home_dir, 'scenario_data', '')
@@ -30,11 +30,11 @@ class OutputData(object):
         """Get data either from server or from local directory.
 
         :param str scenario_name: name of scenario to get data from.
-        :param str field_name: PG or PF data.
+        :param str field_name: *'PG'* or *'PF'* data.
         :return: (*pandas*) --  data frame of PG or PF.
-        :raises FileNotFoundError: scenario_name file neither localy or on the \ 
+        :raises FileNotFoundError: file found neither locally nor on the \ 
             server.
-        :raises NameError: If type not PG or PF.
+        :raises NameError: If type not *'PG'* or *'PF'*.
         """
         if field_name not in ['PG', 'PF']:
             raise NameError('Can only get PG or PF data.')
