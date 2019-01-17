@@ -26,10 +26,20 @@ class Scenario():
 
     def get_pg(self):
         """Returns PG data frame
-        
+
         """
-        
+
         od = OutputData()    
         pg = od.get_data(self.name, 'PG')
-        
+
         return pg
+
+    def get_pf(self):
+        """Returns PF data frame
+
+        """
+
+        od = OutputData()    
+        pf = od.get_data(self.name, 'PF')
+
+        return pf
