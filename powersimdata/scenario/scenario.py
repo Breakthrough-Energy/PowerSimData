@@ -6,11 +6,12 @@ class Scenario():
     """Retrieve information related a scenario
 
     :param str name: name of scenario.
-
+    :param str data_dir: define local folder location to read or save data.
     """
 
-    def __init__(self, name):
+    def __init__(self, name, data_dir=None):
         self.name = name
+        self.data_dir = data_dir
         
         # Check scenario
         self._check_scenario()
@@ -29,7 +30,7 @@ class Scenario():
 
         """
 
-        od = OutputData()    
+        od = OutputData(self.data_dir)
         pg = od.get_data(self.name, 'PG')
 
         return pg
@@ -39,7 +40,7 @@ class Scenario():
 
         """
 
-        od = OutputData()    
+        od = OutputData(data_dir)
         pf = od.get_data(self.name, 'PF')
 
         return pf
