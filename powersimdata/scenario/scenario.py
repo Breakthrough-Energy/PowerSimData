@@ -1,4 +1,6 @@
 from postreise.process.transferdata import TransferData
+from powersimdata.output.profiles import OutputData
+
 
 class Scenario():
     """Retrieve information related a scenario
@@ -22,4 +24,8 @@ class Scenario():
                 print(s)
             return
 
+    def get_pg(self):
+        od = OutputData()    
+        pg = od.get_data(self.name, 'PG')
         
+        return pg
