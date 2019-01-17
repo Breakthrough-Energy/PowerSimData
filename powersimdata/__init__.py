@@ -1,1 +1,1 @@
-__all__ = ["input", "output"]
+__all__ = ["input", "output", "scenario"]
