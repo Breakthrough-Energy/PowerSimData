@@ -73,7 +73,7 @@ class Scenario():
             profile. 
         """
         field = self.info.infeasibilities[0]
-        if field is None:
+        if field == 'No':
             return None
         else:
             infeasibilities = {}
