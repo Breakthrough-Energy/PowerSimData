@@ -1,3 +1,5 @@
+import pandas as pd
+
 from postreise.process.transferdata import TransferData
 from powersimdata.output.profiles import OutputData
 
@@ -19,7 +21,7 @@ class Scenario():
         # Check that scenario
         self._check_name(td.get_scenario_list())
         
-        # Retrieve information on scenario
+        # Retrieve scenario information
         self._retrieve_info(td.get_scenario_table())
         
 
@@ -59,3 +61,38 @@ class Scenario():
         pf = od.get_data(self.name, 'PF')
 
         return pf
+
+    def _parse_infeasibilities(self):
+        """Parses infeasibilities. When the optimizer cannot find a solution \ 
+            in a time interval, the remedy is to decrease demand by some \ 
+            amount until a solution is found. The purpose of this function is \ 
+            to get the interval number and the associated decrease.
+
+        :return: (*dict*) -- keys are the interval number and the values are \ 
+            the decrease in percent (%) applied to the original demand \ 
+            profile. 
+        """
+        field = self.info.infeasibilities[0]
+        if field is None:
+            return None
+        else:
+            infeasibilities = {}
+            for entry in field.split('_'):
+                item = entry.split(':')
+                infeasibilities[int(item[0])] = int(item[1]) 
+            return infeasibilities
+
+    def print_infeasibilities(self):
+        """Prints infeasibilities.
+
+        """
+        infeasibilities = self._parse_infeasibilities()
+        if infeasibilities is None:
+            print("There are no infeasibilities.")
+        else:
+            dates = pd.date_range(start=self.info.start_date[0],
+                                  end=self.info.end_date[0],
+                                  freq=self.info.interval[0])
+            for key, value in infeasibilities.items():
+                print("demand in %s - %s interval has been reduced by %d%%" %
+                      (dates[key], dates[key+1], value))
