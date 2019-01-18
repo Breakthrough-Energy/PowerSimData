@@ -13,24 +13,38 @@ class Scenario():
         self.name = name
         self.data_dir = data_dir
         
-        # Check scenario
-        self._check_scenario()
-
-    def _check_scenario(self):
+        # Communicate with server
         td = TransferData()
-        scenarios = td.get_scenario_list()
-        if self.name not in scenarios:
+        
+        # Check that scenario
+        self._check_name(td.get_scenario_list())
+        
+        # Retrieve information on scenario
+        self._retrieve_info(td.get_scenario_table())
+        
+
+    def _check_name(self, names):
+        """Checks if scenario exists.
+
+        :param list: list of scenario names.
+        """
+        if self.name not in names:
             print("Scenario not available. Possible scenarios are:")
-            for s in scenarios:
-                print(s)
+            for n in names:
+                print(n)
             return
 
+    def _retrieve_info(self, table):
+        """Retrieve scenario information.
+        
+        """
+        self.info = table[table['name'] == self.name]
+        
     def get_pg(self):
         """Returns PG data frame.
 
         :return: (*pandas*) -- data frame of power generated.
         """
-
         od = OutputData(self.data_dir)
         pg = od.get_data(self.name, 'PG')
 
@@ -41,8 +55,7 @@ class Scenario():
 
         :return: (*pandas*) -- data frame of power flow.
         """
-
-        od = OutputData(data_dir)
+        od = OutputData(self.data_dir)
         pf = od.get_data(self.name, 'PF')
 
         return pf
