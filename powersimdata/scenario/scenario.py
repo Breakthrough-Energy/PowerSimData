@@ -26,8 +26,9 @@ class Scenario():
             return
 
     def get_pg(self):
-        """Returns PG data frame
+        """Returns PG data frame.
 
+        :return: (*pandas*) -- data frame of power generated.
         """
 
         od = OutputData(self.data_dir)
@@ -36,8 +37,9 @@ class Scenario():
         return pg
 
     def get_pf(self):
-        """Returns PF data frame
+        """Returns PF data frame.
 
+        :return: (*pandas*) -- data frame of power flow.
         """
 
         od = OutputData(data_dir)
