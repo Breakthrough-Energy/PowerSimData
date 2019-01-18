@@ -31,7 +31,7 @@ class InputData(object):
 
         :param str scenario_name: name of scenario to get data from.
         :param str field_name: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
-        :return: (*pandas*) --  data frame of demand, hydro, solar or wind.
+        :return: (*pandas*) -- data frame of demand, hydro, solar or wind.
         :raises FileNotFoundError: file found neither locally nor on the \ 
             server.
         :raises NameError: If type not *'demand'*, *'hydro'*, *'solar'* or \ 
