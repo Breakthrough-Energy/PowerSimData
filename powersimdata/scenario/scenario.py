@@ -1,6 +1,7 @@
 import pandas as pd
 
 from postreise.process.transferdata import TransferData
+from powersimdata.input.profiles import InputData
 from powersimdata.output.profiles import OutputData
 
 
@@ -96,3 +97,29 @@ class Scenario():
             for key, value in infeasibilities.items():
                 print("demand in %s - %s interval has been reduced by %d%%" %
                       (dates[key], dates[key+1], value))
+
+
+    def get_demand(self, original=True):
+        """Returns demand profiles.
+
+        :param bool original: should the original demand profile or the \ 
+            potentially modified one be returned.
+        :return: (*pandas*) -- data frame of demand.
+        """
+
+        id = InputData(self.data_dir)
+        demand = id.get_data(self.name, 'demand')
+        if original == True:
+            return demand
+        else:
+            dates = pd.date_range(start=self.info.start_date[0],
+                                  end=self.info.end_date[0],
+                                  freq=self.info.interval[0])
+            infeasibilities = self._parse_infeasibilities()
+            if infeasibilities is None:
+                print("There are no infeasibilities. Return original profile.")
+                return demand
+            else:
+                for key, value in infeasibilities.items():
+                    demand[dates[key]:dates[key+1]] *= 1. - value / 100.
+                return demand
