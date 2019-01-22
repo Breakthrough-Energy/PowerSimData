@@ -4,15 +4,15 @@ from powersimdata.input.grid import Grid
 
 
 class Change():
-    """Handle changes that need to be applied to the original grid as well \ 
-        as to the original demand, hydro, solar and wind profiles. A pickle \ 
-        file enclosing the change table in form of a dictionary will be \ 
-        created and trasfered on the server. Keys are *'grid'*, *'demand'*, \ 
-        *'hydro'*, *'solar'* and *'wind'*. If a key is missing, it will be \ 
-        assumed that the original grid of profile(s) should be considered, \ 
-        i.e., no changes should be applied.  The data structure is given \ 
-        below:
-        
+    """Create change table for changes that need to be applied to the \ 
+        original grid as well as to the original demand, hydro, solar and \ 
+        wind profiles. A pickle file enclosing the change table in form of a \ 
+        dictionary will be created and trasfered on the server. Keys are \ 
+        *'grid'*, *'demand'*, *'hydro'*, *'solar'* and *'wind'*. If a key is \ 
+        missing, it will be assumed that the grid of profile(s) associated \ 
+        should be considered, i.e., no changes should be applied. The data \ 
+        structure is given below:
+
         * *'demand'*: \ 
             value is a dictionnary, which has load zones as keys and a \ 
             factor indicating the desired increase/decrease of load in zone \ 
@@ -21,9 +21,8 @@ class Change():
         * *'hydro'*, *'solar'* and *'wind'*: \ 
             value is a dictionary, which has the plant id as key and a \ 
             factor indicating the desired increase/decrease of capacity of \ 
-            the plant (1.2 would correspond to a 20% increase while 0.95 \ 
-            would be a 5% decrease).
-        
+            the *'hydro'*/*'solar'*/*'wind'* plant (1.2 would correspond to \ 
+            a 20% increase while 0.95 would be a 5% decrease).
 
     :param str name: name of scenario.
     :param str interconnect: name of interconnect.
@@ -45,10 +44,25 @@ class Change():
         """Checks if interconnect exists.
 
         param str interconnect: name of interconnect.
+        raise Exception: if resource(s) are invalid.
         """
         possible = ['Western', 'TexasWestern', 'USA']
         if interconnect not in possible:
             print("%s is not an interconnect. Choose one of:" % interconnect)
+            for p in possible:
+                print(p)
+            raise Exception('Invalid resource(s)')
+
+    @staticmethod
+    def _check_resource(resource):
+        """Checks if resources can be changed.
+
+        :param str resources: type of generator.
+        :raise Exception: if resource(s) are invalid.
+        """
+        possible = ['hydro', 'solar', 'wind']
+        if resource not in possible:
+            print("%s is incorrect. Choose one of:" % r)
             for p in possible:
                 print(p)
             raise Exception('Invalid resource(s)')
@@ -104,55 +118,56 @@ class Change():
                     (zone, resource)).index.values.tolist()
             except KeyError:
                 pass
-
         return plant_id
 
-    def set_hydro(self, zones=None, plant_id=None):
-        """Consign changes relative to hydro plants capacity.
+    def set_generator_capacity(self, resource, zones=None, plant_id=None):
+        """Consign changes in capacity of plants.
 
-        :param float factor: increase/decrease in capacity.
+        :param str resource: type of generator to consider.
         :param dict zones: geographical zones. The key(s) is (are) the \ 
             zone(s) and the value is the factor indicating the desired \ 
-            increase/decrease in capacity of all the hydro plants in the zone.  
-        :param dict plant_id: identification numbers of hydro plants. The \ 
-            key(s) is (are) the id of the hydro plant(s) and the value is \ 
+            increase/decrease in capacity of all the generators in the zone \ 
+            of specified type.
+        :param dict plant_id: identification numbers of plants. The \ 
+            key(s) is (are) the id of the plant(s) and the value is \ 
             the factor indicated the desired increase/decrease in capacity \ 
-            of the hydro plant(s).
+            of the generator(s) of specified type.
         """
+        self._check_resource(resource)
         if bool(zones) ^ bool(plant_id) is False:
             print("Set either <zones> or <plant_id>. Return.")
             return
         elif zones is not None:
             self._check_zones(list(zones.keys()))
-            self.table['hydro'] = {}
+            self.table[resource] = {}
             for z in zones.keys():
-                plant_id_zone = self._get_plant_id(z, 'hydro')
+                plant_id_zone = self._get_plant_id(z, resource)
                 if len(plant_id_zone) == 0:
-                    print("No hydro plants in %s" % z)
+                    print("No %s plants in %s" % (resource, z))
                 else:
                     for i in plant_id_zone:
-                        self.table['hydro'][i] = zones[z]
+                        self.table[resource][i] = zones[z]
         else:
             plant_id_interconnect = set(self.grid.genbus.groupby(
-                                        'type').get_group('hydro').index)
+                                        'type').get_group(resource).index)
             diff = set(plant_id.keys()).difference(plant_id_interconnect)
             if len(diff) != 0:
-                print("No hydro plant(s) with the following id:")
+                print("No %s plant(s) with the following id:" % resource)
                 for i in list(diff):
                     print(i)
-                return        
+                return
             else:
-                self.table['hydro'] = {}
+                self.table[resource] = {}
                 for i in plant_id.keys():
-                    self.table['hydro'][i] = plant_id[i]
-        n_plants = len(self.table['hydro'])
+                    self.table[resource][i] = plant_id[i]
+        n_plants = len(self.table[resource])
         if n_plants > 0:
-            print("%d hydro plants consigned" % n_plants)
+            print("%d %s plants consigned" % (n_plants, resource))
         else:
-            self.table.pop('hydro')        
+            self.table.pop(resource)
 
     def set_demand(self, zones):
-        """Consign changes relative to zones.
+        """Consign changes in load.
 
         :param dict zones: geographical zones. The key(s) is (are) the \ 
             zone(s) and the value is a factor indicating the desired \ 
@@ -162,4 +177,3 @@ class Change():
         self.table['demand'] = {}
         for z in zones.keys():
             self.table['demand'][z] = zones[z]
-        return self.table
