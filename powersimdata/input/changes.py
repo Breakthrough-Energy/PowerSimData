@@ -21,7 +21,6 @@ class Change():
         self.interconnect = interconnect
         self.grid = Grid(interconnect)
         self.table = {}
-        
 
     @staticmethod
     def _check_interconnect(interconnect):
@@ -31,9 +30,10 @@ class Change():
         """
         possible = ['Western', 'TexasWestern', 'USA']
         if interconnect not in possible:
-            print("%s is incorrect. Possible interconnect are: %s" % possible)
+            print("%s is not an interconnect. Choose one of:" % interconnect)
+            for p in possible:
+                print(p)
             raise Exception('Invalid resource(s)')
-
 
     def _check_zones(self, zones):
         """Test zones.
@@ -52,7 +52,6 @@ class Change():
                 for p in possible:
                     print(p)
                 raise Exception('Invalid zone(s)')
-
 
     def _get_plant_id(self, zone, resource):
         """Extracts the plant identification number of all the generators \ 
@@ -90,35 +89,47 @@ class Change():
 
         return plant_id
 
-
-    def set_hydro(self, factor, zones=None, plant_id=None):
-        """Modify caoacity of hydro plants
+    def set_hydro(self, zones=None, plant_id=None):
+        """Consign changes relative to hydro plants capacity.
 
         :param float factor: increase/decrease in capacity.
-        :param list zones: geographical zones.
-        :param list plant_id: identification numbers of hydro plants.
+        :param dict zones: geographical zones. The key(s) is (are) the \ 
+            zone(s) and the value is the factor associated with the desired \ 
+            increase/decrease in capacity of all the hydro plants in the zone.  
+        :param dict plant_id: identification numbers of hydro plants. The \ 
+            key(s) is (are) the id of the hydro plant(s) and the value is \ 
+            the factor associated with the desired increase/decrease in \ 
+            the hydro plant(s).
         """
-        if bool(zones) ^ bool(plant_id) == False:
+        if bool(zones) ^ bool(plant_id) is False:
             print("Set either <zones> or <plant_id>. Return.")
             return
         elif zones is not None:
-            self._check_zones(zones)
-            plant_id = []
-            for z in zones:
-                current_id = self._get_plant_id(z, 'hydro')
-                plant_id += current_id
-                if len(current_id) == 0:
+            self._check_zones(list(zones.keys()))
+            self.table['hydro'] = {}
+            for z in zones.keys():
+                plant_id_zone = self._get_plant_id(z, 'hydro')
+                if len(plant_id_zone) == 0:
                     print("No hydro plants in %s" % z)
-            print("%d hydro plants will be modified" % len(plant_id))
+                else:
+                    for i in plant_id_zone:
+                        self.table['hydro'][i] = zones[z]
         else:
             plant_id_interconnect = set(self.grid.genbus.groupby(
                                         'type').get_group('hydro').index)
-            diff = set(plant_id).difference(plant_id_interconnect)
+            diff = set(plant_id.keys()).difference(plant_id_interconnect)
             if len(diff) != 0:
-                print("The following identification number(s) are wrong:")
+                print("No hydro plant(s) with the following id:")
                 for i in list(diff):
                     print(i)
-                return
-        self.table['hydro'] = {}
-        self.table['hydro']['factor'] = factor
-        self.table['hydro']['id'] = plant_id
+                return        
+            else:
+                self.table['hydro'] = {}
+                for i in plant_id.keys():
+                    self.table['hydro'][i] = plant_id[i]
+        n_plants = len(self.table['hydro'])
+        if n_plants > 0:
+            print("%d hydro plants consigned" % n_plants)
+        else:
+            self.table.pop('hydro')        
+        return self.table
