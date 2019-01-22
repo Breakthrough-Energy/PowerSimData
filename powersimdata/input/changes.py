@@ -4,8 +4,26 @@ from powersimdata.input.grid import Grid
 
 
 class Change():
-    """Enclose changes that need to be applied to the original grid as well \ 
-        as to the original demand, hydro, solar and wind profiles.
+    """Handle changes that need to be applied to the original grid as well \ 
+        as to the original demand, hydro, solar and wind profiles. A pickle \ 
+        file enclosing the change table in form of a dictionary will be \ 
+        created and trasfered on the server. Keys are *'grid'*, *'demand'*, \ 
+        *'hydro'*, *'solar'* and *'wind'*. If a key is missing, it will be \ 
+        assumed that the original grid of profile(s) should be considered, \ 
+        i.e., no changes should be applied.  The data structure is given \ 
+        below:
+        
+        * *'demand'*: \ 
+            value is a dictionnary, which has load zones as keys and a \ 
+            factor indicating the desired increase/decrease of load in zone \ 
+            (1.2 would correspond to a 20% increase while 0.95 would be a 5% \ 
+            decrease).
+        * *'hydro'*, *'solar'* and *'wind'*: \ 
+            value is a dictionary, which has the plant id as key and a \ 
+            factor indicating the desired increase/decrease of capacity of \ 
+            the plant (1.2 would correspond to a 20% increase while 0.95 \ 
+            would be a 5% decrease).
+        
 
     :param str name: name of scenario.
     :param str interconnect: name of interconnect.
@@ -94,12 +112,12 @@ class Change():
 
         :param float factor: increase/decrease in capacity.
         :param dict zones: geographical zones. The key(s) is (are) the \ 
-            zone(s) and the value is the factor associated with the desired \ 
+            zone(s) and the value is the factor indicating the desired \ 
             increase/decrease in capacity of all the hydro plants in the zone.  
         :param dict plant_id: identification numbers of hydro plants. The \ 
             key(s) is (are) the id of the hydro plant(s) and the value is \ 
-            the factor associated with the desired increase/decrease in \ 
-            the hydro plant(s).
+            the factor indicated the desired increase/decrease in capacity \ 
+            of the hydro plant(s).
         """
         if bool(zones) ^ bool(plant_id) is False:
             print("Set either <zones> or <plant_id>. Return.")
@@ -132,4 +150,16 @@ class Change():
             print("%d hydro plants consigned" % n_plants)
         else:
             self.table.pop('hydro')        
+
+    def set_demand(self, zones):
+        """Consign changes relative to zones.
+
+        :param dict zones: geographical zones. The key(s) is (are) the \ 
+            zone(s) and the value is a factor indicating the desired \ 
+            increase/decrease of load.
+        """
+        self._check_zones(list(zones.keys()))
+        self.table['demand'] = {}
+        for z in zones.keys():
+            self.table['demand'][z] = zones[z]
         return self.table
