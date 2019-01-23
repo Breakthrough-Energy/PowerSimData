@@ -1,6 +1,6 @@
 import pandas as pd
 
-from postreise.process.transferdata import TransferData
+from postreise.process.transferdata import PullData
 from powersimdata.input.profiles import InputData
 from powersimdata.output.profiles import OutputData
 
@@ -16,13 +16,13 @@ class Scenario():
         self.name = name
         self.data_dir = data_dir
         
-        # Communicate with server
-        td = TransferData()
+        # Open communication with server
+        td = PullData()
         
-        # Check that scenario
+        # Check that scenario exists
         self._check_name(td.get_scenario_list())
         
-        # Retrieve scenario information
+        # Get and store information on scenario
         self._retrieve_info(td.get_scenario_table())
         
 

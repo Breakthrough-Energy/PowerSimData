@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from pathlib import Path
-from postreise.process.transferdata import TransferData
+from postreise.process.transferdata import PullData
 
 
 class InputData(object):
@@ -18,7 +18,7 @@ class InputData(object):
     def __init__(self, data_dir=None):
 
         self.data_dir = data_dir
-        self.TD = TransferData()
+        self.TD = PullData()
         # Check if data can be found locally
         if not data_dir:
             home_dir = str(Path.home())
