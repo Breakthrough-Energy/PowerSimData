@@ -38,6 +38,8 @@ class Change():
         self.interconnect = interconnect
         self.grid = Grid(interconnect)
         self.table = {}
+        self.name2num = dict(zip(self.grid.genbus.ZoneName.unique(), 
+                                 self.grid.genbus.AreaNum.unique()))
 
     @staticmethod
     def _check_interconnect(interconnect):
@@ -134,38 +136,35 @@ class Change():
             of the generator(s) of specified type.
         """
         self._check_resource(resource)
-        if bool(zones) ^ bool(plant_id) is False:
-            print("Set either <zones> or <plant_id>. Return.")
-            return
-        elif zones is not None:
-            self._check_zones(list(zones.keys()))
+        if bool(zones) or bool(plant_id) is True:
             self.table[resource] = {}
-            for z in zones.keys():
-                plant_id_zone = self._get_plant_id(z, resource)
-                if len(plant_id_zone) == 0:
-                    print("No %s plants in %s" % (resource, z))
+            if zones is not None:
+                self._check_zones(list(zones.keys()))
+                self.table[resource]['zone'] = {}
+                for z in zones.keys():
+                    if len(self._get_plant_id(z, resource)) == 0:
+                        print("No %s plants in %s." % (resource, z))
+                    else:
+                        num = self.name2num[z]
+                        self.table[resource]['zone'][num] = zones[z]
+            if plant_id is not None:
+                plant_id_interconnect = set(self.grid.genbus.groupby(
+                    'type').get_group(resource).index)
+                diff = set(plant_id.keys()).difference(plant_id_interconnect)
+                if len(diff) != 0:
+                    print("No %s plant(s) with the following id:" % resource)
+                    for i in list(diff):
+                        print(i)
+                    self.table.pop(resource)
+                    return
                 else:
-                    for i in plant_id_zone:
-                        self.table[resource][i] = zones[z]
+                    self.table[resource]['id'] = {}
+                    for i in plant_id.keys():
+                        self.table[resource]['id'][i] = plant_id[i]
         else:
-            plant_id_interconnect = set(self.grid.genbus.groupby(
-                                        'type').get_group(resource).index)
-            diff = set(plant_id.keys()).difference(plant_id_interconnect)
-            if len(diff) != 0:
-                print("No %s plant(s) with the following id:" % resource)
-                for i in list(diff):
-                    print(i)
-                return
-            else:
-                self.table[resource] = {}
-                for i in plant_id.keys():
-                    self.table[resource][i] = plant_id[i]
-        n_plants = len(self.table[resource])
-        if n_plants > 0:
-            print("%d %s plants consigned" % (n_plants, resource))
-        else:
-            self.table.pop(resource)
-
+            print("<zones> and/or <plant_id> must be set. Return.")
+            return
+    
     def set_demand(self, zones):
         """Consign changes in load.
 
@@ -176,4 +175,4 @@ class Change():
         self._check_zones(list(zones.keys()))
         self.table['demand'] = {}
         for z in zones.keys():
-            self.table['demand'][z] = zones[z]
+            self.table['demand'][self.name2num[z]] = zones[z]
