@@ -46,7 +46,7 @@ class OutputData(object):
             print('Local file not found will',
                   'download data from server and save locally.')
             try:
-                p_out = self.TD.get_data(scenario_name, field_name)
+                p_out = self.TD.download_data(scenario_name, field_name)
             except FileNotFoundError as e:
                 raise FileNotFoundError(
                     'File found neither localy nor on server.'
