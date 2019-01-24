@@ -49,11 +49,11 @@ class OutputData(object):
                 p_out = self.TD.download_data(scenario_name, field_name)
             except FileNotFoundError as e:
                 raise FileNotFoundError(
-                    'File found neither localy nor on server.'
+                    'File found neither locally nor on server.'
                 ) from e
             if not os.path.exists(self.data_dir):
                 os.makedirs(self.data_dir)
-            print('Saving file localy.')
+            print('Saving file locally.')
             p_out.to_pickle(
                 self.data_dir + scenario_name + '_' +field_name + '.pkl')
         
