@@ -127,13 +127,13 @@ class Change():
 
         :param str resource: type of generator to consider.
         :param dict zones: geographical zones. The key(s) is (are) the \ 
-            zone(s) and the value is the factor indicating the desired \ 
+            zone(s) and the associated value is the scaling factor for the \ 
             increase/decrease in capacity of all the generators in the zone \ 
             of specified type.
-        :param dict plant_id: identification numbers of plants. The \ 
-            key(s) is (are) the id of the plant(s) and the value is \ 
-            the factor indicated the desired increase/decrease in capacity \ 
-            of the generator(s) of specified type.
+        :param dict plant_id: identification numbers of plants. The key(s) \ 
+            is (are) the id of the plant(s) and the associated value is the \ 
+            scaling factor for the increase/decrease in capacity of the \ 
+            generator.
         """
         self._check_resource(resource)
         if bool(zones) or bool(plant_id) is True:
@@ -164,7 +164,44 @@ class Change():
         else:
             print("<zones> and/or <plant_id> must be set. Return.")
             return
-    
+
+    def set_branch_capacity(self, zones=None, branch_id=None):
+        """Consign changes in capacity of branches.
+
+        :param dict zones: geographical zones. The key(s) is (are) the \ 
+            zone(s) and the associated value is the scaling factor for the \ 
+            increase/decrease in capacity of all the branches in the zone. \ 
+            Only lines that have both ends in zone are considered.
+        :param dict branch_id: identification numbers of branches. The \ 
+            key(s) is (are) the id of the line(s) and the associated value \ 
+            is the scaling factor for the increase/decrease in capacity of \ 
+            the line(s).
+        """
+        if bool(zones) or bool(plant_id) is True:
+            self.table['branches'] = {}
+            if zones is not None:
+                self._check_zones(list(zones.keys()))
+                self.table['branches']['zone'] = {}
+                for z in zones.keys():
+                    num = self.name2num[z]
+                    self.table['branches']['zone'][num] = zones[z]
+            if branch_id is not None:
+                branch_id_interconnect = set(self.grid.branches.index)
+                diff = set(branch_id.keys()).difference(branch_id_interconnect)
+                if len(diff) != 0:
+                    print("No branche(s) with the following id:")
+                    for i in list(diff):
+                        print(i)
+                    self.table.pop('branches')
+                    return
+                else:
+                    self.table['branches']['id'] = {}
+                    for i in branch_id.keys():
+                        self.table['branches']['id'][i] = branch_id[i]
+        else:
+            print("<zones> and/or <branch_id> must be set. Return.")
+            return
+
     def set_demand(self, zones):
         """Consign changes in load.
 
