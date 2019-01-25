@@ -1,6 +1,11 @@
+import os
+import pickle
+from pathlib import Path
+
 import pandas as pd
 
 from powersimdata.input.grid import Grid
+from postreise.process.transferdata import PushData
 
 
 class Change():
@@ -38,7 +43,7 @@ class Change():
         self.interconnect = interconnect
         self.grid = Grid(interconnect)
         self.table = {}
-        self.name2num = dict(zip(self.grid.genbus.ZoneName.unique(), 
+        self.name2num = dict(zip(self.grid.genbus.ZoneName.unique(),
                                  self.grid.genbus.AreaNum.unique()))
 
     @staticmethod
@@ -213,3 +218,38 @@ class Change():
         self.table['demand'] = {}
         for z in zones.keys():
             self.table['demand'][self.name2num[z]] = zones[z]
+
+    def write(self, local_dir=None):
+        """Saves change table to disk..
+
+        :param str local_dir: define local folder location to save data. If \ 
+            not defined, the change table will be saved in *'scenario_data'* \ 
+            folder in home directory.
+        """
+        if not local_dir:
+            home_dir = str(Path.home())
+            local_dir = os.path.join(home_dir, 'scenario_data', '')
+        print('Local directory is %s' % local_dir)
+        if os.path.isdir(local_dir) is False:
+            os.makedirs(local_dir)
+        file_name = os.path.join(local_dir, self.name + "_ct.pkl")
+        if os.path.isfile(file_name) is False:
+            print("Write %s." % file_name)
+            pickle.dump(self.table, open(file_name, "wb"))
+        else:
+            print("%s already exists. Return" % file_name)
+            return
+
+    def push(self, local_dir=None):
+        """Transfers file to server.
+
+        :param str local_dir: define local folder location. If not defined, \ 
+            it is assumed that the change table is located in the \ 
+            *'scenario_data'* folder in the home directory.
+        """
+        if not local_dir:
+            home_dir = str(Path.home())
+            local_dir = os.path.join(home_dir, 'scenario_data', '')
+        print('Local directory is %s' % local_dir)
+        TD = PushData(local_dir)
+        TD.upload(self.name, 'ct')
