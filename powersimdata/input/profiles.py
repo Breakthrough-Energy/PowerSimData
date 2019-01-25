@@ -11,20 +11,20 @@ class InputData(object):
         locally if it can find the data requested. If it can't find locally \ 
         it will download it from the server if it can find it there.
 
-    :param str data_dir: define local folder location to read or save data.
+    :param str local_dir: define local folder location to read or save data.
 
     """
 
-    def __init__(self, data_dir=None):
+    def __init__(self, local_dir=None):
 
-        self.data_dir = data_dir
+        self.local_dir = local_dir
         self.TD = PullData()
         # Check if data can be found locally
-        if not data_dir:
+        if not local_dir:
             home_dir = str(Path.home())
-            self.data_dir = os.path.join(home_dir, 'scenario_data', '')
+            self.local_dir = os.path.join(home_dir, 'scenario_data', '')
 
-            print('Use ', self.data_dir, ' to save/load local scenario data.')
+            print('Use ', self.local_dir, ' to save/load local scenario data.')
 
     def get_data(self, scenario_name, field_name):
         """Get data either from server or from local directory.
@@ -41,7 +41,7 @@ class InputData(object):
             raise NameError('Can only get demand, hydro, solar or wind data.')
         try:
             p_out = pd.read_pickle(
-                self.data_dir + scenario_name + '_' + field_name + '.pkl'
+                self.local_dir + scenario_name + '_' + field_name + '.pkl'
             )
         except FileNotFoundError:
             print('Local file not found will',
@@ -52,10 +52,10 @@ class InputData(object):
                 raise FileNotFoundError(
                     'File found neither locally nor on server.'
                 ) from e
-            if not os.path.exists(self.data_dir):
-                os.makedirs(self.data_dir)
+            if not os.path.exists(self.local_dir):
+                os.makedirs(self.local_dir)
             print('Saving file locally.')
             p_out.to_pickle(
-                self.data_dir + scenario_name + '_' + field_name + '.pkl')
+                self.local_dir + scenario_name + '_' + field_name + '.pkl')
 
         return p_out
