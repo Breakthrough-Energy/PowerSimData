@@ -24,7 +24,7 @@ class OutputData(object):
             home_dir = str(Path.home())
             self.local_dir = os.path.join(home_dir, 'scenario_data', '')
 
-            print('Use ', self.local_dir, ' to save/load local scenario data.')
+            print('Use %s to save/load local scenario data.' % self.local_dir)
 
     def get_data(self, scenario_name, field_name):
         """Get data either from server or from local directory.
