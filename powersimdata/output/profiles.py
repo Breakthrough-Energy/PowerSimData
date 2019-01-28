@@ -6,9 +6,9 @@ from postreise.process.transferdata import PullData
 
 class OutputData(object):
     """Output Data class.
-        This class enables you to download data from the server as well as \ 
-        from a local folder. The :meth:`~get_data` function will first look \ 
-        locally if it can find the data requested. If it can't find locally \ 
+        This class enables you to download data from the server as well as \
+        from a local folder. The :meth:`~get_data` function will first look \
+        locally if it can find the data requested. If it can't find locally \
         it will download it from the server if it can find it there.
 
     :param str local_dir: define local folder location to read or save data.
@@ -32,7 +32,7 @@ class OutputData(object):
         :param str scenario_name: name of scenario to get data from.
         :param str field_name: *'PG'* or *'PF'* data.
         :return: (*pandas*) --  data frame of PG or PF.
-        :raises FileNotFoundError: file found neither locally nor on the \ 
+        :raises FileNotFoundError: file found neither locally nor on the \
             server.
         :raises NameError: If type not *'PG'* or *'PF'*.
         """
@@ -43,8 +43,8 @@ class OutputData(object):
                 self.local_dir + scenario_name + '_' + field_name + '.pkl'
             )
         except FileNotFoundError:
-            print('Local file not found will',
-                  'download data from server and save locally.')
+            print('Local file not found will. Data will be downloaded from',
+                  'server and saved locally.')
             try:
                 p_out = self.TD.download(scenario_name, field_name)
             except FileNotFoundError as e:
@@ -56,5 +56,5 @@ class OutputData(object):
             print('Saving file locally.')
             p_out.to_pickle(
                 self.local_dir + scenario_name + '_' +field_name + '.pkl')
-        
+
         return p_out
