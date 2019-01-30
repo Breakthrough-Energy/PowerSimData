@@ -7,20 +7,17 @@ import seaborn as sns
 class Grid():
     """Synthetic Network.
 
-    :param str name: name of synthetic network.
+    :param interconnect: name of interconnect(s).
 
     """
-    top_dirname = os.path.dirname(__file__)
-    data_dirname = os.path.join(top_dirname, 'data')
-
-    ID2type = {0: 'wind',
+    id2type = {0: 'wind',
                1: 'solar',
                2: 'hydro',
                3: 'ng',
                4: 'nuclear',
                5: 'coal'}
 
-    type2ID = {v: k for k, v in ID2type.items()}
+    type2id = {v: k for k, v in id2type.items()}
 
     type2color = {'wind': sns.xkcd_rgb["green"],
                   'solar': sns.xkcd_rgb["amber"],
@@ -29,41 +26,110 @@ class Grid():
                   'nuclear': sns.xkcd_rgb["silver"],
                   'coal': sns.xkcd_rgb["light brown"]}
 
-    def __init__(self, name):
-        self.data_loc = os.path.join(self.data_dirname, 'usa', '')
+    def __init__(self, interconnect):
+        top_dirname = os.path.dirname(__file__)
+        data_dirname = os.path.join(top_dirname, 'data')
+        self.data_loc = os.path.join(data_dirname, 'usa', '')
 
-        if name == 'Western':
-            self._read_network_files()
-            for n in ['Eastern', 'Texas']:
-                self.sub.drop(self.sub.groupby(
-                    'interconnect').get_group(n).index, inplace=True)
-                self.bus2sub.drop(self.bus2sub.groupby(
-                    'interconnect').get_group(n).index, inplace=True)
-                self.bus.drop(self.bus.groupby(
-                    'interconnect').get_group(n).index, inplace=True)
-                self.genbus.drop(self.genbus.groupby(
-                    'interconnect').get_group(n).index, inplace=True)
-                self.branches.drop(self.branches.groupby(
-                    'interconnect').get_group(n).index, inplace=True)
-        elif name == 'TexasWestern':
-            self._read_network_files()
-            self.sub.drop(self.sub.groupby(
-                'interconnect').get_group('Eastern').index, inplace=True)
-            self.bus2sub.drop(self.bus2sub.groupby(
-                'interconnect').get_group('Eastern').index, inplace=True)
-            self.bus.drop(self.bus.groupby(
-                'interconnect').get_group('Eastern').index, inplace=True)
-            self.genbus.drop(self.genbus.groupby(
-                'interconnect').get_group('Eastern').index, inplace=True)
-            self.branches.drop(self.branches.groupby(
-                'interconnect').get_group('Eastern').index, inplace=True)
-        elif name == 'USA':
-            self._read_network_files()
-        else:
-            print("Grid not available!")
-            print("Choose between USA, TexasWestern and Western")
-            return
+        self._check_interconnect(interconnect)
+        self._build_network()
+        self._add_column()
         print("Done loading")
+
+    def _check_interconnect(self, interconnect):
+        """Checks if interconnect exists.
+
+        :param interconnect: interconnect name(s).
+        """
+        possible = ['USA', 'Eastern', 'Texas', 'Western']
+        if isinstance(interconnect, str):
+            test = [interconnect]
+        elif isinstance(interconnect, list):
+            test = interconnect
+        else:
+            raise TypeError("Wrong type. A string or list of strings",
+                            "is expected for interconnect")
+
+        for t in test:
+            check = False if t not in possible else True
+
+        if check == False:
+            raise NameError("Interconnect not available. Choose one of:",
+                            possible, "or any combination")
+
+        self.interconnect = test
+
+    def _build_network(self):
+        """Builds betwork.
+
+        """
+        self._read_network()
+        if 'USA' not in self.interconnect:
+            drop = ['Eastern', 'Texas', 'Western']
+            for i in self.interconnect:
+                drop.remove(i)
+            for d in drop:
+                self.sub.drop(self.sub.groupby(
+                    'interconnect').get_group(d).index, inplace=True)
+                self.bus2sub.drop(self.bus2sub.groupby(
+                    'interconnect').get_group(d).index, inplace=True)
+                self.bus.drop(self.bus.groupby(
+                    'interconnect').get_group(d).index, inplace=True)
+                self.plant.drop(self.plant.groupby(
+                    'interconnect').get_group(d).index, inplace=True)
+                self.branch.drop(self.branch.groupby(
+                    'interconnect').get_group(d).index, inplace=True)
+
+    def _add_column(self):
+        """Add information in data frames.
+
+        """
+        bus2zone = self.bus.zone_id.to_dict()
+        bus2coord = pd.merge(self.bus2sub[['sub_id']],
+                             self.sub[['lat', 'lon']],
+                             on='sub_id').set_index(self.bus2sub.index).drop(
+                                columns='sub_id').to_dict()
+
+        # Coordinates
+        self.bus['lat'] = [bus2coord['lat'][i] for i in self.bus.index]
+        self.bus['lon'] = [bus2coord['lon'][i] for i in self.bus.index]
+
+        self.plant['lat'] = [bus2coord['lat'][i] for i in self.plant.bus_id]
+        self.plant['lon'] = [bus2coord['lon'][i] for i in self.plant.bus_id]
+
+        self.branch['from_lat'] = [bus2coord['lat'][i]
+                                   for i in self.branch.from_bus_id]
+        self.branch['from_lon'] = [bus2coord['lon'][i]
+                                   for i in self.branch.from_bus_id]
+        self.branch['to_lat'] = [bus2coord['lat'][i]
+                                 for i in self.branch.to_bus_id]
+        self.branch['to_lon'] = [bus2coord['lon'][i]
+                                 for i in self.branch.to_bus_id]
+
+        # Zoning
+        self.plant['zone_id'] = [bus2zone[i] for i in self.plant.bus_id]
+        self.plant['zone_name'] = [self.load_zone[i]
+                                   for i in self.plant.zone_id]
+
+        self.branch['from_zone_id'] = [bus2zone[i]
+                                       for i in self.branch.from_bus_id]
+        self.branch['to_zone_id'] = [bus2zone[i]
+                                     for i in self.branch.to_bus_id]
+        self.branch['from_zone_name'] = [self.load_zone[i]
+                                         for i in self.branch.from_zone_id]
+        self.branch['to_zone_name'] = [self.load_zone[i]
+                                   for i in self.branch.to_zone_id]
+
+    def _read_network(self):
+        """Reads all network file.
+
+        """
+        self._read_load_zone()
+        self._read_sub()
+        self._read_bus2sub()
+        self._read_bus()
+        self._read_plant()
+        self._read_branch()
 
     def _read_sub(self):
         """Reads the substation file and add information to data frame.
@@ -72,126 +138,89 @@ class Grid():
         print("Loading sub")
 
         self.sub = pd.read_pickle(self.data_loc + 'USASubstations.pkl')
+        self.sub.rename(columns={'intercon_subID': 'interconnect_sub_id'},
+                        inplace=True)
+        self.sub.index.name = 'sub_id'
 
     def _read_bus2sub(self):
         """Reads bus2sub file and add information to data frame.
 
         """
         print("Loading bus2sub")
-
         self.bus2sub = pd.read_pickle(self.data_loc + 'USAbus2sub.pkl')
+        self.bus2sub.index.name = 'bus_id'
+        self.bus2sub.rename(columns={'subID': 'sub_id'}, inplace=True)
 
     def _read_bus(self):
-        """Reads bus file and add information to data frame, including \ 
+        """Reads bus file and add information to data frame, including \
             demand and generators.
 
         """
         print("Loading bus")
 
-        self.bus = pd.read_csv(self.data_loc + 'bus_case.txt', sep=r'\s+')
-        self.bus.rename(columns={'bus_i': 'busID'}, inplace=True)
-        self.bus['lat'] = self.sub.loc[
-            self.bus2sub.loc[self.bus['busID'], 'subID'], 'lat'].values
-        self.bus['lon'] = self.sub.loc[
-            self.bus2sub.loc[self.bus['busID'], 'subID'], 'lon'].values
+        # Read and format
+        self.bus = pd.read_csv(self.data_loc + 'bus_case.txt', index_col=0,
+                               sep=r'\s+')
+        self.bus.index.name = 'bus_id'
+        self.bus.drop(columns='zone', inplace=True)
+        self.bus.rename(columns={'area': 'zone_id'}, inplace=True)
 
+        # Interconnect
         self.bus["interconnect"] = "Eastern"
-        self.bus.loc[self.bus.busID > 3000000, 'interconnect'] = 'Texas'
-        self.bus.loc[(self.bus.busID > 2000000) & (self.bus.busID < 3000000),
-                     'interconnect'] = 'Western'
+        self.bus.loc[self.bus.index > 2000000, 'interconnect'] = 'Western'
+        self.bus.loc[self.bus.index > 3000000, 'interconnect'] = 'Texas'
 
-    def _read_gen_bus(self):
-        """Reads gen_bus file and add information to data frame.
+    def _read_plant(self):
+        """Reads files related to plants and add information to data frame.
 
         """
-        print("Loading genbus")
+        print("Loading plant")
+        # Read and format
+        plant_type = pd.read_csv(self.data_loc+'gentype_case.txt',
+                                 sep=r'\s+', header=None)
+        self.plant = pd.read_csv(self.data_loc+'genbus_case.txt', sep=r'\s+')
+        self._plant_aux = pd.read_pickle(self.data_loc + 'USAgenbus_aux.pkl')
+        self.plant.index.name = 'plant_id'
+        self.plant.rename(columns={'bus': 'bus_id'}, inplace=True)
 
-        self.genbus = pd.read_csv(self.data_loc+'genbus_case.txt', sep=r'\s+')
-        self.gentype = pd.read_csv(self.data_loc+'gentype_case.txt',
-                                   sep=r'\s+', header=None)
-        self.genbus['type'] = self.gentype
-        self.genbus.rename(columns={'bus': 'busID'}, inplace=True)
-        self.genbus['lat'] = self.sub.loc[
-            self.bus2sub.loc[self.genbus['busID'], 'subID'], 'lat'].values
-        self.genbus['lon'] = self.sub.loc[
-            self.bus2sub.loc[self.genbus['busID'], 'subID'], 'lon'].values
-        self.genbus_aux = pd.read_pickle(self.data_loc + 'USAgenbus_aux.pkl')
-        self.genbus = pd.concat([
-            self.genbus,
-            self.genbus_aux.reset_index()[['AreaNum', 'GenMWMax', 'GenMWMin']]
-        ], axis=1)
+        # Combine
+        self.plant = pd.concat([self.plant,
+                                self._plant_aux.reset_index()[
+                                    ['GenMWMax', 'GenMWMin']]],
+                               axis=1)
+        self.plant['type'] = plant_type
 
-        self.genbus['interconnect'] = 'Eastern'
-        self.genbus.loc[self.genbus.busID > 3000000, 'interconnect'] = 'Texas'
-        self.genbus.loc[
-            (self.genbus.busID > 2000000) & (self.genbus.busID < 3000000),
-            'interconnect'] = 'Western'
+        # Interconnect
+        self.plant['interconnect'] = 'Eastern'
+        self.plant.loc[self.plant.bus_id > 2000000,
+                       'interconnect'] = 'Western'
+        self.plant.loc[self.plant.bus_id > 3000000,
+                       'interconnect'] = 'Texas'
 
-        self.genbus['newPlantID'] = self.genbus.index
-        self.genbus.loc[
-            self.genbus['interconnect'] == 'Texas',
-            'newPlantID'] = range(3000000, 3000000 +
-                                  sum(self.genbus['interconnect'] == 'Texas'))
-
-        self.genbus.loc[
-            self.genbus['interconnect'] == 'Western',
-            'newPlantID'] = range(2000000, 2000000 +
-                                  sum(self.genbus[
-                                        'interconnect'] == 'Western'))
-        self.genbus.set_index('newPlantID', inplace=True)
-
-        self.genbus.loc[
-            self.genbus['interconnect'] == 'Texas', 'AreaNum'] += 300
-
-        self.genbus.loc[
-            self.genbus["interconnect"] == 'Western', 'AreaNum'] += 200
-
-        self.genbus['ZoneName'] = self.genbus.AreaNum.apply(
-            lambda AreaNum: self.load_zones.loc[AreaNum])
-
-        self.genbus.index.name = 'plantID'
-
-    def _read_branches(self):
+    def _read_branch(self):
         """Reads branches file and add information to data frame.
 
         """
-        print("Loading branches")
-
-        self.branches = pd.read_csv(self.data_loc + 'branch_case.txt',
+        print("Loading branch")
+        self.branch = pd.read_csv(self.data_loc + 'branch_case.txt',
                                     sep=r'\s+')
+        self.branch.rename(columns={'fbus': 'from_bus_id',
+                                    'tbus': 'to_bus_id'}, inplace=True)
+        self.branch.index.name = 'branch_id'
 
-        self.branches['from_lat'] = self.sub.loc[
-            self.bus2sub.loc[self.branches['fbus'], 'subID'], 'lat'].values
-        self.branches['from_lon'] = self.sub.loc[
-            self.bus2sub.loc[self.branches['fbus'], 'subID'], 'lon'].values
-        self.branches['to_lat'] = self.sub.loc[
-            self.bus2sub.loc[self.branches['tbus'], 'subID'], 'lat'].values
-        self.branches['to_lon'] = self.sub.loc[
-            self.bus2sub.loc[self.branches['tbus'], 'subID'], 'lon'].values
+        # Interconnect
+        self.branch['interconnect'] = 'Eastern'
+        self.branch.loc[self.branch.from_bus_id > 2000000,
+                        'interconnect'] = 'Western'
+        self.branch.loc[self.branch.from_bus_id > 3000000,
+                        'interconnect'] = 'Texas'
 
-        self.branches['interconnect'] = 'Eastern'
-        self.branches.loc[
-            self.branches.fbus > 3000000, 'interconnect'] = 'Texas'
-        self.branches.loc[
-            (self.branches.fbus > 2000000) & (self.branches.fbus < 3000000),
-            'interconnect'] = 'Western'
-
-    def _read_load_zones(self):
+    def _read_load_zone(self):
         """Reads load zone names
 
         """
-
-        self.load_zones = pd.read_csv(self.data_loc + 'USAArea.csv',
-                                      header=None, index_col=0,)
-
-    def _read_network_files(self):
-        """Reads all network file.
-
-        """
-
-        self._read_load_zones()
-        self._read_sub()
-        self._read_bus2sub()
-        self._read_bus()
-        self._read_gen_bus()
-        self._read_branches()
+        print("Loading zone")
+        self.load_zone = pd.read_csv(self.data_loc + 'USAArea.csv',
+                                     header=None,
+                                     index_col=0,
+                                     names=['zone_name']).zone_name.to_dict()
