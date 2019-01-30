@@ -7,7 +7,7 @@ import seaborn as sns
 class Grid():
     """Synthetic Network.
 
-    :param interconnect: name of interconnect(s).
+    :param list interconnect: name of interconnect(s).
 
     """
     id2type = {0: 'wind',
@@ -39,7 +39,7 @@ class Grid():
     def _check_interconnect(self, interconnect):
         """Checks if interconnect exists.
 
-        :param interconnect: interconnect name(s).
+        :param list interconnect: interconnect name(s).
         """
         possible = ['USA', 'Eastern', 'Texas', 'Western']
         if isinstance(interconnect, str):
@@ -47,15 +47,12 @@ class Grid():
         elif isinstance(interconnect, list):
             test = interconnect
         else:
-            raise TypeError("Wrong type. A string or list of strings",
-                            "is expected for interconnect")
+            raise TypeError("List of strings is expected for interconnect")
 
         for t in test:
-            check = False if t not in possible else True
-
-        if check == False:
-            raise NameError("Interconnect not available. Choose one of:",
-                            possible, "or any combination")
+            if t not in possible:
+                raise NameError("%s not available. Choose among %s" %
+                                (t, " / ".join(possible)))
 
         self.interconnect = test
 
@@ -118,7 +115,7 @@ class Grid():
         self.branch['from_zone_name'] = [self.load_zone[i]
                                          for i in self.branch.from_zone_id]
         self.branch['to_zone_name'] = [self.load_zone[i]
-                                   for i in self.branch.to_zone_id]
+                                       for i in self.branch.to_zone_id]
 
     def _read_network(self):
         """Reads all network file.
@@ -132,7 +129,7 @@ class Grid():
         self._read_branch()
 
     def _read_sub(self):
-        """Reads the substation file and add information to data frame.
+        """Reads the substation file.
 
         """
         print("Loading sub")
@@ -143,7 +140,7 @@ class Grid():
         self.sub.index.name = 'sub_id'
 
     def _read_bus2sub(self):
-        """Reads bus2sub file and add information to data frame.
+        """Reads bus2sub file.
 
         """
         print("Loading bus2sub")
@@ -152,8 +149,7 @@ class Grid():
         self.bus2sub.rename(columns={'subID': 'sub_id'}, inplace=True)
 
     def _read_bus(self):
-        """Reads bus file and add information to data frame, including \
-            demand and generators.
+        """Reads bus file.
 
         """
         print("Loading bus")
@@ -171,7 +167,7 @@ class Grid():
         self.bus.loc[self.bus.index > 3000000, 'interconnect'] = 'Texas'
 
     def _read_plant(self):
-        """Reads files related to plants and add information to data frame.
+        """Reads generator files.
 
         """
         print("Loading plant")
@@ -192,13 +188,11 @@ class Grid():
 
         # Interconnect
         self.plant['interconnect'] = 'Eastern'
-        self.plant.loc[self.plant.bus_id > 2000000,
-                       'interconnect'] = 'Western'
-        self.plant.loc[self.plant.bus_id > 3000000,
-                       'interconnect'] = 'Texas'
+        self.plant.loc[self.plant.bus_id > 2000000, 'interconnect'] = 'Western'
+        self.plant.loc[self.plant.bus_id > 3000000, 'interconnect'] = 'Texas'
 
     def _read_branch(self):
-        """Reads branches file and add information to data frame.
+        """Reads branch file.
 
         """
         print("Loading branch")
@@ -216,7 +210,7 @@ class Grid():
                         'interconnect'] = 'Texas'
 
     def _read_load_zone(self):
-        """Reads load zone names
+        """Reads load zone files.
 
         """
         print("Loading zone")
