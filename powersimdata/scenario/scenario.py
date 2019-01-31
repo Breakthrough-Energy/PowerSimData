@@ -10,39 +10,43 @@ class Scenario():
 
     :param str name: name of scenario.
     :param str data_dir: define local folder location to read or save data.
+
     """
 
     def __init__(self, name, data_dir=None):
-        self.name = name
-        self.data_dir = data_dir
-        
-        # Open communication with server
-        td = PullData()
-        
-        # Check that scenario exists
-        self._check_name(td.get_scenario_list())
-        
-        # Get and store information on scenario
-        self._retrieve_info(td.get_scenario_table())
-        
+        """Constructor.
 
-    def _check_name(self, names):
+        """
+        self.data_dir = data_dir
+
+        # Check/set scenario name
+        self._check_name(name)
+
+        # Retrieve scenario information
+        self._retrieve_info()
+
+
+    def _check_name(self, name):
         """Checks if scenario exists.
 
-        :param list: list of scenario names.
+        :param list name: scenario name.
+        :raises NameError: if scenario does not exist.
         """
-        if self.name not in names:
-            print("Scenario not available. Possible scenarios are:")
-            for n in names:
-                print(n)
-            return
+        td = PullData()
+        possible = td.get_scenario_list()
+        if name not in possible:
+            raise NameError("Scenario not available. Choose among %s" %
+                            " / ".join(possible))
+        self.name = name
 
-    def _retrieve_info(self, table):
+    def _retrieve_info(self):
         """Retrieve scenario information.
-        
+
         """
+        td = PullData()
+        table = td.get_scenario_table()
         self.info = table[table['name'] == self.name]
-        
+
     def get_pg(self):
         """Returns PG data frame.
 
@@ -64,14 +68,14 @@ class Scenario():
         return pf
 
     def _parse_infeasibilities(self):
-        """Parses infeasibilities. When the optimizer cannot find a solution \ 
-            in a time interval, the remedy is to decrease demand by some \ 
-            amount until a solution is found. The purpose of this function is \ 
+        """Parses infeasibilities. When the optimizer cannot find a solution \
+            in a time interval, the remedy is to decrease demand by some \
+            amount until a solution is found. The purpose of this function is \
             to get the interval number and the associated decrease.
 
-        :return: (*dict*) -- keys are the interval number and the values are \ 
-            the decrease in percent (%) applied to the original demand \ 
-            profile. 
+        :return: (*dict*) -- keys are the interval number and the values are \
+            the decrease in percent (%) applied to the original demand \
+            profile.
         """
         field = self.info.infeasibilities[0]
         if field == 'No':
@@ -80,7 +84,7 @@ class Scenario():
             infeasibilities = {}
             for entry in field.split('_'):
                 item = entry.split(':')
-                infeasibilities[int(item[0])] = int(item[1]) 
+                infeasibilities[int(item[0])] = int(item[1])
             return infeasibilities
 
     def print_infeasibilities(self):
@@ -102,7 +106,7 @@ class Scenario():
     def get_demand(self, original=True):
         """Returns demand profiles.
 
-        :param bool original: should the original demand profile or the \ 
+        :param bool original: should the original demand profile or the \
             potentially modified one be returned.
         :return: (*pandas*) -- data frame of demand.
         """
