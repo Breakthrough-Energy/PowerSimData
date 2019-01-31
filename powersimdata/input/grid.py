@@ -33,7 +33,7 @@ class Grid():
 
         self._set_interconnect(interconnect)
         self._build_network()
-        self._add_column()
+        self._add_information()
         print("Done loading")
 
     def _set_interconnect(self, interconnect):
@@ -79,7 +79,7 @@ class Grid():
                 self.branch.drop(self.branch.groupby(
                     'interconnect').get_group(d).index, inplace=True)
 
-    def _add_column(self):
+    def _add_information(self):
         """Add information to data frames.
 
         """
