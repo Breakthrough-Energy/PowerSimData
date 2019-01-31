@@ -31,15 +31,17 @@ class Grid():
         data_dirname = os.path.join(top_dirname, 'data')
         self.data_loc = os.path.join(data_dirname, 'usa', '')
 
-        self._check_interconnect(interconnect)
+        self._set_interconnect(interconnect)
         self._build_network()
         self._add_column()
         print("Done loading")
 
-    def _check_interconnect(self, interconnect):
-        """Checks if interconnect exists.
+    def _set_interconnect(self, interconnect):
+        """Checks interconnect.
 
         :param list interconnect: interconnect name(s).
+        :raises TypeError: if parameter has wrong type.
+        :raises NameError: if interconnect does not exist.
         """
         possible = ['USA', 'Eastern', 'Texas', 'Western']
         if isinstance(interconnect, str):
@@ -51,8 +53,8 @@ class Grid():
 
         for t in test:
             if t not in possible:
-                raise NameError("%s not available. Choose among %s" %
-                                (t, " / ".join(possible)))
+                raise NameError("Interconnect not available. Choose from %s" %
+                                " / ".join(possible))
 
         self.interconnect = test
 
@@ -78,7 +80,7 @@ class Grid():
                     'interconnect').get_group(d).index, inplace=True)
 
     def _add_column(self):
-        """Add information in data frames.
+        """Add information to data frames.
 
         """
         bus2zone = self.bus.zone_id.to_dict()
