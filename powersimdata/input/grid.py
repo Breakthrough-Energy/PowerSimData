@@ -43,20 +43,16 @@ class Grid():
         :raises TypeError: if parameter has wrong type.
         :raises NameError: if interconnect does not exist.
         """
-        possible = ['USA', 'Eastern', 'Texas', 'Western']
-        if isinstance(interconnect, str):
-            test = [interconnect]
-        elif isinstance(interconnect, list):
-            test = interconnect
-        else:
-            raise TypeError("List of strings is expected for interconnect")
+        possible = ['Eastern', 'Texas', 'Western', 'USA']
+        if not isinstance(interconnect, list):
+            raise TypeError("List of string(s) is expected for interconnect")
 
-        for t in test:
-            if t not in possible:
+        for i in interconnect:
+            if i not in possible:
                 raise NameError("Interconnect not available. Choose from %s" %
-                                " / ".join(possible))
+                                "/".join(possible))
 
-        self.interconnect = test
+        self.interconnect = list(set(interconnect))
 
     def _build_network(self):
         """Builds betwork.
