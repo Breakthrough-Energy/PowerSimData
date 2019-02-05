@@ -41,7 +41,7 @@ class Grid():
 
         :param list interconnect: interconnect name(s).
         :raises TypeError: if parameter has wrong type.
-        :raises NameError: if interconnect does not exist.
+        :raises Exception: if interconnect not found.
         """
         possible = ['Eastern', 'Texas', 'Western', 'USA']
         if not isinstance(interconnect, list):
@@ -49,7 +49,7 @@ class Grid():
 
         for i in interconnect:
             if i not in possible:
-                raise NameError("Interconnect not available. Choose from %s" %
+                raise Exception("Interconnect not found. Choose from %s" %
                                 "/".join(possible))
 
         self.interconnect = list(set(interconnect))
@@ -60,20 +60,24 @@ class Grid():
         """
         self._read_network()
         if 'USA' not in self.interconnect:
-            drop = ['Eastern', 'Texas', 'Western']
+            drop = {'Eastern': [1, 52],
+                    'Texas': [301, 308],
+                    'Western': [201, 216]}
             for i in self.interconnect:
-                drop.remove(i)
-            for d in drop:
+                del drop[i]
+            for k, v in drop.items():
                 self.sub.drop(self.sub.groupby(
-                    'interconnect').get_group(d).index, inplace=True)
+                    'interconnect').get_group(k).index, inplace=True)
                 self.bus2sub.drop(self.bus2sub.groupby(
-                    'interconnect').get_group(d).index, inplace=True)
+                    'interconnect').get_group(k).index, inplace=True)
                 self.bus.drop(self.bus.groupby(
-                    'interconnect').get_group(d).index, inplace=True)
+                    'interconnect').get_group(k).index, inplace=True)
                 self.plant.drop(self.plant.groupby(
-                    'interconnect').get_group(d).index, inplace=True)
+                    'interconnect').get_group(k).index, inplace=True)
                 self.branch.drop(self.branch.groupby(
-                    'interconnect').get_group(d).index, inplace=True)
+                    'interconnect').get_group(k).index, inplace=True)
+                for i in range(v[0], v[1]+1):
+                    del self.zone[i]
 
     def _add_information(self):
         """Add information to data frames.
@@ -103,23 +107,23 @@ class Grid():
 
         # Zoning
         self.plant['zone_id'] = [bus2zone[i] for i in self.plant.bus_id]
-        self.plant['zone_name'] = [self.load_zone[i]
+        self.plant['zone_name'] = [self.zone[i]
                                    for i in self.plant.zone_id]
 
         self.branch['from_zone_id'] = [bus2zone[i]
                                        for i in self.branch.from_bus_id]
         self.branch['to_zone_id'] = [bus2zone[i]
                                      for i in self.branch.to_bus_id]
-        self.branch['from_zone_name'] = [self.load_zone[i]
+        self.branch['from_zone_name'] = [self.zone[i]
                                          for i in self.branch.from_zone_id]
-        self.branch['to_zone_name'] = [self.load_zone[i]
+        self.branch['to_zone_name'] = [self.zone[i]
                                        for i in self.branch.to_zone_id]
 
     def _read_network(self):
         """Reads all network file.
 
         """
-        self._read_load_zone()
+        self._read_zone()
         self._read_sub()
         self._read_bus2sub()
         self._read_bus()
@@ -207,12 +211,12 @@ class Grid():
         self.branch.loc[self.branch.from_bus_id > 3000000,
                         'interconnect'] = 'Texas'
 
-    def _read_load_zone(self):
+    def _read_zone(self):
         """Reads load zone files.
 
         """
         print("Loading zone")
-        self.load_zone = pd.read_csv(self.data_loc + 'USAArea.csv',
-                                     header=None,
-                                     index_col=0,
-                                     names=['zone_name']).zone_name.to_dict()
+        self.zone = pd.read_csv(self.data_loc + 'USAArea.csv',
+                                header=None,
+                                index_col=0,
+                                names=['zone_name']).zone_name.to_dict()
