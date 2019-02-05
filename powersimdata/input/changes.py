@@ -136,7 +136,7 @@ class Change():
                 pass
         return plant_id
 
-    def set_generator_capacity(self, resource, zones=None, plant_id=None):
+    def set_plant_capacity(self, resource, zones=None, plant_id=None):
         """Consign plant capacity scaling.
 
         :param str resource: type of generator to consider.
