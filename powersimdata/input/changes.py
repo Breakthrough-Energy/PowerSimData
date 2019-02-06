@@ -45,7 +45,7 @@ class Change():
         # Set attribute
         self.grid = Grid(self.interconnect)
         self.table = {}
-        self.zone_name2zone_id = {v: k for k, v in self.grid.load_zone.items()}
+        self.name2id = {v: k for k, v in self.grid.zone.items()}
 
     def _set_interconnect(self, interconnect):
         """Checks interconnect.
@@ -120,11 +120,11 @@ class Change():
         elif zone == 'California':
             ca = ['Bay Area', 'Central California', 'Northern California',
                   'Southeast California', 'Southwest California']
-            for load_zone in ca:
+            for z in ca:
                 try:
                     plant_id += self.grid.plant.groupby(
                         ['zone_name', 'type']).get_group(
-                        (load_zone, resource)).index.values.tolist()
+                        (z, resource)).index.values.tolist()
                 except KeyError:
                     pass
         else:
@@ -154,13 +154,13 @@ class Change():
             self.table[resource] = {}
             if zones is not None:
                 self._check_zones(list(zones.keys()))
-                self.table[resource]['zone'] = {}
+                self.table[resource]['zone_id'] = {}
                 for z in zones.keys():
                     if len(self._get_plant_id(z, resource)) == 0:
                         print("No %s plants in %s." % (resource, z))
                     else:
-                        zone_id = self.zone_name2zone_id[z]
-                        self.table[resource]['zone'][zone_id] = zones[z]
+                        zone_id = self.name2id[z]
+                        self.table[resource]['zone_id'][zone_id] = zones[z]
             if plant_id is not None:
                 plant_id_interconnect = set(self.grid.plant.groupby(
                     'type').get_group(resource).index)
@@ -172,9 +172,9 @@ class Change():
                     self.table.pop(resource)
                     return
                 else:
-                    self.table[resource]['id'] = {}
+                    self.table[resource]['plant_id'] = {}
                     for i in plant_id.keys():
-                        self.table[resource]['id'][i] = plant_id[i]
+                        self.table[resource]['plant_id'][i] = plant_id[i]
         else:
             print("<zones> and/or <plant_id> must be set. Return.")
             return
@@ -192,26 +192,26 @@ class Change():
             the line(s).
         """
         if bool(zones) or bool(plant_id) is True:
-            self.table['branches'] = {}
+            self.table['branch'] = {}
             if zones is not None:
                 self._check_zones(list(zones.keys()))
-                self.table['branches']['zone'] = {}
+                self.table['branch']['zone_id'] = {}
                 for z in zones.keys():
-                    zone_id = self.zone_name2zone_id[z]
-                    self.table['branches']['zone'][zone_id] = zones[z]
+                    zone_id = self.name2id[z]
+                    self.table['branch']['zone_id'][zone_id] = zones[z]
             if branch_id is not None:
                 branch_id_interconnect = set(self.grid.branch.index)
                 diff = set(branch_id.keys()).difference(branch_id_interconnect)
                 if len(diff) != 0:
-                    print("No branche(s) with the following id:")
+                    print("No branch with the following id:")
                     for i in list(diff):
                         print(i)
-                    self.table.pop('branches')
+                    self.table.pop('branch')
                     return
                 else:
-                    self.table['branches']['id'] = {}
+                    self.table['branch']['branch_id'] = {}
                     for i in branch_id.keys():
-                        self.table['branches']['id'][i] = branch_id[i]
+                        self.table['branch']['branch_id'][i] = branch_id[i]
         else:
             print("<zones> and/or <branch_id> must be set. Return.")
             return
@@ -225,8 +225,9 @@ class Change():
         """
         self._check_zones(list(zones.keys()))
         self.table['demand'] = {}
+        self.table['demand']['zone_id'] = {}
         for z in zones.keys():
-            self.table['demand'][self.zone_name2zone_id[z]] = zones[z]
+            self.table['demand']['zone_id'][self.name2id[z]] = zones[z]
 
     def write(self, local_dir=None):
         """Saves change table to disk..
