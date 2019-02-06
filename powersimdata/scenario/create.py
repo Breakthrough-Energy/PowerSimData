@@ -82,7 +82,8 @@ class Create(Scenario):
             self.table = {'demand': None,
                           'hydro': None,
                           'solar': None,
-                          'wind': None}
+                          'wind': None,
+                          'branch': None}
         else:
             path = input("Enter absolute path to pickle file: ")
             try:
@@ -102,35 +103,37 @@ class Create(Scenario):
             information therein (zone id, plant id and branch id) are \
             consistent with resource and interconnect.
         """
-        # Check table keys.
         for type in table.keys():
-            if type not in ['branches', 'demand', 'hydro', 'solar', 'wind']:
+            if type not in ['branch', 'demand', 'hydro', 'solar', 'wind']:
                 raise Exception("Unknown key %s in change table" % possible)
-        # Check zone id.
-        def check_zone(self, zone_id):
+
+        def check_zone(zone_id, id2name):
             """Checks zone.
 
             :param int zone_id: zone id.
+            :param dict id2name: zone id to zone name.
             :raises Exception: if zone not found.
             """
-            if zone_id not in self.grid.keys():
+            if zone_id not in id2name.keys():
                 raise Exception('%d (%s) not in interconnect' %
-                                (zone_id, self.grid.zone[zone_id]))
+                                (zone_id, id2name[zone_id]))
         for type in table.keys():
-            for zone_id in table[type]['zone_id'].keys():
-                check_zone(zone_id)
-        # Check plant id.
-        for type in ['hydro', 'solar', 'wind']:
-            possible = self.grid.plant.groupby('type').get_group(type).index
-            diff = set(table[type]['plant_id'].keys()) - set(possible)
-            if len(diff) != 0:
-                raise Exception("No %s plant with following id:" %
-                                (type, "/".join(list(diff))))
-        # Check branch id.
-        possible = self.grid.branch.index
-        diff = set(branch_id.keys()) - set(possible)
-        if len(diff) != 0:
-                raise Exception("No %s branch with following id:" %
-                                (type, "/".join(list(diff))))
+            for id in table[type].keys():
+                if id == 'zone_id':
+                    for zone_id in table[type]['zone_id'].keys():
+                        check_zone(zone_id, self.grid.zone)
+                if id == 'plant_id':
+                    possible = self.grid.plant.groupby('type').get_group(
+                        type).index
+                    diff = set(table[type]['plant_id'].keys()) - set(possible)
+                    if len(diff) != 0:
+                        raise Exception("No %s plant with following id:" %
+                            (type, "/".join(list(diff))))
+                if id == 'branch_id':
+                    possible = self.grid.branch.index
+                    diff = set(table[type]['branch_id'].keys()) - set(possible)
+                    if len(diff) != 0:
+                        raise Exception("No %s branch with following id:" %
+                            (type, "/".join(list(diff))))
 
         return True
