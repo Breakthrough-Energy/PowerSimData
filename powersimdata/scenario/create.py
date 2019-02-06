@@ -3,7 +3,7 @@ import pickle
 import re
 
 from postreise.process.transferdata import setup_server_connection
-import powersimdata.scenario.helpers as helpers
+from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.input.grid import Grid
 
 class Scenario:
@@ -55,23 +55,25 @@ class Create(Scenario):
     def _select_base_profile(self, type):
         """Selects base profile.
 
-        :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*
+        :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :raises Exception: if no profile is available.
         """
         print("- %s profile" % type.capitalize())
-        file = helpers.interconnect2name(self.interconnect) + '_' + type + '_*'
-        query = os.path.join(self.remote_dir, file)
+        available = interconnect2name(self.interconnect) + '_' + type + '_*'
+        query = os.path.join(self.remote_dir, available)
         stdin, stdout, stderr = self._ssh.exec_command("ls " + query)
         if len(stderr.readlines()) != 0:
-            print("No %s file available for selected interconnect." % type)
-            return
+            raise Exception("No %s file available." % type)
         else:
-            possible = [os.path.basename(line.rstrip())[-6:-4]
+            filename = [os.path.basename(line.rstrip())
                         for line in stdout.readlines()]
+            possible = [f[f.rfind('_')+1:-4] for f in filename]
             return input("Choose from [%s]: " % "/".join(possible))
 
     def _change_table_manager(self):
         """Deals with change table.
 
+        :raises FileNotFoundError: if change table file not found.
         """
         print("- Change table")
         status = input("Do you need a change table? [Yes/No]: ")
@@ -82,22 +84,53 @@ class Create(Scenario):
                           'solar': None,
                           'wind': None}
         else:
-            file = input("Do you have a change table file? [Yes/No]: ")
-            if file == 'Yes':
-                path = input("Enter absolute path to pickle file: ")
-                try:
-                    table = pickle.load(open(path, "rb"))
-                except FileNotFoundError as e:
-                    raise FileNotFoundError("File %s not found. " % path)
-                if self._check_change_table(table):
-                    self.table = table
-            else:
-                print("Let's create a change table")
-
+            path = input("Enter absolute path to pickle file: ")
+            try:
+                table = pickle.load(open(path, "rb"))
+            except FileNotFoundError as e:
+                raise FileNotFoundError("File %s not found. " % path)
+            if self._check_change_table(table):
+                self.table = table
 
     def _check_change_table(self, table):
         """Creates change table.
 
         :param dict table: change table.
+        :raises Exception: if keys in table are uncorrectly named, if \
+            plant/branch id is not found.
+        :return: (*bool*) -- true if change table has expected format and \
+            information therein (zone id, plant id and branch id) are \
+            consistent with resource and interconnect.
         """
+        # Check table keys.
+        for type in table.keys():
+            if type not in ['branches', 'demand', 'hydro', 'solar', 'wind']:
+                raise Exception("Unknown key %s in change table" % possible)
+        # Check zone id.
+        def check_zone(self, zone_id):
+            """Checks zone.
+
+            :param int zone_id: zone id.
+            :raises Exception: if zone not found.
+            """
+            if zone_id not in self.grid.keys():
+                raise Exception('%d (%s) not in interconnect' %
+                                (zone_id, self.grid.zone[zone_id]))
+        for type in table.keys():
+            for zone_id in table[type]['zone_id'].keys():
+                check_zone(zone_id)
+        # Check plant id.
+        for type in ['hydro', 'solar', 'wind']:
+            possible = self.grid.plant.groupby('type').get_group(type).index
+            diff = set(table[type]['plant_id'].keys()) - set(possible)
+            if len(diff) != 0:
+                raise Exception("No %s plant with following id:" %
+                                (type, "/".join(list(diff))))
+        # Check branch id.
+        possible = self.grid.branch.index
+        diff = set(branch_id.keys()) - set(possible)
+        if len(diff) != 0:
+                raise Exception("No %s branch with following id:" %
+                                (type, "/".join(list(diff))))
+
         return True
