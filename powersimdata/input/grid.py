@@ -41,7 +41,8 @@ class Grid():
 
         :param list interconnect: interconnect name(s).
         :raises TypeError: if parameter has wrong type.
-        :raises Exception: if interconnect not found.
+        :raises Exception: if interconnect not found or combination of \
+            interconnect is not appropriate.
         """
         possible = ['Eastern', 'Texas', 'Western', 'USA']
         if not isinstance(interconnect, list):
@@ -49,10 +50,15 @@ class Grid():
 
         for i in interconnect:
             if i not in possible:
-                raise Exception("Interconnect not found. Choose from %s" %
+                raise Exception("Wrong interconnect. Choose from %s" %
                                 "/".join(possible))
+        n = len(interconnect)
+        if n > len(set(interconnect)):
+            raise Exception("List of interconnects contains duplicate values")
+        if 'USA' in interconnect and n > 1:
+            raise Exception("USA interconnect cannot be paired")
 
-        self.interconnect = list(set(interconnect))
+        self.interconnect = interconnect
 
     def _build_network(self):
         """Builds betwork.
