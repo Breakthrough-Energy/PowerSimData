@@ -25,7 +25,7 @@ class InputData(object):
             home_dir = str(Path.home())
             self.local_dir = os.path.join(home_dir, 'scenario_data', '')
 
-            print('Use %s to save/load local scenario data.' % self.local_dir)
+            print('Use %s to save/load scenario data.' % self.local_dir)
 
     def get_data(self, scenario_name, field_name):
         """Get data either from server or from local directory.
@@ -33,14 +33,13 @@ class InputData(object):
         :param str scenario_name: name of scenario to get data from.
         :param str field_name: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
         :return: (*pandas*) -- data frame of demand, hydro, solar or wind.
-        :raises FileNotFoundError: file found neither locally nor on the \
-            server.
+        :raises FileNotFoundError: file found neither locally nor on server.
         :raises NameError: If type not *'demand'*, *'hydro'*, *'solar'*, \
             *'wind'* or *'ct'*.
         """
         if field_name not in ['demand', 'hydro', 'solar', 'wind', 'ct']:
             raise NameError('Can only get demand, hydro, solar, wind and',
-                            'change table data.')
+                            'ct data.')
         try:
             p_out = pd.read_pickle(
                 self.local_dir + scenario_name + '_' + field_name + '.pkl'
