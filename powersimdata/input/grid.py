@@ -61,7 +61,7 @@ class Grid():
         self.interconnect = interconnect
 
     def _build_network(self):
-        """Builds betwork.
+        """Builds network.
 
         """
         self._read_network()
