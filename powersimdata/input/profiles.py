@@ -25,8 +25,6 @@ class InputData(object):
             home_dir = str(Path.home())
             self.local_dir = os.path.join(home_dir, 'scenario_data', '')
 
-            print('Use %s to save/load scenario data.' % self.local_dir)
-
     def get_data(self, scenario_name, field_name):
         """Get data either from server or from local directory.
 
@@ -40,27 +38,22 @@ class InputData(object):
         if field_name not in ['demand', 'hydro', 'solar', 'wind', 'ct']:
             raise NameError('Can only get demand, hydro, solar, wind and',
                             'ct data.')
+
+        file_name = scenario_name + '_' + field_name + '.pkl'
         try:
-            p_out = pd.read_pickle(
-                self.local_dir + scenario_name + '_' + field_name + '.pkl'
-            )
+            p_out = pd.read_pickle(self.local_dir + file_name)
         except FileNotFoundError:
-            print('Local file not found. Data will be downloaded from',
-                  'server and saved locally.')
+            print('File not found in %s' % self.local_dir)
             try:
                 p_out = self.TD.download(scenario_name, field_name)
             except FileNotFoundError as e:
-                raise FileNotFoundError(
-                    'File found neither locally nor on server.'
-                ) from e
+                raise FileNotFoundError('File not found on server') from e
             if not os.path.exists(self.local_dir):
                 os.makedirs(self.local_dir)
-            print('Saving file locally.')
-            file_name = self.local_dir + scenario_name + '_' + \
-                        field_name + '.pkl'
+            print('Saving file in %s' % self.local_dir)
             if field_name == 'ct':
-                pickle.dump(p_out, open(file_name, "wb"))
+                pickle.dump(p_out, open(self.local_dir + file_name, "wb"))
             else:
-                p_out.to_pickle(file_name)
+                p_out.to_pickle(self.local_dir + file_name)
 
         return p_out

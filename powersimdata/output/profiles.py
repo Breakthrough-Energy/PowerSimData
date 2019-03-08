@@ -24,8 +24,6 @@ class OutputData(object):
             home_dir = str(Path.home())
             self.local_dir = os.path.join(home_dir, 'scenario_data', '')
 
-            print('Use %s to save/load local scenario data.' % self.local_dir)
-
     def get_data(self, scenario_name, field_name):
         """Get data either from server or from local directory.
 
@@ -38,23 +36,18 @@ class OutputData(object):
         """
         if field_name not in ['PG', 'PF']:
             raise NameError('Can only get PG or PF data.')
+        file_name = scenario_name + '_' + field_name + '.pkl'
         try:
-            p_out = pd.read_pickle(
-                self.local_dir + scenario_name + '_' + field_name + '.pkl'
-            )
+            p_out = pd.read_pickle(self.local_dir + file_name)
         except FileNotFoundError:
-            print('Local file not found will. Data will be downloaded from',
-                  'server and saved locally.')
+            print('File not found in %s' % (file_name, self.local_dir))
             try:
                 p_out = self.TD.download(scenario_name, field_name)
             except FileNotFoundError as e:
-                raise FileNotFoundError(
-                    'File found neither locally nor on server.'
-                ) from e
+                raise FileNotFoundError('File not found on server.') from e
             if not os.path.exists(self.local_dir):
                 os.makedirs(self.local_dir)
-            print('Saving file locally.')
-            p_out.to_pickle(
-                self.local_dir + scenario_name + '_' +field_name + '.pkl')
+            print('Saving file in %s' % self.local_dir)
+            p_out.to_pickle(self.local_dir + file_name)
 
         return p_out
