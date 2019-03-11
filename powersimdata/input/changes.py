@@ -12,12 +12,16 @@ class Change():
     """Create change table for changes that need to be applied to the \
         original grid as well as to the original demand, hydro, solar and \
         wind profiles. A pickle file enclosing the change table in form of a \
-        dictionary will be created and trasfered on the server. Keys are \
-        *'grid'*, *'demand'*, *'hydro'*, *'solar'* and *'wind'*. If a key is \
-        missing, it will be assumed that the grid of profile(s) associated \
-        should be considered, i.e., no changes should be applied. The data \
-        structure is given below:
+        dictionary will be created and transfered on the server. Keys are \
+        *'branch'*, *'demand'*, *'hydro'*, *'solar'* and *'wind'*. If a key \
+        is missing in the dictionary, then no changes will be applied. The \
+        data structure is given below:
 
+        * *'branch'*: \
+            value is a dictionnary, which has branch id as key and a \
+            factor indicating the desired increase/decrease of capacity of \
+            the line (1.2 would correspond to a 20% increase while 0.95 \
+            would be a 5% decrease).
         * *'demand'*: \
             value is a dictionnary, which has load zones as keys and a \
             factor indicating the desired increase/decrease of load in zone \
@@ -38,14 +42,21 @@ class Change():
 
         """
         self.name = name
-
-        # Check/set interconnect
-        self._set_interconnect(interconnect)
+        if isinstance(interconnect, str):
+            self.interconnect = [interconnect]
+        else:
+            self.interconnect = interconnect
 
         # Set attribute
         self.grid = Grid(self.interconnect)
         self.table = {}
-        self.name2id = {v: k for k, v in self.grid.zone.items()}
+        self.name2id = {}
+        for k, v in self.grid.zone.items():
+            try:
+                self.name2id[v]
+                self.name2id[v].append(k)
+            except KeyError:
+                self.name2id[v] = [k]
 
     def _set_interconnect(self, interconnect):
         """Checks interconnect.
@@ -78,25 +89,21 @@ class Change():
         """
         possible = ['hydro', 'solar', 'wind']
         if resource not in possible:
-            print("%s is incorrect. Choose one of:" % r)
+            print("Choose one of:")
             for p in possible:
                 print(p)
             raise NameError('Invalid resource')
 
-    def _check_zones(self, zones):
-        """Checks zones.
+    def _check_zone(self, zone):
+        """Checks load zones.
 
-        :param list zones: geographical zones.
+        :param list zone: geographical zones.
         :raise NameError: if zone(s) do(es) not exist.
         """
         possible = list(self.grid.plant.zone_name.unique())
-        possible += [self.interconnect]
-        if self.interconnect == 'Western':
-            possible += ['California']
-        for z in zones:
+        for z in zone:
             if z not in possible:
-                print("%s is not in %s interconnect. Possible zones are:" %
-                      (z, self.interconnect))
+                print("Possible zones are:")
                 for p in possible:
                     print(p)
                 raise Exception('Invalid zone(s)')
@@ -111,36 +118,20 @@ class Change():
             generators located in zone and using resource.
         """
         plant_id = []
-        if zone == self.interconnect:
-            try:
-                plant_id = self.grid.plant.groupby('type').get_group(
-                    resource).index.values.tolist()
-            except KeyError:
-                pass
-        elif zone == 'California':
-            ca = ['Bay Area', 'Central California', 'Northern California',
-                  'Southeast California', 'Southwest California']
-            for z in ca:
-                try:
-                    plant_id += self.grid.plant.groupby(
-                        ['zone_name', 'type']).get_group(
-                        (z, resource)).index.values.tolist()
-                except KeyError:
-                    pass
-        else:
-            try:
-                plant_id = self.grid.plant.groupby(
-                    ['zone_name', 'type']).get_group(
-                    (zone, resource)).index.values.tolist()
-            except KeyError:
-                pass
+        try:
+            plant_id = self.grid.plant.groupby(
+                ['zone_name', 'type']).get_group(
+                (zone, resource)).index.values.tolist()
+        except KeyError:
+            pass
+
         return plant_id
 
-    def set_plant_capacity(self, resource, zones=None, plant_id=None):
+    def set_plant_capacity(self, resource, zone=None, plant_id=None):
         """Consign plant capacity scaling.
 
         :param str resource: type of generator to consider.
-        :param dict zones: geographical zones. The key(s) is (are) the \
+        :param dict zone: geographical zones. The key(s) is (are) the \
             zone(s) and the associated value is the scaling factor for the \
             increase/decrease in capacity of all the generators in the zone \
             of specified type.
@@ -150,17 +141,21 @@ class Change():
             generator.
         """
         self._check_resource(resource)
-        if bool(zones) or bool(plant_id) is True:
+        if bool(zone) or bool(plant_id) is True:
             self.table[resource] = {}
-            if zones is not None:
-                self._check_zones(list(zones.keys()))
+            if zone is not None:
+                try:
+                    self._check_zone(list(zone.keys()))
+                except:
+                    self.table.pop(resource)
+                    return
                 self.table[resource]['zone_id'] = {}
-                for z in zones.keys():
+                for z in zone.keys():
                     if len(self._get_plant_id(z, resource)) == 0:
                         print("No %s plants in %s." % (resource, z))
                     else:
-                        zone_id = self.name2id[z]
-                        self.table[resource]['zone_id'][zone_id] = zones[z]
+                        for i in self.name2id[z]:
+                            self.table[resource]['zone_id'][i] = zone[z]
             if plant_id is not None:
                 plant_id_interconnect = set(self.grid.plant.groupby(
                     'type').get_group(resource).index)
@@ -176,13 +171,13 @@ class Change():
                     for i in plant_id.keys():
                         self.table[resource]['plant_id'][i] = plant_id[i]
         else:
-            print("<zones> and/or <plant_id> must be set. Return.")
+            print("<zone> and/or <plant_id> must be set. Return.")
             return
 
-    def set_branch_capacity(self, zones=None, branch_id=None):
+    def set_branch_capacity(self, zone=None, branch_id=None):
         """Consign branch capacity scaling.
 
-        :param dict zones: geographical zones. The key(s) is (are) the \
+        :param dict zone: geographical zones. The key(s) is (are) the \
             zone(s) and the associated value is the scaling factor for the \
             increase/decrease in capacity of all the branches in the zone. \
             Only lines that have both ends in zone are considered.
@@ -191,14 +186,18 @@ class Change():
             is the scaling factor for the increase/decrease in capacity of \
             the line(s).
         """
-        if bool(zones) or bool(plant_id) is True:
+        if bool(zone) or bool(plant_id) is True:
             self.table['branch'] = {}
-            if zones is not None:
-                self._check_zones(list(zones.keys()))
+            if zone is not None:
+                try:
+                    self._check_zone(list(zone.keys()))
+                except:
+                    self.table.pop('branch')
+                    return
                 self.table['branch']['zone_id'] = {}
-                for z in zones.keys():
-                    zone_id = self.name2id[z]
-                    self.table['branch']['zone_id'][zone_id] = zones[z]
+                for z in zone.keys():
+                    for i in self.name2id[z]:
+                        self.table['branch']['zone_id'][i] = zone[z]
             if branch_id is not None:
                 branch_id_interconnect = set(self.grid.branch.index)
                 diff = set(branch_id.keys()).difference(branch_id_interconnect)
@@ -213,21 +212,47 @@ class Change():
                     for i in branch_id.keys():
                         self.table['branch']['branch_id'][i] = branch_id[i]
         else:
-            print("<zones> and/or <branch_id> must be set. Return.")
+            print("<zone> and/or <branch_id> must be set. Return.")
             return
 
-    def set_demand(self, zones):
+    def set_demand(self, zone=None, zone_id=None):
         """Consign load scaling.
 
-        :param dict zones: geographical zones. The key(s) is (are) the \
-            zone(s) and the value is a factor indicating the desired \
-            increase/decrease of load.
+        :param dict zone: geographical zones. The key(s) is (are) the \
+            zone(s) and the value is the scaling factor for the \
+            increase/decrease in load.
+        :param dict zone_id: identification numbers of zones. The \
+            key(s) is (are) the id of the zone(s) and the associated value \
+            is the scaling factor for the increase/decrease in load.
         """
-        self._check_zones(list(zones.keys()))
-        self.table['demand'] = {}
-        self.table['demand']['zone_id'] = {}
-        for z in zones.keys():
-            self.table['demand']['zone_id'][self.name2id[z]] = zones[z]
+        if bool(zone) or bool(plant_id) is True:
+            self.table['demand'] = {}
+            if zone is not None:
+                try:
+                    self._check_zone(list(zone.keys()))
+                except:
+                    self.table.pop('demand')
+                    return
+                self.table['demand']['zone_id'] = {}
+                for z in zone.keys():
+                    for i in self.name2id[z]:
+                        self.table['demand']['zone_id'][i] = zone[z]
+            if zone_id is not None:
+                zone_id_interconnect = set(self.grid.zone.keys())
+                diff = set(zone_id.keys()).difference(zone_id_interconnect)
+                if len(diff) != 0:
+                    print("No zone with the following id:")
+                    for i in list(diff):
+                        print(i)
+                    self.table.pop('demand')
+                    return
+                else:
+                    self.table['demand']['zone_id'] = {}
+                    for i in zone_id.keys():
+                        self.table['demand']['zone_id'][i] = zone_id[i]
+        else:
+            print("<zone> and/or <zone_id> must be set. Return.")
+            return
 
     def write(self, local_dir=None):
         """Saves change table to disk..
