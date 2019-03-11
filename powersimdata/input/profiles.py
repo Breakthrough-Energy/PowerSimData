@@ -42,6 +42,7 @@ class InputData(object):
         file_name = scenario_name + '_' + field_name + '.pkl'
         try:
             p_out = pd.read_pickle(self.local_dir + file_name)
+            print("-> Done loading")
         except FileNotFoundError:
             print('File not found in %s' % self.local_dir)
             try:
@@ -55,5 +56,5 @@ class InputData(object):
                 pickle.dump(p_out, open(self.local_dir + file_name, "wb"))
             else:
                 p_out.to_pickle(self.local_dir + file_name)
-
+            print("-> Done loading")
         return p_out

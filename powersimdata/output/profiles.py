@@ -39,6 +39,7 @@ class OutputData(object):
         file_name = scenario_name + '_' + field_name + '.pkl'
         try:
             p_out = pd.read_pickle(self.local_dir + file_name)
+            print("-> Done loading")
         except FileNotFoundError:
             print('File not found in %s' % (file_name, self.local_dir))
             try:
@@ -49,5 +50,6 @@ class OutputData(object):
                 os.makedirs(self.local_dir)
             print('Saving file in %s' % self.local_dir)
             p_out.to_pickle(self.local_dir + file_name)
+            print("-> Done loading")
 
         return p_out
