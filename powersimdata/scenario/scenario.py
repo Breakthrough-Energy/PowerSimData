@@ -1,83 +1,250 @@
-import pandas as pd
-
 from postreise.process.transferdata import PullData
+from powersimdata.scenario import const
+from powersimdata.input.grid import Grid
 from powersimdata.input.profiles import InputData
 from powersimdata.output.profiles import OutputData
 
+import pandas as pd
 
-class Scenario():
-    """Retrieve information related a scenario
 
-    :param str name: name of scenario.
-    :param str data_dir: define local folder location to read or save data.
+class Scenario(object):
+    """Handles scenario.
+
+    :param str descriptor: scenario name or index.
 
     """
 
-    def __init__(self, name, data_dir=None):
+    def __init__(self, descriptor):
         """Constructor.
 
         """
-        self.data_dir = data_dir
+        if not isinstance(descriptor, str):
+            raise TypeError('Descriptor must be a string')
 
-        # Check/set scenario name
-        self._check_name(name)
+        if not descriptor:
+            self.state = Create()
+        else:
+            status = self._get_status(descriptor)
+            if status == 0:
+                return
+            elif status == 2:
+                self.state = Analyze()
 
-        # Retrieve scenario information
-        self._retrieve_info()
+        print('State: <%s>' % self.state.name)
+        self.state.init(self)
 
 
-    def _check_name(self, name):
-        """Checks if scenario exists.
+    def _get_status(self, descriptor):
+        """Checks scenario status.
 
-        :param list name: scenario name.
-        :raises NameError: if scenario does not exist.
+        :param str descriptor: scenario descriptor.
+        :return: (*int*) -- scenario status.
         """
         td = PullData()
-        possible = td.get_scenario_list()
-        if name not in possible:
-            raise NameError("Scenario not available. Choose among %s" %
-                            " / ".join(possible))
-        self.name = name
+        table = td.get_scenario_table()
 
-    def _retrieve_info(self):
-        """Retrieve scenario information.
+        try:
+            id = int(descriptor)
+            scenario = table[table.index == id]
+            if scenario.shape[0] == 0:
+                print('Scenario with index #%s not found' % descriptor)
+                print('Available scenarios are:')
+                print(scenario[['name', 'interconnect', 'description']])
+                return 0
+            else:
+                self.id = id
+                self.name = scenario.name.values[0]
+                return scenario.status.values[0]
+        except:
+            scenario = table[table.name == descriptor]
+            if scenario.shape[0] == 1:
+                self.id = scenario.index.values[0]
+                self.name = descriptor
+                return scenario.status.values[0]
+            elif scenario.shape[0] > 1:
+                print('Multiple scenarios with name "%s" found' % descriptor)
+                print('Use index to access scenario')
+                print(scenario[['name', 'interconnect', 'description']])
+                return 0
+
+    def change(self, state):
+      """Changes state.
+
+      :param class state: One of the sub-classes.
+      """
+      self.state.clean()
+      self.state.switch(state)
+      self.state.init(self)
+
+
+class State(object):
+    """Defines an interface for encapsulating the behavior associated with a \
+        particular state of the Scenario.
+    """
+
+    name = "state"
+    allowed = []
+
+    def switch(self, state):
+        """Switches to new state.
+
+        :param class state: One of the sub-classes.
+        """
+        if state.name in self.allowed:
+            print('Switching from <%s> to <%s>' % (self, state.name))
+            self.__class__ = state
+        else:
+            print('Cannot switch from <%s> to <%s>' % (self, state.name))
+
+    def __str__(self):
+        return self.name
+
+
+class Analyze(State):
+    """Scenario is in a state of being analyzed.
+
+    """
+
+    name = 'analyze'
+    allowed = ['create', 'delete', 'duplicate']
+
+    def init(self, scenario):
+        """Initializes attributes.
+
+        """
+        self.scenario_id = scenario.id
+        self.scenario_name = scenario.name
+        self._get_scenario_info()
+        self._get_ct()
+        self._get_grid()
+
+    def clean(self):
+        """Deletes attributes prior to switching state.
+
+        """
+        del self.scenario_info
+        del self.scenario_id
+        del self.scenario_name
+        del self.ct
+        del self.grid
+
+    def _get_scenario_info(self):
+        """Load scenario information.
 
         """
         td = PullData()
         table = td.get_scenario_table()
-        self.info = table[table['name'] == self.name]
+        self.scenario_info = table[table.index == self.scenario_id]
 
-    def get_pg(self):
-        """Returns PG data frame.
+    def _get_ct(self):
+        """Loads change table.
 
-        :return: (*pandas*) -- data frame of power generated.
         """
-        od = OutputData(self.data_dir)
-        pg = od.get_data(self.name, 'PG')
+        id = InputData(local_dir=const.LOCAL_DIR)
+        try:
+            print('# Change table')
+            ct = id.get_data(str(self.scenario_id), 'ct')
+            self.ct = ct
+        except:
+            print("No change table for scenario #%d" % self.scenario_id)
+            self.ct = None
 
-        return pg
+    def _get_grid(self):
+        """Loads original grid and apply changes found in change table.
 
-    def get_pf(self):
-        """Returns PF data frame.
-
-        :return: (*pandas*) -- data frame of power flow.
         """
-        od = OutputData(self.data_dir)
-        pf = od.get_data(self.name, 'PF')
+        print('# Grid')
+        interconnect = self.scenario_info.interconnect[0].split('_')
+        self.grid = Grid(interconnect)
+        if self.ct is not None:
+            for r in ['hydro', 'solar', 'wind']:
+                if r in list(self.ct.keys()):
+                    try:
+                        self.ct[r]['zone_id']
+                        for key, value in self.ct[r]['zone_id'].items():
+                            plant_id = self.grid.plant.groupby(
+                                ['zone_id', 'type']).get_group(
+                                (key, r)).index.values.tolist()
+                            for i in plant_id:
+                                self.grid.plant.loc[i, 'GenMWMax'] = \
+                                    self.grid.plant.loc[i, 'GenMWMax'] * value
+                    except:
+                        pass
+                    try:
+                        self.ct[r]['plant_id']
+                        for key, value in self.ct[r]['plant_id'].items():
+                            self.grid.plant.loc[key, 'GenMWMax'] = \
+                                self.grid.plant.loc[key, 'GenMWMax'] * value
+                    except:
+                        pass
+            if 'branch' in list(self.ct.keys()):
+                try:
+                    self.ct['branch']['zone_id']
+                    for key, value in self.ct['branch']['zone_id'].items():
+                        branch_id = self.grid.branch.groupby(
+                                ['from_zone_id', 'to_zone_id']).get_group(
+                                (key, key)).index.values.tolist()
+                        for i in branch_id:
+                            self.grid.branch.loc[i, 'rateA'] = \
+                                self.grid.branch.loc[i, 'rateA'] * value
+                except:
+                    pass
+                try:
+                    self.ct['branch']['branch_id']
+                    for key, value in self.ct['branch']['branch_id'].items():
+                        self.grid.branch.loc[key, 'rateA'] = \
+                            self.grid.branch.loc[key, 'rateA'] * value
+                except:
+                    pass
 
-        return pf
+    def _get_power_output(self, resource):
+        """Scales profile according to changes in change table and returns it.
+
+        :param str resource: *'hydro'*, *'solar'* or *'wind'*.
+        :return: (*pandas*) -- data frame of resource output with plant id \
+            as columns and UTC timestamp as rows.
+        :raises NameError: if invalid resource.
+        """
+        possible = ['branch', 'hydro', 'solar', 'wind']
+        if resource not in possible:
+            print("Choose one of:")
+            for p in possible:
+                print(p)
+            raise NameError('Invalid resource')
+
+        id = InputData(local_dir=const.LOCAL_DIR)
+        profile = id.get_data(str(self.scenario_id), resource)
+
+        if self.ct is not None and resource in list(self.ct.keys()):
+            try:
+                self.ct[resource]['zone_id']
+                for key, value in self.ct[resource]['zone_id'].items():
+                    plant_id = self.grid.plant.groupby(
+                        ['zone_id', 'type']).get_group(
+                        (key, resource)).index.values.tolist()
+                    for i in plant_id:
+                        profile.loc[:, i] *= value
+            except:
+                pass
+            try:
+                self.ct[resource]['plant_id']
+                for key, value in self.ct[resource]['plant_id'].items():
+                    profile.loc[:, key] *= value
+            except:
+                pass
+
+        return profile
 
     def _parse_infeasibilities(self):
         """Parses infeasibilities. When the optimizer cannot find a solution \
             in a time interval, the remedy is to decrease demand by some \
             amount until a solution is found. The purpose of this function is \
-            to get the interval number and the associated decrease.
+            to get the interval number(s) and the associated decrease(s).
 
         :return: (*dict*) -- keys are the interval number and the values are \
-            the decrease in percent (%) applied to the original demand \
-            profile.
+            the decrease in percent (%) applied to the original demand profile.
         """
-        field = self.info.infeasibilities[0]
+        field = self.scenario_info.infeasibilities[0]
         if field == 'No':
             return None
         else:
@@ -95,13 +262,32 @@ class Scenario():
         if infeasibilities is None:
             print("There are no infeasibilities.")
         else:
-            dates = pd.date_range(start=self.info.start_date[0],
-                                  end=self.info.end_date[0],
-                                  freq=self.info.interval[0])
+            dates = pd.date_range(start=self.scenario_info.start_date[0],
+                                  end=self.scenario_info.end_date[0],
+                                  freq=self.scenario_info.interval[0])
             for key, value in infeasibilities.items():
                 print("demand in %s - %s interval has been reduced by %d%%" %
                       (dates[key], dates[key+1], value))
 
+    def get_pg(self):
+        """Returns PG data frame.
+
+        :return: (*pandas*) -- data frame of power generated.
+        """
+        od = OutputData(local_dir=const.LOCAL_DIR)
+        pg = od.get_data(str(self.scenario_id), 'PG')
+
+        return pg
+
+    def get_pf(self):
+        """Returns PF data frame.
+
+        :return: (*pandas*) -- data frame of power flow.
+        """
+        od = OutputData(local_dir=const.LOCAL_DIR)
+        pf = od.get_data(str(self.scenario_id), 'PF')
+
+        return pf
 
     def get_demand(self, original=True):
         """Returns demand profiles.
@@ -111,14 +297,21 @@ class Scenario():
         :return: (*pandas*) -- data frame of demand.
         """
 
-        id = InputData(self.data_dir)
-        demand = id.get_data(self.name, 'demand')
+        id = InputData(local_dir=const.LOCAL_DIR)
+        demand = id.get_data(str(self.scenario_id), 'demand')
+        if self.ct is not None and 'demand' in list(self.ct.keys()):
+            for key, value in self.ct['demand']['zone_id'].items():
+                zone_name = self.grid.zone[key]
+                print('Multiply demand in %s (#%d) by %.2f' %
+                      (self.grid.zone[key], key, value))
+                demand.loc[:, key] *= value
+
         if original == True:
             return demand
         else:
-            dates = pd.date_range(start=self.info.start_date[0],
-                                  end=self.info.end_date[0],
-                                  freq=self.info.interval[0])
+            dates = pd.date_range(start=self.scenario_info.start_date[0],
+                                  end=self.scenario_info.end_date[0],
+                                  freq=self.scenario_info.interval[0])
             infeasibilities = self._parse_infeasibilities()
             if infeasibilities is None:
                 print("There are no infeasibilities. Return original profile.")
@@ -127,3 +320,41 @@ class Scenario():
                 for key, value in infeasibilities.items():
                     demand[dates[key]:dates[key+1]] *= 1. - value / 100.
                 return demand
+
+    def get_hydro(self):
+        """Returns hydro profile
+
+        """
+        return self._get_power_output('hydro')
+
+    def get_solar(self):
+        """Returns solar profile
+
+        """
+        return self._get_power_output('solar')
+
+    def get_wind(self):
+        """Returns wind profile
+
+        """
+        return self._get_power_output('wind')
+
+
+class Create(State):
+    """Scenario is in a state of being created.
+
+    """
+    name = 'create'
+    allowed = ['analyze']
+
+    def init(self, scenario):
+        """Initializes attributes.
+
+        """
+        pass
+
+    def clean(self):
+        """Deletes attributes prior to switching state.
+
+        """
+        pass
