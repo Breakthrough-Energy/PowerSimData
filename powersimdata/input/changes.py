@@ -186,7 +186,7 @@ class Change():
             is the scaling factor for the increase/decrease in capacity of \
             the line(s).
         """
-        if bool(zone) or bool(plant_id) is True:
+        if bool(zone) or bool(branch_id) is True:
             self.table['branch'] = {}
             if zone is not None:
                 try:
