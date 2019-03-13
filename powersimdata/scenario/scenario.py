@@ -5,6 +5,7 @@ from powersimdata.input.profiles import InputData
 from powersimdata.output.profiles import OutputData
 
 import pandas as pd
+pd.set_option('display.max_colwidth', -1)
 
 
 class Scenario(object):
@@ -27,6 +28,8 @@ class Scenario(object):
             status = self._get_status(descriptor)
             if status == 0:
                 return
+            elif status == 1:
+                self.state = Execute()
             elif status == 2:
                 self.state = Analyze()
 
@@ -43,13 +46,21 @@ class Scenario(object):
         td = PullData()
         table = td.get_scenario_table()
 
+        def not_found_message(table, descriptor):
+            """Print message when scenario is not found.
+
+            :param pandas table: scenario table.
+            :param str descriptor: scenario descriptor.
+            """
+            print('Scenario %s not found' % descriptor)
+            print('Available scenarios are:')
+            print(table[['name', 'interconnect', 'description']])
+
         try:
             id = int(descriptor)
             scenario = table[table.index == id]
             if scenario.shape[0] == 0:
-                print('Scenario with index #%s not found' % descriptor)
-                print('Available scenarios are:')
-                print(scenario[['name', 'interconnect', 'description']])
+                not_found_message(table, descriptor)
                 return 0
             else:
                 self.id = id
@@ -57,7 +68,10 @@ class Scenario(object):
                 return scenario.status.values[0]
         except:
             scenario = table[table.name == descriptor]
-            if scenario.shape[0] == 1:
+            if scenario.shape[0] == 0:
+                not_found_message(table, descriptor)
+                return 0
+            elif scenario.shape[0] == 1:
                 self.id = scenario.index.values[0]
                 self.name = descriptor
                 return scenario.status.values[0]
@@ -105,8 +119,8 @@ class Analyze(State):
 
     """
 
-    name = 'analyze'
-    allowed = ['create', 'delete', 'duplicate']
+    self.name = 'analyze'
+    self.allowed = ['delete', 'modify']
 
     def init(self, scenario):
         """Initializes attributes.
@@ -154,7 +168,7 @@ class Analyze(State):
 
         """
         print('# Grid')
-        interconnect = self.scenario_info.interconnect[0].split('_')
+        interconnect = self.scenario_info.interconnect.values[0].split('_')
         self.grid = Grid(interconnect)
         if self.ct is not None:
             for r in ['hydro', 'solar', 'wind']:
@@ -244,7 +258,7 @@ class Analyze(State):
         :return: (*dict*) -- keys are the interval number and the values are \
             the decrease in percent (%) applied to the original demand profile.
         """
-        field = self.scenario_info.infeasibilities[0]
+        field = self.scenario_info.infeasibilities.values[0]
         if field == 'No':
             return None
         else:
@@ -262,9 +276,9 @@ class Analyze(State):
         if infeasibilities is None:
             print("There are no infeasibilities.")
         else:
-            dates = pd.date_range(start=self.scenario_info.start_date[0],
-                                  end=self.scenario_info.end_date[0],
-                                  freq=self.scenario_info.interval[0])
+            dates = pd.date_range(start=self.scenario_info.start_date.values[0],
+                                  end=self.scenario_info.end_date.values[0],
+                                  freq=self.scenario_info.interval.values[0])
             for key, value in infeasibilities.items():
                 print("demand in %s - %s interval has been reduced by %d%%" %
                       (dates[key], dates[key+1], value))
@@ -309,9 +323,9 @@ class Analyze(State):
         if original == True:
             return demand
         else:
-            dates = pd.date_range(start=self.scenario_info.start_date[0],
-                                  end=self.scenario_info.end_date[0],
-                                  freq=self.scenario_info.interval[0])
+            dates = pd.date_range(start=self.scenario_info.start_date.values[0],
+                                  end=self.scenario_info.end_date.values[0],
+                                  freq=self.scenario_info.interval.values[0])
             infeasibilities = self._parse_infeasibilities()
             if infeasibilities is None:
                 print("There are no infeasibilities. Return original profile.")
@@ -344,8 +358,8 @@ class Create(State):
     """Scenario is in a state of being created.
 
     """
-    name = 'create'
-    allowed = ['analyze']
+    self.name = 'create'
+    self.allowed = []
 
     def init(self, scenario):
         """Initializes attributes.
@@ -358,3 +372,24 @@ class Create(State):
 
         """
         pass
+
+class Execute(State):
+    """Scenario is in a state of being executed.
+
+    """
+    self.name = 'execute'
+    self.allowed = ['delete']
+
+    def init(self, scenario):
+        """Initializes attributes.
+
+        """
+        self.scenario_id = scenario.id
+        self.scenario_name = scenario.name
+
+    def clean(self):
+        """Deletes attributes prior to switching state.
+
+        """
+        del self.scenario_id
+        del self.scenario_name
