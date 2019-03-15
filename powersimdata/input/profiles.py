@@ -44,7 +44,7 @@ class InputData(object):
             p_out = pd.read_pickle(self.local_dir + file_name)
             print("-> Done loading")
         except FileNotFoundError:
-            print('File not found in %s' % self.local_dir)
+            print('Local: %s not found in %s' % (file_name, self.local_dir))
             try:
                 p_out = self.TD.download(scenario_name, field_name)
             except FileNotFoundError as e:
