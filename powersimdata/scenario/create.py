@@ -1,139 +1,228 @@
-import os
-import pickle
-import re
+from powersimdata.scenario import const
 
 from postreise.process.transferdata import setup_server_connection
+from powersimdata.scenario.state import State
 from powersimdata.scenario.helpers import interconnect2name
-from powersimdata.input.grid import Grid
 
-class Scenario:
-
-    def __init__(self, name):
-        self.name = name
+import os
 
 
-class Create(Scenario):
-    """Create scenario
+class Create(State):
+    """Scenario is in a state of being created.
 
     """
+    name = 'create'
+    allowed = []
 
-    def __init__(self, name):
-        """Constructor
+    def init(self, scenario):
+        """Initializes attributes.
 
         """
-        super().__init__(name)
-
-        # Server access
-        print("Connecting to server")
+        self._builder = None
         self._ssh = setup_server_connection()
-        self.remote_dir = "/home/EGM/v2/raw"
 
-        # Interconnect
-        self.interconnect = self._select_interconnect()
-        self.grid = Grid(self.interconnect)
-
-        # Base profiles
-        self.demand = self._select_base_profile('demand')
-        self.hydro = self._select_base_profile('hydro')
-        self.solar = self._select_base_profile('solar')
-        self.wind = self._select_base_profile('wind')
-
-        # Create change table
-        self._change_table_manager()
-
-    def _select_interconnect(self):
-        """Selects interconnect.
+    def clean(self):
+        """Deletes attributes prior to switching state.
 
         """
-        print("- Interconnect")
-        interconnect = input("Choose from [Eastern/Texas/Western/USA]: ")
-        interconnect = re.sub('[\s+]', '', interconnect)
-        interconnect = re.split(r'[`\-=~!@#$%^&*()_+\[\]{};\'\\:"|<,./<>?]',
-                                interconnect)
-        return interconnect
+        del self._builder
+        del self._ssh
+        del self.interconnect
 
-    def _select_base_profile(self, type):
-        """Selects base profile.
+    def set_interconnect(self, interconnect):
+        """Sets interconnect object.
+
+        :param object interconnect: interconnect object.
+        """
+
+        self._builder = interconnect
+        self.interconnect = self._builder.get_interconnect()
+        print("Available profiles for %s:" % " + ".join(self.interconnect))
+        for p in ['demand', 'hydro', 'solar', 'wind']:
+            possible = self._get_base_profile(p)
+            if len(possible) != 0:
+                print("# %s: %s"  % (p, " | ".join(possible)))
+
+    def set_base_demand(self, demand):
+        """Sets demand profile.
+
+        :param str demand: demand profile version.
+        """
+        possible = self._get_base_profile('demand')
+        if len(possible) == 0:
+            self.demand = None
+        elif demand in possible:
+            self.demand = demand
+        else:
+            print("Available demand profiles for %s: %s" %
+                  (" + ".join(self.interconnect),
+                   " | ".join(possible)))
+            self.demand = None
+
+    def set_base_hydro(self, hydro):
+        """Sets hydro profile.
+
+        :param str hydro: hydro profile version.
+        """
+        possible = self._get_base_profile('hydro')
+        if len(possible) == 0:
+            self.hydro = None
+        elif hydro in possible:
+            self.hydro = hydro
+        else:
+            print("Available hydro profiles for %s: %s" %
+                  (" + ".join(self.interconnect),
+                   " | ".join(possible)))
+            self.hydro = None
+
+    def set_base_solar(self, solar):
+        """Sets solar profile.
+
+        :param str solar: solar profile version.
+        """
+        possible = self._get_base_profile('solar')
+        if len(possible) == 0:
+            self.solar = None
+        elif solar in possible:
+            self.solar = solar
+        else:
+            print("Available solar profiles for %s: %s" %
+                  (" + ".join(self.interconnect),
+                   " | ".join(possible)))
+            self.solar = None
+
+    def set_base_wind(self, wind):
+        """Sets wind profile.
+
+        :param str wind: wind profile version.
+        """
+        possible = self._get_base_profile('wind')
+        if len(possible) == 0:
+            self.wind = None
+        elif wind in possible:
+            self.wind = wind
+        else:
+            print("Available wind profiles for %s: %s" %
+                  (" + ".join(self.interconnect),
+                   " | ".join(possible)))
+            self.wind = None
+
+    def _get_base_profile(self, type):
+        """Prints available base profiles.
 
         :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
-        :raises Exception: if no profile is available.
+        :raises NameError: if wrong type.
         """
-        print("- %s profile" % type.capitalize())
+
+        possible = ['demand', 'hydro', 'solar', 'wind']
+        if type not in possible:
+            raise NameError("Choose from %s" % " | ".join(possible))
+
         available = interconnect2name(self.interconnect) + '_' + type + '_*'
-        query = os.path.join(self.remote_dir, available)
+        query = os.path.join(const.REMOTE_DIR_BASE, available)
         stdin, stdout, stderr = self._ssh.exec_command("ls " + query)
         if len(stderr.readlines()) != 0:
-            raise Exception("No %s file available." % type)
+            print("No %s profiles available." % type)
+            possible = []
         else:
             filename = [os.path.basename(line.rstrip())
                         for line in stdout.readlines()]
             possible = [f[f.rfind('_')+1:-4] for f in filename]
-            return input("Choose from [%s]: " % "/".join(possible))
+        return possible
 
-    def _change_table_manager(self):
-        """Deals with change table.
 
-        :raises FileNotFoundError: if change table file not found.
+class Builder(object):
+    def get_interconnect(self): pass
+
+
+class Eastern(Builder):
+    """Builder for Eastern interconnect.
+
+    """
+
+    def __init__(self):
+        self.interconnect = ['Eastern']
+
+    def get_interconnect(self):
+        """Get list of interconnect.
+
         """
-        print("- Change table")
-        status = input("Do you need a change table? [Yes/No]: ")
-        if status == 'No':
-            print('Creating empty change table.')
-            self.table = {'demand': None,
-                          'hydro': None,
-                          'solar': None,
-                          'wind': None,
-                          'branch': None}
-        else:
-            path = input("Enter absolute path to pickle file: ")
-            try:
-                table = pickle.load(open(path, "rb"))
-            except FileNotFoundError as e:
-                raise FileNotFoundError("File %s not found. " % path)
-            if self._check_change_table(table):
-                self.table = table
+        return self.interconnect
 
-    def _check_change_table(self, table):
-        """Creates change table.
 
-        :param dict table: change table.
-        :raises Exception: if keys in table are uncorrectly named, if \
-            plant/branch id is not found.
-        :return: (*bool*) -- true if change table has expected format and \
-            information therein (zone id, plant id and branch id) are \
-            consistent with resource and interconnect.
+class Texas(Builder):
+    """Builder for Texas interconnect.
+
+    """
+
+    def __init__(self):
+        self.interconnect = ['Texas']
+
+    def get_interconnect(self):
+        """Get list of interconnect.
+
         """
-        for type in table.keys():
-            if type not in ['branch', 'demand', 'hydro', 'solar', 'wind']:
-                raise Exception("Unknown key %s in change table" % possible)
+        return self.interconnect
 
-        def check_zone(zone_id, id2name):
-            """Checks zone.
 
-            :param int zone_id: zone id.
-            :param dict id2name: zone id to zone name.
-            :raises Exception: if zone not found.
-            """
-            if zone_id not in id2name.keys():
-                raise Exception('%d (%s) not in interconnect' %
-                                (zone_id, id2name[zone_id]))
-        for type in table.keys():
-            for id in table[type].keys():
-                if id == 'zone_id':
-                    for zone_id in table[type]['zone_id'].keys():
-                        check_zone(zone_id, self.grid.zone)
-                if id == 'plant_id':
-                    possible = self.grid.plant.groupby('type').get_group(
-                        type).index
-                    diff = set(table[type]['plant_id'].keys()) - set(possible)
-                    if len(diff) != 0:
-                        raise Exception("No %s plant with following id:" %
-                            (type, "/".join(list(diff))))
-                if id == 'branch_id':
-                    possible = self.grid.branch.index
-                    diff = set(table[type]['branch_id'].keys()) - set(possible)
-                    if len(diff) != 0:
-                        raise Exception("No %s branch with following id:" %
-                            (type, "/".join(list(diff))))
+class Western(Builder):
+    """Builder for Western interconnect.
 
-        return True
+    """
+
+    def __init__(self):
+        self.interconnect = ['Western']
+
+    def get_interconnect(self):
+        """Get list of interconnect.
+
+        """
+        return self.interconnect
+
+
+class TexasWestern(Builder):
+    """Builder for Texas + Western interconnect.
+
+    """
+
+    def __init__(self):
+        self.interconnect = ['Texas', 'Western']
+
+    def get_interconnect(self):
+        """Get list of interconnect.
+
+        """
+        return self.interconnect
+
+
+class TexasEastern(Builder):
+    """Builder for Texas + Eastern interconnect.
+
+    """
+
+    def __init__(self):
+        self.interconnect = ['Texas', 'Eastern']
+
+    def get_interconnect(self):
+        """Get name of interconnect.
+
+        """
+        return self.interconnect
+
+
+class EasternWestern(Builder):
+    """Builder for Eastern + Western interconnect.
+
+    """
+
+    def __init__(self):
+        self.interconnect = ['Eastern', 'Western']
+
+
+class USA(Builder):
+    """Builder for USA interconnect.
+
+    """
+
+    def __init__(self):
+        self.interconnect = ['USA']
