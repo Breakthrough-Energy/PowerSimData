@@ -38,7 +38,7 @@ class Analyze(State):
         id = InputData(local_dir=const.LOCAL_DIR)
         try:
             print('# Change table')
-            ct = id.get_data(str(self.scenario_info.index[0]), 'ct')
+            ct = id.get_data(const.REMOTE_DIR_INPUT, 'ct')
             self.ct = ct
         except:
             print("No change table for scenario #%d" %
@@ -109,7 +109,7 @@ class Analyze(State):
             raise NameError('Invalid resource')
 
         id = InputData(local_dir=const.LOCAL_DIR)
-        profile = id.get_data(str(self.scenario_info.index[0]), resource)
+        profile = id.get_data(const.REMOTE_DIR_INPUT, resource)
 
         if self.ct is not None and resource in list(self.ct.keys()):
             try:
@@ -165,23 +165,23 @@ class Analyze(State):
                 print("demand in %s - %s interval has been reduced by %d%%" %
                       (dates[key], dates[key+1], value))
 
-    def get_pg(self):
+    def get_PG(self):
         """Returns PG data frame.
 
         :return: (*pandas*) -- data frame of power generated.
         """
         od = OutputData(local_dir=const.LOCAL_DIR)
-        pg = od.get_data(str(self.scenario_info.index[0]), 'PG')
+        pg = od.get_data(const.REMOTE_DIR_OUTPUT, 'PG')
 
         return pg
 
-    def get_pf(self):
+    def get_PF(self):
         """Returns PF data frame.
 
         :return: (*pandas*) -- data frame of power flow.
         """
         od = OutputData(local_dir=const.LOCAL_DIR)
-        pf = od.get_data(str(self.scenario_info.index[0]), 'PF')
+        pf = od.get_data(const.REMOTE_DIR_OUTPUT, 'PF')
 
         return pf
 
@@ -194,8 +194,7 @@ class Analyze(State):
         """
 
         id = InputData(local_dir=const.LOCAL_DIR)
-        demand = id.get_data(str(self.scenario_info.index[0
-        ]), 'demand')
+        demand = id.get_data(const.REMOTE_DIR_INPUT, 'demand')
         if self.ct is not None and 'demand' in list(self.ct.keys()):
             for key, value in self.ct['demand']['zone_id'].items():
                 zone_name = self.grid.zone[key]
