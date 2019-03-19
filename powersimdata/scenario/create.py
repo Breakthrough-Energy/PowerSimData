@@ -1,11 +1,12 @@
 from powersimdata.scenario import const
 
+from postreise.process.transferdata import PullData
 from postreise.process.transferdata import setup_server_connection
 from powersimdata.scenario.state import State
 from powersimdata.scenario.helpers import interconnect2name
 
 import os
-
+import pandas as pd
 
 class Create(State):
     """Scenario is in a state of being created.
@@ -21,13 +22,65 @@ class Create(State):
         self._builder = None
         self._ssh = setup_server_connection()
 
+        td = PullData()
+        table = td.get_scenario_table()
+
+        self._info = {'id': table.id.max() + 1,
+                      'name': '',
+                      'status': '0',
+                      'interconnect': '',
+                      'base_demand': '',
+                      'base_hydro': '',
+                      'base_solar': '',
+                      'base_wind': '',
+                      'ct': '',
+                      'start_index': '0',
+                      'end_index': '60',
+                      'interval': '144H',
+                      'start_date': pd.Timestamp(2016, 1, 1, 0),
+                      'end_date': pd.Timestamp(2016, 12, 31, 23)}
+
+        self.interconnect = None
+        self.demand = None
+        self.hydro = None
+        self.solar = None
+        self.wind = None
+        self.ct = None
+
     def clean(self):
         """Deletes attributes prior to switching state.
 
         """
         del self._builder
         del self._ssh
+        del sel._info
         del self.interconnect
+        del self.demand
+        del self.hydro
+        del self.solar
+        del self.wind
+        del self.ct
+
+    def create(self):
+        """Creates entry in scenario file on server.
+
+        """
+        missing = []
+        for key, val in self._info.items():
+            if not val:
+                missing.append(key)
+        if len(missing) != 0:
+            print("Information that still need to be set:")
+            for field in missing:
+                print(field)
+            return
+
+    def print_info(self):
+        """Prints scenario information
+
+        """
+        for key, val in self._info.items():
+            print("%s: %s" % (key, val))
 
     def set_interconnect(self, interconnect):
         """Sets interconnect object.
@@ -42,6 +95,7 @@ class Create(State):
             possible = self._get_base_profile(p)
             if len(possible) != 0:
                 print("# %s: %s"  % (p, " | ".join(possible)))
+        self._info['interconnect'] = "_".join(self.interconnect)
 
     def set_base_demand(self, demand):
         """Sets demand profile.
@@ -50,14 +104,15 @@ class Create(State):
         """
         possible = self._get_base_profile('demand')
         if len(possible) == 0:
-            self.demand = None
+            return
         elif demand in possible:
             self.demand = demand
+            self._info['base_demand'] = demand
         else:
             print("Available demand profiles for %s: %s" %
                   (" + ".join(self.interconnect),
                    " | ".join(possible)))
-            self.demand = None
+            return
 
     def set_base_hydro(self, hydro):
         """Sets hydro profile.
@@ -66,14 +121,15 @@ class Create(State):
         """
         possible = self._get_base_profile('hydro')
         if len(possible) == 0:
-            self.hydro = None
+            return
         elif hydro in possible:
             self.hydro = hydro
+            self._info['base_hydro'] = hydro
         else:
             print("Available hydro profiles for %s: %s" %
                   (" + ".join(self.interconnect),
                    " | ".join(possible)))
-            self.hydro = None
+            return
 
     def set_base_solar(self, solar):
         """Sets solar profile.
@@ -82,14 +138,15 @@ class Create(State):
         """
         possible = self._get_base_profile('solar')
         if len(possible) == 0:
-            self.solar = None
+            return
         elif solar in possible:
             self.solar = solar
+            self._info['base_solar'] = solar
         else:
             print("Available solar profiles for %s: %s" %
                   (" + ".join(self.interconnect),
                    " | ".join(possible)))
-            self.solar = None
+            return
 
     def set_base_wind(self, wind):
         """Sets wind profile.
@@ -98,14 +155,15 @@ class Create(State):
         """
         possible = self._get_base_profile('wind')
         if len(possible) == 0:
-            self.wind = None
+            return
         elif wind in possible:
             self.wind = wind
+            self._info['base_wind'] = wind
         else:
             print("Available wind profiles for %s: %s" %
                   (" + ".join(self.interconnect),
                    " | ".join(possible)))
-            self.wind = None
+            return
 
     def _get_base_profile(self, type):
         """Prints available base profiles.
