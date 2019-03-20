@@ -58,28 +58,6 @@ class Change():
             except KeyError:
                 self.name2id[v] = [k]
 
-    def _set_interconnect(self, interconnect):
-        """Checks interconnect.
-
-        :param list interconnect: interconnect name(s).
-        :raises TypeError: if parameter has wrong type.
-        :raises NameError: if interconnect does not exist.
-        """
-        possible = ['USA', 'Eastern', 'Texas', 'Western']
-        if isinstance(interconnect, str):
-            test = [interconnect]
-        elif isinstance(interconnect, list):
-            test = interconnect
-        else:
-            raise TypeError("List of strings is expected for interconnect")
-
-        for t in test:
-            if t not in possible:
-                raise NameError("Interconnect not available. Choose from %s" %
-                                " / ".join(possible))
-
-        self.interconnect = test
-
     @staticmethod
     def _check_resource(resource):
         """Checks resource.
