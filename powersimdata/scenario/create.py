@@ -8,6 +8,7 @@ from powersimdata.scenario.helpers import interconnect2name
 import os
 import pandas as pd
 
+
 class Create(State):
     """Scenario is in a state of being created.
 
@@ -19,13 +20,13 @@ class Create(State):
         """Initializes attributes.
 
         """
-        self._builder = None
+        self.builder = None
         self._ssh = setup_server_connection()
 
         td = PullData()
         table = td.get_scenario_table()
 
-        self._info = {'id': table.id.max() + 1,
+        self.scenario_info = {'id': table.id.max() + 1,
                       'name': '',
                       'status': '0',
                       'interconnect': '',
@@ -51,9 +52,9 @@ class Create(State):
         """Deletes attributes prior to switching state.
 
         """
-        del self._builder
+        del self.builder
         del self._ssh
-        del sel._info
+        del self.scenario_info
         del self.interconnect
         del self.demand
         del self.hydro
@@ -66,7 +67,7 @@ class Create(State):
 
         """
         missing = []
-        for key, val in self._info.items():
+        for key, val in self.scenario_info.items():
             if not val:
                 missing.append(key)
         if len(missing) != 0:
@@ -75,27 +76,27 @@ class Create(State):
                 print(field)
             return
 
-    def print_info(self):
+    def print_scenario_info(self):
         """Prints scenario information
 
         """
-        for key, val in self._info.items():
+        for key, val in self.scenario_info.items():
             print("%s: %s" % (key, val))
 
-    def set_interconnect(self, interconnect):
+    def set_builder(self, interconnect):
         """Sets interconnect object.
 
         :param object interconnect: interconnect object.
         """
 
-        self._builder = interconnect
-        self.interconnect = self._builder.get_interconnect()
+        self.builder = interconnect
+        self.interconnect = self.builder.get_interconnect()
         print("Available profiles for %s:" % " + ".join(self.interconnect))
         for p in ['demand', 'hydro', 'solar', 'wind']:
             possible = self._get_base_profile(p)
             if len(possible) != 0:
                 print("# %s: %s"  % (p, " | ".join(possible)))
-        self._info['interconnect'] = "_".join(self.interconnect)
+        self.scenario_info['interconnect'] = "_".join(self.interconnect)
 
     def set_base_demand(self, demand):
         """Sets demand profile.
@@ -107,7 +108,7 @@ class Create(State):
             return
         elif demand in possible:
             self.demand = demand
-            self._info['base_demand'] = demand
+            self.scenario_info['base_demand'] = demand
         else:
             print("Available demand profiles for %s: %s" %
                   (" + ".join(self.interconnect),
@@ -124,7 +125,7 @@ class Create(State):
             return
         elif hydro in possible:
             self.hydro = hydro
-            self._info['base_hydro'] = hydro
+            self.scenario_info['base_hydro'] = hydro
         else:
             print("Available hydro profiles for %s: %s" %
                   (" + ".join(self.interconnect),
@@ -141,7 +142,7 @@ class Create(State):
             return
         elif solar in possible:
             self.solar = solar
-            self._info['base_solar'] = solar
+            self.scenario_info['base_solar'] = solar
         else:
             print("Available solar profiles for %s: %s" %
                   (" + ".join(self.interconnect),
@@ -158,7 +159,7 @@ class Create(State):
             return
         elif wind in possible:
             self.wind = wind
-            self._info['base_wind'] = wind
+            self.scenario_info['base_wind'] = wind
         else:
             print("Available wind profiles for %s: %s" %
                   (" + ".join(self.interconnect),
