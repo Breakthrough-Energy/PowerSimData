@@ -15,21 +15,13 @@ class Analyze(State):
     name = 'analyze'
     allowed = ['delete', 'modify']
 
-    def init(self, scenario):
+    def __init__(self, scenario):
         """Initializes attributes.
 
         """
         self.scenario_info = scenario.info
         self._get_ct()
         self._get_grid()
-
-    def clean(self):
-        """Deletes attributes prior to switching state.
-
-        """
-        del self.scenario_info
-        del self.ct
-        del self.grid
 
     def _get_ct(self):
         """Loads change table.

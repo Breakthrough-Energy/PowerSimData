@@ -14,14 +14,13 @@ class Create(State):
 
     """
     name = 'create'
-    allowed = []
+    allowed = ['execute']
 
-    def init(self, scenario):
+    def __init__(self, scenario):
         """Initializes attributes.
 
         """
         self.builder = None
-        self._ssh = setup_server_connection()
 
         td = PullData()
         table = td.get_scenario_table()
@@ -48,20 +47,6 @@ class Create(State):
         self.wind = None
         self.ct = None
 
-    def clean(self):
-        """Deletes attributes prior to switching state.
-
-        """
-        del self.builder
-        del self._ssh
-        del self.scenario_info
-        del self.interconnect
-        del self.demand
-        del self.hydro
-        del self.solar
-        del self.wind
-        del self.ct
-
     def create(self):
         """Creates entry in scenario file on server.
 
@@ -75,6 +60,9 @@ class Create(State):
             for field in missing:
                 print(field)
             return
+        else:
+            self.scenario_info['status'] = '1'
+            print('Update scenario list file on server')
 
     def print_scenario_info(self):
         """Prints scenario information
@@ -90,10 +78,10 @@ class Create(State):
         """
 
         self.builder = interconnect
-        self.interconnect = self.builder.get_interconnect()
+        self.interconnect = self.builder.interconnect#get_interconnect()
         print("Available profiles for %s:" % " + ".join(self.interconnect))
         for p in ['demand', 'hydro', 'solar', 'wind']:
-            possible = self._get_base_profile(p)
+            possible = self.builder.get_base_profile(p)
             if len(possible) != 0:
                 print("# %s: %s"  % (p, " | ".join(possible)))
         self.scenario_info['interconnect'] = "_".join(self.interconnect)
@@ -103,7 +91,7 @@ class Create(State):
 
         :param str demand: demand profile version.
         """
-        possible = self._get_base_profile('demand')
+        possible = self.builder.get_base_profile('demand')
         if len(possible) == 0:
             return
         elif demand in possible:
@@ -120,7 +108,7 @@ class Create(State):
 
         :param str hydro: hydro profile version.
         """
-        possible = self._get_base_profile('hydro')
+        possible = self.builder.get_base_profile('hydro')
         if len(possible) == 0:
             return
         elif hydro in possible:
@@ -137,7 +125,7 @@ class Create(State):
 
         :param str solar: solar profile version.
         """
-        possible = self._get_base_profile('solar')
+        possible = self.builder.get_base_profile('solar')
         if len(possible) == 0:
             return
         elif solar in possible:
@@ -154,7 +142,7 @@ class Create(State):
 
         :param str wind: wind profile version.
         """
-        possible = self._get_base_profile('wind')
+        possible = self.builder.get_base_profile('wind')
         if len(possible) == 0:
             return
         elif wind in possible:
@@ -166,33 +154,15 @@ class Create(State):
                    " | ".join(possible)))
             return
 
-    def _get_base_profile(self, type):
-        """Prints available base profiles.
-
-        :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
-        :raises NameError: if wrong type.
-        """
-
-        possible = ['demand', 'hydro', 'solar', 'wind']
-        if type not in possible:
-            raise NameError("Choose from %s" % " | ".join(possible))
-
-        available = interconnect2name(self.interconnect) + '_' + type + '_*'
-        query = os.path.join(const.REMOTE_DIR_BASE, available)
-        stdin, stdout, stderr = self._ssh.exec_command("ls " + query)
-        if len(stderr.readlines()) != 0:
-            print("No %s profiles available." % type)
-            possible = []
-        else:
-            filename = [os.path.basename(line.rstrip())
-                        for line in stdout.readlines()]
-            possible = [f[f.rfind('_')+1:-4] for f in filename]
-        return possible
-
 
 class Builder(object):
-    def get_interconnect(self): pass
+    name = 'builder'
 
+    def get_interconnect(self): pass
+    def get_base_profile(self, type): pass
+    def set_base_demand(self): pass
+    def __str__(self):
+        return self.name
 
 class Eastern(Builder):
     """Builder for Eastern interconnect.
@@ -229,8 +199,11 @@ class Western(Builder):
 
     """
 
+    name = 'Western'
+
     def __init__(self):
         self.interconnect = ['Western']
+        self.profile = CSV()
 
     def get_interconnect(self):
         """Get list of interconnect.
@@ -238,6 +211,19 @@ class Western(Builder):
         """
         return self.interconnect
 
+    def get_base_profile(self, type):
+        """Get available base profiles.
+
+        :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        """
+        return self.profile.get_base_profile(self.interconnect, type)
+
+    def set_base_demand(self, version):
+        """Sets demand profile.
+
+        :param str version: demand profile version.
+        """
+        pass
 
 class TexasWestern(Builder):
     """Builder for Texas + Western interconnect.
@@ -285,3 +271,33 @@ class USA(Builder):
 
     def __init__(self):
         self.interconnect = ['USA']
+
+
+class CSV(object):
+    """Profiles storage.
+
+    """
+    def __init__(self):
+        self._ssh = setup_server_connection()
+
+    def get_base_profile(self, interconnect, type):
+        """Get available base profiles.
+
+        :param list interconnect: interconnect
+        :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        """
+        possible = ['demand', 'hydro', 'solar', 'wind']
+        if type not in possible:
+            raise NameError("Choose from %s" % " | ".join(possible))
+
+        available = interconnect2name(interconnect) + '_' + type + '_*'
+        query = os.path.join(const.REMOTE_DIR_BASE, available)
+        stdin, stdout, stderr = self._ssh.exec_command("ls " + query)
+        if len(stderr.readlines()) != 0:
+            print("No %s profiles available." % type)
+            possible = []
+        else:
+            filename = [os.path.basename(line.rstrip())
+                        for line in stdout.readlines()]
+            possible = [f[f.rfind('_')+1:-4] for f in filename]
+        return possible

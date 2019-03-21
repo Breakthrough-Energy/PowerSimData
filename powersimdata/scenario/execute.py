@@ -9,14 +9,8 @@ class Execute(State):
     name = 'execute'
     allowed = ['delete']
 
-    def init(self, scenario):
+    def __init__(self, scenario):
         """Initializes attributes.
-
-        """
-        pass
-
-    def clean(self):
-        """Deletes attributes prior to switching state.
 
         """
         pass

@@ -1,8 +1,7 @@
 from postreise.process.transferdata import PullData
-from powersimdata.scenario.state import State
-from powersimdata.scenario.create import Create
 from powersimdata.scenario.analyze import Analyze
-
+from powersimdata.scenario.create import Create
+from powersimdata.scenario.execute import Execute
 
 import pandas as pd
 pd.set_option('display.max_colwidth', -1)
@@ -23,19 +22,17 @@ class Scenario(object):
             raise TypeError('Descriptor must be a string')
 
         if not descriptor:
-            self.state = Create()
+            self.state = Create(self)
         else:
             status = self._get_status(descriptor)
             if status == 0:
                 return
             elif status == 1:
-                self.state = Execute()
+                self.state = Execute(self)
             elif status == 2:
-                self.state = Analyze()
+                self.state = Analyze(self)
 
-        print('State: <%s>' % self.state.name)
-        self.state.init(self)
-
+        print('Current state: %s' % self.state.name)
 
     def _get_status(self, descriptor):
         """Checks scenario status.
@@ -85,6 +82,4 @@ class Scenario(object):
 
       :param class state: One of the sub-classes.
       """
-      self.state.clean()
       self.state.switch(state)
-      self.state.init(self)
