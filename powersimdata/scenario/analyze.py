@@ -18,9 +18,19 @@ class Analyze(State):
         """Initializes attributes.
 
         """
-        self.scenario_info = scenario.info
+        self._scenario_info = scenario.info.copy()
+        print("Loading scenario #%d (%s)" % (self._scenario_info['id'],
+                                             self._scenario_info['name']))
         self._get_ct()
         self._get_grid()
+        self._parse_description()
+
+    def print_scenario_info(self):
+        """Prints scenario information.
+
+        """
+        for key, val in self._scenario_info.items():
+            print("%s: %s" % (key, val))
 
     def _get_ct(self):
         """Loads change table.
@@ -29,19 +39,20 @@ class Analyze(State):
         id = InputData()
         try:
             print('# Change table')
-            ct = id.get_data(str(self.scenario_info['id']), 'ct')
+            ct = id.get_data(str(self._scenario_info['id']), 'ct')
             self.ct = ct
+            self._scenario_info['change_table'] = 'Yes'
         except:
-            print("No change table for scenario #%d" %
-                  self.scenario_info['id'])
+            print("-> No change table loaded")
             self.ct = None
+            self._scenario_info['change_table'] = 'No'
 
     def _get_grid(self):
         """Loads original grid and apply changes found in change table.
 
         """
         print('# Grid')
-        interconnect = self.scenario_info['interconnect'].split('_')
+        interconnect = self._scenario_info['interconnect'].split('_')
         self.grid = Grid(interconnect)
         if self.ct is not None:
             for r in ['hydro', 'solar', 'wind']:
@@ -100,7 +111,7 @@ class Analyze(State):
             raise NameError('Invalid resource')
 
         id = InputData()
-        profile = id.get_data(str(self.scenario_info['id']), resource)
+        profile = id.get_data(str(self._scenario_info['id']), resource)
 
         if self.ct is not None and resource in list(self.ct.keys()):
             try:
@@ -122,6 +133,20 @@ class Analyze(State):
 
         return profile
 
+    def _parse_description(self):
+        """Parses description.
+
+        """
+        field = self._scenario_info['description'].split('_')
+        version = []
+        for i in range(1, 5):
+            version.append(field[i].split(':')[1].split('()')[0])
+        self._scenario_info['base_demand'] = version[0]
+        self._scenario_info['base_hydro'] = version[1]
+        self._scenario_info['base_solar'] = version[2]
+        self._scenario_info['base_wind'] = version[3]
+        del self._scenario_info['description']
+
     def _parse_infeasibilities(self):
         """Parses infeasibilities. When the optimizer cannot find a solution \
             in a time interval, the remedy is to decrease demand by some \
@@ -131,7 +156,7 @@ class Analyze(State):
         :return: (*dict*) -- keys are the interval number and the values are \
             the decrease in percent (%) applied to the original demand profile.
         """
-        field = self.scenario_info['infeasibilities']
+        field = self._scenario_info['infeasibilities']
         if field == 'No':
             return None
         else:
@@ -149,9 +174,9 @@ class Analyze(State):
         if infeasibilities is None:
             print("There are no infeasibilities.")
         else:
-            dates = pd.date_range(start=self.scenario_info['start_date'],
-                                  end=self.scenario_info['end_date'],
-                                  freq=self.scenario_info['interval'])
+            dates = pd.date_range(start=self._scenario_info['start_date'],
+                                  end=self._scenario_info['end_date'],
+                                  freq=self._scenario_info['interval'])
             for key, value in infeasibilities.items():
                 print("demand in %s - %s interval has been reduced by %d%%" %
                       (dates[key], dates[key+1], value))
@@ -162,7 +187,7 @@ class Analyze(State):
         :return: (*pandas*) -- data frame of power generated.
         """
         od = OutputData()
-        pg = od.get_data(str(self.scenario_info['id']), 'PG')
+        pg = od.get_data(str(self._scenario_info['id']), 'PG')
 
         return pg
 
@@ -172,7 +197,7 @@ class Analyze(State):
         :return: (*pandas*) -- data frame of power flow.
         """
         od = OutputData()
-        pf = od.get_data(str(self.scenario_info['id']), 'PF')
+        pf = od.get_data(str(self._scenario_info['id']), 'PF')
 
         return pf
 
@@ -185,7 +210,7 @@ class Analyze(State):
         """
 
         id = InputData()
-        demand = id.get_data(str(self.scenario_info['id']), 'demand')
+        demand = id.get_data(str(self._scenario_info['id']), 'demand')
         if self.ct is not None and 'demand' in list(self.ct.keys()):
             for key, value in self.ct['demand']['zone_id'].items():
                 zone_name = self.grid.zone[key]
@@ -196,9 +221,9 @@ class Analyze(State):
         if original == True:
             return demand
         else:
-            dates = pd.date_range(start=self.scenario_info['start_date'],
-                                  end=self.scenario_info['end_date'],
-                                  freq=self.scenario_info['interval'])
+            dates = pd.date_range(start=self._scenario_info['start_date'],
+                                  end=self._scenario_info['end_date'],
+                                  freq=self._scenario_info['interval'])
             infeasibilities = self._parse_infeasibilities()
             if infeasibilities is None:
                 print("There are no infeasibilities. Return original profile.")

@@ -25,32 +25,32 @@ class Create(State):
         td = PullData()
         table = td.get_scenario_table()
 
-        self.scenario_info = {'id': table.id.max() + 1,
-                      'name': '',
-                      'status': 0,
-                      'interconnect': '',
-                      'base_demand': '',
-                      'base_hydro': '',
-                      'base_solar': '',
-                      'base_wind': '',
-                      'ct': '',
-                      'start_index': 0,
-                      'end_index': 60,
-                      'interval': '144H',
-                      'start_date': pd.Timestamp(2016, 1, 1, 0),
-                      'end_date': pd.Timestamp(2016, 12, 31, 23)}
+        self._scenario_info = {'id': table.id.max() + 1,
+                               'name': '',
+                               'status': 0,
+                               'interconnect': '',
+                               'base_demand': '',
+                               'base_hydro': '',
+                               'base_solar': '',
+                               'base_wind': '',
+                               'change_table': 'No',
+                               'start_index': 0,
+                               'end_index': 60,
+                               'interval': '144H',
+                               'start_date': pd.Timestamp(2016, 1, 1, 0),
+                               'end_date': pd.Timestamp(2016, 12, 31, 23)}
 
-    def _update_scenario_info():
+    def _update_scenario_info(self):
         """Updates scenario information
 
         """
         if self.builder is not None:
-            self.scenario_info['base_demand'] = self.builder.demand
-            self.scenario_info['base_hydro'] = self.builder.hydro
-            self.scenario_info['base_solar'] = self.builder.solar
-            self.scenario_info['base_wind'] = self.builder.wind
-        else:
-            print("Set builder to pick interconnect and profiles.")
+            self._scenario_info['base_demand'] = self.builder.demand
+            self._scenario_info['base_hydro'] = self.builder.hydro
+            self._scenario_info['base_solar'] = self.builder.solar
+            self._scenario_info['base_wind'] = self.builder.wind
+            if self.builder.ct is not None:
+                self._scenario_info['change_table'] = 'Yes'
 
     def create_scenario(self):
         """Creates entry in scenario file on server.
@@ -58,7 +58,7 @@ class Create(State):
         """
         self._update_scenario_info()
         missing = []
-        for key, val in self.scenario_info.items():
+        for key, val in self._scenario_info.items():
             if not val:
                 missing.append(key)
         if len(missing) != 0:
@@ -67,7 +67,7 @@ class Create(State):
                 print(field)
             return
         else:
-            self.scenario_info['status'] = 1
+            self._scenario_info['status'] = 1
             print('Update scenario list file on server')
 
     def print_scenario_info(self):
@@ -75,7 +75,7 @@ class Create(State):
 
         """
         self._update_scenario_info()
-        for key, val in self.scenario_info.items():
+        for key, val in self._scenario_info.items():
             print("%s: %s" % (key, val))
 
     def set_builder(self, interconnect):
@@ -91,7 +91,7 @@ class Create(State):
             possible = self.builder.get_base_profile(p)
             if len(possible) != 0:
                 print("# %s: %s"  % (p, " | ".join(possible)))
-        self.scenario_info['interconnect'] = "_".join(pick)
+        self._scenario_info['interconnect'] = "_".join(pick)
 
 
 class Builder(object):
@@ -105,6 +105,7 @@ class Builder(object):
         self.hydro = ''
         self.solar = ''
         self.wind = ''
+        self.ct = None
 
     def get_base_profile(self, type): pass
 

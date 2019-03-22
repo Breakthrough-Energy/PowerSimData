@@ -32,8 +32,6 @@ class Scenario(object):
             elif status == 2:
                 self.state = Analyze(self)
 
-        print('Current state: %s' % self.state.name)
-
     def _get_status(self, descriptor):
         """Checks scenario status.
 
