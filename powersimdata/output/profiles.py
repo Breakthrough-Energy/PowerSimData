@@ -1,7 +1,9 @@
+from postreise.process.transferdata import PullData
+from postreise.process import const
+
 import os
 import pandas as pd
 from pathlib import Path
-from postreise.process.transferdata import PullData
 
 
 class OutputData(object):
@@ -15,12 +17,12 @@ class OutputData(object):
 
     """
 
-    def __init__(self, local_dir=None):
+    def __init__(self):
 
-        self.local_dir = local_dir
+        self.local_dir = const.LOCAL_DIR
         self.TD = PullData()
         # Check if data can be found locally
-        if not local_dir:
+        if not self.local_dir:
             home_dir = str(Path.home())
             self.local_dir = os.path.join(home_dir, 'scenario_data', '')
 

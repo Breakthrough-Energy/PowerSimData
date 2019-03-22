@@ -42,7 +42,6 @@ class Scenario(object):
         """
         td = PullData()
         table = td.get_scenario_table()
-        table.set_index('id', inplace=True)
 
         def not_found_message(table, descriptor):
             """Print message when scenario is not found.
@@ -56,21 +55,21 @@ class Scenario(object):
 
         try:
             id = int(descriptor)
-            scenario = table[table.index == id]
+            scenario = table[table.id == id]
             if scenario.shape[0] == 0:
                 not_found_message(table, descriptor)
                 return 0
             else:
-                self.info = scenario
-                return scenario.status.values[0]
+                self.info = scenario.to_dict('records')[0]
+                return self.info['status']
         except:
             scenario = table[table.name == descriptor]
             if scenario.shape[0] == 0:
                 not_found_message(table, descriptor)
                 return 0
             elif scenario.shape[0] == 1:
-                self.info = scenario
-                return scenario.status.values[0]
+                self.info = scenario.to_dict('records')[0]
+                return self.info['status']
             elif scenario.shape[0] > 1:
                 print('Multiple scenarios with name "%s" found' % descriptor)
                 print('Use index to access scenario')

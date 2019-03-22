@@ -1,4 +1,3 @@
-from powersimdata.scenario import const
 from powersimdata.input.grid import Grid
 from powersimdata.input.profiles import InputData
 from powersimdata.output.profiles import OutputData
@@ -27,14 +26,14 @@ class Analyze(State):
         """Loads change table.
 
         """
-        id = InputData(local_dir=const.LOCAL_DIR)
+        id = InputData()
         try:
             print('# Change table')
-            ct = id.get_data(const.REMOTE_DIR_INPUT, 'ct')
+            ct = id.get_data(str(self.scenario_info['id']), 'ct')
             self.ct = ct
         except:
             print("No change table for scenario #%d" %
-                  self.scenario_info.index[0])
+                  self.scenario_info['id'])
             self.ct = None
 
     def _get_grid(self):
@@ -42,7 +41,7 @@ class Analyze(State):
 
         """
         print('# Grid')
-        interconnect = self.scenario_info.interconnect.values[0].split('_')
+        interconnect = self.scenario_info['interconnect'].split('_')
         self.grid = Grid(interconnect)
         if self.ct is not None:
             for r in ['hydro', 'solar', 'wind']:
@@ -100,8 +99,8 @@ class Analyze(State):
                 print(p)
             raise NameError('Invalid resource')
 
-        id = InputData(local_dir=const.LOCAL_DIR)
-        profile = id.get_data(const.REMOTE_DIR_INPUT, resource)
+        id = InputData()
+        profile = id.get_data(str(self.scenario_info['id']), resource)
 
         if self.ct is not None and resource in list(self.ct.keys()):
             try:
@@ -132,7 +131,7 @@ class Analyze(State):
         :return: (*dict*) -- keys are the interval number and the values are \
             the decrease in percent (%) applied to the original demand profile.
         """
-        field = self.scenario_info.infeasibilities.values[0]
+        field = self.scenario_info['infeasibilities']
         if field == 'No':
             return None
         else:
@@ -150,9 +149,9 @@ class Analyze(State):
         if infeasibilities is None:
             print("There are no infeasibilities.")
         else:
-            dates = pd.date_range(start=self.scenario_info.start_date.values[0],
-                                  end=self.scenario_info.end_date.values[0],
-                                  freq=self.scenario_info.interval.values[0])
+            dates = pd.date_range(start=self.scenario_info['start_date'],
+                                  end=self.scenario_info['end_date'],
+                                  freq=self.scenario_info['interval'])
             for key, value in infeasibilities.items():
                 print("demand in %s - %s interval has been reduced by %d%%" %
                       (dates[key], dates[key+1], value))
@@ -162,8 +161,8 @@ class Analyze(State):
 
         :return: (*pandas*) -- data frame of power generated.
         """
-        od = OutputData(local_dir=const.LOCAL_DIR)
-        pg = od.get_data(const.REMOTE_DIR_OUTPUT, 'PG')
+        od = OutputData()
+        pg = od.get_data(str(self.scenario_info['id']), 'PG')
 
         return pg
 
@@ -172,8 +171,8 @@ class Analyze(State):
 
         :return: (*pandas*) -- data frame of power flow.
         """
-        od = OutputData(local_dir=const.LOCAL_DIR)
-        pf = od.get_data(const.REMOTE_DIR_OUTPUT, 'PF')
+        od = OutputData()
+        pf = od.get_data(str(self.scenario_info['id']), 'PF')
 
         return pf
 
@@ -185,8 +184,8 @@ class Analyze(State):
         :return: (*pandas*) -- data frame of demand.
         """
 
-        id = InputData(local_dir=const.LOCAL_DIR)
-        demand = id.get_data(const.REMOTE_DIR_INPUT, 'demand')
+        id = InputData()
+        demand = id.get_data(str(self.scenario_info['id']), 'demand')
         if self.ct is not None and 'demand' in list(self.ct.keys()):
             for key, value in self.ct['demand']['zone_id'].items():
                 zone_name = self.grid.zone[key]
@@ -197,9 +196,9 @@ class Analyze(State):
         if original == True:
             return demand
         else:
-            dates = pd.date_range(start=self.scenario_info.start_date.values[0],
-                                  end=self.scenario_info.end_date.values[0],
-                                  freq=self.scenario_info.interval.values[0])
+            dates = pd.date_range(start=self.scenario_info['start_date'],
+                                  end=self.scenario_info['end_date'],
+                                  freq=self.scenario_info['interval'])
             infeasibilities = self._parse_infeasibilities()
             if infeasibilities is None:
                 print("There are no infeasibilities. Return original profile.")
