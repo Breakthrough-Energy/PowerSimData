@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from powersimdata.input.grid import Grid
+from postreise.process import const
 from postreise.process.transferdata import PushData
 
 
@@ -33,22 +34,19 @@ class Change():
             the *'hydro'*/*'solar'*/*'wind'* plant (1.2 would correspond to \
             a 20% increase while 0.95 would be a 5% decrease).
 
-    :param str name: name of scenario.
     :param list interconnect: interconnect name(s).
     """
 
-    def __init__(self, name, interconnect):
+    def __init__(self, interconnect):
         """Constructor.
 
         """
-        self.name = name
         if isinstance(interconnect, str):
-            self.interconnect = [interconnect]
+            self.grid = Grid([interconnect])
         else:
-            self.interconnect = interconnect
+            self.grid = Grid(interconnect)
 
         # Set attribute
-        self.grid = Grid(self.interconnect)
         self.table = {}
         self.name2id = {}
         for k, v in self.grid.zone.items():
@@ -232,20 +230,19 @@ class Change():
             print("<zone> and/or <zone_id> must be set. Return.")
             return
 
-    def write(self, local_dir=None):
-        """Saves change table to disk..
+    def write(self, scenario_id):
+        """Saves change table to disk.
 
-        :param str local_dir: define local folder location to save data. If \
-            not defined, the change table will be saved in *'scenario_data'* \
-            folder in home directory.
+        :param str scenario_id: scenario index
         """
+        local_dir = const.LOCAL_DIR
         if not local_dir:
             home_dir = str(Path.home())
             local_dir = os.path.join(home_dir, 'scenario_data', '')
         print('Local directory is %s' % local_dir)
         if os.path.isdir(local_dir) is False:
             os.makedirs(local_dir)
-        file_name = os.path.join(local_dir, self.name + "_ct.pkl")
+        file_name = os.path.join(local_dir, scenario_id + "_ct.pkl")
         if os.path.isfile(file_name) is False:
             print("Write %s." % file_name)
             pickle.dump(self.table, open(file_name, "wb"))
@@ -253,16 +250,15 @@ class Change():
             print("%s already exists. Return" % file_name)
             return
 
-    def push(self, local_dir=None):
+    def push(self, scenario_id):
         """Transfers file to server.
 
-        :param str local_dir: define local folder location. If not defined, \
-            it is assumed that the change table is located in the \
-            *'scenario_data'* folder in the home directory.
+        :param str scenrio_id: scenario index
         """
+        local_dir = const.LOCAL_DIR
         if not local_dir:
             home_dir = str(Path.home())
             local_dir = os.path.join(home_dir, 'scenario_data', '')
         print('Local directory is %s' % local_dir)
         TD = PushData(local_dir)
-        TD.upload(self.name, 'ct')
+        TD.upload(scenario_id, 'ct')
