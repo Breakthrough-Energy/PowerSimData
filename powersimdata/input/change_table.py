@@ -9,7 +9,7 @@ from postreise.process import const
 from postreise.process.transferdata import PushData
 
 
-class Change():
+class ChangeTable():
     """Create change table for changes that need to be applied to the \
         original grid as well as to the original demand, hydro, solar and \
         wind profiles. A pickle file enclosing the change table in form of a \
@@ -47,7 +47,7 @@ class Change():
             self.grid = Grid(interconnect)
 
         # Set attribute
-        self.table = {}
+        self.ct = {}
         self.name2id = {}
         for k, v in self.grid.zone.items():
             try:
@@ -103,7 +103,7 @@ class Change():
 
         return plant_id
 
-    def set_plant_capacity(self, resource, zone=None, plant_id=None):
+    def scale_plant_capacity(self, resource, zone=None, plant_id=None):
         """Consign plant capacity scaling.
 
         :param str resource: type of generator to consider.
@@ -118,20 +118,20 @@ class Change():
         """
         self._check_resource(resource)
         if bool(zone) or bool(plant_id) is True:
-            self.table[resource] = {}
+            self.ct[resource] = {}
             if zone is not None:
                 try:
                     self._check_zone(list(zone.keys()))
                 except:
-                    self.table.pop(resource)
+                    self.ct.pop(resource)
                     return
-                self.table[resource]['zone_id'] = {}
+                self.ct[resource]['zone_id'] = {}
                 for z in zone.keys():
                     if len(self._get_plant_id(z, resource)) == 0:
                         print("No %s plants in %s." % (resource, z))
                     else:
                         for i in self.name2id[z]:
-                            self.table[resource]['zone_id'][i] = zone[z]
+                            self.ct[resource]['zone_id'][i] = zone[z]
             if plant_id is not None:
                 plant_id_interconnect = set(self.grid.plant.groupby(
                     'type').get_group(resource).index)
@@ -140,17 +140,17 @@ class Change():
                     print("No %s plant(s) with the following id:" % resource)
                     for i in list(diff):
                         print(i)
-                    self.table.pop(resource)
+                    self.ct.pop(resource)
                     return
                 else:
-                    self.table[resource]['plant_id'] = {}
+                    self.ct[resource]['plant_id'] = {}
                     for i in plant_id.keys():
-                        self.table[resource]['plant_id'][i] = plant_id[i]
+                        self.ct[resource]['plant_id'][i] = plant_id[i]
         else:
             print("<zone> and/or <plant_id> must be set. Return.")
             return
 
-    def set_branch_capacity(self, zone=None, branch_id=None):
+    def scale_branch_capacity(self, zone=None, branch_id=None):
         """Consign branch capacity scaling.
 
         :param dict zone: geographical zones. The key(s) is (are) the \
@@ -163,17 +163,17 @@ class Change():
             the line(s).
         """
         if bool(zone) or bool(branch_id) is True:
-            self.table['branch'] = {}
+            self.ct['branch'] = {}
             if zone is not None:
                 try:
                     self._check_zone(list(zone.keys()))
                 except:
-                    self.table.pop('branch')
+                    self.ct.pop('branch')
                     return
-                self.table['branch']['zone_id'] = {}
+                self.ct['branch']['zone_id'] = {}
                 for z in zone.keys():
                     for i in self.name2id[z]:
-                        self.table['branch']['zone_id'][i] = zone[z]
+                        self.ct['branch']['zone_id'][i] = zone[z]
             if branch_id is not None:
                 branch_id_interconnect = set(self.grid.branch.index)
                 diff = set(branch_id.keys()).difference(branch_id_interconnect)
@@ -181,17 +181,17 @@ class Change():
                     print("No branch with the following id:")
                     for i in list(diff):
                         print(i)
-                    self.table.pop('branch')
+                    self.ct.pop('branch')
                     return
                 else:
-                    self.table['branch']['branch_id'] = {}
+                    self.ct['branch']['branch_id'] = {}
                     for i in branch_id.keys():
-                        self.table['branch']['branch_id'][i] = branch_id[i]
+                        self.ct['branch']['branch_id'][i] = branch_id[i]
         else:
             print("<zone> and/or <branch_id> must be set. Return.")
             return
 
-    def set_demand(self, zone=None, zone_id=None):
+    def scale_demand(self, zone=None, zone_id=None):
         """Consign load scaling.
 
         :param dict zone: geographical zones. The key(s) is (are) the \
@@ -202,17 +202,17 @@ class Change():
             is the scaling factor for the increase/decrease in load.
         """
         if bool(zone) or bool(plant_id) is True:
-            self.table['demand'] = {}
+            self.ct['demand'] = {}
             if zone is not None:
                 try:
                     self._check_zone(list(zone.keys()))
                 except:
-                    self.table.pop('demand')
+                    self.ct.pop('demand')
                     return
-                self.table['demand']['zone_id'] = {}
+                self.ct['demand']['zone_id'] = {}
                 for z in zone.keys():
                     for i in self.name2id[z]:
-                        self.table['demand']['zone_id'][i] = zone[z]
+                        self.ct['demand']['zone_id'][i] = zone[z]
             if zone_id is not None:
                 zone_id_interconnect = set(self.grid.zone.keys())
                 diff = set(zone_id.keys()).difference(zone_id_interconnect)
@@ -220,12 +220,12 @@ class Change():
                     print("No zone with the following id:")
                     for i in list(diff):
                         print(i)
-                    self.table.pop('demand')
+                    self.ct.pop('demand')
                     return
                 else:
-                    self.table['demand']['zone_id'] = {}
+                    self.ct['demand']['zone_id'] = {}
                     for i in zone_id.keys():
-                        self.table['demand']['zone_id'][i] = zone_id[i]
+                        self.ct['demand']['zone_id'][i] = zone_id[i]
         else:
             print("<zone> and/or <zone_id> must be set. Return.")
             return
@@ -245,7 +245,7 @@ class Change():
         file_name = os.path.join(local_dir, scenario_id + "_ct.pkl")
         if os.path.isfile(file_name) is False:
             print("Write %s." % file_name)
-            pickle.dump(self.table, open(file_name, "wb"))
+            pickle.dump(self.ct, open(file_name, "wb"))
         else:
             print("%s already exists. Return" % file_name)
             return
