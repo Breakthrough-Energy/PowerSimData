@@ -47,9 +47,11 @@ class Scenario(object):
             :param pandas table: scenario table.
             :param str descriptor: scenario descriptor.
             """
-            print('Scenario %s not found' % descriptor)
-            print('Available scenarios are:')
-            print(table[['name', 'interconnect', 'description']])
+            print("SCENARIO NOT FOUND")
+            print("------------------")
+            print(table.to_string(index=False, justify='center',
+                                  columns=['id', 'name', 'interconnect',
+                                           'description']))
 
         try:
             id = int(descriptor)
@@ -58,21 +60,30 @@ class Scenario(object):
                 not_found_message(table, descriptor)
                 return 0
             else:
-                self.info = scenario.to_dict('records')[0]
-                return self.info['status']
+                self._info = scenario.to_dict('records')[0]
+                return self._info['status']
         except:
             scenario = table[table.name == descriptor]
             if scenario.shape[0] == 0:
                 not_found_message(table, descriptor)
                 return 0
             elif scenario.shape[0] == 1:
-                self.info = scenario.to_dict('records')[0]
-                return self.info['status']
+                self._info = scenario.to_dict('records')[0]
+                return self._info['status']
             elif scenario.shape[0] > 1:
-                print('Multiple scenarios with name "%s" found' % descriptor)
-                print('Use index to access scenario')
-                print(scenario[['name', 'interconnect', 'description']])
+                print("MULTIPLE SCENARIO FOUND")
+                print("-----------------------")
+                print('Use id to access scenario')
+                print(table.to_string(index=False, justify='center',
+                                       columns=['id', 'name', 'interconnect',
+                                                'description']))
                 return 0
+
+    def print_scenario_info(self):
+        """Prints scenario information.
+
+        """
+        self.state.print_scenario_info()
 
     def change(self, state):
       """Changes state.

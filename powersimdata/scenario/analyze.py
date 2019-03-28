@@ -18,9 +18,9 @@ class Analyze(State):
         """Initializes attributes.
 
         """
-        self._scenario_info = scenario.info.copy()
-        print("Loading scenario #%d (%s)" % (self._scenario_info['id'],
-                                             self._scenario_info['name']))
+        self._scenario_info = scenario._info.copy()
+        print("LOADING SCENARIO #%d (%s) \n" % (self._scenario_info['id'],
+                                                self._scenario_info['name']))
         self._get_ct()
         self._get_grid()
         self._parse_description()
@@ -29,6 +29,8 @@ class Analyze(State):
         """Prints scenario information.
 
         """
+        print("SCENARIO INFORMATION")
+        print("--------------------")
         for key, val in self._scenario_info.items():
             print("%s: %s" % (key, val))
 
@@ -38,12 +40,13 @@ class Analyze(State):
         """
         id = InputData()
         try:
-            print('# Change table')
+            print("CHANGE TABLE")
+            print("------------")
             ct = id.get_data(str(self._scenario_info['id']), 'ct')
             self.ct = ct
             self._scenario_info['change_table'] = 'Yes'
         except:
-            print("-> No change table loaded")
+            print("-> No scaling")
             self.ct = None
             self._scenario_info['change_table'] = 'No'
 
@@ -51,7 +54,8 @@ class Analyze(State):
         """Loads original grid and apply changes found in change table.
 
         """
-        print('# Grid')
+        print("GRID")
+        print("----")
         interconnect = self._scenario_info['interconnect'].split('_')
         self.grid = Grid(interconnect)
         if self.ct is not None:
@@ -145,7 +149,7 @@ class Analyze(State):
         self._scenario_info['base_hydro'] = version[1]
         self._scenario_info['base_solar'] = version[2]
         self._scenario_info['base_wind'] = version[3]
-        del self._scenario_info['description']
+
 
     def _parse_infeasibilities(self):
         """Parses infeasibilities. When the optimizer cannot find a solution \

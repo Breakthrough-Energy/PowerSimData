@@ -3,10 +3,12 @@ from postreise.process import const
 from postreise.process.transferdata import PullData
 from postreise.process.transferdata import setup_server_connection
 from powersimdata.scenario.state import State
+from powersimdata.input.change_table import ChangeTable
 from powersimdata.scenario.helpers import interconnect2name
 
 import os
 import pandas as pd
+import pickle
 
 
 class Create(State):
@@ -25,17 +27,17 @@ class Create(State):
         td = PullData()
         table = td.get_scenario_table()
 
-        self._scenario_info = {'id': table.id.max() + 1,
+        self._scenario_info = {'id': str(table.id.max() + 1),
                                'name': '',
-                               'status': 0,
+                               'status': '0',
                                'interconnect': '',
                                'base_demand': '',
                                'base_hydro': '',
                                'base_solar': '',
                                'base_wind': '',
                                'change_table': 'No',
-                               'start_index': 0,
-                               'end_index': 60,
+                               'start_index': '0',
+                               'end_index': '60',
                                'interval': '144H',
                                'start_date': pd.Timestamp(2016, 1, 1, 0),
                                'end_date': pd.Timestamp(2016, 12, 31, 23)}
@@ -45,11 +47,12 @@ class Create(State):
 
         """
         if self.builder is not None:
+            self._scenario_info['name'] = self.builder.scenario_name
             self._scenario_info['base_demand'] = self.builder.demand
             self._scenario_info['base_hydro'] = self.builder.hydro
             self._scenario_info['base_solar'] = self.builder.solar
             self._scenario_info['base_wind'] = self.builder.wind
-            if self.builder.ct is not None:
+            if bool(self.builder.ct):
                 self._scenario_info['change_table'] = 'Yes'
 
     def create_scenario(self):
@@ -62,19 +65,24 @@ class Create(State):
             if not val:
                 missing.append(key)
         if len(missing) != 0:
-            print("Information that still need to be set:")
+            print("MISSING INFORMATION")
+            print("-------------------")
             for field in missing:
                 print(field)
             return
         else:
-            self._scenario_info['status'] = 1
-            print('Update scenario list file on server')
+            self._scenario_info['status'] = '1'
+            print("CREATING SCENARIO #%s (%s)" % (self._scenario_info['id'],
+                                                  self._scenario_info['name']))
+
 
     def print_scenario_info(self):
         """Prints scenario information
 
         """
         self._update_scenario_info()
+        print("SCENARIO INFORMATION")
+        print("--------------------")
         for key, val in self._scenario_info.items():
             print("%s: %s" % (key, val))
 
@@ -85,39 +93,42 @@ class Create(State):
         """
 
         self.builder = interconnect
-        pick = self.builder.interconnect
-        print("Available profiles for %s:" % " + ".join(pick))
+        print("PROFILES")
+        print("--------")
         for p in ['demand', 'hydro', 'solar', 'wind']:
             possible = self.builder.get_base_profile(p)
             if len(possible) != 0:
-                print("# %s: %s"  % (p, " | ".join(possible)))
-        self._scenario_info['interconnect'] = "_".join(pick)
+                print("%s: %s"  % (p, " | ".join(possible)))
+        self._scenario_info['interconnect'] = "_".join(self.builder.interconnect)
 
 
 class Builder(object):
     """Scenario Builder
 
     """
+    demand = ''
+    hydro = ''
+    solar = ''
+    wind = ''
     name = 'builder'
 
-    def __init__(self):
-        self.demand = ''
-        self.hydro = ''
-        self.solar = ''
-        self.wind = ''
-        self.ct = None
+    def set_scenario_name(self, name): pass
 
     def get_base_profile(self, type): pass
 
     def set_base_profile(self, type, version): pass
 
+    def load_change_table(self, filename): pass
+
     def __str__(self):
         return self.name
+
 
 class Eastern(Builder):
     """Builder for Eastern interconnect.
 
     """
+    name = 'Eastern'
 
     def __init__(self):
         self.interconnect = ['Eastern']
@@ -127,28 +138,39 @@ class Texas(Builder):
     """Builder for Texas interconnect.
 
     """
+    name = 'Texas'
 
     def __init__(self):
         self.interconnect = ['Texas']
 
 
-class Western(Builder):
+class Western(ChangeTable, Builder):
     """Builder for Western interconnect.
 
     """
     name = 'Western'
 
     def __init__(self):
-        super().__init__()
+        print("GRID")
+        print("----")
         self.interconnect = ['Western']
-        self.profile = CSV()
+        self.profile = CSV(self.interconnect)
+        super().__init__(self.interconnect)
+
+    def set_scenario_name(self, name):
+        """Sets scenario name.
+
+        :param str name: scenario name.
+        """
+        self.scenario_name = name
+
 
     def get_base_profile(self, type):
         """Get available base profiles.
 
         :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         """
-        return self.profile.get_base_profile(self.interconnect, type)
+        return self.profile.get_base_profile(type)
 
     def set_base_profile(self, type, version):
         """Sets demand profile.
@@ -156,7 +178,7 @@ class Western(Builder):
         :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         :param str version: demand profile version.
         """
-        possible = self.get_base_profile('demand')
+        possible = self.get_base_profile(type)
         if len(possible) == 0:
             return
         elif version in possible:
@@ -171,10 +193,24 @@ class Western(Builder):
                    " | ".join(possible)))
             return
 
+    def load_change_table(self, filename):
+        """Uploads change table.
+
+        :param str filename: full path to change table pickle file.
+        :raises FileNotFoundError: if file not found.
+        """
+        try:
+            ct = pickle.load(open(path, "rb"))
+            self.ct = ct
+        except FileNotFoundError as e:
+            raise FileNotFoundError("File %s not found. " % path)
+
+
 class TexasWestern(Builder):
     """Builder for Texas + Western interconnect.
 
     """
+    name = 'Texas + Western'
 
     def __init__(self):
         self.interconnect = ['Texas', 'Western']
@@ -184,6 +220,7 @@ class TexasEastern(Builder):
     """Builder for Texas + Eastern interconnect.
 
     """
+    name = 'Texas + Eastern'
 
     def __init__(self):
         self.interconnect = ['Texas', 'Eastern']
@@ -193,6 +230,7 @@ class EasternWestern(Builder):
     """Builder for Eastern + Western interconnect.
 
     """
+    name = 'Eastern + Western'
 
     def __init__(self):
         self.interconnect = ['Eastern', 'Western']
@@ -202,6 +240,7 @@ class USA(Builder):
     """Builder for USA interconnect.
 
     """
+    name = 'USA'
 
     def __init__(self):
         self.interconnect = ['USA']
@@ -211,20 +250,20 @@ class CSV(object):
     """Profiles storage.
 
     """
-    def __init__(self):
+    def __init__(self, interconnect):
         self._ssh = setup_server_connection()
+        self.interconnect = interconnect
 
-    def get_base_profile(self, interconnect, type):
+    def get_base_profile(self, type):
         """Get available base profiles.
 
-        :param list interconnect: interconnect
         :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         """
         possible = ['demand', 'hydro', 'solar', 'wind']
         if type not in possible:
             raise NameError("Choose from %s" % " | ".join(possible))
 
-        available = interconnect2name(interconnect) + '_' + type + '_*'
+        available = interconnect2name(self.interconnect) + '_' + type + '_*'
         query = os.path.join(const.REMOTE_DIR_BASE, available)
         stdin, stdout, stderr = self._ssh.exec_command("ls " + query)
         if len(stderr.readlines()) != 0:
