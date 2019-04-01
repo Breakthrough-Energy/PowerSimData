@@ -16,7 +16,7 @@ class Create(State):
 
     """
     name = 'create'
-    allowed = ['execute']
+    allowed = []
 
     def __init__(self, scenario):
         """Initializes attributes.
@@ -28,6 +28,7 @@ class Create(State):
         table = td.get_scenario_table()
 
         self._scenario_info = {'id': str(table.id.max() + 1),
+                               'plan': '',
                                'name': '',
                                'status': '0',
                                'interconnect': '',
@@ -47,6 +48,7 @@ class Create(State):
 
         """
         if self.builder is not None:
+            self._scenario_info['plan'] = self.builder.plan_name
             self._scenario_info['name'] = self.builder.scenario_name
             self._scenario_info['base_demand'] = self.builder.demand
             self._scenario_info['base_hydro'] = self.builder.hydro
@@ -65,6 +67,7 @@ class Create(State):
             if not val:
                 missing.append(key)
         if len(missing) != 0:
+            print("-------------------")
             print("MISSING INFORMATION")
             print("-------------------")
             for field in missing:
@@ -72,15 +75,29 @@ class Create(State):
             return
         else:
             self._scenario_info['status'] = '1'
-            print("CREATING SCENARIO #%s (%s)" % (self._scenario_info['id'],
-                                                  self._scenario_info['name']))
+            print("SCENARIO: %s | %s \n" % (self._scenario_info['plan'],
+                                            self._scenario_info['name']))
 
+            print("--> Update scenario table")
+            
+            if bool(self.builder.ct):
+                id = self._scenario_info['id']
+                print("--> Write change table")
+                self.builder.write(id)
+                print("--> Upload change table")
+                self.builder.push(id)
+            print("--> Create links to base profiles")
+            for p in ['demand', 'hydro', 'solar', 'wind']:
+                version = self._scenario_info['base_' + p]
+                self.builder.profile.create_link(id, p, version)
+            self.allowed = ['execute']
 
     def print_scenario_info(self):
         """Prints scenario information
 
         """
         self._update_scenario_info()
+        print("--------------------")
         print("SCENARIO INFORMATION")
         print("--------------------")
         for key, val in self._scenario_info.items():
@@ -93,8 +110,14 @@ class Create(State):
         """
 
         self.builder = interconnect
-        print("PROFILES")
-        print("--------")
+        print("--------------")
+        print("EXISTING STUDY")
+        print("--------------")
+        for s in self.builder.existing.plan.unique():
+            print(s)
+        print("------------------")
+        print("AVAILABLE PROFILES")
+        print("------------------")
         for p in ['demand', 'hydro', 'solar', 'wind']:
             possible = self.builder.get_base_profile(p)
             if len(possible) != 0:
@@ -106,19 +129,23 @@ class Builder(object):
     """Scenario Builder
 
     """
+    plan_name = ''
+    scenario_name = ''
     demand = ''
     hydro = ''
     solar = ''
     wind = ''
     name = 'builder'
 
-    def set_scenario_name(self, name): pass
+    def set_name(self, plan_name, scenario_name): pass
 
     def get_base_profile(self, type): pass
 
     def set_base_profile(self, type, version): pass
 
     def load_change_table(self, filename): pass
+
+    def link(self, id, type): pass
 
     def __str__(self):
         return self.name
@@ -151,18 +178,30 @@ class Western(ChangeTable, Builder):
     name = 'Western'
 
     def __init__(self):
-        print("GRID")
-        print("----")
         self.interconnect = ['Western']
         self.profile = CSV(self.interconnect)
         super().__init__(self.interconnect)
 
-    def set_scenario_name(self, name):
+        td = PullData()
+        table = td.get_scenario_table()
+        self.existing = table[table.interconnect == self.name]
+
+
+    def set_name(self, plan_name, scenario_name):
         """Sets scenario name.
 
-        :param str name: scenario name.
+        :param str plan_name: plan name
+        :param str scenario_name: scenario name.
         """
-        self.scenario_name = name
+
+        if plan_name in self.existing.plan.tolist():
+            scenario = self.existing[self.existing.plan == plan_name]
+            if scenario_name in scenario.name.tolist():
+                print('Combination %s - %s already exists' % (plan_name,
+                                                              scenario_name))
+                return
+        self.plan_name = plan_name
+        self.scenario_name = scenario_name
 
 
     def get_base_profile(self, type):
@@ -210,7 +249,7 @@ class TexasWestern(Builder):
     """Builder for Texas + Western interconnect.
 
     """
-    name = 'Texas + Western'
+    name = 'Texas_Western'
 
     def __init__(self):
         self.interconnect = ['Texas', 'Western']
@@ -220,7 +259,7 @@ class TexasEastern(Builder):
     """Builder for Texas + Eastern interconnect.
 
     """
-    name = 'Texas + Eastern'
+    name = 'Texas_Eastern'
 
     def __init__(self):
         self.interconnect = ['Texas', 'Eastern']
@@ -230,7 +269,7 @@ class EasternWestern(Builder):
     """Builder for Eastern + Western interconnect.
 
     """
-    name = 'Eastern + Western'
+    name = 'Eastern_Western'
 
     def __init__(self):
         self.interconnect = ['Eastern', 'Western']
@@ -274,3 +313,21 @@ class CSV(object):
                         for line in stdout.readlines()]
             possible = [f[f.rfind('_')+1:-4] for f in filename]
         return possible
+
+    def create_link(self, id, type, version):
+        """Creates link on server to base profile.
+
+        :param str id: scenario id.
+        :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :param str version: profile version.
+        """
+        interconnect = interconnect2name(self.interconnect)
+        source = interconnect + '_' + type + '_' + version + '.csv'
+        target = id + '_' + type + '.csv'
+
+        command = "ln -s %s %s" % (const.REMOTE_DIR_BASE + '/' + source,
+                                   const.REMOTE_DIR_INPUT + '/' + target)
+        stdin, stdout, stderr = self._ssh.exec_command(command)
+        if len(stderr.readlines()) != 0:
+            print("Cannot create link to %s profile on server. Return." % type)
+            return
