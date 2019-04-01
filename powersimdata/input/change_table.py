@@ -41,6 +41,9 @@ class ChangeTable():
         """Constructor.
 
         """
+        print("----")
+        print("GRID")
+        print("----")
         if isinstance(interconnect, str):
             self.grid = Grid([interconnect])
         else:
@@ -239,7 +242,6 @@ class ChangeTable():
         if not local_dir:
             home_dir = str(Path.home())
             local_dir = os.path.join(home_dir, 'scenario_data', '')
-        print('Local directory is %s' % local_dir)
         if os.path.isdir(local_dir) is False:
             os.makedirs(local_dir)
         file_name = os.path.join(local_dir, scenario_id + "_ct.pkl")
@@ -247,7 +249,7 @@ class ChangeTable():
             print("Write %s." % file_name)
             pickle.dump(self.ct, open(file_name, "wb"))
         else:
-            print("%s already exists. Return" % file_name)
+            print("%s already exists. Return." % file_name)
             return
 
     def push(self, scenario_id):
@@ -259,6 +261,5 @@ class ChangeTable():
         if not local_dir:
             home_dir = str(Path.home())
             local_dir = os.path.join(home_dir, 'scenario_data', '')
-        print('Local directory is %s' % local_dir)
         TD = PushData(local_dir)
         TD.upload(scenario_id, 'ct')

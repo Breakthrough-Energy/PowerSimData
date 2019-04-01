@@ -34,7 +34,6 @@ class Grid():
         self._set_interconnect(interconnect)
         self._build_network()
         self._add_information()
-        print("-> Done loading")
 
     def _set_interconnect(self, interconnect):
         """Checks interconnect.
