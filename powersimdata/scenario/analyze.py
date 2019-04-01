@@ -19,8 +19,8 @@ class Analyze(State):
 
         """
         self._scenario_info = scenario._info.copy()
-        print("LOADING SCENARIO #%d (%s) \n" % (self._scenario_info['id'],
-                                                self._scenario_info['name']))
+        print("SCENARIO: %s | %s \n" % (self._scenario_info['plan'],
+                                        self._scenario_info['name']))
         self._get_ct()
         self._get_grid()
         self._parse_description()
@@ -29,6 +29,7 @@ class Analyze(State):
         """Prints scenario information.
 
         """
+        print("--------------------")
         print("SCENARIO INFORMATION")
         print("--------------------")
         for key, val in self._scenario_info.items():
@@ -40,13 +41,14 @@ class Analyze(State):
         """
         id = InputData()
         try:
+            print("------------")
             print("CHANGE TABLE")
             print("------------")
             ct = id.get_data(str(self._scenario_info['id']), 'ct')
             self.ct = ct
             self._scenario_info['change_table'] = 'Yes'
         except:
-            print("-> No scaling")
+            print("No scaling")
             self.ct = None
             self._scenario_info['change_table'] = 'No'
 
@@ -54,6 +56,7 @@ class Analyze(State):
         """Loads original grid and apply changes found in change table.
 
         """
+        print("----")
         print("GRID")
         print("----")
         interconnect = self._scenario_info['interconnect'].split('_')

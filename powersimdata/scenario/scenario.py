@@ -47,11 +47,12 @@ class Scenario(object):
             :param pandas table: scenario table.
             :param str descriptor: scenario descriptor.
             """
+            print("------------------")
             print("SCENARIO NOT FOUND")
             print("------------------")
-            print(table.to_string(index=False, justify='center',
-                                  columns=['id', 'name', 'interconnect',
-                                           'description']))
+            print(table.tail(n=10).to_string(index=False, justify='center',
+                                             columns=['id', 'plan', 'name',
+                                                      'interconnect']))
 
         try:
             id = int(descriptor)
@@ -71,12 +72,13 @@ class Scenario(object):
                 self._info = scenario.to_dict('records')[0]
                 return self._info['status']
             elif scenario.shape[0] > 1:
+                print("-----------------------")
                 print("MULTIPLE SCENARIO FOUND")
                 print("-----------------------")
                 print('Use id to access scenario')
                 print(table.to_string(index=False, justify='center',
-                                       columns=['id', 'name', 'interconnect',
-                                                'description']))
+                                      columns=['id', 'plan', 'name',
+                                               'interconnect']))
                 return 0
 
     def print_scenario_info(self):
