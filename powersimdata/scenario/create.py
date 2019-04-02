@@ -54,7 +54,7 @@ class Create(State):
             self._scenario_info['base_hydro'] = self.builder.hydro
             self._scenario_info['base_solar'] = self.builder.solar
             self._scenario_info['base_wind'] = self.builder.wind
-            if bool(self.builder.ct):
+            if bool(self.builder.change_table.ct):
                 self._scenario_info['change_table'] = 'Yes'
 
     def create_scenario(self):
@@ -79,13 +79,13 @@ class Create(State):
                                             self._scenario_info['name']))
 
             print("--> Update scenario table")
-            
-            if bool(self.builder.ct):
+
+            if bool(self.builder.change_table.ct):
                 id = self._scenario_info['id']
                 print("--> Write change table")
-                self.builder.write(id)
+                self.builder.change_table.write(id)
                 print("--> Upload change table")
-                self.builder.push(id)
+                self.builder.change_table.push(id)
             print("--> Create links to base profiles")
             for p in ['demand', 'hydro', 'solar', 'wind']:
                 version = self._scenario_info['base_' + p]
@@ -129,6 +129,7 @@ class Builder(object):
     """Scenario Builder
 
     """
+
     plan_name = ''
     scenario_name = ''
     demand = ''
@@ -171,7 +172,7 @@ class Texas(Builder):
         self.interconnect = ['Texas']
 
 
-class Western(ChangeTable, Builder):
+class Western(Builder):
     """Builder for Western interconnect.
 
     """
@@ -180,7 +181,7 @@ class Western(ChangeTable, Builder):
     def __init__(self):
         self.interconnect = ['Western']
         self.profile = CSV(self.interconnect)
-        super().__init__(self.interconnect)
+        self.change_table = ChangeTable(self.interconnect)
 
         td = PullData()
         table = td.get_scenario_table()
@@ -239,10 +240,10 @@ class Western(ChangeTable, Builder):
         :raises FileNotFoundError: if file not found.
         """
         try:
-            ct = pickle.load(open(path, "rb"))
-            self.ct = ct
+            ct = pickle.load(open(filename, "rb"))
+            self.change_table.ct = ct
         except FileNotFoundError as e:
-            raise FileNotFoundError("File %s not found. " % path)
+            raise FileNotFoundError("File %s not found. " % filename)
 
 
 class TexasWestern(Builder):
@@ -329,5 +330,5 @@ class CSV(object):
                                    const.REMOTE_DIR_INPUT + '/' + target)
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            print("Cannot create link to %s profile on server. Return." % type)
+            print("Failed create symbolic link to %s profile. Return." % type)
             return
