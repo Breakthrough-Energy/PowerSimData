@@ -155,8 +155,6 @@ class Builder(object):
 
     def load_change_table(self, filename): pass
 
-    def link(self, id, type): pass
-
     def __str__(self):
         return self.name
 
