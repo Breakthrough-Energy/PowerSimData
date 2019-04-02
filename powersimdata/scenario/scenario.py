@@ -3,6 +3,8 @@ from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create
 from powersimdata.scenario.execute import Execute
 
+from collections import OrderedDict
+
 import pandas as pd
 pd.set_option('display.max_colwidth', -1)
 
@@ -61,7 +63,7 @@ class Scenario(object):
                 not_found_message(table, descriptor)
                 return 0
             else:
-                self._info = scenario.to_dict('records')[0]
+                self._info = scenario.to_dict('records', into=OrderedDict)[0]
                 return self._info['status']
         except:
             scenario = table[table.name == descriptor]
@@ -69,7 +71,7 @@ class Scenario(object):
                 not_found_message(table, descriptor)
                 return 0
             elif scenario.shape[0] == 1:
-                self._info = scenario.to_dict('records')[0]
+                self._info = scenario.to_dict('records', into=OrderedDict)[0]
                 return self._info['status']
             elif scenario.shape[0] > 1:
                 print("-----------------------")
