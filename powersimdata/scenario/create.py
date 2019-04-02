@@ -1,13 +1,13 @@
 from postreise.process import const
-
 from postreise.process.transferdata import PullData
 from postreise.process.transferdata import setup_server_connection
 from powersimdata.scenario.state import State
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.scenario.helpers import interconnect2name
 
+from collections import OrderedDict
+
 import os
-import pandas as pd
 import pickle
 
 
@@ -27,21 +27,22 @@ class Create(State):
         td = PullData()
         table = td.get_scenario_table()
 
-        self._scenario_info = {'id': str(table.id.max() + 1),
-                               'plan': '',
-                               'name': '',
-                               'status': '0',
-                               'interconnect': '',
-                               'base_demand': '',
-                               'base_hydro': '',
-                               'base_solar': '',
-                               'base_wind': '',
-                               'change_table': 'No',
-                               'start_index': '0',
-                               'end_index': '60',
-                               'interval': '144H',
-                               'start_date': pd.Timestamp(2016, 1, 1, 0),
-                               'end_date': pd.Timestamp(2016, 12, 31, 23)}
+        self._scenario_info = OrderedDict([
+            ('id', str(table.id.max() + 1)),
+            ('plan', ''),
+            ('name', ''),
+            ('status', '0'),
+            ('interconnect', ''),
+            ('base_demand', ''),
+            ('base_hydro', ''),
+            ('base_solar', ''),
+            ('base_wind', ''),
+            ('change_table', 'No'),
+            ('start_index', '0'),
+            ('end_index', '60'),
+            ('interval', '144H'),
+            ('start_date', '2016-01-01 00:00:00'),
+            ('end_date', '2016-12-31 23:00:00')])
 
     def _update_scenario_info(self):
         """Updates scenario information
@@ -74,12 +75,20 @@ class Create(State):
                 print(field)
             return
         else:
-            self._scenario_info['status'] = '1'
             print("SCENARIO: %s | %s \n" % (self._scenario_info['plan'],
                                             self._scenario_info['name']))
 
+            self._scenario_info['status'] = '1'
+            self._scenario_info['runtime'] = ''
+            self._scenario_info['infeasibilities'] = ''
             print("--> Update scenario table")
-
+            entry = ",".join(self._scenario_info.values())
+            command = "echo %s >> %s" % (entry, const.SCENARIO_LIST_LOCATION)
+            ssh = setup_server_connection()
+            stdin, stdout, stderr = ssh.exec_command(command)
+            if len(stderr.readlines()) != 0:
+                print("Failed to update %s. Return." % const.SCENARIO_LIST_LOCATION)
+                return
             if bool(self.builder.change_table.ct):
                 id = self._scenario_info['id']
                 print("--> Write change table")
@@ -122,7 +131,7 @@ class Create(State):
             possible = self.builder.get_base_profile(p)
             if len(possible) != 0:
                 print("%s: %s"  % (p, " | ".join(possible)))
-        self._scenario_info['interconnect'] = "_".join(self.builder.interconnect)
+        self._scenario_info['interconnect'] = self.builder.name
 
 
 class Builder(object):
@@ -330,5 +339,5 @@ class CSV(object):
                                    const.REMOTE_DIR_INPUT + '/' + target)
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            print("Failed create symbolic link to %s profile. Return." % type)
+            print("Failed to create link to %s profile. Return." % type)
             return
