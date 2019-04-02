@@ -18,12 +18,11 @@ class Analyze(State):
         """Initializes attributes.
 
         """
-        self._scenario_info = scenario._info.copy()
+        self._scenario_info = scenario._info
         print("SCENARIO: %s | %s \n" % (self._scenario_info['plan'],
                                         self._scenario_info['name']))
         self._get_ct()
         self._get_grid()
-        self._parse_description()
 
     def print_scenario_info(self):
         """Prints scenario information.
@@ -39,18 +38,15 @@ class Analyze(State):
         """Loads change table.
 
         """
-        id = InputData()
-        try:
+        if self._scenario_info['change_table'] == 'Yes':
             print("------------")
             print("CHANGE TABLE")
             print("------------")
-            ct = id.get_data(str(self._scenario_info['id']), 'ct')
-            self.ct = ct
-            self._scenario_info['change_table'] = 'Yes'
-        except:
+            id = InputData()
+            self.ct = id.get_data(str(self._scenario_info['id']), 'ct')
+        else:
             print("No scaling")
-            self.ct = None
-            self._scenario_info['change_table'] = 'No'
+            self.ct = {}
 
     def _get_grid(self):
         """Loads original grid and apply changes found in change table.
@@ -61,7 +57,7 @@ class Analyze(State):
         print("----")
         interconnect = self._scenario_info['interconnect'].split('_')
         self.grid = Grid(interconnect)
-        if self.ct is not None:
+        if bool(self.ct):
             for r in ['hydro', 'solar', 'wind']:
                 if r in list(self.ct.keys()):
                     try:
@@ -120,7 +116,7 @@ class Analyze(State):
         id = InputData()
         profile = id.get_data(str(self._scenario_info['id']), resource)
 
-        if self.ct is not None and resource in list(self.ct.keys()):
+        if bool(self.ct) and resource in list(self.ct.keys()):
             try:
                 self.ct[resource]['zone_id']
                 for key, value in self.ct[resource]['zone_id'].items():
@@ -139,20 +135,6 @@ class Analyze(State):
                 pass
 
         return profile
-
-    def _parse_description(self):
-        """Parses description.
-
-        """
-        field = self._scenario_info['description'].split('_')
-        version = []
-        for i in range(1, 5):
-            version.append(field[i].split(':')[1].split('()')[0])
-        self._scenario_info['base_demand'] = version[0]
-        self._scenario_info['base_hydro'] = version[1]
-        self._scenario_info['base_solar'] = version[2]
-        self._scenario_info['base_wind'] = version[3]
-
 
     def _parse_infeasibilities(self):
         """Parses infeasibilities. When the optimizer cannot find a solution \
@@ -218,7 +200,7 @@ class Analyze(State):
 
         id = InputData()
         demand = id.get_data(str(self._scenario_info['id']), 'demand')
-        if self.ct is not None and 'demand' in list(self.ct.keys()):
+        if bool(self.ct) and 'demand' in list(self.ct.keys()):
             for key, value in self.ct['demand']['zone_id'].items():
                 zone_name = self.grid.zone[key]
                 print('Multiply demand in %s (#%d) by %.2f' %
