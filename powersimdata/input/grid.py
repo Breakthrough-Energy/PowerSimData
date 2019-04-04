@@ -134,6 +134,7 @@ class Grid():
         self._read_bus()
         self._read_plant()
         self._read_branch()
+        print("-> Done loading")
 
     def _read_sub(self):
         """Reads the substation file.

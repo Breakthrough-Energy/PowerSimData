@@ -42,6 +42,7 @@ class InputData(object):
             raise NameError('Can only get demand, hydro, solar, wind and',
                             'ct data.')
 
+        print("Loading %s" % field_name)
         file_name = scenario_id + '_' + field_name + '.pkl'
         try:
             p_out = pd.read_pickle(self.local_dir + file_name)
