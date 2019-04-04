@@ -128,7 +128,7 @@ class Analyze(State):
         """Returns solar profile
 
         """
-        return self.solar.get_solar()
+        return self.scaler.get_solar()
 
     def get_wind(self):
         """Returns wind profile
