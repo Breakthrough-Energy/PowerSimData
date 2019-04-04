@@ -1,5 +1,4 @@
-from powersimdata.input.grid import Grid
-from powersimdata.input.profiles import InputData
+from powersimdata.input.scaler import Scaler
 from powersimdata.output.profiles import OutputData
 from powersimdata.scenario.state import State
 
@@ -21,8 +20,8 @@ class Analyze(State):
         self._scenario_info = scenario._info
         print("SCENARIO: %s | %s \n" % (self._scenario_info['plan'],
                                         self._scenario_info['name']))
-        self._get_ct()
-        self._get_grid()
+        self.scaler = Scaler(self._scenario_info['id'],
+                             self._scenario_info['interconnect'].split('_'))
 
     def print_scenario_info(self):
         """Prints scenario information.
@@ -33,108 +32,6 @@ class Analyze(State):
         print("--------------------")
         for key, val in self._scenario_info.items():
             print("%s: %s" % (key, val))
-
-    def _get_ct(self):
-        """Loads change table.
-
-        """
-        if self._scenario_info['change_table'] == 'Yes':
-            print("------------")
-            print("CHANGE TABLE")
-            print("------------")
-            id = InputData()
-            self.ct = id.get_data(str(self._scenario_info['id']), 'ct')
-        else:
-            print("No scaling")
-            self.ct = {}
-
-    def _get_grid(self):
-        """Loads original grid and apply changes found in change table.
-
-        """
-        print("----")
-        print("GRID")
-        print("----")
-        interconnect = self._scenario_info['interconnect'].split('_')
-        self.grid = Grid(interconnect)
-        if bool(self.ct):
-            for r in ['hydro', 'solar', 'wind']:
-                if r in list(self.ct.keys()):
-                    try:
-                        self.ct[r]['zone_id']
-                        for key, value in self.ct[r]['zone_id'].items():
-                            plant_id = self.grid.plant.groupby(
-                                ['zone_id', 'type']).get_group(
-                                (key, r)).index.values.tolist()
-                            for i in plant_id:
-                                self.grid.plant.loc[i, 'GenMWMax'] = \
-                                    self.grid.plant.loc[i, 'GenMWMax'] * value
-                    except:
-                        pass
-                    try:
-                        self.ct[r]['plant_id']
-                        for key, value in self.ct[r]['plant_id'].items():
-                            self.grid.plant.loc[key, 'GenMWMax'] = \
-                                self.grid.plant.loc[key, 'GenMWMax'] * value
-                    except:
-                        pass
-            if 'branch' in list(self.ct.keys()):
-                try:
-                    self.ct['branch']['zone_id']
-                    for key, value in self.ct['branch']['zone_id'].items():
-                        branch_id = self.grid.branch.groupby(
-                                ['from_zone_id', 'to_zone_id']).get_group(
-                                (key, key)).index.values.tolist()
-                        for i in branch_id:
-                            self.grid.branch.loc[i, 'rateA'] = \
-                                self.grid.branch.loc[i, 'rateA'] * value
-                except:
-                    pass
-                try:
-                    self.ct['branch']['branch_id']
-                    for key, value in self.ct['branch']['branch_id'].items():
-                        self.grid.branch.loc[key, 'rateA'] = \
-                            self.grid.branch.loc[key, 'rateA'] * value
-                except:
-                    pass
-
-    def _get_power_output(self, resource):
-        """Scales profile according to changes in change table and returns it.
-
-        :param str resource: *'hydro'*, *'solar'* or *'wind'*.
-        :return: (*pandas*) -- data frame of resource output with plant id \
-            as columns and UTC timestamp as rows.
-        :raises NameError: if invalid resource.
-        """
-        possible = ['branch', 'hydro', 'solar', 'wind']
-        if resource not in possible:
-            print("Choose one of:")
-            for p in possible:
-                print(p)
-            raise NameError('Invalid resource')
-
-        id = InputData()
-        profile = id.get_data(str(self._scenario_info['id']), resource)
-
-        if bool(self.ct) and resource in list(self.ct.keys()):
-            try:
-                self.ct[resource]['zone_id']
-                for key, value in self.ct[resource]['zone_id'].items():
-                    plant_id = self.grid.plant.groupby(
-                        ['zone_id', 'type']).get_group(
-                        (key, resource)).index.values.tolist()
-                    for i in plant_id:
-                        profile.loc[:, i] *= value
-            except:
-                pass
-            try:
-                self.ct[resource]['plant_id']
-                for key, value in self.ct[resource]['plant_id'].items():
-                    profile.loc[:, key] *= value
-            except:
-                pass
-
-        return profile
 
     def _parse_infeasibilities(self):
         """Parses infeasibilities. When the optimizer cannot find a solution \
@@ -190,6 +87,12 @@ class Analyze(State):
 
         return pf
 
+    def get_grid(self):
+        """Returns Grid.
+
+        """
+        return self.scaler.get_grid()
+
     def get_demand(self, original=True):
         """Returns demand profiles.
 
@@ -198,14 +101,7 @@ class Analyze(State):
         :return: (*pandas*) -- data frame of demand.
         """
 
-        id = InputData()
-        demand = id.get_data(str(self._scenario_info['id']), 'demand')
-        if bool(self.ct) and 'demand' in list(self.ct.keys()):
-            for key, value in self.ct['demand']['zone_id'].items():
-                zone_name = self.grid.zone[key]
-                print('Multiply demand in %s (#%d) by %.2f' %
-                      (self.grid.zone[key], key, value))
-                demand.loc[:, key] *= value
+        demand = self.scaler.get_demand()
 
         if original == True:
             return demand
@@ -226,16 +122,16 @@ class Analyze(State):
         """Returns hydro profile
 
         """
-        return self._get_power_output('hydro')
+        return self.scaler.get_hydro()
 
     def get_solar(self):
         """Returns solar profile
 
         """
-        return self._get_power_output('solar')
+        return self.solar.get_solar()
 
     def get_wind(self):
         """Returns wind profile
 
         """
-        return self._get_power_output('wind')
+        return self.scaler.get_wind()
