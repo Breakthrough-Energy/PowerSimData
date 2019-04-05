@@ -87,6 +87,12 @@ class Analyze(State):
 
         return pf
 
+    def get_ct(self):
+        """Returns change table.
+
+        """
+        return self.scaler.ct
+
     def get_grid(self):
         """Returns Grid.
 
