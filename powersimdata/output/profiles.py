@@ -13,14 +13,13 @@ class OutputData(object):
         locally if it can find the data requested. If it can't find locally \
         it will download it from the server if it can find it there.
 
-    :param str local_dir: define local folder location to read or save data.
-
     """
 
     def __init__(self):
+        """Constructor
 
+        """
         self.local_dir = const.LOCAL_DIR
-        self.TD = PullData()
         # Check if data can be found locally
         if not self.local_dir:
             home_dir = str(Path.home())
@@ -29,27 +28,33 @@ class OutputData(object):
     def get_data(self, scenario_id, field_name):
         """Get data either from server or from local directory.
 
-        :param str scenario_id: id of scenario to get data from.
-        :param str field_name: *'PG'* or *'PF'* data.
+        :param str scenario_id: scenario id.
+        :param str field_name: *'PG'* or *'PF'*.
         :return: (*pandas*) --  data frame of PG or PF.
-        :raises FileNotFoundError: file found neither locally nor on the \
-            server.
-        :raises NameError: If type not *'PG'* or *'PF'*.
+        :raises FileNotFoundError: if file not found on local machine
+        :raises ValueError: if second argument is not one of *'PG'* or *'PF'*.
         """
-        if field_name not in ['PG', 'PF']:
-            raise NameError('Can only get PG or PF data.')
+        possible = ['PG', 'PF']
+        if field_name not in possible:
+            raise ValueError("Only %s data can be loaded" % "/".join(possible))
+
+        print("Loading %s" % field_name)
         file_name = scenario_id + '_' + field_name + '.pkl'
         try:
             p_out = pd.read_pickle(self.local_dir + file_name)
             print("-> Done loading")
         except FileNotFoundError:
-            print('Local: %s not found in %s' % (file_name, self.local_dir))
-            try:
-                p_out = self.TD.download(scenario_id, field_name)
-            except FileNotFoundError as e:
-                raise FileNotFoundError('File not found on server.') from e
+            print("%s not found in %s on local machine" %
+                  (file_name, self.local_dir))
+
+            transfer = PullData()
+            p_out = transfer.download(scenario_id, field_name)
+            if p_out is None:
+                return
+
             if not os.path.exists(self.local_dir):
                 os.makedirs(self.local_dir)
+
             print('Saving file in %s' % self.local_dir)
             p_out.to_pickle(self.local_dir + file_name)
             print("-> Done loading")

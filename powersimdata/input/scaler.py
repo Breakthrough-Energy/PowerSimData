@@ -23,11 +23,12 @@ class Scaler(object):
         """Loads change table.
 
         """
-        try:
-            self.ct = self._input.get_data(self.scenario_id, 'ct')
-        except:
+        ct = self._input.get_data(self.scenario_id, 'ct')
+        if ct is None:
             print("-> No scaling")
             self.ct = {}
+        else:
+            self.ct = ct
 
     def _load_grid(self):
         """Loads change table.
