@@ -24,11 +24,7 @@ class Create(State):
         """
         self.builder = None
 
-        td = PullData()
-        table = td.get_scenario_table()
-
         self._scenario_info = OrderedDict([
-            ('id', str(table.id.max() + 1)),
             ('plan', ''),
             ('name', ''),
             ('status', '0'),
@@ -75,30 +71,45 @@ class Create(State):
                 print(field)
             return
         else:
-            print("SCENARIO: %s | %s \n" % (self._scenario_info['plan'],
-                                            self._scenario_info['name']))
+            print("CREATING SCENARIO: %s | %s \n" %
+                  (self._scenario_info['plan'], self._scenario_info['name']))
 
+            # Update status
             self._scenario_info['status'] = '1'
+            # Create entries that that will be filled out after execution
             self._scenario_info['runtime'] = ''
             self._scenario_info['infeasibilities'] = ''
-            print("--> Update scenario table")
+            # Create scenario id
+            td = PullData()
+            table = td.get_scenario_table()
+            self._scenario_info['id'] = str(table.id.max() + 1)
+            self._scenario_info.move_to_end('id', last=False)
+
+            # Update the scenario list
+            print("-> Update scenario table")
             entry = ",".join(self._scenario_info.values())
             command = "echo %s >> %s" % (entry, const.SCENARIO_LIST_LOCATION)
             ssh = setup_server_connection()
             stdin, stdout, stderr = ssh.exec_command(command)
             if len(stderr.readlines()) != 0:
-                print("Failed to update %s. Return." % const.SCENARIO_LIST_LOCATION)
+                print("Failed to update %s. Return." %
+                      const.SCENARIO_LIST_LOCATION)
                 return
+
+            # Upload change table
             if bool(self.builder.change_table.ct):
                 id = self._scenario_info['id']
-                print("--> Write change table")
+                print("-> Write change table")
                 self.builder.change_table.write(id)
-                print("--> Upload change table")
+                print("-> Upload change table")
                 self.builder.change_table.push(id)
-            print("--> Create links to base profiles")
+            # Create links
+            print("-> Create links to base profiles \n")
             for p in ['demand', 'hydro', 'solar', 'wind']:
                 version = self._scenario_info['base_' + p]
                 self.builder.profile.create_link(id, p, version)
+
+            print("SCENARIO SUCCESSFULLY CREATED WITH ID #%s" % id)
             self.allowed = ['execute']
 
     def print_scenario_info(self):
@@ -205,8 +216,8 @@ class Western(Builder):
         if plan_name in self.existing.plan.tolist():
             scenario = self.existing[self.existing.plan == plan_name]
             if scenario_name in scenario.name.tolist():
-                print('Combination %s - %s already exists' % (plan_name,
-                                                              scenario_name))
+                print('Combination %s - %s already exists' %
+                      (plan_name, scenario_name))
                 return
         self.plan_name = plan_name
         self.scenario_name = scenario_name
@@ -235,9 +246,7 @@ class Western(Builder):
             if type == 'wind': self.wind = version
         else:
             print("Available %s profiles for %s: %s" %
-                  (type,
-                   " + ".join(self.interconnect),
-                   " | ".join(possible)))
+                  (type, " + ".join(self.interconnect), " | ".join(possible)))
             return
 
     def load_change_table(self, filename):
