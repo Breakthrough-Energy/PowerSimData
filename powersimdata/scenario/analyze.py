@@ -90,12 +90,14 @@ class Analyze(State):
     def get_ct(self):
         """Returns change table.
 
+        :return: (*dict*) -- change table.
         """
         return self.scaler.ct
 
     def get_grid(self):
         """Returns Grid.
 
+        :return: (*grid*) -- grid object
         """
         return self.scaler.get_grid()
 
@@ -127,17 +129,20 @@ class Analyze(State):
     def get_hydro(self):
         """Returns hydro profile
 
+        :return: (*pandas*) -- data frame of hydro power output.
         """
         return self.scaler.get_hydro()
 
     def get_solar(self):
         """Returns solar profile
 
+        :return: (*pandas*) -- data frame of solar power output.
         """
         return self.scaler.get_solar()
 
     def get_wind(self):
         """Returns wind profile
 
+        :return: (*pandas*) -- data frame of wind power output.
         """
         return self.scaler.get_wind()
