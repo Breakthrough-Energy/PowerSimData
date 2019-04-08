@@ -16,6 +16,7 @@ class Scaler(object):
         self.interconnect = interconnect
         self._input = InputData()
         self._load_ct()
+        print("")
         self._load_grid()
 
 
@@ -23,12 +24,11 @@ class Scaler(object):
         """Loads change table.
 
         """
-        ct = self._input.get_data(self.scenario_id, 'ct')
-        if ct is None:
+        try:
+            self.ct = self._input.get_data(self.scenario_id, 'ct')
+        except FileNotFoundError:
             print("-> No scaling")
             self.ct = {}
-        else:
-            self.ct = ct
 
     def _load_grid(self):
         """Loads change table.
