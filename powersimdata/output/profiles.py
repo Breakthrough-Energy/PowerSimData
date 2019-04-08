@@ -38,25 +38,23 @@ class OutputData(object):
         if field_name not in possible:
             raise ValueError("Only %s data can be loaded" % "/".join(possible))
 
-        print("Loading %s" % field_name)
+        print("# Loading %s" % field_name)
         file_name = scenario_id + '_' + field_name + '.pkl'
         try:
             p_out = pd.read_pickle(self.local_dir + file_name)
-            print("-> Done loading")
+            print("--> Done loading")
+            return p_out
         except FileNotFoundError:
-            print("%s not found in %s on local machine" %
+            print("%s not found in %s on local machine. Looking on server." %
                   (file_name, self.local_dir))
 
-            transfer = PullData()
-            p_out = transfer.download(scenario_id, field_name)
-            if p_out is None:
-                return
+        transfer = PullData()
+        p_out = transfer.download(scenario_id, field_name)
 
-            if not os.path.exists(self.local_dir):
-                os.makedirs(self.local_dir)
+        if not os.path.exists(self.local_dir):
+            os.makedirs(self.local_dir)
 
-            print('Saving file in %s' % self.local_dir)
-            p_out.to_pickle(self.local_dir + file_name)
-            print("-> Done loading")
-
+        print('Saving file in %s' % self.local_dir)
+        p_out.to_pickle(self.local_dir + file_name)
+        print("--> Done loading")
         return p_out
