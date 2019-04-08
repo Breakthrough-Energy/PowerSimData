@@ -41,9 +41,6 @@ class ChangeTable():
         """Constructor.
 
         """
-        print("----")
-        print("GRID")
-        print("----")
         if isinstance(interconnect, str):
             self.grid = Grid([interconnect])
         else:
@@ -68,7 +65,9 @@ class ChangeTable():
         """
         possible = ['hydro', 'solar', 'wind']
         if resource not in possible:
-            print("Choose one of:")
+            print("-----------------------")
+            print("Possible Generator type")
+            print("-----------------------")
             for p in possible:
                 print(p)
             raise NameError('Invalid resource')
@@ -82,7 +81,9 @@ class ChangeTable():
         possible = list(self.grid.plant.zone_name.unique())
         for z in zone:
             if z not in possible:
-                print("Possible zones are:")
+                print("--------------")
+                print("Possible zones")
+                print("--------------")
                 for p in possible:
                     print(p)
                 raise Exception('Invalid zone(s)')
@@ -246,7 +247,7 @@ class ChangeTable():
             os.makedirs(local_dir)
         file_name = os.path.join(local_dir, scenario_id + "_ct.pkl")
         if os.path.isfile(file_name) is False:
-            print("Write %s." % file_name)
+            print("Write %s" % file_name)
             pickle.dump(self.ct, open(file_name, "wb"))
         else:
             print("%s already exists. Return." % file_name)
@@ -261,5 +262,5 @@ class ChangeTable():
         if not local_dir:
             home_dir = str(Path.home())
             local_dir = os.path.join(home_dir, 'scenario_data', '')
-        TD = PushData(local_dir)
+        TD = PushData()
         TD.upload(scenario_id, 'ct')

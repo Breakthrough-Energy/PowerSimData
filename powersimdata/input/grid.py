@@ -50,7 +50,7 @@ class Grid():
         for i in interconnect:
             if i not in possible:
                 raise Exception("Wrong interconnect. Choose from %s" %
-                                "/".join(possible))
+                                " | ".join(possible))
         n = len(interconnect)
         if n > len(set(interconnect)):
             raise Exception("List of interconnects contains duplicate values")
@@ -128,13 +128,14 @@ class Grid():
         """Reads all network file.
 
         """
+        print("# Loading %s interconnect" % "+".join(self.interconnect))
         self._read_zone()
         self._read_sub()
         self._read_bus2sub()
         self._read_bus()
         self._read_plant()
         self._read_branch()
-        print("-> Done loading")
+        print("--> Done loading")
 
     def _read_sub(self):
         """Reads the substation file.

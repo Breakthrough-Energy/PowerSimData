@@ -86,7 +86,7 @@ class Create(State):
             self._scenario_info.move_to_end('id', last=False)
 
             # Update the scenario list
-            print("-> Update scenario table")
+            print("--> Update scenario table on server")
             entry = ",".join(self._scenario_info.values())
             command = "echo %s >> %s" % (entry, const.SCENARIO_LIST_LOCATION)
             ssh = setup_server_connection()
@@ -99,12 +99,12 @@ class Create(State):
             # Upload change table
             if bool(self.builder.change_table.ct):
                 id = self._scenario_info['id']
-                print("-> Write change table")
+                print("--> Write change table on local machine")
                 self.builder.change_table.write(id)
-                print("-> Upload change table")
+                print("--> Upload change table to server")
                 self.builder.change_table.push(id)
             # Create links
-            print("-> Create links to base profiles \n")
+            print("--> Create links to base profiles on server \n")
             for p in ['demand', 'hydro', 'solar', 'wind']:
                 version = self._scenario_info['base_' + p]
                 self.builder.profile.create_link(id, p, version)
@@ -130,18 +130,17 @@ class Create(State):
         """
 
         self.builder = interconnect
-        print("--------------")
-        print("EXISTING STUDY")
-        print("--------------")
-        for s in self.builder.existing.plan.unique():
-            print(s)
-        print("------------------")
-        print("AVAILABLE PROFILES")
-        print("------------------")
+        print("")
+        print("# Existing study")
+        plan = [p for p in self.builder.existing.plan.unique()]
+        print("%s \n" % " | ".join(plan))
+
+        print("# Available profiles")
         for p in ['demand', 'hydro', 'solar', 'wind']:
             possible = self.builder.get_base_profile(p)
             if len(possible) != 0:
                 print("%s: %s"  % (p, " | ".join(possible)))
+
         self._scenario_info['interconnect'] = self.builder.name
 
 

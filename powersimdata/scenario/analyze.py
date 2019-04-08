@@ -119,7 +119,7 @@ class Analyze(State):
                                   freq=self._scenario_info['interval'])
             infeasibilities = self._parse_infeasibilities()
             if infeasibilities is None:
-                print("There are no infeasibilities. Return original profile.")
+                print("No infeasibilities. Return original profile.")
                 return demand
             else:
                 for key, value in infeasibilities.items():
