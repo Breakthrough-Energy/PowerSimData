@@ -1,6 +1,7 @@
 from postreise.process.transferdata import PullData
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create
+from powersimdata.scenario.delete import Delete
 from powersimdata.scenario.execute import Execute
 
 from collections import OrderedDict
@@ -27,11 +28,11 @@ class Scenario(object):
             self.state = Create(self)
         else:
             status = self._get_status(descriptor)
-            if status == 0:
+            if status == '0':
                 return
-            elif status == 1:
+            elif status == '1':
                 self.state = Execute(self)
-            elif status == 2:
+            elif status == '2':
                 self.state = Analyze(self)
 
     def _get_status(self, descriptor):
@@ -57,11 +58,11 @@ class Scenario(object):
                                                       'interconnect']))
 
         try:
-            id = int(descriptor)
+            id = descriptor
             scenario = table[table.id == id]
             if scenario.shape[0] == 0:
                 not_found_message(table, descriptor)
-                return 0
+                return '0'
             else:
                 self._info = scenario.to_dict('records', into=OrderedDict)[0]
                 return self._info['status']
@@ -69,7 +70,7 @@ class Scenario(object):
             scenario = table[table.name == descriptor]
             if scenario.shape[0] == 0:
                 not_found_message(table, descriptor)
-                return 0
+                return '0'
             elif scenario.shape[0] == 1:
                 self._info = scenario.to_dict('records', into=OrderedDict)[0]
                 return self._info['status']
@@ -81,7 +82,7 @@ class Scenario(object):
                 print(table.to_string(index=False, justify='center',
                                       columns=['id', 'plan', 'name',
                                                'interconnect']))
-                return 0
+                return '0'
 
     def print_scenario_info(self):
         """Prints scenario information.

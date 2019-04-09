@@ -73,7 +73,7 @@ class Analyze(State):
         :return: (*pandas*) -- data frame of power generated.
         """
         od = OutputData()
-        pg = od.get_data(str(self._scenario_info['id']), 'PG')
+        pg = od.get_data(self._scenario_info['id'], 'PG')
 
         return pg
 
@@ -83,7 +83,7 @@ class Analyze(State):
         :return: (*pandas*) -- data frame of power flow.
         """
         od = OutputData()
-        pf = od.get_data(str(self._scenario_info['id']), 'PF')
+        pf = od.get_data(self._scenario_info['id'], 'PF')
 
         return pf
 
