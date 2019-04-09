@@ -82,7 +82,7 @@ class Create(State):
             # Create scenario id
             td = PullData()
             table = td.get_scenario_table()
-            self._scenario_info['id'] = str(table.id.max() + 1)
+            self._scenario_info['id'] = str(table.id.astype(int).max() + 1)
             self._scenario_info.move_to_end('id', last=False)
 
             # Update the scenario list
