@@ -86,7 +86,7 @@ class Create(State):
             self._scenario_info.move_to_end('id', last=False)
 
             # Update the scenario list
-            print("--> Update scenario table on server")
+            print("--> Add entry in scenario table on server")
             entry = ",".join(self._scenario_info.values())
             command = "echo %s >> %s" % (entry, const.SCENARIO_LIST_LOCATION)
             ssh = setup_server_connection()
@@ -110,7 +110,7 @@ class Create(State):
                 self.builder.profile.create_link(id, p, version)
 
             print("SCENARIO SUCCESSFULLY CREATED WITH ID #%s" % id)
-            self.allowed = ['execute']
+            self.allowed = ['delete', 'execute']
 
     def print_scenario_info(self):
         """Prints scenario information
