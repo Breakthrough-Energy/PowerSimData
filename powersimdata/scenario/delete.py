@@ -3,12 +3,12 @@ from powersimdata.scenario.state import State
 from postreise.process.transferdata import setup_server_connection
 
 
-class Delete(object):
+class Delete(State):
     """Deletes scenario
 
     """
     name = 'delete'
-    allowed = []
+    allowed = ['create']
 
     def print_scenario_info(self):
         """Prints scenario information.
@@ -36,7 +36,7 @@ class Delete(object):
             print("Failed. Return.")
             return
 
-        # Delete links to base input profiles
+        # Delete links to base profiles on server
         print("--> Delete scenario inputs on server")
         command = "rm -f %s/%s_*" % (const.REMOTE_DIR_INPUT,
                                      self._scenario_info['id'])
