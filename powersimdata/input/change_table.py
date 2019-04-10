@@ -237,7 +237,8 @@ class ChangeTable():
     def write(self, scenario_id):
         """Saves change table to disk.
 
-        :param str scenario_id: scenario index
+        :param str scenario_id: scenario index.
+        :raises IOError: if file already exists on local machine.
         """
         local_dir = const.LOCAL_DIR
         if not local_dir:
@@ -250,8 +251,7 @@ class ChangeTable():
             print("Write %s" % file_name)
             pickle.dump(self.ct, open(file_name, "wb"))
         else:
-            print("%s already exists. Return." % file_name)
-            return
+            raise IOError("%s already exists" % file_name)
 
     def push(self, scenario_id):
         """Transfers file to server.
