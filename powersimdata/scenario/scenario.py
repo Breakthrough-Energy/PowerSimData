@@ -25,7 +25,7 @@ class Scenario(object):
             raise TypeError('Descriptor must be a string')
 
         if not descriptor:
-            self.state = Create(self)
+            self.state = Create()
         else:
             status = self._get_status(descriptor)
             if status == '0':
