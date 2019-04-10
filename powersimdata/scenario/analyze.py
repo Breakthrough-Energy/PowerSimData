@@ -11,7 +11,7 @@ class Analyze(State):
     """
 
     name = 'analyze'
-    allowed = ['delete', 'modify']
+    allowed = ['delete']
 
     def __init__(self, scenario):
         """Initializes attributes.
