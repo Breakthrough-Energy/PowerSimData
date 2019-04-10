@@ -13,9 +13,27 @@ class State(object):
         """
         if state.name in self.allowed:
             print('%s --> %s' % (self, state.name))
+            self._leave()
             self.__class__ = state
+            self._enter()
         else:
             print('%s -/-> %s' % (self, state.name))
 
     def __str__(self):
         return self.name
+
+    def _leave(self):
+        """Operations to perform when leaving state.
+
+        """
+        if self.name == 'create':
+            del self.builder
+        elif self.name == 'analyze':
+            del self.scaler
+
+    def _enter(self):
+        """Operations to perform when entering state.
+
+        """
+        if self.name == 'create':
+            self.__init__()
