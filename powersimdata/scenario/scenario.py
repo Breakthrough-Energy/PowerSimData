@@ -55,7 +55,11 @@ class Scenario(object):
             print("------------------")
             print(table.tail(n=10).to_string(index=False, justify='center',
                                              columns=['id', 'plan', 'name',
-                                                      'interconnect']))
+                                                      'interconnect',
+                                                      'base_demand',
+                                                      'base_hydro',
+                                                      'base_solar',
+                                                      'base_wind']))
 
         try:
             id = descriptor
@@ -81,7 +85,11 @@ class Scenario(object):
                 print('Use id to access scenario')
                 print(table.to_string(index=False, justify='center',
                                       columns=['id', 'plan', 'name',
-                                               'interconnect']))
+                                               'interconnect',
+                                               'base_demand',
+                                               'base_hydro',
+                                               'base_solar',
+                                               'base_wind']))
                 return '0'
 
     def print_scenario_info(self):
