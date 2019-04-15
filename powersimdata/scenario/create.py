@@ -82,7 +82,7 @@ class Create(State):
 
         :raises IOError: if execute list file on server cannot be updated.
         """
-        print("--> Add entry in execute table on server")
+        print("--> Add entry in execute table on server\n")
         entry = "%s,ready" % self._scenario_info['id']
         command = "echo %s >> %s" % (entry, const.EXECUTE_LIST_LOCATION)
         ssh = setup_server_connection()
@@ -104,7 +104,7 @@ class Create(State):
         """Creates links to base profiles on server.
 
         """
-        print("--> Create links to base profiles on server \n")
+        print("--> Create links to base profiles on server")
         for p in ['demand', 'hydro', 'solar', 'wind']:
             version = self._scenario_info['base_' + p]
             self.builder.profile.create_link(self._scenario_info['id'],
@@ -144,7 +144,8 @@ class Create(State):
             # Add scenario to execute list file on server
             self._update_execute_list()
 
-            print("SCENARIO SUCCESSFULLY CREATED WITH ID #%s" % id)
+            print("SCENARIO SUCCESSFULLY CREATED WITH ID #%s" %
+                  self._scenario_info['id'])
             self.allowed = ['delete', 'execute']
 
     def print_scenario_info(self):
