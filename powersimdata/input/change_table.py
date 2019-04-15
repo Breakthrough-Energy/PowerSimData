@@ -248,7 +248,7 @@ class ChangeTable():
             os.makedirs(local_dir)
         file_name = os.path.join(local_dir, scenario_id + "_ct.pkl")
         if os.path.isfile(file_name) is False:
-            print("Write %s" % file_name)
+            print("Writing %s" % file_name)
             pickle.dump(self.ct, open(file_name, "wb"))
         else:
             raise IOError("%s already exists" % file_name)
