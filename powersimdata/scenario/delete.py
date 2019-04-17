@@ -46,7 +46,7 @@ class Delete(State):
             return
 
         # Delete output profiles
-        if self._scenario_info['status'] == '2':
+        if self._scenario_info['state'] == 'analyze':
             print("--> Delete scenario outputs on server")
             command = "rm -f %s/%s_*.csv" % (const.REMOTE_DIR_OUTPUT,
                                              self._scenario_info['id'])

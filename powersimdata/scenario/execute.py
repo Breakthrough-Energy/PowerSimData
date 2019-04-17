@@ -12,12 +12,12 @@ class Execute(State):
     name = 'execute'
     allowed = ['delete']
 
-    def __init__(self, info):
+    def __init__(self, scenario):
         """Initializes attributes.
 
-        :param dict info: scenario information.
+        :param class scenario: scenario instance.
         """
-        self._scenario_info = info
+        self._scenario_info = scenario._info
         print("SCENARIO: %s | %s" % (self._scenario_info['plan'],
                                      self._scenario_info['name']))
 

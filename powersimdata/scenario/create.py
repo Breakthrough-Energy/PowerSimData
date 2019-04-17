@@ -27,7 +27,7 @@ class Create(State):
         self._scenario_info = OrderedDict([
             ('plan', ''),
             ('name', ''),
-            ('status', '0'),
+            ('state', 'create'),
             ('interconnect', ''),
             ('base_demand', ''),
             ('base_hydro', ''),
@@ -131,7 +131,7 @@ class Create(State):
                   (self._scenario_info['plan'], self._scenario_info['name']))
             # Add missing information
             self._generate_scenario_id()
-            self._scenario_info['status'] = '1'
+            self._scenario_info['state'] = 'execute'
             self._scenario_info['runtime'] = ''
             self._scenario_info['infeasibilities'] = ''
             # Add scenario to scenario list file on server

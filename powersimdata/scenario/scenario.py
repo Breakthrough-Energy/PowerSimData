@@ -27,19 +27,19 @@ class Scenario(object):
         if not descriptor:
             self.state = Create()
         else:
-            info = self._get_status(descriptor)
-            if info['status'] == '0':
+            state = self._get_state(descriptor)
+            if state is None:
                 return
-            elif info['status'] == '1':
-                self.state = Execute(info)
-            elif info['status'] == '2':
-                self.state = Analyze(info)
+            elif state == 'execute':
+                self.state = Execute(self)
+            elif state == 'analyze':
+                self.state = Analyze(self)
 
-    def _get_status(self, descriptor):
-        """Checks scenario status.
+    def _get_state(self, descriptor):
+        """Checks scenario state.
 
         :param str descriptor: scenario descriptor.
-        :return: (*int*) -- scenario status.
+        :return: (*int*) -- scenario state.
         """
         td = PullData()
         table = td.get_scenario_table()
@@ -62,22 +62,21 @@ class Scenario(object):
                                                       'base_wind']))
 
         try:
-            id = descriptor
-            scenario = table[table.id == id]
+            scenario = table[table.id == descriptor]
             if scenario.shape[0] == 0:
                 not_found_message(table, descriptor)
-                return '0'
+                return
             else:
-                info = scenario.to_dict('records', into=OrderedDict)[0]
-                return info
+                self._info = scenario.to_dict('records', into=OrderedDict)[0]
+                return self._info['state']
         except:
             scenario = table[table.name == descriptor]
             if scenario.shape[0] == 0:
                 not_found_message(table, descriptor)
-                return '0'
+                return
             elif scenario.shape[0] == 1:
-                info = scenario.to_dict('records', into=OrderedDict)[0]
-                return info
+                self._info = scenario.to_dict('records', into=OrderedDict)[0]
+                return self._info['status']
             elif scenario.shape[0] > 1:
                 print("-----------------------")
                 print("MULTIPLE SCENARIO FOUND")
@@ -90,7 +89,7 @@ class Scenario(object):
                                                'base_hydro',
                                                'base_solar',
                                                'base_wind']))
-                return '0'
+                return
 
     def print_scenario_info(self):
         """Prints scenario information.
