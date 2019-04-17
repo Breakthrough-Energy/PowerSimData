@@ -13,11 +13,12 @@ class Analyze(State):
     name = 'analyze'
     allowed = ['delete']
 
-    def __init__(self, scenario):
+    def __init__(self, info):
         """Initializes attributes.
 
+        :param dict info: scenario information.
         """
-        self._scenario_info = scenario._info
+        self._scenario_info = info
         print("SCENARIO: %s | %s \n" % (self._scenario_info['plan'],
                                         self._scenario_info['name']))
         self.scaler = Scaler(self._scenario_info['id'],
@@ -97,7 +98,7 @@ class Analyze(State):
     def get_grid(self):
         """Returns Grid.
 
-        :return: (*grid*) -- grid object
+        :return: (*grid*) -- instance of grid object.
         """
         return self.scaler.get_grid()
 

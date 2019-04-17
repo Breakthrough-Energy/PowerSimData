@@ -27,13 +27,13 @@ class Scenario(object):
         if not descriptor:
             self.state = Create()
         else:
-            status = self._get_status(descriptor)
-            if status == '0':
+            info = self._get_status(descriptor)
+            if info['status'] == '0':
                 return
-            elif status == '1':
-                self.state = Execute(self)
-            elif status == '2':
-                self.state = Analyze(self)
+            elif info['status'] == '1':
+                self.state = Execute(info)
+            elif info['status'] == '2':
+                self.state = Analyze(info)
 
     def _get_status(self, descriptor):
         """Checks scenario status.
@@ -68,16 +68,16 @@ class Scenario(object):
                 not_found_message(table, descriptor)
                 return '0'
             else:
-                self._info = scenario.to_dict('records', into=OrderedDict)[0]
-                return self._info['status']
+                info = scenario.to_dict('records', into=OrderedDict)[0]
+                return info
         except:
             scenario = table[table.name == descriptor]
             if scenario.shape[0] == 0:
                 not_found_message(table, descriptor)
                 return '0'
             elif scenario.shape[0] == 1:
-                self._info = scenario.to_dict('records', into=OrderedDict)[0]
-                return self._info['status']
+                info = scenario.to_dict('records', into=OrderedDict)[0]
+                return info
             elif scenario.shape[0] > 1:
                 print("-----------------------")
                 print("MULTIPLE SCENARIO FOUND")
