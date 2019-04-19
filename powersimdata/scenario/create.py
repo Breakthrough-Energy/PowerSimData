@@ -2,6 +2,7 @@ from postreise.process import const
 from postreise.process.transferdata import PullData
 from postreise.process.transferdata import setup_server_connection
 from powersimdata.scenario.state import State
+from powersimdata.scenario.execute import Execute
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.scenario.helpers import interconnect2name
 
@@ -23,7 +24,7 @@ class Create(State):
 
         """
         self.builder = None
-
+        self._scenario_status = None
         self._scenario_info = OrderedDict([
             ('plan', ''),
             ('name', ''),
@@ -64,7 +65,7 @@ class Create(State):
         self._scenario_info.move_to_end('id', last=False)
 
     def _update_scenario_list(self):
-        """Add scenario to the scenario list file on server.
+        """Adds scenario to the scenario list file on server.
 
         :raises IOError: if scenario list file on server cannot be updated.
         """
@@ -90,6 +91,8 @@ class Create(State):
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to update %s on server" %
                             const.EXECUTE_LIST_LOCATION)
+        self._scenario_status = 'ready'
+        self.allowed.append('execute')
 
     def _upload_change_table(self):
         """Uploads change table to server.
@@ -111,7 +114,7 @@ class Create(State):
                                              p, version)
 
     def create_scenario(self):
-        """Creates entry in scenario file on server.
+        """Creates scenario.
 
         """
         self._update_scenario_info()
@@ -146,7 +149,7 @@ class Create(State):
 
             print("SCENARIO SUCCESSFULLY CREATED WITH ID #%s" %
                   self._scenario_info['id'])
-            self.allowed = ['delete', 'execute']
+            self.switch(Execute)
 
     def print_scenario_info(self):
         """Prints scenario information.
