@@ -27,7 +27,7 @@ class Scaler(object):
         try:
             self.ct = self._input.get_data(self.scenario_id, 'ct')
         except FileNotFoundError:
-            print("-> No scaling")
+            print("--> No scaling")
             self.ct = {}
 
     def _load_grid(self):
