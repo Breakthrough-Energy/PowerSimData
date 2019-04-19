@@ -46,11 +46,10 @@ class Delete(State):
             return
 
         # Delete output profiles
-        if self._scenario_info['state'] == 'analyze':
-            print("--> Delete scenario outputs on server")
-            command = "rm -f %s/%s_*.csv" % (const.REMOTE_DIR_OUTPUT,
-                                             self._scenario_info['id'])
-            stdin, stdout, stderr = ssh.exec_command(command)
-            if len(stderr.readlines()) != 0:
-                print("Failed. Return.")
-                return
+        print("--> Delete scenario outputs on server")
+        command = "rm -f %s/%s_*.csv" % (const.REMOTE_DIR_OUTPUT,
+                                         self._scenario_info['id'])
+        stdin, stdout, stderr = ssh.exec_command(command)
+        if len(stderr.readlines()) != 0:
+            print("Failed. Return.")
+            return
