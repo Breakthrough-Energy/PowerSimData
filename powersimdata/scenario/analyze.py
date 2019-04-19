@@ -19,8 +19,12 @@ class Analyze(State):
         :param class scenario: scenario instance.
         """
         self._scenario_info = scenario._info
-        print("SCENARIO: %s | %s \n" % (self._scenario_info['plan'],
-                                        self._scenario_info['name']))
+        self._scenario_status = scenario._status
+
+        print("SCENARIO: %s | %s\n" % (self._scenario_info['plan'],
+                                     self._scenario_info['name']))
+        print("# Status\n--> %s\n" % self._scenario_status)
+
         self.scaler = Scaler(self._scenario_info['id'],
                              self._scenario_info['interconnect'].split('_'))
 

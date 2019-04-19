@@ -1,3 +1,4 @@
+from postreise.process import const
 from postreise.process.transferdata import PullData
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create
@@ -27,28 +28,29 @@ class Scenario(object):
         if not descriptor:
             self.state = Create()
         else:
-            state = self._get_state(descriptor)
-            if state is None:
-                return
-            elif state == 'execute':
-                self.state = Execute(self)
-            elif state == 'analyze':
-                self.state = Analyze(self)
+            self._get_info(descriptor)
+            try:
+                state = self._info['state']
+                self._get_status()
+                if state == 'execute':
+                    self.state = Execute(self)
+                elif state == 'analyze':
+                    self.state = Analyze(self)
+            except:
+                pass
 
-    def _get_state(self, descriptor):
-        """Checks scenario state.
+    def _get_info(self, descriptor):
+        """Gets scenario information
 
         :param str descriptor: scenario descriptor.
-        :return: (*int*) -- scenario state.
         """
         td = PullData()
         table = td.get_scenario_table()
 
-        def not_found_message(table, descriptor):
+        def not_found_message(table):
             """Print message when scenario is not found.
 
             :param pandas table: scenario table.
-            :param str descriptor: scenario descriptor.
             """
             print("------------------")
             print("SCENARIO NOT FOUND")
@@ -62,21 +64,19 @@ class Scenario(object):
                                                       'base_wind']))
 
         try:
+            int(descriptor)
             scenario = table[table.id == descriptor]
             if scenario.shape[0] == 0:
-                not_found_message(table, descriptor)
-                return
+                not_found_message(table)
             else:
                 self._info = scenario.to_dict('records', into=OrderedDict)[0]
-                return self._info['state']
-        except:
+            return
+        except ValueError:
             scenario = table[table.name == descriptor]
             if scenario.shape[0] == 0:
-                not_found_message(table, descriptor)
-                return
+                not_found_message(table)
             elif scenario.shape[0] == 1:
                 self._info = scenario.to_dict('records', into=OrderedDict)[0]
-                return self._info['status']
             elif scenario.shape[0] > 1:
                 print("-----------------------")
                 print("MULTIPLE SCENARIO FOUND")
@@ -89,7 +89,21 @@ class Scenario(object):
                                                'base_hydro',
                                                'base_solar',
                                                'base_wind']))
-                return
+            return
+
+    def _get_status(self):
+        """Get execution status of scenario.
+
+        """
+        td = PullData()
+        table = td.get_execute_table()
+
+        status = table[table.id == self._info['id']]
+        if status.shape[0] == 0:
+            raise Exception("Scenario not found in %s on server" %
+                             const.EXECUTE_LIST_LOCATION)
+        elif status.shape[0] == 1:
+            self._status = status.status.values[0]
 
     def print_scenario_info(self):
         """Prints scenario information.
