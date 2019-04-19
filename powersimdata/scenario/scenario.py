@@ -94,6 +94,7 @@ class Scenario(object):
     def _get_status(self):
         """Get execution status of scenario.
 
+        :raises Exception: if scenario not found in execute list on server.
         """
         td = PullData()
         table = td.get_execute_table()
@@ -101,7 +102,7 @@ class Scenario(object):
         status = table[table.id == self._info['id']]
         if status.shape[0] == 0:
             raise Exception("Scenario not found in %s on server" %
-                             const.EXECUTE_LIST_LOCATION)
+                             const.EXECUTE_DIR)
         elif status.shape[0] == 1:
             self._status = status.status.values[0]
 

@@ -69,28 +69,27 @@ class Create(State):
 
         :raises IOError: if scenario list file on server cannot be updated.
         """
-        print("--> Add entry in scenario table on server")
+        print("--> Adding entry in scenario table on server")
         entry = ",".join(self._scenario_info.values())
-        command = "echo %s >> %s" % (entry, const.SCENARIO_LIST_LOCATION)
+        command = "echo %s >> %s" % (entry, const.SCENARIO_LIST)
         ssh = setup_server_connection()
         stdin, stdout, stderr = ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to update %s on server" %
-                            const.SCENARIO_LIST_LOCATION)
+                          const.SCENARIO_LIST)
 
     def _update_execute_list(self):
-        """Updates scenario to the execute list file on server.
+        """Adds scenario to the execute list file on server.
 
         :raises IOError: if execute list file on server cannot be updated.
         """
-        print("--> Add entry in execute table on server\n")
+        print("--> Adding entry in execute table on server\n")
         entry = "%s,ready" % self._scenario_info['id']
-        command = "echo %s >> %s" % (entry, const.EXECUTE_LIST_LOCATION)
+        command = "echo %s >> %s" % (entry, const.EXECUTE_LIST)
         ssh = setup_server_connection()
         stdin, stdout, stderr = ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to update %s on server" %
-                            const.EXECUTE_LIST_LOCATION)
+            raise IOError("Failed to update %s on server" % const.EXECUTE_LIST)
         self._scenario_status = 'ready'
         self.allowed.append('execute')
 
@@ -98,16 +97,16 @@ class Create(State):
         """Uploads change table to server.
 
         """
-        print("--> Write change table on local machine")
+        print("--> Writing change table on local machine")
         self.builder.change_table.write(self._scenario_info['id'])
-        print("--> Upload change table to server")
+        print("--> Uploading change table to server")
         self.builder.change_table.push(self._scenario_info['id'])
 
     def _create_link(self):
         """Creates links to base profiles on server.
 
         """
-        print("--> Create links to base profiles on server")
+        print("--> Creating links to base profiles on server")
         for p in ['demand', 'hydro', 'solar', 'wind']:
             version = self._scenario_info['base_' + p]
             self.builder.profile.create_link(self._scenario_info['id'],
@@ -358,7 +357,7 @@ class CSV(object):
             raise NameError("Choose from %s" % " | ".join(possible))
 
         available = interconnect2name(self.interconnect) + '_' + type + '_*'
-        query = os.path.join(const.REMOTE_DIR_BASE, available)
+        query = os.path.join(const.BASE_PROFILE_DIR, available)
         stdin, stdout, stderr = self._ssh.exec_command("ls " + query)
         if len(stderr.readlines()) != 0:
             print("No %s profiles available." % type)
@@ -381,8 +380,8 @@ class CSV(object):
         source = interconnect + '_' + type + '_' + version + '.csv'
         target = id + '_' + type + '.csv'
 
-        command = "ln -s %s %s" % (const.REMOTE_DIR_BASE + '/' + source,
-                                   const.REMOTE_DIR_INPUT + '/' + target)
+        command = "ln -s %s %s" % (const.BASE_PROFILE_DIR + '/' + source,
+                                   const.INPUT_DIR + '/' + target)
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to create link to %s profile." % type)

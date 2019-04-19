@@ -30,7 +30,7 @@ class Delete(State):
         print("--> Delete entry in scenario table on server")
         entry = ",".join(self._scenario_info.values())
         command = "sed -i.bak '/%s/d' %s" % (entry,
-                                             const.SCENARIO_LIST_LOCATION)
+                                             const.SCENARIO_LIST)
         stdin, stdout, stderr = ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             print("Failed. Return.")
@@ -38,7 +38,7 @@ class Delete(State):
 
         # Delete links to base profiles on server
         print("--> Delete scenario inputs on server")
-        command = "rm -f %s/%s_*" % (const.REMOTE_DIR_INPUT,
+        command = "rm -f %s/%s_*" % (const.INPUT_DIR,
                                      self._scenario_info['id'])
         stdin, stdout, stderr = ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
@@ -47,7 +47,7 @@ class Delete(State):
 
         # Delete output profiles
         print("--> Delete scenario outputs on server")
-        command = "rm -f %s/%s_*.csv" % (const.REMOTE_DIR_OUTPUT,
+        command = "rm -f %s/%s_*.csv" % (const.OUTPUT_DIR,
                                          self._scenario_info['id'])
         stdin, stdout, stderr = ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
