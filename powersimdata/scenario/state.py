@@ -12,12 +12,12 @@ class State(object):
         :param class state: One of the sub-classes.
         """
         if state.name in self.allowed:
-            print('%s --> %s' % (self, state.name))
+            print('State switching: %s --> %s' % (self, state.name))
             self._leave()
             self.__class__ = state
             self._enter()
         else:
-            print('%s -/-> %s' % (self, state.name))
+            print('State switching: %s -/-> %s' % (self, state.name))
 
     def __str__(self):
         return self.name
