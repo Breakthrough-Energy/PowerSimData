@@ -64,7 +64,7 @@ class Create(State):
         self._scenario_info['id'] = str(table.id.astype(int).max() + 1)
         self._scenario_info.move_to_end('id', last=False)
 
-    def _update_scenario_list(self):
+    def _add_entry_in_scenario_list(self):
         """Adds scenario to the scenario list file on server.
 
         :raises IOError: if scenario list file on server cannot be updated.
@@ -78,7 +78,7 @@ class Create(State):
             raise IOError("Failed to update %s on server" %
                           const.SCENARIO_LIST)
 
-    def _update_execute_list(self):
+    def _add_entry_in_execute_list(self):
         """Adds scenario to the execute list file on server.
 
         :raises IOError: if execute list file on server cannot be updated.
@@ -137,14 +137,14 @@ class Create(State):
             self._scenario_info['runtime'] = ''
             self._scenario_info['infeasibilities'] = ''
             # Add scenario to scenario list file on server
-            self._update_scenario_list()
+            self._add_entry_in_scenario_list()
             # Upload change table to server
             if bool(self.builder.change_table.ct):
                 self._upload_change_table()
             # Create symbolic links to base profiles on server
             self._create_link()
             # Add scenario to execute list file on server
-            self._update_execute_list()
+            self._add_entry_in_execute_list()
 
             print("SCENARIO SUCCESSFULLY CREATED WITH ID #%s" %
                   self._scenario_info['id'])
