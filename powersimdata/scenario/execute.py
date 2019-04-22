@@ -67,6 +67,7 @@ class Execute(State):
     def _create_folder(self):
         """Creates folder on server that will enclose simulation inputs.
 
+        :raises IOError: if folder cannot be created.
         """
         print("--> Creating temporary folder on server")
         self._tmp_dir = '%s/scenario_%s' % (const.EXECUTE_DIR,
@@ -80,7 +81,7 @@ class Execute(State):
     def _update_execute_list(self, status):
         """Updates status in execute list file on server.
 
-        :param str status: status.
+        :param str status: execution status.
         :raises IOError: if execute list file on server cannot be updated.
         """
         print("--> Updating status in execute table on server")
@@ -96,6 +97,7 @@ class Execute(State):
     def _copy_input_file(self):
         """Copies simulation inputs in temporary directory on server.
 
+        :raises IOError: if files cannot be copied.
         """
         print("--> Copying files into folder")
         command = "cp -a %s/%s_* %s" % (const.INPUT_DIR,
