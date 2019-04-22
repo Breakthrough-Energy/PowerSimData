@@ -61,19 +61,21 @@ class Execute(State):
         print("PREPARING SCENARIO:\n")
         self._update_execute_list('preparing')
         self._create_folder()
+        self._copy_input_file()
 
 
     def _create_folder(self):
         """Creates folder on server that will enclose simulation inputs.
 
         """
-        print("--> Creating folder on server")
-        dir = const.EXECUTE_DIR + '/scenario_' + self._scenario_info['id']
-        command = "mkdir %s" % dir
+        print("--> Creating temporary folder on server")
+        self._tmp_dir = '%s/scenario_%s' % (const.EXECUTE_DIR,
+                                            self._scenario_info['id'])
+        command = "mkdir %s" % self._tmp_dir
         ssh = setup_server_connection()
         stdin, stdout, stderr = ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to create %s on server" % dir)
+            raise IOError("Failed to create %s on server" % self._tmp_dir)
 
     def _update_execute_list(self, status):
         """Updates status in execute list file on server.
@@ -91,4 +93,15 @@ class Execute(State):
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to update %s on server" % const.EXECUTE_LIST)
 
-    def _copy_
+    def _copy_input_file(self):
+        """Copies simulation inputs in temporary directory on server.
+
+        """
+        print("--> Copying files into folder")
+        command = "cp -a %s/%s_* %s" % (const.INPUT_DIR,
+                                        self._scenario_info['id'],
+                                        self._tmp_dir)
+        ssh = setup_server_connection()
+        stdin, stdout, stderr = ssh.exec_command(command)
+        if len(stderr.readlines()) != 0:
+            raise IOError("Failed to copy inputs on server" % self._tmp_dir)
