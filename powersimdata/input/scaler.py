@@ -7,13 +7,13 @@ class Scaler(object):
         table.
     """
 
-    def __init__(self, scenario_id, interconnect):
+    def __init__(self, scenario_info):
         """Constructor.
 
-        :param scenario_id: scenario id
+        :param dict scenario_info: scenario information
         """
-        self.scenario_id = str(scenario_id)
-        self.interconnect = interconnect
+        self.scenario_id = scenario_info['id']
+        self.interconnect = scenario_info['interconnect'].split('_')
         self._input = InputData()
         self._load_ct()
         print("")
