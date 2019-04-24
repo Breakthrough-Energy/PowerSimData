@@ -25,8 +25,7 @@ class Analyze(State):
                                      self._scenario_info['name']))
         print("# Status\n--> %s\n" % self._scenario_status)
 
-        self.scaler = Scaler(self._scenario_info['id'],
-                             self._scenario_info['interconnect'].split('_'))
+        self._scaler = Scaler(self._scenario_info)
 
     def print_scenario_info(self):
         """Prints scenario information.
@@ -97,14 +96,14 @@ class Analyze(State):
 
         :return: (*dict*) -- change table.
         """
-        return self.scaler.ct
+        return self._scaler.ct
 
     def get_grid(self):
         """Returns Grid.
 
         :return: (*grid*) -- instance of grid object.
         """
-        return self.scaler.get_grid()
+        return self._scaler.get_grid()
 
     def get_demand(self, original=True):
         """Returns demand profiles.
@@ -114,7 +113,7 @@ class Analyze(State):
         :return: (*pandas*) -- data frame of demand.
         """
 
-        demand = self.scaler.get_demand()
+        demand = self._scaler.get_demand()
 
         if original == True:
             return demand
@@ -136,18 +135,18 @@ class Analyze(State):
 
         :return: (*pandas*) -- data frame of hydro power output.
         """
-        return self.scaler.get_hydro()
+        return self._scaler.get_hydro()
 
     def get_solar(self):
         """Returns solar profile
 
         :return: (*pandas*) -- data frame of solar power output.
         """
-        return self.scaler.get_solar()
+        return self._scaler.get_solar()
 
     def get_wind(self):
         """Returns wind profile
 
         :return: (*pandas*) -- data frame of wind power output.
         """
-        return self.scaler.get_wind()
+        return self._scaler.get_wind()
