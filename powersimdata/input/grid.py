@@ -50,7 +50,7 @@ class Grid():
         for i in interconnect:
             if i not in possible:
                 raise Exception("Wrong interconnect. Choose from %s" %
-                                "|".join(possible))
+                                " | ".join(possible))
         n = len(interconnect)
         if n > len(set(interconnect)):
             raise Exception("List of interconnects contains duplicate values")
