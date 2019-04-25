@@ -60,7 +60,7 @@ class Grid():
         self.interconnect = interconnect
 
     def _build_network(self):
-        """Builds betwork.
+        """Builds network.
 
         """
         self._read_network()
@@ -79,9 +79,11 @@ class Grid():
                     'interconnect').get_group(k).index, inplace=True)
                 self.plant.drop(self.plant.groupby(
                     'interconnect').get_group(k).index, inplace=True)
+                self.gencost.drop(self.gencost.groupby(
+                    'interconnect').get_group(k).index, inplace=True)
                 self.branch.drop(self.branch.groupby(
                     'interconnect').get_group(k).index, inplace=True)
-                for i in range(v[0], v[1]+1):
+                for i in range(v[0], v[1] + 1):
                     del self.zone[i]
 
     def _add_information(self):
@@ -92,7 +94,7 @@ class Grid():
         bus2coord = pd.merge(self.bus2sub[['sub_id']],
                              self.sub[['lat', 'lon']],
                              on='sub_id').set_index(self.bus2sub.index).drop(
-                                columns='sub_id').to_dict()
+            columns='sub_id').to_dict()
 
         # Coordinates
         self.bus['lat'] = [bus2coord['lat'][i] for i in self.bus.index]
@@ -134,6 +136,7 @@ class Grid():
         self._read_bus2sub()
         self._read_bus()
         self._read_plant()
+        self._read_gencost()
         self._read_branch()
         print("--> Done loading")
 
@@ -181,9 +184,9 @@ class Grid():
         """
         print("Loading plant")
         # Read and format
-        plant_type = pd.read_csv(self.data_loc+'gentype_case.txt',
+        plant_type = pd.read_csv(self.data_loc + 'gentype_case.txt',
                                  sep=r'\s+', header=None)
-        self.plant = pd.read_csv(self.data_loc+'genbus_case.txt', sep=r'\s+')
+        self.plant = pd.read_csv(self.data_loc + 'genbus_case.txt', sep=r'\s+')
         self._plant_aux = pd.read_pickle(self.data_loc + 'USAgenbus_aux.pkl')
         self.plant.index.name = 'plant_id'
         self.plant.rename(columns={'bus': 'bus_id'}, inplace=True)
@@ -200,13 +203,25 @@ class Grid():
         self.plant.loc[self.plant.bus_id > 2000000, 'interconnect'] = 'Western'
         self.plant.loc[self.plant.bus_id > 3000000, 'interconnect'] = 'Texas'
 
+    def _read_gencost(self):
+        """Reads generator cost files.
+
+        """
+        print("Loading plant cost")
+        # Read and format
+        self.gencost = pd.read_csv(self.data_loc + 'gencost_case.txt', sep=r'\s+')
+        self.gencost.index.name = 'plant_id'
+
+        # Interconnect
+        self.gencost['interconnect'] = self.plant.interconnect
+
     def _read_branch(self):
         """Reads branch file.
 
         """
         print("Loading branch")
         self.branch = pd.read_csv(self.data_loc + 'branch_case.txt',
-                                    sep=r'\s+')
+                                  sep=r'\s+')
         self.branch.rename(columns={'fbus': 'from_bus_id',
                                     'tbus': 'to_bus_id'}, inplace=True)
         self.branch.index.name = 'branch_id'
