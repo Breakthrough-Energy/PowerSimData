@@ -66,12 +66,12 @@ class Execute(State):
             self._scaler = Scaler(self._scenario_info)
 
             ps = PrepareScenario(self._scaler)
-            #ps.create_folder()
-            #if self._scaler.ct is not None:
-            #    ps.scale_input()
-            #else:
-            #    ps.copy_input_file()
-            #self._update_execute_list('prepared')
+            ps.create_folder()
+            if self._scaler.ct is not None:
+                ps.scale_input()
+            else:
+                ps.copy_input_file()
+            self._update_execute_list('prepared')
         else:
             print("-------------------------")
             print("SCENARIO ALREADY PREPARED")
