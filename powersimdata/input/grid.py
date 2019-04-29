@@ -81,6 +81,16 @@ class Grid():
                     'interconnect').get_group(k).index, inplace=True)
                 self.gencost.drop(self.gencost.groupby(
                     'interconnect').get_group(k).index, inplace=True)
+                try:
+                    self.dcline.drop(self.dcline.groupby(
+                        'from_interconnect').get_group(k).index, inplace=True)
+                except KeyError:
+                    pass
+                try:
+                    self.dcline.drop(self.dcline.groupby(
+                        'to_interconnect').get_group(k).index, inplace=True)
+                except KeyError:
+                    pass
                 self.branch.drop(self.branch.groupby(
                     'interconnect').get_group(k).index, inplace=True)
                 for i in range(v[0], v[1] + 1):
@@ -138,6 +148,7 @@ class Grid():
         self._read_plant()
         self._read_gencost()
         self._read_branch()
+        self._read_dcline()
         print("--> Done loading")
 
     def _read_sub(self):
@@ -204,7 +215,7 @@ class Grid():
         self.plant.loc[self.plant.bus_id > 3000000, 'interconnect'] = 'Texas'
 
     def _read_gencost(self):
-        """Reads generator cost files.
+        """Reads generator cost file.
 
         """
         print("Loading plant cost")
@@ -214,6 +225,29 @@ class Grid():
 
         # Interconnect
         self.gencost['interconnect'] = self.plant.interconnect
+
+    def _read_dcline(self):
+        """Reads DC line file.
+
+        """
+        print("Loading DC line")
+        # Read and format
+        self.dcline = pd.read_csv(self.data_loc + 'dcline_case.txt', sep=r'\s+')
+        self.dcline.rename(columns={'fbus': 'from_bus_id',
+                                    'tbus': 'to_bus_id'}, inplace=True)
+        self.dcline.index.name = 'dcline_id'
+
+        # Interconnect
+        self.dcline['from_interconnect'] = 'Eastern'
+        self.dcline['to_interconnect'] = 'Eastern'
+        self.dcline.loc[self.dcline.from_bus_id > 2000000,
+                        'from_interconnect'] = 'Western'
+        self.dcline.loc[self.dcline.to_bus_id > 2000000,
+                        'to_interconnect'] = 'Western'
+        self.dcline.loc[self.dcline.from_bus_id > 3000000,
+                        'from_interconnect'] = 'Texas'
+        self.dcline.loc[self.dcline.to_bus_id > 3000000,
+                        'to_interconnect'] = 'Texas'
 
     def _read_branch(self):
         """Reads branch file.
