@@ -63,14 +63,14 @@ class ChangeTable():
         :param str resources: type of generator.
         :raises ValueError: if resource cannot be changed.
         """
-        possible = ['hydro', 'solar', 'wind']
+        possible = ['coal', 'ng', 'nuclear', 'hydro', 'solar', 'wind']
         if resource not in possible:
             print("-----------------------")
             print("Possible Generator type")
             print("-----------------------")
             for p in possible:
                 print(p)
-            raise ValueError('Invalid resource')
+            raise ValueError('Invalid resource: %s' % resource)
 
     def _check_zone(self, zone):
         """Checks load zones.
@@ -86,7 +86,7 @@ class ChangeTable():
                 print("--------------")
                 for p in possible:
                     print(p)
-                raise ValueError('Invalid zone(s)')
+                raise ValueError('Invalid zone(s): %s' % " | ".join(zone))
 
     def _get_plant_id(self, zone, resource):
         """Extracts the plant identification number of all the generators \

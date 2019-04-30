@@ -1,6 +1,7 @@
 from powersimdata.input.grid import Grid
 from powersimdata.input.profiles import InputData
 
+import copy
 
 class Scaler(object):
     """Scales grid and input profiles using information stored in change \
@@ -34,14 +35,15 @@ class Scaler(object):
         """Loads original grid.
 
         """
-        self._grid = Grid(self.interconnect)
+        self._original_grid = Grid(self.interconnect)
 
     def get_grid(self):
         """Returns modified grid.
 
         """
+        self._grid = copy.deepcopy(self._original_grid)
         if bool(self.ct):
-            for r in ['hydro', 'solar', 'wind']:
+            for r in ['coal', 'ng', 'nuclear', 'hydro', 'solar', 'wind']:
                 if r in list(self.ct.keys()):
                     try:
                         self.ct[r]['zone_id']
@@ -52,6 +54,9 @@ class Scaler(object):
                             for i in plant_id:
                                 self._grid.plant.loc[i, 'GenMWMax'] = \
                                     self._grid.plant.loc[i, 'GenMWMax'] * value
+                                if r in ['coal', 'ng', 'nuclear']:
+                                    self._grid.plant.loc[i, 'Pmax'] = \
+                                        self._grid.plant.loc[i, 'Pmax'] * value
                     except:
                         pass
                     try:
@@ -59,6 +64,9 @@ class Scaler(object):
                         for key, value in self.ct[r]['plant_id'].items():
                             self._grid.plant.loc[key, 'GenMWMax'] = \
                                 self._grid.plant.loc[key, 'GenMWMax'] * value
+                            if r in ['coal', 'ng', 'nuclear']:
+                                self._grid.plant.loc[key, 'Pmax'] = \
+                                    self._grid.plant.loc[key, 'Pmax'] * value
                     except:
                         pass
             if 'branch' in list(self.ct.keys()):
@@ -89,14 +97,14 @@ class Scaler(object):
         :param str resource: *'hydro'*, *'solar'* or *'wind'*.
         :return: (*pandas*) -- data frame of resource output with plant id \
             as columns and UTC timestamp as rows.
-        :raises NameError: if invalid resource.
+        :raises ValueError: if invalid resource.
         """
-        possible = ['branch', 'hydro', 'solar', 'wind']
+        possible = ['hydro', 'solar', 'wind']
         if resource not in possible:
             print("Choose one of:")
             for p in possible:
                 print(p)
-            raise NameError('Invalid resource')
+            raise ValueError('Invalid resource: %s' % resource)
 
         profile = self._input.get_data(self.scenario_id, resource)
 
@@ -104,7 +112,7 @@ class Scaler(object):
             try:
                 self.ct[resource]['zone_id']
                 for key, value in self.ct[resource]['zone_id'].items():
-                    plant_id = self._grid.plant.groupby(
+                    plant_id = self._original_grid.plant.groupby(
                         ['zone_id', 'type']).get_group(
                         (key, resource)).index.values.tolist()
                     for i in plant_id:
@@ -149,8 +157,8 @@ class Scaler(object):
         demand = self._input.get_data(self.scenario_id, 'demand')
         if bool(self.ct) and 'demand' in list(self.ct.keys()):
             for key, value in self.ct['demand']['zone_id'].items():
-                zone_name = self._grid.zone[key]
+                zone_name = self._original_grid.zone[key]
                 print('Multiply demand in %s (#%d) by %.2f' %
-                      (self._grid.zone[key], key, value))
+                      (self._original_grid.zone[key], key, value))
                 demand.loc[:, key] *= value
         return demand
