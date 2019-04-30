@@ -13,7 +13,7 @@ class ChangeTable():
     """Create change table for changes that need to be applied to the \
         original grid as well as to the original demand, hydro, solar and \
         wind profiles. A pickle file enclosing the change table in form of a \
-        dictionary will be created and transfered on the server. Keys are \
+        dictionary can be created and transfered on the server. Keys are \
         *'branch'*, *'demand'*, *'hydro'*, *'solar'* and *'wind'*. If a key \
         is missing in the dictionary, then no changes will be applied. The \
         data structure is given below:
@@ -61,7 +61,7 @@ class ChangeTable():
         """Checks resource.
 
         :param str resources: type of generator.
-        :raises NameError: if resource cannot be changed.
+        :raises ValueError: if resource cannot be changed.
         """
         possible = ['hydro', 'solar', 'wind']
         if resource not in possible:
@@ -70,13 +70,13 @@ class ChangeTable():
             print("-----------------------")
             for p in possible:
                 print(p)
-            raise NameError('Invalid resource')
+            raise ValueError('Invalid resource')
 
     def _check_zone(self, zone):
         """Checks load zones.
 
         :param list zone: geographical zones.
-        :raise NameError: if zone(s) do(es) not exist.
+        :raise ValueError: if zone(s) do(es) not exist.
         """
         possible = list(self.grid.plant.zone_name.unique())
         for z in zone:
@@ -86,7 +86,7 @@ class ChangeTable():
                 print("--------------")
                 for p in possible:
                     print(p)
-                raise Exception('Invalid zone(s)')
+                raise ValueError('Invalid zone(s)')
 
     def _get_plant_id(self, zone, resource):
         """Extracts the plant identification number of all the generators \
