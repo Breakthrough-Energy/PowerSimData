@@ -84,13 +84,13 @@ class Create(State):
         :raises IOError: if execute list file on server cannot be updated.
         """
         print("--> Adding entry in execute table on server\n")
-        entry = "%s,ready" % self._scenario_info['id']
+        entry = "%s,created" % self._scenario_info['id']
         command = "echo %s >> %s" % (entry, const.EXECUTE_LIST)
         ssh = setup_server_connection()
         stdin, stdout, stderr = ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to update %s on server" % const.EXECUTE_LIST)
-        self._scenario_status = 'ready'
+        self._scenario_status = 'created'
         self.allowed.append('execute')
 
     def _upload_change_table(self):
