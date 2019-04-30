@@ -31,7 +31,7 @@ class Scaler(object):
             self.ct = {}
 
     def _load_grid(self):
-        """Loads change table.
+        """Loads original grid.
 
         """
         self._grid = Grid(self.interconnect)
