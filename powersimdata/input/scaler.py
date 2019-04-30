@@ -89,6 +89,12 @@ class Scaler(object):
                 except:
                     pass
 
+            if 'dcline' in list(self.ct.keys()):
+                self.ct['dcline']['dcline_id']
+                for key, value in self.ct['dcline']['dcline_id'].items():
+                    self._grid.dcline.loc[key, 'Pmax'] = \
+                        self._grid.dcline.loc[key, 'Pmax'] * value
+
         return self._grid
 
     def _get_power_output(self, resource):

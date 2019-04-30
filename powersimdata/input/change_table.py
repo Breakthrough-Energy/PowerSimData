@@ -195,6 +195,28 @@ class ChangeTable():
             print("<zone> and/or <branch_id> must be set. Return.")
             return
 
+    def scale_dcline_capacity(self, dcline_id):
+        """Consign dcline capacity scaling.
+
+        :param dict dcline_id: identification numbers of dc line. The \
+            key(s) is (are) the id of the line(s) and the associated value \
+            is the scaling factor for the increase/decrease in capacity of \
+            the line(s).
+        """
+        self.ct['dcline'] = {}
+        self.ct['dcline']['dcline_id'] = {}
+        diff = set(dcline_id.keys()).difference(set(self.grid.dcline.index))
+        if len(diff) != 0:
+            print("No dc line with the following id:")
+            for i in list(diff):
+                print(i)
+            self.ct.pop('dcline')
+            return
+        else:
+            self.ct['dcline']['dcline_id'] = {}
+            for i in dcline_id.keys():
+                self.ct['dcline']['dcline_id'][i] = dcline_id[i]
+
     def scale_demand(self, zone=None, zone_id=None):
         """Consign load scaling.
 
