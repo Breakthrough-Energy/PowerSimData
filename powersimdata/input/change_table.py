@@ -196,7 +196,7 @@ class ChangeTable():
             return
 
     def scale_dcline_capacity(self, dcline_id):
-        """Consign dcline capacity scaling.
+        """Consign DC line capacity scaling.
 
         :param dict dcline_id: identification numbers of dc line. The \
             key(s) is (are) the id of the line(s) and the associated value \
@@ -275,7 +275,8 @@ class ChangeTable():
         else:
             raise IOError("%s already exists" % file_name)
 
-    def push(self, scenario_id):
+    @staticmethod
+    def push(scenario_id):
         """Transfers file to server.
 
         :param str scenrio_id: scenario index
