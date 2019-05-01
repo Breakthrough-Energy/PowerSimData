@@ -14,13 +14,12 @@ pd.set_option('display.max_colwidth', -1)
 class Scenario(object):
     """Handles scenario.
 
-    :param str descriptor: scenario name or index.
-
     """
 
     def __init__(self, descriptor):
         """Constructor.
 
+        :param str descriptor: scenario name or index.
         """
         if not isinstance(descriptor, str):
             raise TypeError('Descriptor must be a string')
@@ -28,10 +27,10 @@ class Scenario(object):
         if not descriptor:
             self.state = Create()
         else:
-            self._get_info(descriptor)
+            self._set_info(descriptor)
             try:
                 state = self._info['state']
-                self._get_status()
+                self._set_status()
                 if state == 'execute':
                     self.state = Execute(self)
                 elif state == 'analyze':
@@ -39,8 +38,8 @@ class Scenario(object):
             except:
                 pass
 
-    def _get_info(self, descriptor):
-        """Gets scenario information
+    def _set_info(self, descriptor):
+        """Sets scenario information.
 
         :param str descriptor: scenario descriptor.
         """
@@ -91,8 +90,8 @@ class Scenario(object):
                                                'base_wind']))
             return
 
-    def _get_status(self):
-        """Get execution status of scenario.
+    def _set_status(self):
+        """Sets execution status of scenario.
 
         :raises Exception: if scenario not found in execute list on server.
         """
@@ -115,6 +114,7 @@ class Scenario(object):
     def change(self, state):
       """Changes state.
 
-      :param class state: One of the sub-classes.
+      :param State state: One of *'Create'*, *'Execute'*, *'Analyze'* or \
+        *'Delete'* object.
       """
       self.state.switch(state)
