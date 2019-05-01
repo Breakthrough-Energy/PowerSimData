@@ -60,7 +60,7 @@ class Execute(State):
 
         """
         self._update_scenario_status()
-        if self._scenario_status == 'ready':
+        if self._scenario_status == 'created':
             print("PREPARING SCENARIO:\n")
 
             self._scaler = Scaler(self._scenario_info)
