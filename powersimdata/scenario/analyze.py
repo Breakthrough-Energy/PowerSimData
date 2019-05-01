@@ -14,9 +14,9 @@ class Analyze(State):
     allowed = ['delete']
 
     def __init__(self, scenario):
-        """Initializes attributes.
+        """Constructor.
 
-        :param class scenario: scenario instance.
+        :param Scenario scenario: scenario instance.
         """
         self._scenario_info = scenario._info
         self._scenario_status = scenario._status
@@ -101,7 +101,7 @@ class Analyze(State):
     def get_grid(self):
         """Returns Grid.
 
-        :return: (*grid*) -- instance of grid object.
+        :return: (*Grid*) -- instance of grid object.
         """
         return self._scaler.get_grid()
 

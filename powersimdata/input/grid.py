@@ -4,10 +4,8 @@ import pandas as pd
 import seaborn as sns
 
 
-class Grid():
+class Grid(object):
     """Synthetic Network.
-
-    :param list interconnect: name of interconnect(s).
 
     """
     id2type = {0: 'wind',
@@ -27,6 +25,10 @@ class Grid():
                   'coal': sns.xkcd_rgb["light brown"]}
 
     def __init__(self, interconnect):
+        """Constructor.
+
+        :param list interconnect: name of interconnect(s).
+        """
         top_dirname = os.path.dirname(__file__)
         data_dirname = os.path.join(top_dirname, 'data')
         self.data_loc = os.path.join(data_dirname, 'usa', '')
@@ -36,7 +38,7 @@ class Grid():
         self._add_information()
 
     def _set_interconnect(self, interconnect):
-        """Checks interconnect.
+        """Sets interconnect.
 
         :param list interconnect: interconnect name(s).
         :raises TypeError: if parameter has wrong type.
@@ -97,7 +99,7 @@ class Grid():
                     del self.zone[i]
 
     def _add_information(self):
-        """Add information to data frames.
+        """Adds information to data frames.
 
         """
         bus2zone = self.bus.zone_id.to_dict()

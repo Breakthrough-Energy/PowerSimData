@@ -26,7 +26,7 @@ class OutputData(object):
             self.local_dir = os.path.join(home_dir, 'scenario_data', '')
 
     def get_data(self, scenario_id, field_name):
-        """Get data either from server or from local directory.
+        """Returns data either from server or from local directory.
 
         :param str scenario_id: scenario id.
         :param str field_name: *'PG'* or *'PF'*.

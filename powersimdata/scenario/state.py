@@ -1,15 +1,17 @@
 class State(object):
     """Defines an interface for encapsulating the behavior associated with a \
-        particular state of the Scenario.
+        particular state of the Scenario object.
+
     """
 
     name = "state"
     allowed = []
 
     def switch(self, state):
-        """Switches to new state.
+        """Switches state.
 
-        :param class state: One of the sub-classes.
+        :param class state: One of *'Create'*, *'Execute'*, *'Analyze'* or \
+          *'Delete'* object.
         """
         if state.name in self.allowed:
             print('State switching: %s --> %s' % (self, state.name))
@@ -23,7 +25,7 @@ class State(object):
         return self.name
 
     def _leave(self):
-        """Operations to perform when leaving state.
+        """Cleans when leaving state.
 
         """
         if self.name == 'create':
@@ -32,7 +34,7 @@ class State(object):
             del self.scaler
 
     def _enter(self):
-        """Operations to perform when entering state.
+        """Initializes when entering state.
 
         """
         if self.name == 'create':

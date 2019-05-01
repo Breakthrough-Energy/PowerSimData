@@ -16,7 +16,7 @@ class Execute(State):
     allowed = ['stop']
 
     def __init__(self, scenario):
-        """Initializes attributes.
+        """Constructor.
 
         :param class scenario: scenario instance.
         """
@@ -104,9 +104,9 @@ class PrepareScenario(object):
     """
 
     def __init__(self, scaler):
-        """Initializes attributes.
+        """Constructor.
 
-        :param object scaler: Scaler instance.
+        :param Scaler scaler: Scaler instance.
         """
         self._scaler = scaler
         self._tmp_dir = '%s/scenario_%s' % (const.EXECUTE_DIR,

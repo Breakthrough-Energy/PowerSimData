@@ -162,9 +162,11 @@ class Create(State):
             print("%s: %s" % (key, val))
 
     def set_builder(self, interconnect):
-        """Sets interconnect object.
+        """Sets builder.
 
-        :param object interconnect: interconnect object.
+        :param object interconnect: one of *'Eastern'*, *'Texas'*, \
+            *'Western'*, *'TexasEastern'*, *'TexasWestern'*, \
+            *'EasternWestern'* or *'USA'* object.
         """
 
         self.builder = interconnect
@@ -261,7 +263,7 @@ class Western(Builder):
 
 
     def get_base_profile(self, type):
-        """Get available base profiles.
+        """Returns available base profiles.
 
         :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         """
@@ -344,11 +346,15 @@ class CSV(object):
 
     """
     def __init__(self, interconnect):
+        """Constructor.
+
+        :param list interconect: interconect(s)
+        """
         self._ssh = setup_server_connection()
         self.interconnect = interconnect
 
     def get_base_profile(self, type):
-        """Get available base profiles.
+        """Returns available base profiles.
 
         :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         """

@@ -6,6 +6,7 @@ import copy
 class Scaler(object):
     """Scales grid and input profiles using information stored in change \
         table.
+
     """
 
     def __init__(self, scenario_info):
@@ -40,6 +41,7 @@ class Scaler(object):
     def get_grid(self):
         """Returns modified grid.
 
+        :return: (*Grid*) -- instance of grid object.
         """
         self._grid = copy.deepcopy(self._original_grid)
         if bool(self.ct):

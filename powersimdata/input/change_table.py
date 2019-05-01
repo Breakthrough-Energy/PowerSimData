@@ -9,7 +9,7 @@ from postreise.process import const
 from postreise.process.transferdata import PushData
 
 
-class ChangeTable():
+class ChangeTable(object):
     """Create change table for changes that need to be applied to the \
         original grid as well as to the original demand, hydro, solar and \
         wind profiles. A pickle file enclosing the change table in form of a \
@@ -34,12 +34,12 @@ class ChangeTable():
             the *'hydro'*/*'solar'*/*'wind'* plant (1.2 would correspond to \
             a 20% increase while 0.95 would be a 5% decrease).
 
-    :param list interconnect: interconnect name(s).
     """
 
     def __init__(self, interconnect):
         """Constructor.
 
+        :param list interconnect: interconnect name(s).
         """
         if isinstance(interconnect, str):
             self.grid = Grid([interconnect])
@@ -89,7 +89,7 @@ class ChangeTable():
                 raise ValueError('Invalid zone(s): %s' % " | ".join(zone))
 
     def _get_plant_id(self, zone, resource):
-        """Extracts the plant identification number of all the generators \
+        """Returns the plant identification number of all the generators \
             located in one zone and using one specific resource.
 
         :param str zone: zone to consider.
@@ -108,7 +108,7 @@ class ChangeTable():
         return plant_id
 
     def scale_plant_capacity(self, resource, zone=None, plant_id=None):
-        """Consign plant capacity scaling.
+        """Sets plant capacity scaling factor in change table.
 
         :param str resource: type of generator to consider.
         :param dict zone: geographical zones. The key(s) is (are) the \
@@ -155,7 +155,7 @@ class ChangeTable():
             return
 
     def scale_branch_capacity(self, zone=None, branch_id=None):
-        """Consign branch capacity scaling.
+        """Sets branch capacity scaling factor in change table.
 
         :param dict zone: geographical zones. The key(s) is (are) the \
             zone(s) and the associated value is the scaling factor for the \
@@ -196,7 +196,7 @@ class ChangeTable():
             return
 
     def scale_dcline_capacity(self, dcline_id):
-        """Consign DC line capacity scaling.
+        """Sets DC line capacity scaling factor in change table.
 
         :param dict dcline_id: identification numbers of dc line. The \
             key(s) is (are) the id of the line(s) and the associated value \
@@ -218,7 +218,7 @@ class ChangeTable():
                 self.ct['dcline']['dcline_id'][i] = dcline_id[i]
 
     def scale_demand(self, zone=None, zone_id=None):
-        """Consign load scaling.
+        """Sets load scaling factor in change table.
 
         :param dict zone: geographical zones. The key(s) is (are) the \
             zone(s) and the value is the scaling factor for the \
