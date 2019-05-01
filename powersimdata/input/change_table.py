@@ -262,13 +262,10 @@ class ChangeTable(object):
         :param str scenario_id: scenario index.
         :raises IOError: if file already exists on local machine.
         """
-        local_dir = const.LOCAL_DIR
-        if not local_dir:
-            home_dir = str(Path.home())
-            local_dir = os.path.join(home_dir, 'scenario_data', '')
-        if os.path.isdir(local_dir) is False:
-            os.makedirs(local_dir)
-        file_name = os.path.join(local_dir, scenario_id + "_ct.pkl")
+        if not os.path.exists(const.LOCAL_DIR):
+            os.makedirs(const.LOCAL_DIR)
+
+        file_name = os.path.join(const.LOCAL_DIR, scenario_id + "_ct.pkl")
         if os.path.isfile(file_name) is False:
             print("Writing %s" % file_name)
             pickle.dump(self.ct, open(file_name, "wb"))
@@ -279,11 +276,7 @@ class ChangeTable(object):
     def push(scenario_id):
         """Transfers file to server.
 
-        :param str scenrio_id: scenario index
+        :param str scenrio_id: scenario index.
         """
-        local_dir = const.LOCAL_DIR
-        if not local_dir:
-            home_dir = str(Path.home())
-            local_dir = os.path.join(home_dir, 'scenario_data', '')
         TD = PushData()
-        TD.upload(scenario_id, 'ct')
+        TD.upload(scenario_id, 'ct', const.LOCAL_DIR, const.INPUT_DIR)
