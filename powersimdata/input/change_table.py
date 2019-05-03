@@ -6,7 +6,7 @@ import pandas as pd
 
 from powersimdata.input.grid import Grid
 from postreise.process import const
-from postreise.process.transferdata import PushData
+from postreise.process.transferdata import upload
 
 
 class ChangeTable(object):
@@ -278,5 +278,5 @@ class ChangeTable(object):
 
         :param str scenrio_id: scenario index.
         """
-        TD = PushData()
-        TD.upload(scenario_id, 'ct', const.LOCAL_DIR, const.INPUT_DIR)
+        file_name = scenario_id + '_ct.pkl'
+        upload(file_name, const.LOCAL_DIR, const.INPUT_DIR)
