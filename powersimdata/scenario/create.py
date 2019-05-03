@@ -1,5 +1,5 @@
 from postreise.process import const
-from postreise.process.transferdata import PullData
+from postreise.process.transferdata import get_scenario_table
 from postreise.process.transferdata import setup_server_connection
 from powersimdata.scenario.state import State
 from powersimdata.scenario.execute import Execute
@@ -59,8 +59,7 @@ class Create(State):
         """Generates scenario id.
 
         """
-        td = PullData()
-        table = td.get_scenario_table()
+        table = get_scenario_table()
         self._scenario_info['id'] = str(table.id.astype(int).max() + 1)
         self._scenario_info.move_to_end('id', last=False)
 
@@ -240,8 +239,7 @@ class Western(Builder):
         self.profile = CSV(self.interconnect)
         self.change_table = ChangeTable(self.interconnect)
 
-        td = PullData()
-        table = td.get_scenario_table()
+        table = get_scenario_table()
         self.existing = table[table.interconnect == self.name]
 
 
