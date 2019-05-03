@@ -18,7 +18,6 @@ class Scaler(object):
         self.interconnect = scenario_info['interconnect'].split('_')
         self._input = InputData()
         self._load_ct()
-        print("")
         self._load_grid()
 
 
@@ -28,8 +27,9 @@ class Scaler(object):
         """
         try:
             self.ct = self._input.get_data(self.scenario_id, 'ct')
-        except FileNotFoundError:
-            print("--> No scaling")
+        except FileNotFoundError as e:
+            print(e)
+            print("No scaling")
             self.ct = {}
 
     def _load_grid(self):
@@ -102,7 +102,7 @@ class Scaler(object):
 
         return self._grid
 
-    def _get_power_output(self, resource):
+    def get_power_output(self, resource):
         """Scales profile according to changes in change table and returns it.
 
         :param str resource: *'hydro'*, *'solar'* or *'wind'*.
@@ -144,21 +144,21 @@ class Scaler(object):
 
         :return: (*pandas*) -- data frame of hydro.
         """
-        return self._get_power_output('hydro')
+        return self.get_power_output('hydro')
 
     def get_solar(self):
         """Returns scaled solar profile.
 
         :return: (*pandas*) -- data frame of solar.
         """
-        return self._get_power_output('solar')
+        return self.get_power_output('solar')
 
     def get_wind(self):
         """Returns scaled wind profile.
 
         :return: (*pandas*) -- data frame of wind.
         """
-        return self._get_power_output('wind')
+        return self.get_power_output('wind')
 
     def get_demand(self):
         """Returns scaled demand profile.
