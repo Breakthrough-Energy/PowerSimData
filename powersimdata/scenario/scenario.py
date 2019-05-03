@@ -1,5 +1,6 @@
 from postreise.process import const
-from postreise.process.transferdata import PullData
+from postreise.process.transferdata import get_scenario_table
+from postreise.process.transferdata import get_execute_table
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create
 from powersimdata.scenario.delete import Delete
@@ -43,8 +44,7 @@ class Scenario(object):
 
         :param str descriptor: scenario descriptor.
         """
-        td = PullData()
-        table = td.get_scenario_table()
+        table = get_scenario_table()
 
         def not_found_message(table):
             """Print message when scenario is not found.
@@ -95,8 +95,7 @@ class Scenario(object):
 
         :raises Exception: if scenario not found in execute list on server.
         """
-        td = PullData()
-        table = td.get_execute_table()
+        table = get_execute_table()
 
         status = table[table.id == self._info['id']]
         if status.shape[0] == 0:
