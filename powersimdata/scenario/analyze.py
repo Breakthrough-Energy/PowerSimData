@@ -22,8 +22,8 @@ class Analyze(State):
         self._scenario_status = scenario._status
 
         print("SCENARIO: %s | %s\n" % (self._scenario_info['plan'],
-                                     self._scenario_info['name']))
-        print("# Status\n--> %s\n" % self._scenario_status)
+                                       self._scenario_info['name']))
+        print("--> Status\n%s" % self._scenario_status)
 
         self._scaler = Scaler(self._scenario_info)
 
