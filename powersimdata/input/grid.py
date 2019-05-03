@@ -142,7 +142,7 @@ class Grid(object):
         """Reads all network file.
 
         """
-        print("# Loading %s interconnect" % "+".join(self.interconnect))
+        print("--> Loading %s interconnect" % "+".join(self.interconnect))
         self._read_zone()
         self._read_sub()
         self._read_bus2sub()
@@ -151,7 +151,6 @@ class Grid(object):
         self._read_gencost()
         self._read_branch()
         self._read_dcline()
-        print("--> Done loading")
 
     def _read_sub(self):
         """Reads the substation file.
