@@ -137,10 +137,11 @@ class SimulationInput(object):
         :raises IOError: if file cannot be copied.
         """
         print("--> Copying %s base profile into temporary folder" % resource)
-        command = "cp -a %s/%s_%s.csv %s" % (const.INPUT_DIR,
-                                             self._scaler.scenario_id,
-                                             resource,
-                                             self._tmp_dir)
+        command = "cp -a %s/%s_%s.csv %s/%s.csv" % (const.INPUT_DIR,
+                                                    self._scaler.scenario_id,
+                                                    resource,
+                                                    self._tmp_dir,
+                                                    resource)
         ssh = setup_server_connection()
         stdin, stdout, stderr = ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
@@ -184,9 +185,10 @@ class SimulationInput(object):
         # Create MPC data structure
         mpc = {'mpc':{'version': '2', 'baseMVA': 100, 'bus': bus.values,
                       'gen': gen.values, 'branch': branch.values,
-                      'gencost': gencost.values, 'dcline': dcline.values}}
+                      'gencost': gencost.values, 'genfuel': genfuel,
+                      'dcline': dcline.values}}
         # Write MPC file
-        file_name = '%s_case.m' % self._scaler.scenario_id
+        file_name = 'case.mat'
         savemat(os.path.join(const.LOCAL_DIR, file_name), mpc, appendmat=False)
 
         upload(file_name, const.LOCAL_DIR, self._tmp_dir)
@@ -203,7 +205,7 @@ class SimulationInput(object):
 
         print("Writing scaled %s profile in %s on local machine" %
               (resource, const.LOCAL_DIR))
-        file_name = '%s_%s_scaled.csv' % (self._scaler.scenario_id, resource)
+        file_name = '%s.csv' % resource
         profile.to_csv(os.path.join(const.LOCAL_DIR, file_name))
 
         upload(file_name, const.LOCAL_DIR, self._tmp_dir)
