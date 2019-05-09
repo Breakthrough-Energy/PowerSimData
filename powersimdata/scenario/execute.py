@@ -10,6 +10,7 @@ from collections import OrderedDict
 from scipy.io import savemat
 import numpy as np
 import os
+from subprocess import Popen, PIPE
 
 
 class Execute(State):
@@ -103,6 +104,24 @@ class Execute(State):
             print("Current status: %s" % self._scenario_status)
             return
 
+    def launch_simulation(self):
+        """Launches simulation on server.
+
+        :return: (*Popen*) -- new process used to launch simulation..
+        """
+        print("--> Launching simulation on server")
+        cmd = ['ssh', const.SERVER_ADDRESS, 'python3',
+               '/home/EGM/v2/PreREISE/prereise/call/call.py',
+               self._scenario_info['id']]
+        process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        print("PID: %s" % process.pid)
+        return process
+
+    def extract_simulation_output(self):
+        """Extracts simulation outputs PG and PF.
+
+        """
+        pass
 
 class SimulationInput(object):
     """Prepares scenario for execution.
