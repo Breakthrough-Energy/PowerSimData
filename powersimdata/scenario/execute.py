@@ -98,9 +98,9 @@ class Execute(State):
 
             self._update_execute_list('prepared')
         else:
-            print("-------------------------")
-            print("SCENARIO ALREADY PREPARED")
-            print("-------------------------")
+            print("---------------------------")
+            print("SCENARIO CANNOT BE PREPARED")
+            print("---------------------------")
             print("Current status: %s" % self._scenario_status)
             return
 
@@ -121,7 +121,19 @@ class Execute(State):
         """Extracts simulation outputs PG and PF.
 
         """
-        pass
+        self._update_scenario_status()
+        if self._scenario_status == 'finished':
+            print("-----------------------------")
+            print("EXTRACTING SIMULATION OUTPUTS")
+            print("-----------------------------")
+            pass
+        else:
+            print("---------------------------")
+            print("OUTPUTS CANNOT BE EXTRACTED")
+            print("---------------------------")
+            print("Current status: %s" % self._scenario_status)
+            return
+
 
 class SimulationInput(object):
     """Prepares scenario for execution.
