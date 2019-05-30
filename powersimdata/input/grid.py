@@ -270,8 +270,13 @@ class Grid(object):
         print("Loading branch")
         self.branch = pd.read_csv(self.data_loc + 'branch_case.txt',
                                   sep=r'\s+')
+        self._branch_aux = pd.read_pickle(self.data_loc + 'USAbranchdevicetype.pkl')
         self.branch.rename(columns={'fbus': 'from_bus_id',
                                     'tbus': 'to_bus_id'}, inplace=True)
+        self.branch = pd.concat([self.branch,
+                                self._branch_aux.reset_index()[
+                                    ['BranchDeviceType']]],
+                              axis=1)
 
         # Interconnect
         self.branch['interconnect'] = 'Eastern'
