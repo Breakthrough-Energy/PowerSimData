@@ -107,7 +107,7 @@ class Execute(State):
     def launch_simulation(self):
         """Launches simulation on server.
 
-        :return: (*Popen*) -- new process used to launch simulation..
+        :return: (*Popen*) -- new process used to launch simulation.
         """
         print("--> Launching simulation on server")
         cmd = ['ssh', const.SERVER_ADDRESS, 'python3',
@@ -118,15 +118,19 @@ class Execute(State):
         return process
 
     def extract_simulation_output(self):
-        """Extracts simulation outputs PG and PF.
+        """Extracts simulation outputs PG and PF on server.
 
+        :return: (*Popen*) -- new process used to extract output data.
         """
         self._update_scenario_status()
         if self._scenario_status == 'finished':
-            print("-----------------------------")
-            print("EXTRACTING SIMULATION OUTPUTS")
-            print("-----------------------------")
-            pass
+            print("--> Extracting output data on server")
+            cmd = ['ssh', const.SERVER_ADDRESS, 'python3',
+               '/home/EGM/v2/PostREISE/postreise/extract/extract_data.py',
+               self._scenario_info['id']]
+               process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+               print("PID: %s" % process.pid)
+               return process
         else:
             print("---------------------------")
             print("OUTPUTS CANNOT BE EXTRACTED")
