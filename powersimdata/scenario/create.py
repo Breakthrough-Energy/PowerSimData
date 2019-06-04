@@ -35,11 +35,9 @@ class Create(State):
             ('base_solar', ''),
             ('base_wind', ''),
             ('change_table', 'No'),
-            ('start_index', '0'),
-            ('end_index', '60'),
-            ('interval', '144H'),
             ('start_date', '2016-01-01 00:00:00'),
-            ('end_date', '2016-12-31 23:00:00')])
+            ('end_date', '2016-12-31 23:00:00'),
+            ('interval', '144H')])
 
     def _update_scenario_info(self):
         """Updates scenario information
