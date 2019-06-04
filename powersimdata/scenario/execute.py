@@ -126,11 +126,11 @@ class Execute(State):
         if self._scenario_status == 'finished':
             print("--> Extracting output data on server")
             cmd = ['ssh', const.SERVER_ADDRESS, 'python3',
-               '/home/EGM/v2/PostREISE/postreise/extract/extract_data.py',
-               self._scenario_info['id']]
-               process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-               print("PID: %s" % process.pid)
-               return process
+                   '/home/EGM/v2/PostREISE/postreise/extract/extract_data.py',
+                   self._scenario_info['id']]
+            process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            print("PID: %s" % process.pid)
+            return process
         else:
             print("---------------------------")
             print("OUTPUTS CANNOT BE EXTRACTED")
