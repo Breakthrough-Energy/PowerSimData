@@ -6,10 +6,12 @@ from powersimdata.scenario.execute import Execute
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.scenario.helpers import interconnect2name
 
-from collections import OrderedDict
 
 import os
+import numpy as np
+import pandas as pd
 import pickle
+from collections import OrderedDict
 
 
 class Create(State):
@@ -34,10 +36,10 @@ class Create(State):
             ('base_hydro', ''),
             ('base_solar', ''),
             ('base_wind', ''),
-            ('change_table', 'No'),
-            ('start_date', '2016-01-01 00:00:00'),
-            ('end_date', '2016-12-31 23:00:00'),
-            ('interval', '144H')])
+            ('change_table', ''),
+            ('start_date', ''),
+            ('end_date', ''),
+            ('interval', '')])
 
     def _update_scenario_info(self):
         """Updates scenario information
@@ -46,12 +48,17 @@ class Create(State):
         if self.builder is not None:
             self._scenario_info['plan'] = self.builder.plan_name
             self._scenario_info['name'] = self.builder.scenario_name
+            self._scenario_info['start_date'] = self.builder.start_date
+            self._scenario_info['end_date'] = self.builder.end_date
+            self._scenario_info['interval'] = self.builder.interval
             self._scenario_info['base_demand'] = self.builder.demand
             self._scenario_info['base_hydro'] = self.builder.hydro
             self._scenario_info['base_solar'] = self.builder.solar
             self._scenario_info['base_wind'] = self.builder.wind
             if bool(self.builder.change_table.ct):
                 self._scenario_info['change_table'] = 'Yes'
+            else:
+                self._scenario_info['change_table'] = 'No'
 
     def _generate_scenario_id(self):
         """Generates scenario id.
@@ -188,6 +195,9 @@ class Builder(object):
 
     plan_name = ''
     scenario_name = ''
+    start_date = '2016-01-01 00:00:00'
+    end_date = '2016-12-31 23:00:00'
+    interval = '144H'
     demand = ''
     hydro = ''
     solar = ''
@@ -195,6 +205,8 @@ class Builder(object):
     name = 'builder'
 
     def set_name(self, plan_name, scenario_name): pass
+
+    def set_time(self, start_date, end_date, interval): pass
 
     def get_base_profile(self, type): pass
 
@@ -257,6 +269,27 @@ class Western(Builder):
         self.plan_name = plan_name
         self.scenario_name = scenario_name
 
+    def set_time(self, start_date, end_date, interval):
+        """Sets scenario strat and end dates as well as the interval that \
+            will be used to split the date range.
+
+        :param str start_date: start date.
+        :param str end_date: start date.
+        :param str interval: interval.
+        """
+        start_ts = pd.Timestamp(start_date)
+        end_ts = pd.Timestamp(end_date)
+        if start_ts > end_ts:
+            print("start_date > end_date")
+            return
+        hours = (end_ts - start_ts) / np.timedelta64(1, 'h') + 1
+        if hours % int(interval.split('H', 1)[0]) == 0:
+            self.start_date = start_date
+            self.end_date = end_date
+            self.interval = interval
+        else:
+            print("Incorrect interval for start and end dates")
+        return
 
     def get_base_profile(self, type):
         """Returns available base profiles.
