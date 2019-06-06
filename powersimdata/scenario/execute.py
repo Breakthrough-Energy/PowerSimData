@@ -198,12 +198,14 @@ class SimulationInput(object):
         bus.insert(10, 'loss_zone', [1]*len(bus))
         # Format generator
         gen = grid.plant.copy()
+        genid = gen.index.values[np.newaxis].T
         gen.reset_index(inplace=True, drop=True)
-        genfuel = gen.type.values
+        genfuel = gen.type.values[np.newaxis].T
         gen.drop(columns=['GenMWMax', 'GenMWMin', 'type', 'interconnect',
                           'lat', 'lon', 'zone_id', 'zone_name'], inplace=True)
         # Format branch
         branch = grid.branch.copy()
+        branchid = branch.index.values[np.newaxis].T
         branch.reset_index(inplace=True, drop=True)
         branch.drop(columns=['interconnect', 'from_lat', 'from_lon', 'to_lat',
                              'to_lon', 'from_zone_id', 'to_zone_id',
@@ -218,10 +220,12 @@ class SimulationInput(object):
         dcline.drop(columns=['from_interconnect', 'to_interconnect'],
                     inplace=True)
         # Create MPC data structure
-        mpc = {'mpc':{'version': '2', 'baseMVA': 100, 'bus': bus.values,
-                      'gen': gen.values, 'branch': branch.values,
-                      'gencost': gencost.values, 'genfuel': genfuel,
-                      'dcline': dcline.values}}
+        mpc = {'mpc':{'version': '2', 'baseMVA': 100.0, 'bus': bus.values,
+                      'gen': gen.values, 'gencost': gencost.values,
+                      'genfuel': genfuel, 'genid': genid,
+                      'branch': branch.values, 'branchid': branchid}}
+        if len(dcline) > 0:
+            mpc['mpc']['dcline'] = dcline.values
         # Write MPC file
         file_name = 'case.mat'
         savemat(os.path.join(const.LOCAL_DIR, file_name), mpc, appendmat=False)
