@@ -32,10 +32,9 @@ class OutputData(object):
         """Reads data.
 
         :param str file_name: file name
+        :return: (*pandas*) -- PG or PF as a dataframe.
         """
-        data = pd.read_csv(os.path.join(const.LOCAL_DIR, file_name),
-                           index_col=0, parse_dates=True)
-        data.columns = data.columns.astype(int)
+        data = pd.read_pickle(os.path.join(const.LOCAL_DIR, file_name))
 
         return data
 
@@ -51,7 +50,7 @@ class OutputData(object):
         self._check_field(field_name)
 
         print("--> Loading %s" % field_name)
-        file_name = scenario_id + '_' + field_name + '.csv'
+        file_name = scenario_id + '_' + field_name + '.pkl'
 
         try:
             data = self._read_data(file_name)
