@@ -79,8 +79,7 @@ class Create(State):
         ssh = setup_server_connection()
         stdin, stdout, stderr = ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to update %s on server" %
-                          const.SCENARIO_LIST)
+            raise IOError("Failed to update %s on server" % const.SCENARIO_LIST)
 
     def _add_entry_in_execute_list(self):
         """Adds scenario to the execute list file on server.
@@ -258,43 +257,51 @@ class Western(Builder):
 
         :param str plan_name: plan name
         :param str scenario_name: scenario name.
+        :raises Exception: if combination plan - scenario already exists
         """
 
         if plan_name in self.existing.plan.tolist():
             scenario = self.existing[self.existing.plan == plan_name]
             if scenario_name in scenario.name.tolist():
-                print('Combination %s - %s already exists' %
-                      (plan_name, scenario_name))
-                return
+                raise Exception('Combination %s - %s already exists' %
+                                (plan_name, scenario_name))
         self.plan_name = plan_name
         self.scenario_name = scenario_name
 
     def set_time(self, start_date, end_date, interval):
-        """Sets scenario strat and end dates as well as the interval that \
+        """Sets scenario start and end dates as well as the interval that \
             will be used to split the date range.
 
         :param str start_date: start date.
         :param str end_date: start date.
         :param str interval: interval.
+        :raises Exception: if start date, end date or interval are not \
+            properly defined.
         """
+        min_ts = pd.Timestamp('2016-01-01 00:00:00')
+        max_ts = pd.Timestamp('2016-12-31 23:00:00')
+
         start_ts = pd.Timestamp(start_date)
         end_ts = pd.Timestamp(end_date)
-        if start_ts > end_ts:
-            print("start_date > end_date")
-            return
         hours = (end_ts - start_ts) / np.timedelta64(1, 'h') + 1
-        if hours % int(interval.split('H', 1)[0]) == 0:
+        if start_ts > end_ts:
+            raise Exception("start_date > end_date")
+        elif start_ts < min_ts or start_ts >= max_ts:
+            raise Exception("start_date not in [%s,%s[" % (min_ts, max_ts))
+        elif end_ts <= min_ts or end_ts > max_ts:
+            raise Exception("end_date not in ]%s,%s]" % (lmin_ts, max_ts))
+        elif hours % int(interval.split('H', 1)[0]) != 0:
+            raise Exception("Incorrect interval for start and end dates")
+        else:
             self.start_date = start_date
             self.end_date = end_date
             self.interval = interval
-        else:
-            print("Incorrect interval for start and end dates")
-        return
 
     def get_base_profile(self, type):
         """Returns available base profiles.
 
         :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :return: (*list*) -- available version for selected profile type.
         """
         return self.profile.get_base_profile(type)
 
@@ -303,19 +310,22 @@ class Western(Builder):
 
         :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         :param str version: demand profile version.
+        :raises Exception: if no profile or selected version.
         """
         possible = self.get_base_profile(type)
         if len(possible) == 0:
-            return
+            raise Exception("No %s profile available in %s" %
+                            (type, " + ".join(self.interconnect)))
         elif version in possible:
             if type == 'demand': self.demand = version
             if type == 'hydro': self.hydro = version
             if type == 'solar': self.solar = version
             if type == 'wind': self.wind = version
         else:
-            print("Available %s profiles for %s: %s" %
-                  (type, " + ".join(self.interconnect), " | ".join(possible)))
-            return
+            raise Exception("Available %s profiles for %s: %s" %
+                            (type,
+                             " + ".join(self.interconnect),
+                             " | ".join(possible)))
 
     def load_change_table(self, filename):
         """Uploads change table.
@@ -386,6 +396,7 @@ class CSV(object):
         """Returns available base profiles.
 
         :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :return: (*list*) -- available version for selected profile type.
         """
         possible = ['demand', 'hydro', 'solar', 'wind']
         if type not in possible:
