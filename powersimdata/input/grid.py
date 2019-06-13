@@ -275,7 +275,7 @@ class Grid(object):
                                     'tbus': 'to_bus_id'}, inplace=True)
         self.branch = pd.concat([self.branch,
                                 self._branch_aux.reset_index()[
-                                    ['BranchDeviceType']]],
+                                    ['branch_device_type']]],
                               axis=1)
 
         # Interconnect
