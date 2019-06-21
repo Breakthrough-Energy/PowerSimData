@@ -1,4 +1,5 @@
 from postreise.process import const
+from postreise.process.transferdata import setup_server_connection
 from postreise.process.transferdata import get_scenario_table
 from postreise.process.transferdata import get_execute_table
 from powersimdata.scenario.analyze import Analyze
@@ -25,8 +26,9 @@ class Scenario(object):
         if not isinstance(descriptor, str):
             raise TypeError('Descriptor must be a string')
 
+        self._ssh = setup_server_connection()
         if not descriptor:
-            self.state = Create()
+            self.state = Create(self)
         else:
             self._set_info(descriptor)
             try:
@@ -36,15 +38,17 @@ class Scenario(object):
                     self.state = Execute(self)
                 elif state == 'analyze':
                     self.state = Analyze(self)
+                    print(self.state.name)
             except:
-                pass
+                self._ssh.close()
+
 
     def _set_info(self, descriptor):
         """Sets scenario information.
 
         :param str descriptor: scenario descriptor.
         """
-        table = get_scenario_table()
+        table = get_scenario_table(self._ssh)
 
         def not_found_message(table):
             """Print message when scenario is not found.
@@ -95,7 +99,7 @@ class Scenario(object):
 
         :raises Exception: if scenario not found in execute list on server.
         """
-        table = get_execute_table()
+        table = get_execute_table(self._ssh)
 
         status = table[table.id == self._info['id']]
         if status.shape[0] == 0:

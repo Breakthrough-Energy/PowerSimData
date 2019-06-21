@@ -1,10 +1,11 @@
 from postreise.process import const
 from postreise.process.transferdata import get_scenario_table
 from postreise.process.transferdata import setup_server_connection
+from postreise.process.transferdata import upload
 from powersimdata.scenario.state import State
 from powersimdata.scenario.execute import Execute
 from powersimdata.input.change_table import ChangeTable
-from powersimdata.scenario.helpers import interconnect2name
+from powersimdata.scenario.helpers import interconnect2name, check_interconnect
 
 
 import os
@@ -21,9 +22,10 @@ class Create(State):
     name = 'create'
     allowed = []
 
-    def __init__(self):
+    def __init__(self, scenario):
         """Initializes attributes.
 
+        :param Scenario scenario: scenario instance.
         """
         self.builder = None
         self._scenario_status = None
@@ -40,6 +42,7 @@ class Create(State):
             ('start_date', ''),
             ('end_date', ''),
             ('interval', '')])
+        self._ssh = scenario._ssh
 
     def _update_scenario_info(self):
         """Updates scenario information
@@ -64,9 +67,20 @@ class Create(State):
         """Generates scenario id.
 
         """
-        table = get_scenario_table()
-        self._scenario_info['id'] = str(table.id.astype(int).max() + 1)
-        self._scenario_info.move_to_end('id', last=False)
+        print("--> Generating scenario id")
+        script = ("(flock -e 200; \
+                   id=$(awk -F',' 'END{print $1+1}' %s); \
+                   echo $id, >> %s; \
+                   echo $id) 200>/tmp/scenario.lockfile" %
+                   (const.SCENARIO_LIST, const.SCENARIO_LIST))
+
+        stdin, stdout, stderr = self._ssh.exec_command(script)
+        if len(stderr.readlines()) != 0:
+            raise IOError("Failed to update %s on server" % const.SCENARIO_LIST)
+        else:
+            scenario_id = stdout.readlines()[0].splitlines()[0]
+            self._scenario_info['id'] = scenario_id
+            self._scenario_info.move_to_end('id', last=False)
 
     def _add_entry_in_scenario_list(self):
         """Adds scenario to the scenario list file on server.
@@ -75,11 +89,15 @@ class Create(State):
         """
         print("--> Adding entry in scenario table on server")
         entry = ",".join(self._scenario_info.values())
-        command = "echo %s >> %s" % (entry, const.SCENARIO_LIST)
-        ssh = setup_server_connection()
-        stdin, stdout, stderr = ssh.exec_command(command)
+        options = "-F, -v INPLACE_SUFFIX=.bak -i inplace"
+        program = ("'{for(i=1; i<=NF; i++){if($1==%s) $0=\"%s\"}};1'" %
+                   (self._scenario_info['id'], entry))
+        command = "awk %s %s %s" % (options, program, const.SCENARIO_LIST)
+
+        stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to update %s on server" % const.SCENARIO_LIST)
+
 
     def _add_entry_in_execute_list(self):
         """Adds scenario to the execute list file on server.
@@ -89,8 +107,8 @@ class Create(State):
         print("--> Adding entry in execute table on server\n")
         entry = "%s,created" % self._scenario_info['id']
         command = "echo %s >> %s" % (entry, const.EXECUTE_LIST)
-        ssh = setup_server_connection()
-        stdin, stdout, stderr = ssh.exec_command(command)
+
+        stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to update %s on server" % const.EXECUTE_LIST)
         self._scenario_status = 'created'
@@ -103,7 +121,8 @@ class Create(State):
         print("--> Writing change table on local machine")
         self.builder.change_table.write(self._scenario_info['id'])
         print("--> Uploading change table to server")
-        self.builder.change_table.push(self._scenario_info['id'])
+        file_name = self._scenario_info['id'] + '_ct.pkl'
+        upload(self._ssh, file_name, const.LOCAL_DIR, const.INPUT_DIR)
 
     def _create_link(self):
         """Creates links to base profiles on server.
@@ -134,8 +153,10 @@ class Create(State):
         else:
             print("CREATING SCENARIO: %s | %s \n" %
                   (self._scenario_info['plan'], self._scenario_info['name']))
-            # Add missing information
+
+            # Generate scenario id
             self._generate_scenario_id()
+            # Add missing information
             self._scenario_info['state'] = 'execute'
             self._scenario_info['runtime'] = ''
             self._scenario_info['infeasibilities'] = ''
@@ -167,16 +188,28 @@ class Create(State):
     def set_builder(self, interconnect):
         """Sets builder.
 
-        :param object interconnect: one of *'Eastern'*, *'Texas'*, \
-            *'Western'*, *'TexasEastern'*, *'TexasWestern'*, \
-            *'EasternWestern'* or *'USA'* object.
+        :param list interconnect: name of interconnect(s).
         """
 
-        self.builder = interconnect
-        print("")
+        check_interconnect(interconnect)
+        if 'Eastern' in interconnect:
+            pass
+        elif 'Texas' in interconnect:
+            pass
+        elif 'Western' in interconnect:
+            self.builder = Western(self._ssh)
+        elif 'Western' in interconnect and 'Texas' in interconnect:
+            pass
+        elif 'Eastern' in interconnect and 'Texas' in interconnect:
+            pass
+        elif 'Eastern' in interconnect and 'Western' in interconnect:
+            pass
+        elif 'USA' in interconnect:
+            pass
+        print("--> Summary")
         print("# Existing study")
         plan = [p for p in self.builder.existing.plan.unique()]
-        print("%s \n" % " | ".join(plan))
+        print("%s" % " | ".join(plan))
 
         print("# Available profiles")
         for p in ['demand', 'hydro', 'solar', 'wind']:
@@ -243,12 +276,16 @@ class Western(Builder):
     """
     name = 'Western'
 
-    def __init__(self):
+    def __init__(self, ssh_client):
+        """Constructor.
+
+        :param paramiko ssh_client: session with an SSH server.
+        """
         self.interconnect = ['Western']
-        self.profile = CSV(self.interconnect)
+        self.profile = CSV(self.interconnect, ssh_client)
         self.change_table = ChangeTable(self.interconnect)
 
-        table = get_scenario_table()
+        table = get_scenario_table(ssh_client)
         self.existing = table[table.interconnect == self.name]
 
 
@@ -384,12 +421,13 @@ class CSV(object):
     """Profiles storage.
 
     """
-    def __init__(self, interconnect):
+    def __init__(self, interconnect, ssh_client):
         """Constructor.
 
         :param list interconect: interconect(s)
+        :param paramiko ssh_client: session with an SSH server.
         """
-        self._ssh = setup_server_connection()
+        self._ssh = ssh_client
         self.interconnect = interconnect
 
     def get_base_profile(self, type):

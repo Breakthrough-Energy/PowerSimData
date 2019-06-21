@@ -23,19 +23,21 @@ class Execute(State):
     def __init__(self, scenario):
         """Constructor.
 
-        :param class scenario: scenario instance.
+        :param Scenario scenario: scenario instance.
         """
         self._scenario_info = scenario._info
         self._scenario_status = scenario._status
         print("SCENARIO: %s | %s\n" % (self._scenario_info['plan'],
                                        self._scenario_info['name']))
         print("--> Status\n%s" % self._scenario_status)
+        self._ssh = scenario._ssh
+
 
     def _update_scenario_status(self):
         """Updates scenario status.
 
         """
-        table = get_execute_table()
+        table = get_execute_table(self._ssh)
         id = self._scenario_info['id']
         self._scenario_status = table[table.id == id].status.values[0]
 
@@ -50,8 +52,7 @@ class Execute(State):
         program = ("'{for(i=1; i<=NF; i++){if($1==%s) $2=\"%s\"}};1'" %
                    (self._scenario_info['id'], status))
         command = "awk %s %s %s" % (options, program, const.EXECUTE_LIST)
-        ssh = setup_server_connection()
-        stdin, stdout, stderr = ssh.exec_command(command)
+        stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to update %s on server" % const.EXECUTE_LIST)
 
@@ -85,8 +86,8 @@ class Execute(State):
             print("PREPARING SIMULATION INPUTS")
             print("---------------------------")
 
-            self._scaler = Scaler(self._scenario_info)
-            si = SimulationInput(self._scaler)
+            self._scaler = Scaler(self._scenario_info, self._ssh)
+            si = SimulationInput(self._scaler, self._ssh)
             si.create_folder()
             for r in ['demand', 'hydro', 'solar', 'wind']:
                 try:
@@ -148,14 +149,16 @@ class SimulationInput(object):
 
     """
 
-    def __init__(self, scaler):
+    def __init__(self, scaler, ssh_client):
         """Constructor.
 
         :param Scaler scaler: Scaler instance.
+        :param paramiko ssh_client: session with an SSH server.
         """
         self._scaler = scaler
         self._tmp_dir = '%s/scenario_%s' % (const.EXECUTE_DIR,
                                             scaler.scenario_id)
+        self._ssh = ssh_client
 
     def create_folder(self):
         """Creates folder on server that will enclose simulation inputs.
@@ -164,8 +167,7 @@ class SimulationInput(object):
         """
         print("--> Creating temporary folder on server for simulation inputs")
         command = "mkdir %s" % self._tmp_dir
-        ssh = setup_server_connection()
-        stdin, stdout, stderr = ssh.exec_command(command)
+        stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to create %s on server" % self._tmp_dir)
 
@@ -181,8 +183,7 @@ class SimulationInput(object):
                                                     resource,
                                                     self._tmp_dir,
                                                     resource)
-        ssh = setup_server_connection()
-        stdin, stdout, stderr = ssh.exec_command(command)
+        stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to copy inputs on server" % self._tmp_dir)
 
@@ -231,13 +232,11 @@ class SimulationInput(object):
         if len(dcline) > 0:
             mpc['mpc']['dcline'] = dcline.values
         # Write MPC file
-        file_name = 'case.mat'
+        file_name = '%s_case.mat' % self._scaler.scenario_id
         savemat(os.path.join(const.LOCAL_DIR, file_name), mpc, appendmat=False)
 
-        upload(file_name, const.LOCAL_DIR, self._tmp_dir)
-
-        print("Deleting MPC file on local machine")
-        os.remove(os.path.join(const.LOCAL_DIR, file_name))
+        upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir,
+               change_name_to='case.mat')
 
     def prepare_scaled_profile(self, resource):
         """Loads, scales and writes on local machine a base profile.
@@ -251,7 +250,7 @@ class SimulationInput(object):
         file_name = '%s.csv' % resource
         profile.to_csv(os.path.join(const.LOCAL_DIR, file_name))
 
-        upload(file_name, const.LOCAL_DIR, self._tmp_dir)
+        upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir)
 
         print("Deleting scaled %s profile on local machine" % resource)
         os.remove(os.path.join(const.LOCAL_DIR, file_name))

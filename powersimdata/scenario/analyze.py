@@ -20,12 +20,12 @@ class Analyze(State):
         """
         self._scenario_info = scenario._info
         self._scenario_status = scenario._status
+        self._ssh = scenario._ssh
 
         print("SCENARIO: %s | %s\n" % (self._scenario_info['plan'],
                                        self._scenario_info['name']))
         print("--> Status\n%s" % self._scenario_status)
-
-        self._scaler = Scaler(self._scenario_info)
+        self._scaler = Scaler(self._scenario_info, self._ssh)
 
     def print_scenario_info(self):
         """Prints scenario information.
@@ -76,7 +76,7 @@ class Analyze(State):
 
         :return: (*pandas*) -- data frame of power generated.
         """
-        od = OutputData()
+        od = OutputData(self._ssh)
         pg = od.get_data(self._scenario_info['id'], 'PG')
 
         return pg
@@ -86,7 +86,7 @@ class Analyze(State):
 
         :return: (*pandas*) -- data frame of power flow.
         """
-        od = OutputData()
+        od = OutputData(self._ssh)
         pf = od.get_data(self._scenario_info['id'], 'PF')
 
         return pf
