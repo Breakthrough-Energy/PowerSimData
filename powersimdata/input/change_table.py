@@ -271,12 +271,3 @@ class ChangeTable(object):
             pickle.dump(self.ct, open(file_name, "wb"))
         else:
             raise IOError("%s already exists" % file_name)
-
-    @staticmethod
-    def push(scenario_id):
-        """Transfers file to server.
-
-        :param str scenrio_id: scenario index.
-        """
-        file_name = scenario_id + '_ct.pkl'
-        upload(file_name, const.LOCAL_DIR, const.INPUT_DIR)
