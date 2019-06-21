@@ -10,12 +10,14 @@ class OutputData(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, ssh_client):
         """Constructor
 
+        :param paramiko ssh_client: session with an SSH server.
         """
         if not os.path.exists(const.LOCAL_DIR):
             os.makedirs(const.LOCAL_DIR)
+        self._ssh = ssh_client
 
     def _check_field(self, field_name):
         """Checks field name.
@@ -60,7 +62,7 @@ class OutputData(object):
                   (file_name, const.LOCAL_DIR))
 
         try:
-            download(file_name, const.OUTPUT_DIR, const.LOCAL_DIR)
+            download(self._ssh, file_name, const.OUTPUT_DIR, const.LOCAL_DIR)
             data = self._read_data(file_name)
             return data
         except FileNotFoundError as e:

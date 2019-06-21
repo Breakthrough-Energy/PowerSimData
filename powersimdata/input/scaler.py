@@ -9,15 +9,19 @@ class Scaler(object):
 
     """
 
-    def __init__(self, scenario_info):
+    def __init__(self, scenario_info, ssh_client):
         """Constructor.
 
         :param dict scenario_info: scenario information
+        :param paramiko ssh_client: session with an SSH server.
         """
         self.scenario_id = scenario_info['id']
         self.interconnect = scenario_info['interconnect'].split('_')
-        self._input = InputData()
-        self._load_ct()
+        self._input = InputData(ssh_client)
+        if scenario_info['change_table'] == 'Yes':
+            self._load_ct()
+        else:
+            self.ct = {}
         self._load_grid()
 
 
@@ -28,9 +32,7 @@ class Scaler(object):
         try:
             self.ct = self._input.get_data(self.scenario_id, 'ct')
         except FileNotFoundError as e:
-            print(e)
-            print("No scaling")
-            self.ct = {}
+            raise(e)
 
     def _load_grid(self):
         """Loads original grid.
