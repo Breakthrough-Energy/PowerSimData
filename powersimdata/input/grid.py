@@ -42,7 +42,7 @@ class Grid(object):
 
         :param list interconnect: interconnect name(s).
         :raises TypeError: if parameter has wrong type.
-        :raises Exception: if interconnect not found or combination of \
+        :raises Exception: if interconnect not found or combination of
             interconnect is not appropriate.
         """
         possible = ['Eastern', 'Texas', 'Western', 'USA']
@@ -168,7 +168,7 @@ class Grid(object):
 
         """
         print("Loading bus2sub")
-        self.bus2sub = pd.read_pickle(self.data_loc + 'USAbus2sub.pkl')
+        self.bus2sub = pd.read_pickle(self.data_loc + 'USABus2sub.pkl')
         self.bus2sub.index.name = 'bus_id'
         self.bus2sub.rename(columns={'subID': 'sub_id'}, inplace=True)
 
@@ -199,7 +199,7 @@ class Grid(object):
         plant_type = pd.read_csv(self.data_loc + 'gentype_case.txt',
                                  sep=r'\s+', header=None)
         self.plant = pd.read_csv(self.data_loc + 'genbus_case.txt', sep=r'\s+')
-        self._plant_aux = pd.read_pickle(self.data_loc + 'USAgenbus_aux.pkl')
+        self._plant_aux = pd.read_pickle(self.data_loc + 'USAGenbus_aux.pkl')
         self.plant.index.name = 'plant_id'
         self.plant.rename(columns={'bus': 'bus_id'}, inplace=True)
 
@@ -221,7 +221,8 @@ class Grid(object):
         """
         print("Loading plant cost")
         # Read and format
-        self.gencost = pd.read_csv(self.data_loc + 'gencost_case.txt', sep=r'\s+')
+        self.gencost = pd.read_csv(self.data_loc + 'gencost_case.txt',
+                                   sep=r'\s+')
         self.gencost.index.name = 'plant_id'
 
         # Interconnect
@@ -233,7 +234,8 @@ class Grid(object):
         """
         print("Loading DC line")
         # Read and format
-        self.dcline = pd.read_csv(self.data_loc + 'dcline_case.txt', sep=r'\s+')
+        self.dcline = pd.read_csv(self.data_loc + 'dcline_case.txt',
+                                  sep=r'\s+')
         self.dcline.rename(columns={'fbus': 'from_bus_id',
                                     'tbus': 'to_bus_id'}, inplace=True)
         self.dcline.index.name = 'dcline_id'
