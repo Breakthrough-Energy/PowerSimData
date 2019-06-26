@@ -4,7 +4,6 @@ from postreise.process.transferdata import get_scenario_table
 from postreise.process.transferdata import get_execute_table
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create
-from powersimdata.scenario.delete import Delete
 from powersimdata.scenario.execute import Execute
 
 from collections import OrderedDict
@@ -26,29 +25,24 @@ class Scenario(object):
         if not isinstance(descriptor, str):
             raise TypeError('Descriptor must be a string')
 
-        self._ssh = setup_server_connection()
+        self.ssh = setup_server_connection()
         if not descriptor:
             self.state = Create(self)
         else:
             self._set_info(descriptor)
-            try:
-                state = self._info['state']
-                self._set_status()
-                if state == 'execute':
-                    self.state = Execute(self)
-                elif state == 'analyze':
-                    self.state = Analyze(self)
-                    print(self.state.name)
-            except:
-                self._ssh.close()
-
+            self._set_status()
+            state = self.info['state']
+            if state == 'execute':
+                self.state = Execute(self)
+            elif state == 'analyze':
+                self.state = Analyze(self)
 
     def _set_info(self, descriptor):
         """Sets scenario information.
 
         :param str descriptor: scenario descriptor.
         """
-        table = get_scenario_table(self._ssh)
+        scenario_table = get_scenario_table(self.ssh)
 
         def not_found_message(table):
             """Print message when scenario is not found.
@@ -68,30 +62,30 @@ class Scenario(object):
 
         try:
             int(descriptor)
-            scenario = table[table.id == descriptor]
+            scenario = scenario_table[scenario_table.id == descriptor]
             if scenario.shape[0] == 0:
-                not_found_message(table)
+                not_found_message(scenario_table)
             else:
-                self._info = scenario.to_dict('records', into=OrderedDict)[0]
+                self.info = scenario.to_dict('records', into=OrderedDict)[0]
             return
         except ValueError:
-            scenario = table[table.name == descriptor]
+            scenario = scenario_table[scenario_table.name == descriptor]
             if scenario.shape[0] == 0:
-                not_found_message(table)
+                not_found_message(scenario_table)
             elif scenario.shape[0] == 1:
-                self._info = scenario.to_dict('records', into=OrderedDict)[0]
+                self.info = scenario.to_dict('records', into=OrderedDict)[0]
             elif scenario.shape[0] > 1:
                 print("-----------------------")
                 print("MULTIPLE SCENARIO FOUND")
                 print("-----------------------")
                 print('Use id to access scenario')
-                print(table.to_string(index=False, justify='center',
-                                      columns=['id', 'plan', 'name',
-                                               'interconnect',
-                                               'base_demand',
-                                               'base_hydro',
-                                               'base_solar',
-                                               'base_wind']))
+                print(scenario_table.to_string(index=False, justify='center',
+                                               columns=['id', 'plan', 'name',
+                                                        'interconnect',
+                                                        'base_demand',
+                                                        'base_hydro',
+                                                        'base_solar',
+                                                        'base_wind']))
             return
 
     def _set_status(self):
@@ -99,14 +93,14 @@ class Scenario(object):
 
         :raises Exception: if scenario not found in execute list on server.
         """
-        table = get_execute_table(self._ssh)
+        execute_table = get_execute_table(self.ssh)
 
-        status = table[table.id == self._info['id']]
+        status = execute_table[execute_table.id == self.info['id']]
         if status.shape[0] == 0:
             raise Exception("Scenario not found in %s on server" %
-                             const.EXECUTE_DIR)
+                            const.EXECUTE_DIR)
         elif status.shape[0] == 1:
-            self._status = status.status.values[0]
+            self.status = status.status.values[0]
 
     def print_scenario_info(self):
         """Prints scenario information.
@@ -115,9 +109,9 @@ class Scenario(object):
         self.state.print_scenario_info()
 
     def change(self, state):
-      """Changes state.
+        """Changes state.
 
-      :param State state: One of *'Create'*, *'Execute'*, *'Analyze'* or \
-        *'Delete'* object.
-      """
-      self.state.switch(state)
+        :param class state: One of :class:`.Analyze` :class:`.Create`,
+            :class:`.Execute`.
+        """
+        self.state.switch(state)

@@ -1,12 +1,9 @@
 from postreise.process import const
-from postreise.process.transferdata import setup_server_connection
 from postreise.process.transferdata import get_execute_table
 from postreise.process.transferdata import upload
 from powersimdata.input.scaler import Scaler
-from powersimdata.input.grid import Grid
 from powersimdata.scenario.state import State
 
-from collections import OrderedDict
 from scipy.io import savemat
 import numpy as np
 import os
@@ -23,23 +20,26 @@ class Execute(State):
     def __init__(self, scenario):
         """Constructor.
 
-        :param Scenario scenario: scenario instance.
+        :param powersimdata.scenario.scenario.Scenario scenario: scenario
+            instance.
         """
-        self._scenario_info = scenario._info
-        self._scenario_status = scenario._status
+        self._scenario_info = scenario.info
+        self._scenario_status = scenario.status
+        self._ssh = scenario.ssh
+
         print("SCENARIO: %s | %s\n" % (self._scenario_info['plan'],
                                        self._scenario_info['name']))
+        print("--> State\n%s" % self.name)
         print("--> Status\n%s" % self._scenario_status)
-        self._ssh = scenario._ssh
-
 
     def _update_scenario_status(self):
         """Updates scenario status.
 
         """
-        table = get_execute_table(self._ssh)
-        id = self._scenario_info['id']
-        self._scenario_status = table[table.id == id].status.values[0]
+        execute_table = get_execute_table(self._ssh)
+        scenario_id = self._scenario_info['id']
+        self._scenario_status = execute_table[execute_table.id == scenario_id
+                                              ].status.values[0]
 
     def _update_execute_list(self, status):
         """Updates status in execute list file on server.
@@ -86,14 +86,13 @@ class Execute(State):
             print("PREPARING SIMULATION INPUTS")
             print("---------------------------")
 
-            self._scaler = Scaler(self._scenario_info, self._ssh)
-            si = SimulationInput(self._scaler, self._ssh)
+            self.scaler = Scaler(self._scenario_info, self._ssh)
+            si = SimulationInput(self.scaler, self._ssh)
             si.create_folder()
             for r in ['demand', 'hydro', 'solar', 'wind']:
                 try:
-                    self._scaler.ct[r]
                     si.prepare_scaled_profile(r)
-                except KeyError:
+                except ValueError:
                     si.copy_base_profile(r)
             si.prepare_mpc_file()
 
@@ -108,7 +107,7 @@ class Execute(State):
     def launch_simulation(self):
         """Launches simulation on server.
 
-        :return: (*Popen*) -- new process used to launch simulation.
+        :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
         print("--> Launching simulation on server")
         cmd = ['ssh', const.SERVER_ADDRESS,
@@ -123,7 +122,8 @@ class Execute(State):
     def extract_simulation_output(self):
         """Extracts simulation outputs PG and PF on server.
 
-        :return: (*Popen*) -- new process used to extract output data.
+        :return: (*subprocess.Popen*) -- new process used to extract output
+            data.
         """
         self._update_scenario_status()
         if self._scenario_status == 'finished':
@@ -153,9 +153,9 @@ class SimulationInput(object):
         """Constructor.
 
         :param Scaler scaler: Scaler instance.
-        :param paramiko ssh_client: session with an SSH server.
+        :param paramiko.client.SSHClient ssh_client: session with an SSH server.
         """
-        self._scaler = scaler
+        self.scaler = scaler
         self._tmp_dir = '%s/scenario_%s' % (const.EXECUTE_DIR,
                                             scaler.scenario_id)
         self._ssh = ssh_client
@@ -179,13 +179,14 @@ class SimulationInput(object):
         """
         print("--> Copying %s base profile into temporary folder" % resource)
         command = "cp -a %s/%s_%s.csv %s/%s.csv" % (const.INPUT_DIR,
-                                                    self._scaler.scenario_id,
+                                                    self.scaler.scenario_id,
                                                     resource,
                                                     self._tmp_dir,
                                                     resource)
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to copy inputs on server" % self._tmp_dir)
+            raise IOError("Failed to copy inputs in %s on server" %
+                          self._tmp_dir)
 
     def prepare_mpc_file(self):
         """Creates MATPOWER case file.
@@ -193,14 +194,14 @@ class SimulationInput(object):
         """
         print("--> Preparing MPC file")
         print("Scaling grid")
-        grid = self._scaler.get_grid()
+        grid = self.scaler.get_grid()
 
         print("Building MPC file")
         # Format bus
         bus = grid.bus.copy()
         bus.reset_index(level=0, inplace=True)
         bus.drop(columns=['interconnect', 'lat', 'lon'], inplace=True)
-        bus.insert(10, 'loss_zone', [1]*len(bus))
+        bus.insert(10, 'loss_zone', [1] * len(bus))
         # Format generator
         gen = grid.plant.copy()
         genid = gen.index.values[np.newaxis].T
@@ -225,14 +226,14 @@ class SimulationInput(object):
         dcline.drop(columns=['from_interconnect', 'to_interconnect'],
                     inplace=True)
         # Create MPC data structure
-        mpc = {'mpc':{'version': '2', 'baseMVA': 100.0, 'bus': bus.values,
-                      'gen': gen.values, 'gencost': gencost.values,
-                      'genfuel': genfuel, 'genid': genid,
-                      'branch': branch.values, 'branchid': branchid}}
+        mpc = {'mpc': {'version': '2', 'baseMVA': 100.0, 'bus': bus.values,
+                       'gen': gen.values, 'gencost': gencost.values,
+                       'genfuel': genfuel, 'genid': genid,
+                       'branch': branch.values, 'branchid': branchid}}
         if len(dcline) > 0:
             mpc['mpc']['dcline'] = dcline.values
         # Write MPC file
-        file_name = '%s_case.mat' % self._scaler.scenario_id
+        file_name = '%s_case.mat' % self.scaler.scenario_id
         savemat(os.path.join(const.LOCAL_DIR, file_name), mpc, appendmat=False)
 
         upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir,
@@ -243,7 +244,7 @@ class SimulationInput(object):
 
         :param str resource: one of *'hydro'*, *'solar'* or *'wind'*.
         """
-        profile = self._scaler.get_power_output(resource)
+        profile = self.scaler.get_power_output(resource)
 
         print("Writing scaled %s profile in %s on local machine" %
               (resource, const.LOCAL_DIR))

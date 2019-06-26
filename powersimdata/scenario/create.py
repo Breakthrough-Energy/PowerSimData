@@ -1,12 +1,10 @@
 from postreise.process import const
 from postreise.process.transferdata import get_scenario_table
-from postreise.process.transferdata import setup_server_connection
 from postreise.process.transferdata import upload
 from powersimdata.scenario.state import State
 from powersimdata.scenario.execute import Execute
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.scenario.helpers import interconnect2name, check_interconnect
-
 
 import os
 import numpy as np
@@ -25,7 +23,8 @@ class Create(State):
     def __init__(self, scenario):
         """Initializes attributes.
 
-        :param Scenario scenario: scenario instance.
+        :param powersimdata.scenario.scenario.Scenario scenario: scenario
+            instance.
         """
         self.builder = None
         self._scenario_status = None
@@ -42,10 +41,10 @@ class Create(State):
             ('start_date', ''),
             ('end_date', ''),
             ('interval', '')])
-        self._ssh = scenario._ssh
+        self._ssh = scenario.ssh
 
     def _update_scenario_info(self):
-        """Updates scenario information
+        """Updates scenario information.
 
         """
         if self.builder is not None:
@@ -72,7 +71,7 @@ class Create(State):
                    id=$(awk -F',' 'END{print $1+1}' %s); \
                    echo $id, >> %s; \
                    echo $id) 200>/tmp/scenario.lockfile" %
-                   (const.SCENARIO_LIST, const.SCENARIO_LIST))
+                  (const.SCENARIO_LIST, const.SCENARIO_LIST))
 
         stdin, stdout, stderr = self._ssh.exec_command(script)
         if len(stderr.readlines()) != 0:
@@ -97,7 +96,6 @@ class Create(State):
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to update %s on server" % const.SCENARIO_LIST)
-
 
     def _add_entry_in_execute_list(self):
         """Adds scenario to the execute list file on server.
@@ -215,13 +213,13 @@ class Create(State):
         for p in ['demand', 'hydro', 'solar', 'wind']:
             possible = self.builder.get_base_profile(p)
             if len(possible) != 0:
-                print("%s: %s"  % (p, " | ".join(possible)))
+                print("%s: %s" % (p, " | ".join(possible)))
 
         self._scenario_info['interconnect'] = self.builder.name
 
 
 class Builder(object):
-    """Scenario Builder
+    """Scenario Builder.
 
     """
 
@@ -240,9 +238,9 @@ class Builder(object):
 
     def set_time(self, start_date, end_date, interval): pass
 
-    def get_base_profile(self, type): pass
+    def get_base_profile(self, kind): pass
 
-    def set_base_profile(self, type, version): pass
+    def set_base_profile(self, kind, version): pass
 
     def load_change_table(self, filename): pass
 
@@ -279,7 +277,7 @@ class Western(Builder):
     def __init__(self, ssh_client):
         """Constructor.
 
-        :param paramiko ssh_client: session with an SSH server.
+        :param paramiko.client.SSHClient ssh_client: session with an SSH server.
         """
         self.interconnect = ['Western']
         self.profile = CSV(self.interconnect, ssh_client)
@@ -287,7 +285,6 @@ class Western(Builder):
 
         table = get_scenario_table(ssh_client)
         self.existing = table[table.interconnect == self.name]
-
 
     def set_name(self, plan_name, scenario_name):
         """Sets scenario name.
@@ -306,14 +303,14 @@ class Western(Builder):
         self.scenario_name = scenario_name
 
     def set_time(self, start_date, end_date, interval):
-        """Sets scenario start and end dates as well as the interval that \
-            will be used to split the date range.
+        """Sets scenario start and end dates as well as the interval that will
+            be used to split the date range.
 
         :param str start_date: start date.
         :param str end_date: start date.
         :param str interval: interval.
-        :raises Exception: if start date, end date or interval are not \
-            properly defined.
+        :raises Exception: if start date, end date or interval are not properly
+            defined.
         """
         min_ts = pd.Timestamp('2016-01-01 00:00:00')
         max_ts = pd.Timestamp('2016-12-31 23:00:00')
@@ -326,7 +323,7 @@ class Western(Builder):
         elif start_ts < min_ts or start_ts >= max_ts:
             raise Exception("start_date not in [%s,%s[" % (min_ts, max_ts))
         elif end_ts <= min_ts or end_ts > max_ts:
-            raise Exception("end_date not in ]%s,%s]" % (lmin_ts, max_ts))
+            raise Exception("end_date not in ]%s,%s]" % (min_ts, max_ts))
         elif hours % int(interval.split('H', 1)[0]) != 0:
             raise Exception("Incorrect interval for start and end dates")
         else:
@@ -334,33 +331,37 @@ class Western(Builder):
             self.end_date = end_date
             self.interval = interval
 
-    def get_base_profile(self, type):
+    def get_base_profile(self, kind):
         """Returns available base profiles.
 
-        :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
-        :return: (*list*) -- available version for selected profile type.
+        :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :return: (*list*) -- available version for selected profile kind.
         """
-        return self.profile.get_base_profile(type)
+        return self.profile.get_base_profile(kind)
 
-    def set_base_profile(self, type, version):
+    def set_base_profile(self, kind, version):
         """Sets demand profile.
 
-        :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         :param str version: demand profile version.
         :raises Exception: if no profile or selected version.
         """
-        possible = self.get_base_profile(type)
+        possible = self.get_base_profile(kind)
         if len(possible) == 0:
             raise Exception("No %s profile available in %s" %
-                            (type, " + ".join(self.interconnect)))
+                            (kind, " + ".join(self.interconnect)))
         elif version in possible:
-            if type == 'demand': self.demand = version
-            if type == 'hydro': self.hydro = version
-            if type == 'solar': self.solar = version
-            if type == 'wind': self.wind = version
+            if kind == 'demand':
+                self.demand = version
+            if kind == 'hydro':
+                self.hydro = version
+            if kind == 'solar':
+                self.solar = version
+            if kind == 'wind':
+                self.wind = version
         else:
             raise Exception("Available %s profiles for %s: %s" %
-                            (type,
+                            (kind,
                              " + ".join(self.interconnect),
                              " | ".join(possible)))
 
@@ -373,8 +374,8 @@ class Western(Builder):
         try:
             ct = pickle.load(open(filename, "rb"))
             self.change_table.ct = ct
-        except:
-            raise FileNotFoundError("%s not found. " % filename)
+        except FileNotFoundError:
+            raise ("%s not found. " % filename)
 
 
 class TexasWestern(Builder):
@@ -421,51 +422,52 @@ class CSV(object):
     """Profiles storage.
 
     """
+
     def __init__(self, interconnect, ssh_client):
         """Constructor.
 
-        :param list interconect: interconect(s)
-        :param paramiko ssh_client: session with an SSH server.
+        :param list interconnect: interconnect(s)
+        :param paramiko.client.SSHClient ssh_client: session with an SSH server.
         """
         self._ssh = ssh_client
         self.interconnect = interconnect
 
-    def get_base_profile(self, type):
+    def get_base_profile(self, kind):
         """Returns available base profiles.
 
-        :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
-        :return: (*list*) -- available version for selected profile type.
+        :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :return: (*list*) -- available version for selected profile kind.
         """
         possible = ['demand', 'hydro', 'solar', 'wind']
-        if type not in possible:
+        if kind not in possible:
             raise NameError("Choose from %s" % " | ".join(possible))
 
-        available = interconnect2name(self.interconnect) + '_' + type + '_*'
+        available = interconnect2name(self.interconnect) + '_' + kind + '_*'
         query = os.path.join(const.BASE_PROFILE_DIR, available)
         stdin, stdout, stderr = self._ssh.exec_command("ls " + query)
         if len(stderr.readlines()) != 0:
-            print("No %s profiles available." % type)
+            print("No %s profiles available." % kind)
             possible = []
         else:
             filename = [os.path.basename(line.rstrip())
                         for line in stdout.readlines()]
-            possible = [f[f.rfind('_')+1:-4] for f in filename]
+            possible = [f[f.rfind('_') + 1:-4] for f in filename]
         return possible
 
-    def create_link(self, id, type, version):
+    def create_link(self, scenario_id, kind, version):
         """Creates link on server to base profile.
 
-        :param str id: scenario id.
-        :param str type: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :param str scenario_id: scenario id.
+        :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         :param str version: profile version.
         :raises IOError: if symbolic link cannot be created.
         """
         interconnect = interconnect2name(self.interconnect)
-        source = interconnect + '_' + type + '_' + version + '.csv'
-        target = id + '_' + type + '.csv'
+        source = interconnect + '_' + kind + '_' + version + '.csv'
+        target = scenario_id + '_' + kind + '.csv'
 
         command = "ln -s %s %s" % (const.BASE_PROFILE_DIR + '/' + source,
                                    const.INPUT_DIR + '/' + target)
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to create link to %s profile." % type)
+            raise IOError("Failed to create link to %s profile." % kind)

@@ -1,10 +1,9 @@
 from postreise.process import const
 from powersimdata.scenario.state import State
-from postreise.process.transferdata import setup_server_connection
 
 
 class Delete(State):
-    """Deletes scenario
+    """Deletes scenario.
 
     """
     name = 'delete'
@@ -24,39 +23,38 @@ class Delete(State):
         """Deletes scenario on server.
 
         """
-        ssh = setup_server_connection()
 
         # Delete entry in scenario list
         print("--> Delete entry in scenario table on server")
         entry = ",".join(self._scenario_info.values())
         command = "sed -i.bak '/%s/d' %s" % (entry, const.SCENARIO_LIST)
-        stdin, stdout, stderr = ssh.exec_command(command)
+        stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            print("Failed. Return.")
-            return
+            raise IOError("Failed to delete entry in %s on server" %
+                          const.SCENARIO_LIST)
 
         # Delete entry in execute list
         print("--> Delete entry in execute table on server")
         command = "sed -i.bak '/^%s,*/d' %s" % (self._scenario_info['id'],
                                                 const.EXECUTE_LIST)
-        stdin, stdout, stderr = ssh.exec_command(command)
+        stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            print("Failed. Return.")
-            return
+            raise IOError("Failed to delete entry in %s on server" %
+                          const.EXECUTE_LIST)
 
         # Delete links to base profiles on server
         print("--> Delete scenario inputs on server")
         command = "rm -f %s/%s_*" % (const.INPUT_DIR, self._scenario_info['id'])
-        stdin, stdout, stderr = ssh.exec_command(command)
+        stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            print("Failed. Return.")
-            return
+            raise IOError("Failed to delete scenario inputs in %s on server" %
+                          const.INPUT_DIR)
 
         # Delete output profiles
         print("--> Delete scenario outputs on server")
         command = "rm -f %s/%s_*.csv" % (const.OUTPUT_DIR,
                                          self._scenario_info['id'])
-        stdin, stdout, stderr = ssh.exec_command(command)
+        stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            print("Failed. Return.")
-            return
+            raise IOError("Failed to delete scenario inputs in %s on server" %
+                          const.OUTPUT_DIR)

@@ -16,16 +16,16 @@ class Analyze(State):
     def __init__(self, scenario):
         """Constructor.
 
-        :param Scenario scenario: scenario instance.
+        :param powersimdata.scenario.scenario.Scenario scenario: scenario
+            instance.
         """
-        self._scenario_info = scenario._info
-        self._scenario_status = scenario._status
-        self._ssh = scenario._ssh
+        self._scenario_info = scenario.info
+        self._ssh = scenario.ssh
 
         print("SCENARIO: %s | %s\n" % (self._scenario_info['plan'],
                                        self._scenario_info['name']))
-        print("--> Status\n%s" % self._scenario_status)
-        self._scaler = Scaler(self._scenario_info, self._ssh)
+        print("--> State\n%s" % self.name)
+        self.scaler = Scaler(self._scenario_info, self._ssh)
 
     def print_scenario_info(self):
         """Prints scenario information.
@@ -38,12 +38,12 @@ class Analyze(State):
             print("%s: %s" % (key, val))
 
     def _parse_infeasibilities(self):
-        """Parses infeasibilities. When the optimizer cannot find a solution \
-            in a time interval, the remedy is to decrease demand by some \
-            amount until a solution is found. The purpose of this function is \
-            to get the interval number(s) and the associated decrease(s).
+        """Parses infeasibilities. When the optimizer cannot find a solution in
+            a time interval, the remedy is to decrease demand by some amount
+            until a solution is found. The purpose of this function is to get
+            the interval number(s) and the associated decrease(s).
 
-        :return: (*dict*) -- keys are the interval number and the values are \
+        :return: (*dict*) -- keys are the interval number and the values are
             the decrease in percent (%) applied to the original demand profile.
         """
         field = self._scenario_info['infeasibilities']
@@ -71,20 +71,20 @@ class Analyze(State):
                 print("demand in %s - %s interval has been reduced by %d%%" %
                       (dates[key], dates[key+1], value))
 
-    def get_PG(self):
+    def get_pg(self):
         """Returns PG data frame.
 
-        :return: (*pandas*) -- data frame of power generated.
+        :return: (*pandas.DataFrame*) -- data frame of power generated.
         """
         od = OutputData(self._ssh)
         pg = od.get_data(self._scenario_info['id'], 'PG')
 
         return pg
 
-    def get_PF(self):
+    def get_pf(self):
         """Returns PF data frame.
 
-        :return: (*pandas*) -- data frame of power flow.
+        :return: (*pandas.DataFrame*) -- data frame of power flow.
         """
         od = OutputData(self._ssh)
         pf = od.get_data(self._scenario_info['id'], 'PF')
@@ -96,26 +96,26 @@ class Analyze(State):
 
         :return: (*dict*) -- change table.
         """
-        return self._scaler.ct
+        return self.scaler.ct
 
     def get_grid(self):
         """Returns Grid.
 
-        :return: (*Grid*) -- instance of grid object.
+        :return: (*powersimdata.input.grid.Grid*) -- instance of grid object.
         """
-        return self._scaler.get_grid()
+        return self.scaler.get_grid()
 
     def get_demand(self, original=True):
         """Returns demand profiles.
 
-        :param bool original: should the original demand profile or the \
+        :param bool original: should the original demand profile or the
             potentially modified one be returned.
-        :return: (*pandas*) -- data frame of demand.
+        :return: (*pandas.DataFrame*) -- data frame of demand.
         """
 
-        demand = self._scaler.get_demand()
+        demand = self.scaler.get_demand
 
-        if original == True:
+        if original:
             return demand
         else:
             dates = pd.date_range(start=self._scenario_info['start_date'],
@@ -133,20 +133,20 @@ class Analyze(State):
     def get_hydro(self):
         """Returns hydro profile
 
-        :return: (*pandas*) -- data frame of hydro power output.
+        :return: (*pandas.DataFrame*) -- data frame of hydro power output.
         """
-        return self._scaler.get_hydro()
+        return self.scaler.get_hydro
 
     def get_solar(self):
         """Returns solar profile
 
-        :return: (*pandas*) -- data frame of solar power output.
+        :return: (*pandas.DataFrame*) -- data frame of solar power output.
         """
-        return self._scaler.get_solar()
+        return self.scaler.get_solar
 
     def get_wind(self):
         """Returns wind profile
 
-        :return: (*pandas*) -- data frame of wind power output.
+        :return: (*pandas.DataFrame*) -- data frame of wind power output.
         """
-        return self._scaler.get_wind()
+        return self.scaler.get_wind
