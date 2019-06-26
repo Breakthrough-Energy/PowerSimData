@@ -1,39 +1,33 @@
 import os
 import pickle
-from pathlib import Path
-
-import pandas as pd
 
 from powersimdata.input.grid import Grid
 from postreise.process import const
-from postreise.process.transferdata import upload
 
 
 class ChangeTable(object):
-    """Create change table for changes that need to be applied to the \
-        original grid as well as to the original demand, hydro, solar and \
-        wind profiles. A pickle file enclosing the change table in form of a \
-        dictionary can be created and transfered on the server. Keys are \
-        *'branch'*, *'demand'*, *'hydro'*, *'solar'* and *'wind'*. If a key \
-        is missing in the dictionary, then no changes will be applied. The \
-        data structure is given below:
+    """Create change table for changes that need to be applied to the original
+        grid as well as to the original demand, hydro, solar and wind profiles.
+        A pickle file enclosing the change table in form of a dictionary can be
+        created and transferred on the server. Keys are *'branch'*, *'demand'*,
+        *'hydro'*, *'solar'* and *'wind'*. If a key is missing in the
+        dictionary, then no changes will be applied. The data structure is
+        given below:
 
-        * *'branch'*: \
-            value is a dictionnary, which has branch id as key and a \
-            factor indicating the desired increase/decrease of capacity of \
-            the line (1.2 would correspond to a 20% increase while 0.95 \
-            would be a 5% decrease).
-        * *'demand'*: \
-            value is a dictionnary, which has load zones as keys and a \
-            factor indicating the desired increase/decrease of load in zone \
-            (1.2 would correspond to a 20% increase while 0.95 would be a 5% \
+        * *'branch'*:
+            value is a dictionary, which has branch id as key and a factor
+            indicating the desired increase/decrease of capacity of the line
+            (1.2 would correspond to a 20% increase while 0.95 would be a 5%
             decrease).
-        * *'hydro'*, *'solar'* and *'wind'*: \
-            value is a dictionary, which has the plant id as key and a \
-            factor indicating the desired increase/decrease of capacity of \
-            the *'hydro'*/*'solar'*/*'wind'* plant (1.2 would correspond to \
-            a 20% increase while 0.95 would be a 5% decrease).
-
+        * *'demand'*:
+            value is a dictionary, which has load zones as keys and a factor
+            indicating the desired increase/decrease of load in zone (1.2 would
+            correspond to a 20% increase while 0.95 would be a 5% decrease).
+        * *'coal'*, *'ng'*, *'nuclear'*, *'hydro'*, *'solar'* and *'wind'*:
+            value is a dictionary, which has the plant id as key and a factor
+            indicating the desired increase/decrease of capacity of the
+            *'hydro'*/*'solar'*/*'wind'* plant (1.2 would correspond to a 20%
+            increase while 0.95 would be a 5% decrease).
     """
 
     def __init__(self, interconnect):
@@ -51,7 +45,6 @@ class ChangeTable(object):
         self.name2id = {}
         for k, v in self.grid.zone.items():
             try:
-                self.name2id[v]
                 self.name2id[v].append(k)
             except KeyError:
                 self.name2id[v] = [k]
@@ -60,7 +53,7 @@ class ChangeTable(object):
     def _check_resource(resource):
         """Checks resource.
 
-        :param str resources: type of generator.
+        :param str resource: type of generator.
         :raises ValueError: if resource cannot be changed.
         """
         possible = ['coal', 'ng', 'nuclear', 'hydro', 'solar', 'wind']
@@ -89,13 +82,13 @@ class ChangeTable(object):
                 raise ValueError('Invalid zone(s): %s' % " | ".join(zone))
 
     def _get_plant_id(self, zone, resource):
-        """Returns the plant identification number of all the generators \
+        """Returns the plant identification number of all the generators
             located in one zone and using one specific resource.
 
         :param str zone: zone to consider.
         :param str resource: type of generator to consider.
-        :return: (*list*) -- plant identification number of all the \
-            generators located in zone and using resource.
+        :return: (*list*) -- plant identification number of all the generators
+            located in zone and using resource.
         """
         plant_id = []
         try:
@@ -111,13 +104,13 @@ class ChangeTable(object):
         """Sets plant capacity scaling factor in change table.
 
         :param str resource: type of generator to consider.
-        :param dict zone: geographical zones. The key(s) is (are) the \
-            zone(s) and the associated value is the scaling factor for the \
-            increase/decrease in capacity of all the generators in the zone \
-            of specified type.
-        :param dict plant_id: identification numbers of plants. The key(s) \
-            is (are) the id of the plant(s) and the associated value is the \
-            scaling factor for the increase/decrease in capacity of the \
+        :param dict zone: geographical zones. The key(s) is (are) the zone(s)
+            and the associated value is the scaling factor for the
+            increase/decrease in capacity of all the generators in the zone of
+            specified type.
+        :param dict plant_id: identification numbers of plants. The key(s) is
+            (are) the id of the plant(s) and the associated value is the
+            scaling factor for the increase/decrease in capacity of the
             generator.
         """
         self._check_resource(resource)
@@ -126,7 +119,7 @@ class ChangeTable(object):
             if zone is not None:
                 try:
                     self._check_zone(list(zone.keys()))
-                except:
+                except ValueError:
                     self.ct.pop(resource)
                     return
                 self.ct[resource]['zone_id'] = {}
@@ -157,21 +150,20 @@ class ChangeTable(object):
     def scale_branch_capacity(self, zone=None, branch_id=None):
         """Sets branch capacity scaling factor in change table.
 
-        :param dict zone: geographical zones. The key(s) is (are) the \
-            zone(s) and the associated value is the scaling factor for the \
-            increase/decrease in capacity of all the branches in the zone. \
-            Only lines that have both ends in zone are considered.
-        :param dict branch_id: identification numbers of branches. The \
-            key(s) is (are) the id of the line(s) and the associated value \
-            is the scaling factor for the increase/decrease in capacity of \
-            the line(s).
+        :param dict zone: geographical zones. The key(s) is (are) the zone(s)
+            and the associated value is the scaling factor for the
+            increase/decrease in capacity of all the branches in the zone. Only
+            lines that have both ends in zone are considered.
+        :param dict branch_id: identification numbers of branches. The key(s)
+            is (are) the id of the line(s) and the associated value is the
+            scaling factor for the increase/decrease in capacity of the line(s).
         """
         if bool(zone) or bool(branch_id) is True:
             self.ct['branch'] = {}
             if zone is not None:
                 try:
                     self._check_zone(list(zone.keys()))
-                except:
+                except ValueError:
                     self.ct.pop('branch')
                     return
                 self.ct['branch']['zone_id'] = {}
@@ -198,10 +190,9 @@ class ChangeTable(object):
     def scale_dcline_capacity(self, dcline_id):
         """Sets DC line capacity scaling factor in change table.
 
-        :param dict dcline_id: identification numbers of dc line. The \
-            key(s) is (are) the id of the line(s) and the associated value \
-            is the scaling factor for the increase/decrease in capacity of \
-            the line(s).
+        :param dict dcline_id: identification numbers of dc line. The key(s) is
+            (are) the id of the line(s) and the associated value is the scaling
+            factor for the increase/decrease in capacity of the line(s).
         """
         self.ct['dcline'] = {}
         self.ct['dcline']['dcline_id'] = {}
@@ -220,19 +211,19 @@ class ChangeTable(object):
     def scale_demand(self, zone=None, zone_id=None):
         """Sets load scaling factor in change table.
 
-        :param dict zone: geographical zones. The key(s) is (are) the \
-            zone(s) and the value is the scaling factor for the \
-            increase/decrease in load.
-        :param dict zone_id: identification numbers of zones. The \
-            key(s) is (are) the id of the zone(s) and the associated value \
-            is the scaling factor for the increase/decrease in load.
+        :param dict zone: geographical zones. The key(s) is (are) the zone(s)
+            and the value is the scaling factor for the increase/decrease in
+            load.
+        :param dict zone_id: identification numbers of zones. The key(s) is
+            (are) the id of the zone(s) and the associated value is the scaling
+            factor for the increase/decrease in load.
         """
-        if bool(zone) or bool(plant_id) is True:
+        if bool(zone) or bool(zone_id) is True:
             self.ct['demand'] = {}
             if zone is not None:
                 try:
                     self._check_zone(list(zone.keys()))
-                except:
+                except ValueError:
                     self.ct.pop('demand')
                     return
                 self.ct['demand']['zone_id'] = {}
