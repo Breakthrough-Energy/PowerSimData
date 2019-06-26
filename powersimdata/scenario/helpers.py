@@ -3,7 +3,7 @@ def check_interconnect(interconnect):
 
     :param list interconnect: interconnect name(s).
     :raises TypeError: if parameter has wrong type.
-    :raises Exception: if interconnect not found or unappropriate combination.
+    :raises Exception: if interconnect not found or inappropriate combination.
     """
     possible = ['Eastern', 'Texas', 'Western', 'USA']
     if not isinstance(interconnect, list):
@@ -18,6 +18,7 @@ def check_interconnect(interconnect):
         raise Exception("List of interconnects contains duplicate values")
     if 'USA' in interconnect and n > 1:
         raise Exception("USA interconnect cannot be paired")
+
 
 def interconnect2name(interconnect):
     """Converts list of interconnect to string used for naming files.

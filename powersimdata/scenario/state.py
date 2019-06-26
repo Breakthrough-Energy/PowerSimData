@@ -10,8 +10,8 @@ class State(object):
     def switch(self, state):
         """Switches state.
 
-        :param class state: One of *'Create'*, *'Execute'*, *'Analyze'* or \
-          *'Delete'* object.
+        :param class state: One of :class:`.Analyze` :class:`.Create`,
+            :class:`.Execute`.
         """
         if state.name in self.allowed:
             print('State switching: %s --> %s' % (self, state.name))
@@ -22,6 +22,10 @@ class State(object):
             print('State switching: %s -/-> %s' % (self, state.name))
 
     def __str__(self):
+        """
+
+        :return: (*str*) -- state name.
+        """
         return self.name
 
     def _leave(self):
