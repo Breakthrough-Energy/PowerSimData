@@ -13,7 +13,7 @@ class InputData(object):
     def __init__(self, ssh_client):
         """Constructor.
 
-        :param paramiko ssh_client: session with an SSH server.
+        :param paramiko.client.SSHClient ssh_client: session with an SSH server.
         """
         if not os.path.exists(const.LOCAL_DIR):
             os.makedirs(const.LOCAL_DIR)
@@ -26,36 +26,21 @@ class InputData(object):
         """Checks field name.
 
         :param str field_name: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
-        :raises ValueError: if not *'demand'*, *'hydro'*, *'solar'*, \
-            *'wind'* or *'ct'*.
+        :raises ValueError: if not *'demand'*, *'hydro'*, *'solar'*, *'wind'*
+            or *'ct'*.
         """
         possible = list(self.file_extension.keys())
         if field_name not in possible:
             raise ValueError("Only %s data can be loaded" %
                              " | ".join(possible))
 
-    def _read_data(self, file_name):
-        """Reads data.
-
-        :param str file_name: file name
-        """
-        ext = file_name.split(".")[-1]
-        if ext == 'pkl':
-            data = pd.read_pickle(os.path.join(const.LOCAL_DIR, file_name))
-        elif ext == 'csv':
-            data = pd.read_csv(os.path.join(const.LOCAL_DIR, file_name),
-                               index_col=0, parse_dates=True)
-            data.columns = data.columns.astype(int)
-
-        return data
-
     def get_data(self, scenario_id, field_name):
         """Returns data either from server or local directory.
 
         :param str scenario_id: scenario id.
         :param str field_name: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
-        :return: (*pandas* or *dict*) -- demand, hydro, solar or wind as a \
-            data frame or changle table as a dictionary.
+        :return: (*pandas.DataFrame* or *dict*) -- demand, hydro, solar or wind
+            as a data frame or change table as a dictionary.
         :raises FileNotFoundError: if file not found on local machine.
         """
         self._check_field(field_name)
@@ -65,15 +50,33 @@ class InputData(object):
         file_name = scenario_id + '_' + field_name + '.' + ext
 
         try:
-            data = self._read_data(file_name)
+            data = _read_data(file_name)
             return data
         except FileNotFoundError:
-            print("%s not found in %s on local machine" %
+            print('%s not found in %s on local machine' %
                   (file_name, const.LOCAL_DIR))
 
         try:
             download(self._ssh, file_name, const.INPUT_DIR, const.LOCAL_DIR)
-            data = self._read_data(file_name)
+            data = _read_data(file_name)
             return data
-        except FileNotFoundError as e:
-            raise(e)
+        except FileNotFoundError:
+            raise
+
+
+def _read_data(file_name):
+    """Reads data.
+
+    :param str file_name: file name
+    :return: (*pandas.DataFrame or dict*) -- demand, hydro, solar or wind as a
+        data frame or change table as a dictionary.
+    """
+    ext = file_name.split(".")[-1]
+    if ext == 'pkl':
+        data = pd.read_pickle(os.path.join(const.LOCAL_DIR, file_name))
+    else:
+        data = pd.read_csv(os.path.join(const.LOCAL_DIR, file_name),
+                           index_col=0, parse_dates=True)
+        data.columns = data.columns.astype(int)
+
+    return data
