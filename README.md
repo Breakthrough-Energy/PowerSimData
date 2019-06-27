@@ -31,7 +31,7 @@ files.
 
 
 
-# 1. *Scenario* Object
+## 1. *Scenario* Object
 This section illustrates the functionalities of the *Scenario* object.
 
 
@@ -42,7 +42,7 @@ data using the *Scenario* object.
 from powersimdata.scenario.scenario import Scenario
 
 scenario = Scenario('0')
-print(scenario.state.name)  # print internal state of Scenario object
+print(scenario.state.name)  # print name of Scenario object state
 
 scenario.state.print_scenario_info()  # print scenario information
 scenario.state.print_infeasibilities()  # print eventual infeasibilities
@@ -59,10 +59,50 @@ pg = scenario.state.get_pg()  # get PG profile
 pf = scenario.state.get_pf()  # get PF profile
 ```
 If the capacity of some generators, branches or DC line have been increased
-and/or the demand in one or multiple load zones has been scaled for this scenario
-then the change table will enclose these changes and the retrieved grid and
-input profiles will be modified accordingly.
+and/or the demand in one or multiple load zones has been scaled for this
+scenario then the change table will enclose these changes and the retrieved
+grid and input profiles will be modified accordingly.
 
 
 
 ### B. Creating Scenario
+A scenario can be created using few lines of code. This is illustrated below:
+```python
+from powersimdata.scenario.scenario import Scenario
+
+scenario = Scenario('')
+print(scenario.state.name)  # print name of Scenario object state
+
+
+scenario.state.set_builder(['Western'])  # set interconnection
+
+scenario.state.builder.set_name('test', 'dummy')  # set plan and scenario names
+scenario.state.builder.set_time('2016-08-01 00:00:00', '2016-08-31 23:00:00',
+                                '124H')  # set start date, end date and interval
+scenario.state.builder.set_base_profile('demand', 'v3')  # set demand
+scenario.state.builder.set_base_profile('hydro', 'v1')  # set hydro
+scenario.state.builder.set_base_profile('solar', 'v2')  # set solar
+scenario.state.builder.set_base_profile('wind', 'v1')  # set wind
+
+# scale capacity of solar plants in WA and AZ by 5 and 2.5, respectively
+scenario.state.builder.change_table.scale_plant_capacity('solar',
+                                                         zone={'Washington': 5,
+                                                               'Arizona': 2.5})
+# scale capacity of wind farms in OR and MT by 1.5 and 2, respectively
+scenario.state.builder.change_table.scale_plant_capacity('wind',
+                                                         zone={'Oregon': 1.5,
+                                                               'Montana': 2})
+# scale capacity of solar plants in NV and WY by 2
+scenario.state.builder.change_table.scale_branch_capacity(zone={'Nevada': 2,
+                                                                'Wyoming': 2})
+print(scenario.state.builder.change_table.ct)  # print change table
+
+###################
+# Create scenario #
+###################
+scenario.state.print_scenario_info()  # review information
+scenario.state.create_scenario()  # create
+print(scenario.state.name)  # print name of Scenario object state
+print(scenario.state.print_scenario_status())  # print status of scenario
+```
+
