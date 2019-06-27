@@ -113,7 +113,7 @@ class Analyze(State):
         :return: (*pandas.DataFrame*) -- data frame of demand.
         """
 
-        demand = self.scaler.get_demand
+        demand = self.scaler.get_demand()
 
         if original:
             return demand
@@ -135,18 +135,18 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of hydro power output.
         """
-        return self.scaler.get_hydro
+        return self.scaler.get_hydro()
 
     def get_solar(self):
         """Returns solar profile
 
         :return: (*pandas.DataFrame*) -- data frame of solar power output.
         """
-        return self.scaler.get_solar
+        return self.scaler.get_solar()
 
     def get_wind(self):
         """Returns wind profile
 
         :return: (*pandas.DataFrame*) -- data frame of wind power output.
         """
-        return self.scaler.get_wind
+        return self.scaler.get_wind()
