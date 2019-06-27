@@ -30,12 +30,15 @@ class Scenario(object):
             self.state = Create(self)
         else:
             self._set_info(descriptor)
-            self._set_status()
-            state = self.info['state']
-            if state == 'execute':
-                self.state = Execute(self)
-            elif state == 'analyze':
-                self.state = Analyze(self)
+            try:
+                state = self.info['state']
+                self._set_status()
+                if state == 'execute':
+                    self.state = Execute(self)
+                elif state == 'analyze':
+                    self.state = Analyze(self)
+            except AttributeError:
+                return
 
     def _set_info(self, descriptor):
         """Sets scenario information.
