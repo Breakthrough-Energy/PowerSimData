@@ -25,7 +25,7 @@ class Delete(State):
         """
 
         # Delete entry in scenario list
-        print("--> Delete entry in scenario table on server")
+        print("--> Deleting entry in scenario table on server")
         entry = ",".join(self._scenario_info.values())
         command = "sed -i.bak '/%s/d' %s" % (entry, const.SCENARIO_LIST)
         stdin, stdout, stderr = self._ssh.exec_command(command)
@@ -34,7 +34,7 @@ class Delete(State):
                           const.SCENARIO_LIST)
 
         # Delete entry in execute list
-        print("--> Delete entry in execute table on server")
+        print("--> Deleting entry in execute table on server")
         command = "sed -i.bak '/^%s,*/d' %s" % (self._scenario_info['id'],
                                                 const.EXECUTE_LIST)
         stdin, stdout, stderr = self._ssh.exec_command(command)
@@ -43,7 +43,7 @@ class Delete(State):
                           const.EXECUTE_LIST)
 
         # Delete links to base profiles on server
-        print("--> Delete scenario inputs on server")
+        print("--> Deleting scenario inputs on server")
         command = "rm -f %s/%s_*" % (const.INPUT_DIR, self._scenario_info['id'])
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
@@ -51,10 +51,19 @@ class Delete(State):
                           const.INPUT_DIR)
 
         # Delete output profiles
-        print("--> Delete scenario outputs on server")
+        print("--> Deleting scenario outputs on server")
         command = "rm -f %s/%s_*.csv" % (const.OUTPUT_DIR,
                                          self._scenario_info['id'])
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to delete scenario inputs in %s on server" %
                           const.OUTPUT_DIR)
+
+        # Delete temporary folder enclosing simulation inputs
+        print("--> Deleting temporary folder on server")
+        tmp_dir = '%s/scenario_%s' % (const.EXECUTE_DIR,
+                                      self._scenario_info['id'])
+        command = "rm -rf %s" % tmp_dir
+        stdin, stdout, stderr = self._ssh.exec_command(command)
+        if len(stderr.readlines()) != 0:
+            raise IOError("Failed to create %s on server" % tmp_dir)
