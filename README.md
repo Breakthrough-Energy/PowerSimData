@@ -95,14 +95,58 @@ scenario.state.builder.change_table.scale_branch_capacity(zone={'Nevada': 2,
                                                                 'Wyoming': 2})
 print(scenario.state.builder.change_table.ct)  # print change table
 
-###################
-# Create scenario #
-###################
+
+# Create scenario
 scenario.state.print_scenario_info()  # review information
 scenario.state.create_scenario()  # create
 print(scenario.state.name)  # print name of Scenario object state
-print(scenario.state.print_scenario_status())  # print status of scenario
+scenario.state.print_scenario_status()  # print status of scenario
 ```
+Once the scenario is successfully created, the state of the *Scenario* object is
+switched to **execute**. Also a scenario id is automatically created and printed
+on screen
 
 
 ### C. Executing Scenario
+It is possible to execute the scenario immediately after the scenario has been
+created. One can also create a new *Scenario* object. This is the option we
+follow here.
+
+The **execute** state accomplishes the three following tasks.
+1. It prepares the simulation inputs: the scaled profiles and MATPOWER case file
+enclosing information on the electrical grid that will be used in the
+simulation.
+2. It launches the simulation. The status of the simulation can be accessed
+using the `print_scenario_status` method. Once the status switched from
+**running** to **finished**, output data can be extracted. It is worth noting
+that. It is possible after the simulation is finished to access the written
+output and error messages as demonstrated below.
+3. It extracts the output data. This operation can only be done once after the
+simulation has finished running. 
+```python
+from powersimdata.scenario.scenario import Scenario
+
+scenario = Scenario('dummy')
+scenario.print_scenario_info()  # print scenario information
+
+# prepare simulation inputs
+scenario.state.prepare_simulation_input()
+
+# launch simulation
+process_run = scenario.state.launch_simulation()
+
+# Get simulation status
+scenario.state.print_scenario_status()
+
+# Get output/error messages once the simulation is done running
+output_run = process_run.stdout.read()
+print(list(filter(None, output_run.decode("utf-8").splitlines())))
+error_run = process_run.stderr.read()
+print(list(filter(None, error_run.decode("utf-8").splitlines())))
+
+# Extract data
+process_extract = scenario.state.extract_simulation_output()
+```  
+
+
+## 2. U.S. Electric Grid and Interconnection
