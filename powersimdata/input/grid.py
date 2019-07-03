@@ -169,8 +169,8 @@ class Grid(object):
         """
         print("Loading bus2sub")
         self.bus2sub = pd.read_pickle(self.data_loc + 'USABus2sub.pkl')
-        self.bus2sub.index.name = 'bus_id'
         self.bus2sub.rename(columns={'subID': 'sub_id'}, inplace=True)
+        self.bus2sub.index.name = 'bus_id'
 
     def _read_bus(self):
         """Reads bus file.
@@ -181,7 +181,6 @@ class Grid(object):
         # Read and format
         self.bus = pd.read_csv(self.data_loc + 'bus_case.txt', index_col=0,
                                sep=r'\s+')
-        self.bus.index.name = 'bus_id'
         self.bus.drop(columns='zone', inplace=True)
         self.bus.rename(columns={'area': 'zone_id'}, inplace=True)
 
@@ -189,6 +188,8 @@ class Grid(object):
         self.bus["interconnect"] = "Eastern"
         self.bus.loc[self.bus.index > 2000000, 'interconnect'] = 'Western'
         self.bus.loc[self.bus.index > 3000000, 'interconnect'] = 'Texas'
+
+        self.bus.index.name = 'bus_id'
 
     def _read_plant(self):
         """Reads generator files.
@@ -200,7 +201,6 @@ class Grid(object):
                                  sep=r'\s+', header=None)
         self.plant = pd.read_csv(self.data_loc + 'genbus_case.txt', sep=r'\s+')
         self._plant_aux = pd.read_pickle(self.data_loc + 'USAGenbus_aux.pkl')
-        self.plant.index.name = 'plant_id'
         self.plant.rename(columns={'bus': 'bus_id'}, inplace=True)
 
         # Combine
@@ -215,6 +215,8 @@ class Grid(object):
         self.plant.loc[self.plant.bus_id > 2000000, 'interconnect'] = 'Western'
         self.plant.loc[self.plant.bus_id > 3000000, 'interconnect'] = 'Texas'
 
+        self.plant.index.name = 'plant_id'
+
     def _read_gencost(self):
         """Reads generator cost file.
 
@@ -223,10 +225,11 @@ class Grid(object):
         # Read and format
         self.gencost = pd.read_csv(self.data_loc + 'gencost_case.txt',
                                    sep=r'\s+')
-        self.gencost.index.name = 'plant_id'
 
         # Interconnect
         self.gencost['interconnect'] = self.plant.interconnect
+
+        self.gencost.index.name = 'plant_id'
 
     def _read_dcline(self):
         """Reads DC line file.
@@ -238,7 +241,6 @@ class Grid(object):
                                   sep=r'\s+')
         self.dcline.rename(columns={'fbus': 'from_bus_id',
                                     'tbus': 'to_bus_id'}, inplace=True)
-        self.dcline.index.name = 'dcline_id'
 
         # Interconnect
         self.dcline['from_interconnect'] = 'Eastern'
@@ -252,6 +254,8 @@ class Grid(object):
         self.dcline.loc[self.dcline.to_bus_id > 3000000,
                         'to_interconnect'] = 'Texas'
 
+        self.dcline.index.name = 'dcline_id'
+
     def _read_branch(self):
         """Reads branch file.
 
@@ -261,7 +265,6 @@ class Grid(object):
                                   sep=r'\s+')
         self.branch.rename(columns={'fbus': 'from_bus_id',
                                     'tbus': 'to_bus_id'}, inplace=True)
-        self.branch.index.name = 'branch_id'
 
         # Interconnect
         self.branch['interconnect'] = 'Eastern'
@@ -269,6 +272,8 @@ class Grid(object):
                         'interconnect'] = 'Western'
         self.branch.loc[self.branch.from_bus_id > 3000000,
                         'interconnect'] = 'Texas'
+
+        self.branch.index.name = 'branch_id'
 
     def _read_zone(self):
         """Reads load zone files.
