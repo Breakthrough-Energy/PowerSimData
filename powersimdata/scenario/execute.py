@@ -15,7 +15,7 @@ class Execute(State):
 
     """
     name = 'execute'
-    allowed = ['stop']
+    allowed = []
 
     def __init__(self, scenario):
         """Constructor.
@@ -90,10 +90,8 @@ class Execute(State):
             si = SimulationInput(self.scaler, self._ssh)
             si.create_folder()
             for r in ['demand', 'hydro', 'solar', 'wind']:
-                try:
-                    si.prepare_scaled_profile(r)
-                except ValueError:
-                    si.copy_base_profile(r)
+                si.prepare_profile(r)
+
             si.prepare_mpc_file()
 
             self._update_execute_list('prepared')
@@ -171,23 +169,6 @@ class SimulationInput(object):
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to create %s on server" % self._tmp_dir)
 
-    def copy_base_profile(self, resource):
-        """Copies base profile in temporary directory on server.
-
-        :param str resource: one of *'hydro'*, *'solar'* or *'wind'*.
-        :raises IOError: if file cannot be copied.
-        """
-        print("--> Copying %s base profile into temporary folder" % resource)
-        command = "cp -a %s/%s_%s.csv %s/%s.csv" % (const.INPUT_DIR,
-                                                    self.scaler.scenario_id,
-                                                    resource,
-                                                    self._tmp_dir,
-                                                    resource)
-        stdin, stdout, stderr = self._ssh.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError("Failed to copy inputs in %s on server" %
-                          self._tmp_dir)
-
     def prepare_mpc_file(self):
         """Creates MATPOWER case file.
 
@@ -239,19 +220,47 @@ class SimulationInput(object):
         upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir,
                change_name_to='case.mat')
 
-    def prepare_scaled_profile(self, resource):
+    def prepare_profile(self, kind):
+        """Prepares profile for simulation.
+
+        :param kind: one of *demand*, *'hydro'*, *'solar'* or *'wind'*.
+        """
+        if kind in self.scaler.ct.keys():
+            self._prepare_scaled_profile(kind)
+        else:
+            self._copy_base_profile(kind)
+
+    def _copy_base_profile(self, kind):
+        """Copies base profile in temporary directory on server.
+
+        :param str kind: one of *demand*, *'hydro'*, *'solar'* or *'wind'*.
+        :raises IOError: if file cannot be copied.
+        """
+        print("--> Copying %s base profile into temporary folder" % kind)
+        command = "cp -a %s/%s_%s.csv %s/%s.csv" % (const.INPUT_DIR,
+                                                    self.scaler.scenario_id,
+                                                    kind,
+                                                    self._tmp_dir,
+                                                    kind)
+        stdin, stdout, stderr = self._ssh.exec_command(command)
+        if len(stderr.readlines()) != 0:
+            raise IOError("Failed to copy inputs in %s on server" %
+                          self._tmp_dir)
+
+    def _prepare_scaled_profile(self, kind):
         """Loads, scales and writes on local machine a base profile.
 
-        :param str resource: one of *'hydro'*, *'solar'* or *'wind'*.
+        :param str kind: one of *'hydro'*, *'solar'* or *'wind'*.
         """
-        profile = self.scaler.get_power_output(resource)
+        if kind == 'demand':
+            profile = self.scaler.get_demand()
+        else:
+            profile = self.scaler.get_power_output(kind)
 
         print("Writing scaled %s profile in %s on local machine" %
-              (resource, const.LOCAL_DIR))
-        file_name = '%s.csv' % resource
+              (kind, const.LOCAL_DIR))
+        file_name = '%s_%s.csv' % (self.scaler.scenario_id, kind)
         profile.to_csv(os.path.join(const.LOCAL_DIR, file_name))
 
-        upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir)
-
-        print("Deleting scaled %s profile on local machine" % resource)
-        os.remove(os.path.join(const.LOCAL_DIR, file_name))
+        upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir,
+               change_name_to='%s.csv' % kind)
