@@ -55,7 +55,7 @@ class Scenario(object):
             print("------------------")
             print("SCENARIO NOT FOUND")
             print("------------------")
-            print(table.tail(n=10).to_string(index=False, justify='center',
+            print(table.to_string(index=False, justify='center',
                                              columns=['id', 'plan', 'name',
                                                       'interconnect',
                                                       'base_demand',
