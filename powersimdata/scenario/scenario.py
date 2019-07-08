@@ -56,12 +56,9 @@ class Scenario(object):
             print("SCENARIO NOT FOUND")
             print("------------------")
             print(table.to_string(index=False, justify='center',
-                                             columns=['id', 'plan', 'name',
-                                                      'interconnect',
-                                                      'base_demand',
-                                                      'base_hydro',
-                                                      'base_solar',
-                                                      'base_wind']))
+                                  columns=['id', 'plan', 'name', 'interconnect',
+                                           'base_demand', 'base_hydro',
+                                           'base_solar', 'base_wind']))
 
         try:
             int(descriptor)
