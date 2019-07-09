@@ -30,13 +30,13 @@ well as all references to the scenario in master files.
 
 
 
-## 1. `Scenario` Object
+## 1. Scenario Manipulation
 This section illustrates the functionalities of the `Scenario` object.
 
 
 ### A. Analyzing Scenario
 The following code snippet shows how one can access scenario information and
-data using the `Scenario` object. 
+data using the `Scenario` object.
 ```python
 from powersimdata.scenario.scenario import Scenario
 
@@ -122,7 +122,7 @@ using the `print_scenario_status` method. Once the status switched from
 that. It is possible after the simulation is finished to access the written
 output and error messages as demonstrated below.
 3. It extracts the output data. This operation can only be done once after the
-simulation has finished running. 
+simulation has finished running.
 ```python
 from powersimdata.scenario.scenario import Scenario
 
@@ -146,41 +146,63 @@ print(list(filter(None, error_run.decode("utf-8").splitlines())))
 
 # Extract data
 process_extract = scenario.state.extract_simulation_output()
-```  
+```
+
+
+### D. Deleting Scenario
+A scenario can be deleted. All the input and output files as well as any entries
+in monitoring files will be removed. The **delete** state is only accessible
+from the **analyze** state.
+```python
+from powersimdata.scenario.scenario import Scenario
+from powersimdata.scenario.delete import Delete
+
+scenario = Scenario('dummy')
+print(scenario.state.name)  # print name of Scenario object state
+print(scenario.state.allowed)  # print list of accessible states
+
+scenario.change(Delete)
+print(scenario.state.name)  # print name of Scenario object state
+
+# Delete scenario
+scenario.state.delete_scenario()
+```
+After the `delete_scenario` method is called, the state of the `Scenario` object
+is changed automatically to **create**.
 
 
 ## 2. U.S. Electric Grid and Interconnection
 The `Grid` object encapsulates all the information related to the synthetic
-network for one interconnection (**Eastern**, **Texas** or **Western**) or a
-combination of two interconnections or the full U.S. grid (**USA**). Only one
+network used in this project for a single interconnection (**Eastern**,
+**Texas** or **Western**), a combination of two interconnections (**Eastern**
+and **Texas** for example) or the full U.S. electric grid (**USA**). Only one
 argument is required to instantiate a `Grid` object, a `list` of interconnection
 (as `str`).
 ```python
 from powersimdata.input.grid import Grid
-western_texas = Grid(['Western', 'Texas'])  # order does'nt matter
+western_texas = Grid(['Western', 'Texas'])  # order in list does not matter
 ```
-The object has various attributes. These are listed below along with a short 
+The object has various attributes. These are listed below along with a short
 description:
-* **zone**: `dict` that relates the load zone id (key) to the load zone
-name (value).
-* **type2id** (**id2type**): `dict` mapping generator's type (generator's id) to
-generator's id (generator's type).
-* **type2color**: `dict` mapping generator's type to generator's color (used for
-plotting).
-* **interconnect**: `str` enclosing the interconnection name.
-* **bus**: `pandas.DataFrame` with bus id as index and bus characteristics as
+* **zone**: `dict` -- load zone id to load zone name.
+* **type2id** (**id2type**): `dict` -- generator type (id) to generator id
+(type).
+* **type2color**: `dict` -- generator type to generator color as used in plots.
+* **interconnect**: `str` --  interconnection name.
+* **bus**: `pandas.DataFrame` -- bus id as index and bus characteristics as
 columns.
-* **sub**: `pandas.DataFrame` with substation id as index and substation
+* **sub**: `pandas.DataFrame` -- substation id as index and substation
 information as columns.
-* **bus2sub**: `pandas.DataFrame` mapping bus id (index) to sub id (column).
-* **plant**: `pandas.DataFrame` with plant id as index and plant characteristics
+* **bus2sub**: `pandas.DataFrame` -- bus id as index and substation id as
+column.
+* **plant**: `pandas.DataFrame` -- plant id as index and plant characteristics
 as columns.
-* **branch**: `pandas.DataFrame` with branch id as index and branch
-characteristics as columns. 
-* **gencost**: `pandas.DataFrame` with plant id as index and generation cost 
-characteristics as columns. 
-* **dcline**: `pandas.DataFrame` with DC line id as index and DC line
-characteristics as columns. 
+* **branch**: `pandas.DataFrame` -- branch id as index and branch
+characteristics as columns.
+* **gencost**: `pandas.DataFrame` -- plant id as index and generation cost
+information as columns.
+* **dcline**: `pandas.DataFrame` -- DC line id as index and DC line
+characteristics as columns.
 ```python
 from powersimdata.input.grid import Grid
 usa = Grid(['USA'])
