@@ -1,13 +1,13 @@
 from postreise.process import const
 from powersimdata.scenario.state import State
-
+from powersimdata.scenario.create import Create
 
 class Delete(State):
     """Deletes scenario.
 
     """
     name = 'delete'
-    allowed = ['create']
+    allowed = []
 
     def print_scenario_info(self):
         """Prints scenario information.
@@ -52,8 +52,8 @@ class Delete(State):
 
         # Delete output profiles
         print("--> Deleting scenario outputs on server")
-        command = "rm -f %s/%s_*.csv" % (const.OUTPUT_DIR,
-                                         self._scenario_info['id'])
+        command = "rm -f %s/%s_*" % (const.OUTPUT_DIR,
+                                     self._scenario_info['id'])
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to delete scenario inputs in %s on server" %
@@ -67,3 +67,6 @@ class Delete(State):
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to create %s on server" % tmp_dir)
+
+        self.allowed.append('create')
+        self.switch(Create)
