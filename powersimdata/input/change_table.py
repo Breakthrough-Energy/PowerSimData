@@ -42,12 +42,6 @@ class ChangeTable(object):
 
         # Set attribute
         self.ct = {}
-        self.name2id = {}
-        for k, v in self.grid.zone.items():
-            try:
-                self.name2id[v].append(k)
-            except KeyError:
-                self.name2id[v] = [k]
 
     @staticmethod
     def _check_resource(resource):
@@ -127,7 +121,7 @@ class ChangeTable(object):
                     if len(self._get_plant_id(z, resource)) == 0:
                         print("No %s plants in %s." % (resource, z))
                     else:
-                        for i in self.name2id[z]:
+                        for i in self.grid.zone2id[z]:
                             self.ct[resource]['zone_id'][i] = zone[z]
             if plant_id is not None:
                 plant_id_interconnect = set(self.grid.plant.groupby(
@@ -168,7 +162,7 @@ class ChangeTable(object):
                     return
                 self.ct['branch']['zone_id'] = {}
                 for z in zone.keys():
-                    for i in self.name2id[z]:
+                    for i in self.grid.zone2id[z]:
                         self.ct['branch']['zone_id'][i] = zone[z]
             if branch_id is not None:
                 branch_id_interconnect = set(self.grid.branch.index)
@@ -228,10 +222,10 @@ class ChangeTable(object):
                     return
                 self.ct['demand']['zone_id'] = {}
                 for z in zone.keys():
-                    for i in self.name2id[z]:
+                    for i in self.grid.zone2id[z]:
                         self.ct['demand']['zone_id'][i] = zone[z]
             if zone_id is not None:
-                zone_id_interconnect = set(self.grid.zone.keys())
+                zone_id_interconnect = set(self.grid.id2zone.keys())
                 diff = set(zone_id.keys()).difference(zone_id_interconnect)
                 if len(diff) != 0:
                     print("No zone with the following id:")

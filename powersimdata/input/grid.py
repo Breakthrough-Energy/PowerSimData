@@ -96,7 +96,14 @@ class Grid(object):
                 self.branch.drop(self.branch.groupby(
                     'interconnect').get_group(k).index, inplace=True)
                 for i in range(v[0], v[1] + 1):
-                    del self.zone[i]
+                    del self.id2zone[i]
+
+        self.zone2id = {}
+        for k, v in self.id2zone.items():
+            try:
+                self.zone2id[v].append(k)
+            except KeyError:
+                self.zone2id[v] = [k]
 
     def _add_information(self):
         """Adds information to data frames.
@@ -126,16 +133,16 @@ class Grid(object):
 
         # Zoning
         self.plant['zone_id'] = [bus2zone[i] for i in self.plant.bus_id]
-        self.plant['zone_name'] = [self.zone[i]
+        self.plant['zone_name'] = [self.id2zone[i]
                                    for i in self.plant.zone_id]
 
         self.branch['from_zone_id'] = [bus2zone[i]
                                        for i in self.branch.from_bus_id]
         self.branch['to_zone_id'] = [bus2zone[i]
                                      for i in self.branch.to_bus_id]
-        self.branch['from_zone_name'] = [self.zone[i]
+        self.branch['from_zone_name'] = [self.id2zone[i]
                                          for i in self.branch.from_zone_id]
-        self.branch['to_zone_name'] = [self.zone[i]
+        self.branch['to_zone_name'] = [self.id2zone[i]
                                        for i in self.branch.to_zone_id]
 
     def _read_network(self):
@@ -280,7 +287,7 @@ class Grid(object):
 
         """
         print("Loading zone")
-        self.zone = pd.read_csv(self.data_loc + 'USAArea.csv',
-                                header=None,
-                                index_col=0,
-                                names=['zone_name']).zone_name.to_dict()
+        self.id2zone = pd.read_csv(self.data_loc + 'USAArea.csv',
+                                   header=None,
+                                   index_col=0,
+                                   names=['zone_name']).zone_name.to_dict()

@@ -162,6 +162,6 @@ class Scaler(object):
         if bool(self.ct) and 'demand' in list(self.ct.keys()):
             for key, value in self.ct['demand']['zone_id'].items():
                 print('Multiply demand in %s (#%d) by %.2f' %
-                      (self._original_grid.zone[key], key, value))
+                      (self._original_grid.id2zone[key], key, value))
                 demand.loc[:, key] *= value
         return demand
