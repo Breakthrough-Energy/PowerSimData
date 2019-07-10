@@ -41,5 +41,4 @@ class State(object):
         """Initializes when entering state.
 
         """
-        if self.name == 'create':
-            self.__init__()
+        pass
