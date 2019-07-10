@@ -1,6 +1,8 @@
 from postreise.process import const
 from powersimdata.scenario.state import State
-from powersimdata.scenario.create import Create
+
+import os, re
+
 
 class Delete(State):
     """Deletes scenario.
@@ -12,12 +14,16 @@ class Delete(State):
     def print_scenario_info(self):
         """Prints scenario information.
 
+        :raises AttributeError: if scenario has been deleted.
         """
         print("--------------------")
         print("SCENARIO INFORMATION")
         print("--------------------")
-        for key, val in self._scenario_info.items():
-            print("%s: %s" % (key, val))
+        try:
+            for key, val in self._scenario_info.items():
+                print("%s: %s" % (key, val))
+        except AttributeError:
+            print('Scenario has been deleted')
 
     def delete_scenario(self):
         """Deletes scenario on server.
@@ -68,5 +74,18 @@ class Delete(State):
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to create %s on server" % tmp_dir)
 
-        self.allowed.append('create')
-        self.switch(Create)
+        # Delete local files
+        print("--> Deleting MPC file and profiles on local machine")
+        for f in os.listdir(const.LOCAL_DIR):
+            if re.search(self._scenario_info['id'], f):
+                os.remove(os.path.join(const.LOCAL_DIR, f))
+
+        # Delete attributes
+        self._clean()
+
+    def _clean(self):
+        """Clean after deletion.
+
+        """
+        self._ssh.close()
+        self._scenario_info = None
