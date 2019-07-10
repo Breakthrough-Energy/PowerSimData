@@ -1,9 +1,10 @@
 from postreise.process import const
-from postreise.process.transferdata import get_execute_table
+from postreise.process.transferdata import get_execute_table, get_scenario_table
 from postreise.process.transferdata import upload
 from powersimdata.input.scaler import Scaler
 from powersimdata.scenario.state import State
 
+from collections import OrderedDict
 from scipy.io import savemat
 import numpy as np
 import os
@@ -41,6 +42,15 @@ class Execute(State):
         self._scenario_status = execute_table[execute_table.id == scenario_id
                                               ].status.values[0]
 
+    def _update_scenario_info(self):
+        """Updates scenario information.
+
+        """
+        scenario_table = get_scenario_table(self._ssh)
+        scenario_id = self._scenario_info['id']
+        scenario = scenario_table[scenario_table.id == scenario_id]
+        self._scenario_info = scenario.to_dict('records', into=OrderedDict)[0]
+
     def _update_execute_list(self, status):
         """Updates status in execute list file on server.
 
@@ -63,6 +73,7 @@ class Execute(State):
         print("--------------------")
         print("SCENARIO INFORMATION")
         print("--------------------")
+        self._update_scenario_info()
         for key, val in self._scenario_info.items():
             print("%s: %s" % (key, val))
 
