@@ -224,10 +224,10 @@ Several discrepancies between the branch object of power.simdata.input.grid,
 and the .aux files, were observed:
 
 
-| Interconnect  | from_bus_id   |  to_bus_id    |  Discrepancy: Description and Resolution                                   |
-| ------------- |:-------------:|:-------------:|:--------------------------------------------------------------------------:|
-| Eastern       | 6991          | 13525         | Not in .aux. Distance and ratio classify as Line.                          |
-| Eastern       | 54736         | 56767         | Not in .aux. Distance and ratio classify as Line.                          |
-| Eastern       | 30322         | 30839         | From and to bus switched in .aux                                           |
-| Eastern       | 30304         | 30310         | In aux., not in powersimdata.input.grid. Not added.                        |
-| Texas         | 3007161       | 3007292       | Multiple in .aux as Line and Transformer. Dist. and ratio classify as Line.|
+| Interconnect  | from_bus_id   |  to_bus_id    |  Discrepancy: Description and Resolution                                                     |
+| ------------- |:-------------:|:-------------:|:--------------------------------------------------------------------------------------------:|
+| Eastern       | 6991          | 13525         | Not in .aux. Distance and ratio classify as Line.                                            |
+| Eastern       | 54736         | 56767         | Not in .aux. Distance and ratio classify as Line.                                            |
+| Eastern       | 30322         | 30839         | From and to bus switched in .aux                                                             |
+| Eastern       | 30304         | 30310         | In aux., not in powersimdata.input.grid. Not added.                                          |
+| Texas         | 3007161       | 3007292       | Multiple in .aux as Line and Transformer. Ratio 0 and 1. Distance >0. Classified as Line     |
