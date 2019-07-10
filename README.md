@@ -12,10 +12,10 @@ When a `Scenario` object is created, its state is set either to **create**,
 **execute** or **analyze**. This is handled in the constructor of the *Scenario*
 class. Only one argument is required to instantiate a `Scenario` object: the
 **descriptor** (as `str`) of the scenario, which can either be the scenario id
-or name. An empty `str` instantiates the `Scenario` in the **create** state. A
-valid scenario id or name activates the **analyze** state if the simulation has
-been successfully ran and the output data have been extracted. Otherwise the
-**execute** state is selected.
+or name. An empty `str` instantiates the `Scenario` object in the **create**
+state. A valid scenario id or name activates the **analyze** state if the
+simulation has been successfully ran and the output data have been extracted.
+Otherwise the **execute** state is selected.
 
 Once the scenario is created, the internal state of the `Scenario` object is
 automatically changed to **execute**. The later state does the heavy lifting: i)
@@ -26,7 +26,7 @@ state an download input (grid and various profiles used in the simulation) and
 output data (power produced by generators and flowing in the branches of the
 network). The **delete** state is only accessible from the **analyze** state and
 lets the user delete the current scenario, i.e., input and out output data as
-well as all references to the scenario in master files.
+well as all references to the scenario in monitoring files.
 
 
 
@@ -184,7 +184,8 @@ western_texas = Grid(['Western', 'Texas'])  # order in list does not matter
 ```
 The object has various attributes. These are listed below along with a short
 description:
-* **zone**: `dict` -- load zone id to load zone name.
+* **zone2id (id2zone)**: `dict` -- load zone name (load zone id) to load zone id
+(load zone name).
 * **type2id** (**id2type**): `dict` -- generator type (id) to generator id
 (type).
 * **type2color**: `dict` -- generator type to generator color as used in plots.
