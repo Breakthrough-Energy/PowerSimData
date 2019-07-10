@@ -112,6 +112,6 @@ class Scenario(object):
         """Changes state.
 
         :param class state: One of :class:`.Analyze` :class:`.Create`,
-            :class:`.Execute`.
+            :class:`.Execute` or :class:`.Delete`.
         """
         self.state.switch(state)
