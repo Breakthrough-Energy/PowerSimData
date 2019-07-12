@@ -213,9 +213,10 @@ dcline = usa.dcline  # DC line in network
 ```
 
 ---
-**NOTE**  
+**NOTE**
+
 Discrepancies were found between the branch data frame and ***.aux*** files
-from https://electricgrids.engr.tamu.edu.
+from <https://electricgrids.engr.tamu.edu>.
 
 The branch attribute of the `Grid` object was merged with the branch data found
 in the ***.aux*** files for the three interconnects: Eastern is 
@@ -234,4 +235,5 @@ discrepancies between the branch attribute of the `Grid` object and the
 | Eastern       | 30322         | 30839         | from_bus_id and to_bus_id switched in ***.aux***                                                  |
 | Eastern       | 30304         | 30310         | In ***.aux*** but not in `Grid` object --> Not added.                                             |
 | Texas         | 3007161       | 3007292       | Multiple in ***.aux*** as Line and Transformer. Ratio 0 and 1. Distance >0 --> classified as Line |
+
 ---
