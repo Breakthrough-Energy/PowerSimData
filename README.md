@@ -211,3 +211,23 @@ usa.plant.head()
 wind_farm = usa.plant.groupby('type').get_group('wind')  # wind farm in network
 dcline = usa.dcline  # DC line in network
 ```
+Discrepancies between powersimdata.input.grid  and .aux files from 
+https://electricgrids.engr.tamu.edu
+
+The branch object of powersimdata.input.grid was merged with the branch data 
+in the .aux files for the three interconnects: Eastern is "ActivSg70k.aux", 
+Western is "ActivSg2000.aux", and Texas is "ActivSg10k.aux.” The original intent
+of this work was to add the column ‘BranchDeviceType’ from the .aux files to 
+the branch object of powersimdata.input.grid, for each branch. ‘BranchDeviceType’ 
+is a categorical attribute with three values: Line, Transformer, and TransformerWinding. 
+Several discrepancies between the branch object of power.simdata.input.grid,
+and the .aux files, were observed:
+
+
+| Interconnect  | from_bus_id   |  to_bus_id    |  Discrepancy: Description and Resolution                                                     |
+| ------------- |:-------------:|:-------------:|:--------------------------------------------------------------------------------------------:|
+| Eastern       | 6991          | 13525         | Not in .aux. Distance and ratio classify as Line.                                            |
+| Eastern       | 54736         | 56767         | Not in .aux. Distance and ratio classify as Line.                                            |
+| Eastern       | 30322         | 30839         | From and to bus switched in .aux                                                             |
+| Eastern       | 30304         | 30310         | In aux., not in powersimdata.input.grid. Not added.                                          |
+| Texas         | 3007161       | 3007292       | Multiple in .aux as Line and Transformer. Ratio 0 and 1. Distance >0. Classified as Line     |
