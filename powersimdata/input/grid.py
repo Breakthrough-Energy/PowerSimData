@@ -213,8 +213,7 @@ class Grid(object):
         # Combine
         self.plant = pd.concat([self.plant,
                                 self._plant_aux.reset_index()[
-                                    ['GenMWMax', 'GenMWMin']]],
-                               axis=1)
+                                    ['GenMWMax', 'GenMWMin']]], axis=1)
         self.plant['type'] = plant_type
 
         # Interconnect
@@ -270,13 +269,13 @@ class Grid(object):
         print("Loading branch")
         self.branch = pd.read_csv(self.data_loc + 'branch_case.txt',
                                   sep=r'\s+')
-        self._branch_aux = pd.read_pickle(self.data_loc + 'USAbranchdevicetype.pkl')
+        self._branch_aux = pd.read_pickle(
+            self.data_loc + 'USABranchDeviceType.pkl')
         self.branch.rename(columns={'fbus': 'from_bus_id',
                                     'tbus': 'to_bus_id'}, inplace=True)
         self.branch = pd.concat([self.branch,
-                                self._branch_aux.reset_index()[
-                                    ['branch_device_type']]],
-                              axis=1)
+                                 self._branch_aux.reset_index()[
+                                     ['branch_device_type']]], axis=1)
 
         # Interconnect
         self.branch['interconnect'] = 'Eastern'
