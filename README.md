@@ -227,11 +227,11 @@ discrepancies between the branch attribute of the `Grid` object and the
 ***.aux*** files, were observed:
 
 
-| interconnect  | from_bus_id   |  to_bus_id    |  discrepancy: description and resolution                                                       |
-| ------------- |:-------------:|:-------------:|:----------------------------------------------------------------------------------------------:|
-| Eastern       | 6991          | 13525         | Not in ***.aux***. Distance and ratio --> classify as Line.                                    |
-| Eastern       | 54736         | 56767         | Not in ***.aux***. Distance and ratio --> classify as Line.                                    |
-| Eastern       | 30322         | 30839         | from_bus_id and to_bus_id switched in ***.aux***                                               |
-| Eastern       | 30304         | 30310         | In ***.aux*** but not in `Grid` object --> Not added.                                          |
-| Texas         | 3007161       | 3007292       | Multiple in ***.aux*** as Line and Transformer. Ratio 0 and 1. Distance >0. Classified as Line |
+| interconnect  | from_bus_id   |  to_bus_id    |  discrepancy: description and resolution                                                          |
+| ------------- |:-------------:|:-------------:|:-------------------------------------------------------------------------------------------------:|
+| Eastern       | 6991          | 13525         | Not in ***.aux***. Distance and ratio --> classified as Line.                                     |
+| Eastern       | 54736         | 56767         | Not in ***.aux***. Distance and ratio --> classified as Line.                                     |
+| Eastern       | 30322         | 30839         | from_bus_id and to_bus_id switched in ***.aux***                                                  |
+| Eastern       | 30304         | 30310         | In ***.aux*** but not in `Grid` object --> Not added.                                             |
+| Texas         | 3007161       | 3007292       | Multiple in ***.aux*** as Line and Transformer. Ratio 0 and 1. Distance >0 --> classified as Line |
 ---
