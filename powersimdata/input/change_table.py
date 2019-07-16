@@ -59,27 +59,28 @@ class ChangeTable(object):
                 print(p)
             raise ValueError('Invalid resource: %s' % resource)
 
-    def _check_zone(self, zone):
+    def _check_zone(self, zone_name):
         """Checks load zones.
 
-        :param list zone: geographical zones.
+        :param list zone_name: load zones.
         :raise ValueError: if zone(s) do(es) not exist.
         """
         possible = list(self.grid.plant.zone_name.unique())
-        for z in zone:
+        for z in zone_name:
             if z not in possible:
                 print("--------------")
                 print("Possible zones")
                 print("--------------")
                 for p in possible:
                     print(p)
-                raise ValueError('Invalid zone(s): %s' % " | ".join(zone))
+                raise ValueError('Invalid load zone(s): %s' %
+                                 " | ".join(zone_name))
 
-    def _get_plant_id(self, zone, resource):
+    def _get_plant_id(self, zone_name, resource):
         """Returns the plant identification number of all the generators
             located in one zone and using one specific resource.
 
-        :param str zone: zone to consider.
+        :param str zone_name: load zone to consider.
         :param str resource: type of generator to consider.
         :return: (*list*) -- plant identification number of all the generators
             located in zone and using resource.
@@ -88,41 +89,41 @@ class ChangeTable(object):
         try:
             plant_id = self.grid.plant.groupby(
                 ['zone_name', 'type']).get_group(
-                (zone, resource)).index.values.tolist()
+                (zone_name, resource)).index.values.tolist()
         except KeyError:
             pass
 
         return plant_id
 
-    def scale_plant_capacity(self, resource, zone=None, plant_id=None):
+    def scale_plant_capacity(self, resource, zone_name=None, plant_id=None):
         """Sets plant capacity scaling factor in change table.
 
         :param str resource: type of generator to consider.
-        :param dict zone: geographical zones. The key(s) is (are) the zone(s)
-            and the associated value is the scaling factor for the
-            increase/decrease in capacity of all the generators in the zone of
-            specified type.
+        :param dict zone_name: load zones. The key(s) is (are) the name of the
+            load zone(s) and the associated value is the scaling factor for the
+            increase/decrease in capacity of all the generators fueled by
+            specified resource in the load zone.
         :param dict plant_id: identification numbers of plants. The key(s) is
             (are) the id of the plant(s) and the associated value is the
             scaling factor for the increase/decrease in capacity of the
             generator.
         """
         self._check_resource(resource)
-        if bool(zone) or bool(plant_id) is True:
+        if bool(zone_name) or bool(plant_id) is True:
             self.ct[resource] = {}
-            if zone is not None:
+            if zone_name is not None:
                 try:
-                    self._check_zone(list(zone.keys()))
+                    self._check_zone(list(zone_name.keys()))
                 except ValueError:
                     self.ct.pop(resource)
                     return
                 self.ct[resource]['zone_id'] = {}
-                for z in zone.keys():
+                for z in zone_name.keys():
                     if len(self._get_plant_id(z, resource)) == 0:
                         print("No %s plants in %s." % (resource, z))
                     else:
-                        for i in self.grid.zone2id[z]:
-                            self.ct[resource]['zone_id'][i] = zone[z]
+                        self.ct[resource]['zone_id'][
+                            self.grid.zone2id[z]] = zone_name[z]
             if plant_id is not None:
                 plant_id_interconnect = set(self.grid.plant.groupby(
                     'type').get_group(resource).index)
@@ -141,29 +142,29 @@ class ChangeTable(object):
             print("<zone> and/or <plant_id> must be set. Return.")
             return
 
-    def scale_branch_capacity(self, zone=None, branch_id=None):
+    def scale_branch_capacity(self, zone_name=None, branch_id=None):
         """Sets branch capacity scaling factor in change table.
 
-        :param dict zone: geographical zones. The key(s) is (are) the zone(s)
-            and the associated value is the scaling factor for the
-            increase/decrease in capacity of all the branches in the zone. Only
-            lines that have both ends in zone are considered.
+        :param dict zone_name: load zones. The key(s) is (are) the name of the
+            load zone(s) and the associated value is the scaling factor for
+            the increase/decrease in capacity of all the branches in the load
+            zone. Only lines that have both ends in zone are considered.
         :param dict branch_id: identification numbers of branches. The key(s)
             is (are) the id of the line(s) and the associated value is the
             scaling factor for the increase/decrease in capacity of the line(s).
         """
-        if bool(zone) or bool(branch_id) is True:
+        if bool(zone_name) or bool(branch_id) is True:
             self.ct['branch'] = {}
-            if zone is not None:
+            if zone_name is not None:
                 try:
-                    self._check_zone(list(zone.keys()))
+                    self._check_zone(list(zone_name.keys()))
                 except ValueError:
                     self.ct.pop('branch')
                     return
                 self.ct['branch']['zone_id'] = {}
-                for z in zone.keys():
-                    for i in self.grid.zone2id[z]:
-                        self.ct['branch']['zone_id'][i] = zone[z]
+                for z in zone_name.keys():
+                    self.ct['branch']['zone_id'][
+                        self.grid.zone2id[z]] = zone_name[z]
             if branch_id is not None:
                 branch_id_interconnect = set(self.grid.branch.index)
                 diff = set(branch_id.keys()).difference(branch_id_interconnect)
@@ -202,28 +203,28 @@ class ChangeTable(object):
             for i in dcline_id.keys():
                 self.ct['dcline']['dcline_id'][i] = dcline_id[i]
 
-    def scale_demand(self, zone=None, zone_id=None):
+    def scale_demand(self, zone_name=None, zone_id=None):
         """Sets load scaling factor in change table.
 
-        :param dict zone: geographical zones. The key(s) is (are) the zone(s)
-            and the value is the scaling factor for the increase/decrease in
-            load.
+        :param dict zone_name: load zones. The key(s) is (are) the name of the
+            load zone(s) and the value is the scaling factor for the
+            increase/decrease in load.
         :param dict zone_id: identification numbers of zones. The key(s) is
             (are) the id of the zone(s) and the associated value is the scaling
             factor for the increase/decrease in load.
         """
-        if bool(zone) or bool(zone_id) is True:
+        if bool(zone_name) or bool(zone_id) is True:
             self.ct['demand'] = {}
-            if zone is not None:
+            if zone_name is not None:
                 try:
-                    self._check_zone(list(zone.keys()))
+                    self._check_zone(list(zone_name.keys()))
                 except ValueError:
                     self.ct.pop('demand')
                     return
                 self.ct['demand']['zone_id'] = {}
-                for z in zone.keys():
-                    for i in self.grid.zone2id[z]:
-                        self.ct['demand']['zone_id'][i] = zone[z]
+                for z in zone_name.keys():
+                    self.ct['demand']['zone_id'][
+                        self.grid.zone2id[z]] = zone_name[z]
             if zone_id is not None:
                 zone_id_interconnect = set(self.grid.id2zone.keys())
                 diff = set(zone_id.keys()).difference(zone_id_interconnect)
