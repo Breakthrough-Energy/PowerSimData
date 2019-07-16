@@ -83,16 +83,17 @@ scenario.state.builder.set_base_profile('solar', 'v2')  # set solar
 scenario.state.builder.set_base_profile('wind', 'v1')  # set wind
 
 # scale capacity of solar plants in WA and AZ by 5 and 2.5, respectively
-scenario.state.builder.change_table.scale_plant_capacity('solar',
-                                                         zone={'Washington': 5,
-                                                               'Arizona': 2.5})
+scenario.state.builder.change_table.scale_plant_capacity(
+    'solar', zone_name={'Washington': 5, 'Arizona': 2.5})
+    
 # scale capacity of wind farms in OR and MT by 1.5 and 2, respectively
-scenario.state.builder.change_table.scale_plant_capacity('wind',
-                                                         zone={'Oregon': 1.5,
-                                                               'Montana': 2})
+scenario.state.builder.change_table.scale_plant_capacity(
+    'wind', zone_name={'Oregon': 1.5, 'Montana Western': 2})
+    
 # scale capacity of solar plants in NV and WY by 2
-scenario.state.builder.change_table.scale_branch_capacity(zone={'Nevada': 2,
-                                                                'Wyoming': 2})
+scenario.state.builder.change_table.scale_branch_capacity(
+    zone_name={'Nevada': 2, 'Wyoming': 2})
+    
 print(scenario.state.builder.change_table.ct)  # print change table
 
 
