@@ -16,6 +16,7 @@ from collections import OrderedDict
 class Create(State):
     """Scenario is in a state of being created.
 
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     """
     name = 'create'
     allowed = []
@@ -23,8 +24,6 @@ class Create(State):
     def __init__(self, scenario):
         """Initializes attributes.
 
-        :param powersimdata.scenario.scenario.Scenario scenario: scenario
-            instance.
         """
         self.builder = None
         self._scenario_status = None
@@ -271,13 +270,13 @@ class Texas(Builder):
 class Western(Builder):
     """Builder for Western interconnect.
 
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
     name = 'Western'
 
     def __init__(self, ssh_client):
         """Constructor.
 
-        :param paramiko.client.SSHClient ssh_client: session with an SSH server.
         """
         self.interconnect = ['Western']
         self.profile = CSV(self.interconnect, ssh_client)
@@ -419,15 +418,15 @@ class USA(Builder):
 
 
 class CSV(object):
-    """Profiles storage.
+    """Profiles handler.
 
+    :param list interconnect: interconnect(s)
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
 
     def __init__(self, interconnect, ssh_client):
         """Constructor.
 
-        :param list interconnect: interconnect(s)
-        :param paramiko.client.SSHClient ssh_client: session with an SSH server.
         """
         self._ssh = ssh_client
         self.interconnect = interconnect

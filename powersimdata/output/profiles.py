@@ -8,12 +8,12 @@ import pandas as pd
 class OutputData(object):
     """Load output data.
 
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
 
     def __init__(self, ssh_client):
         """Constructor
 
-        :param paramiko.client.SSHClient ssh_client: session with an SSH server.
         """
         if not os.path.exists(const.LOCAL_DIR):
             os.makedirs(const.LOCAL_DIR)

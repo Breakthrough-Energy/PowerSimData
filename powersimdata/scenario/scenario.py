@@ -15,12 +15,12 @@ pd.set_option('display.max_colwidth', -1)
 class Scenario(object):
     """Handles scenario.
 
+    :param str descriptor: scenario name or index.
     """
 
     def __init__(self, descriptor):
         """Constructor.
 
-        :param str descriptor: scenario name or index.
         """
         if not isinstance(descriptor, str):
             raise TypeError('Descriptor must be a string')

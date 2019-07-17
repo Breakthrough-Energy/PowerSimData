@@ -14,6 +14,7 @@ from subprocess import Popen, PIPE
 class Execute(State):
     """Scenario is in a state of being executed.
 
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     """
     name = 'execute'
     allowed = []
@@ -21,8 +22,6 @@ class Execute(State):
     def __init__(self, scenario):
         """Constructor.
 
-        :param powersimdata.scenario.scenario.Scenario scenario: scenario
-            instance.
         """
         self._scenario_info = scenario.info
         self._scenario_status = scenario.status
@@ -156,13 +155,13 @@ class Execute(State):
 class SimulationInput(object):
     """Prepares scenario for execution.
 
+    :param Scaler scaler: Scaler instance.
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
 
     def __init__(self, scaler, ssh_client):
         """Constructor.
 
-        :param Scaler scaler: Scaler instance.
-        :param paramiko.client.SSHClient ssh_client: session with an SSH server.
         """
         self.scaler = scaler
         self._tmp_dir = '%s/scenario_%s' % (const.EXECUTE_DIR,

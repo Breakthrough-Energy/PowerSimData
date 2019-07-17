@@ -7,13 +7,13 @@ import copy
 class Scaler(object):
     """Scales grid and input profiles using information stored in change table.
 
+    :param dict scenario_info: scenario information.
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
 
     def __init__(self, scenario_info, ssh_client):
         """Constructor.
 
-        :param dict scenario_info: scenario information.
-        :param paramiko.client.SSHClient ssh_client: session with an SSH server.
         """
         self.scenario_id = scenario_info['id']
         self.interconnect = scenario_info['interconnect'].split('_')

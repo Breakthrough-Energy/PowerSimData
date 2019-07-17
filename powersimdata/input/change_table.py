@@ -28,12 +28,13 @@ class ChangeTable(object):
             indicating the desired increase/decrease of capacity of the
             *'hydro'*/*'solar'*/*'wind'* plant (1.2 would correspond to a 20%
             increase while 0.95 would be a 5% decrease).
+
+        :param list interconnect: interconnect name(s).
     """
 
     def __init__(self, interconnect):
         """Constructor.
 
-        :param list interconnect: interconnect name(s).
         """
         if isinstance(interconnect, str):
             self.grid = Grid([interconnect])

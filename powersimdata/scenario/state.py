@@ -1,7 +1,6 @@
 class State(object):
-    """Defines an interface for encapsulating the behavior associated with a \
+    """Defines an interface for encapsulating the behavior associated with a
         particular state of the Scenario object.
-
     """
 
     name = "state"

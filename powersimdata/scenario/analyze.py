@@ -8,6 +8,7 @@ import pandas as pd
 class Analyze(State):
     """Scenario is in a state of being analyzed.
 
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     """
 
     name = 'analyze'
@@ -16,8 +17,6 @@ class Analyze(State):
     def __init__(self, scenario):
         """Constructor.
 
-        :param powersimdata.scenario.scenario.Scenario scenario: scenario
-            instance.
         """
         self._scenario_info = scenario.info
         self._ssh = scenario.ssh

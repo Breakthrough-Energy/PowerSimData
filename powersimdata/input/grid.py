@@ -7,6 +7,7 @@ import seaborn as sns
 class Grid(object):
     """Synthetic Network.
 
+    :param list interconnect: name of interconnect(s).
     """
     id2type = {0: 'wind',
                1: 'solar',
@@ -27,7 +28,6 @@ class Grid(object):
     def __init__(self, interconnect):
         """Constructor.
 
-        :param list interconnect: name of interconnect(s).
         """
         top_dirname = os.path.dirname(__file__)
         data_dirname = os.path.join(top_dirname, 'data')
