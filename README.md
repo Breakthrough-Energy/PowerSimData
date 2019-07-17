@@ -120,7 +120,7 @@ simulation.
 2. It launches the simulation. The status of the simulation can be accessed
 using the `print_scenario_status` method. Once the status switched from
 **running** to **finished**, output data can be extracted. It is worth noting
-that. It is possible after the simulation is finished to access the written
+that it is possible after the simulation is finished to access the written
 output and error messages as demonstrated below.
 3. It extracts the output data. This operation can only be done once after the
 simulation has finished running.
