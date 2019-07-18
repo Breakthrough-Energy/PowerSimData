@@ -79,12 +79,16 @@ class Scaler(object):
                         for i in branch_id:
                             self._grid.branch.loc[i, 'rateA'] = \
                                 self._grid.branch.loc[i, 'rateA'] * value
+                            self._grid.branch.loc[i, 'x'] = \
+                                self._grid.branch.loc[i, 'x'] / value
                 except KeyError:
                     pass
                 try:
                     for key, value in self.ct['branch']['branch_id'].items():
                         self._grid.branch.loc[key, 'rateA'] = \
                             self._grid.branch.loc[key, 'rateA'] * value
+                        self._grid.branch.loc[i, 'x'] = \
+                            self._grid.branch.loc[i, 'x'] / value
                 except KeyError:
                     pass
             if 'dcline' in list(self.ct.keys()):
