@@ -128,7 +128,7 @@ class Execute(State):
         return process
 
     def extract_simulation_output(self):
-        """Extracts simulation outputs PG and PF on server.
+        """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL} on server.
 
         :return: (*subprocess.Popen*) -- new process used to extract output
             data.

@@ -89,6 +89,36 @@ class Analyze(State):
         pf = od.get_data(self._scenario_info['id'], 'PF')
 
         return pf
+    
+    def get_lmp(self):
+        """Returns LMP data frame. LMP = locational marginal price
+
+        :return: (*pandas.DataFrame*) -- data frame of nodal prices.
+        """
+        od = OutputData(self._ssh)
+        lmp = od.get_data(self._scenario_info['id'], 'LMP')
+
+        return lmp
+    
+    def get_congu(self):
+        """Returns CONGU data frame. CONGU = Congestion, Upper flow limit
+
+        :return: (*pandas.DataFrame*) -- data frame of branch flow mu (upper).
+        """
+        od = OutputData(self._ssh)
+        congu = od.get_data(self._scenario_info['id'], 'CONGU')
+
+        return congu
+    
+    def get_congl(self):
+        """Returns CONGL data frame. CONGL = Congestion, Lower flow limit
+
+        :return: (*pandas.DataFrame*) -- data frame of branch flow mu (lower).
+        """
+        od = OutputData(self._ssh)
+        congl = od.get_data(self._scenario_info['id'], 'CONGL')
+
+        return congl
 
     def get_ct(self):
         """Returns change table.
