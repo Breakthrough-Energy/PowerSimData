@@ -23,10 +23,10 @@ class OutputData(object):
         """Returns data either from server or from local directory.
 
         :param str scenario_id: scenario id.
-        :param str field_name: *'PG'* or *'PF'*.
-        :return: (*pandas.DataFrame*) -- PG or PF as a data frame.
+        :param str field_name: *'PG'*, *'PF'*, *'LMP'*, *'CONGU'*, or *'CONGL'*.
+        :return: (*pandas.DataFrame*) -- specified field as a data frame.
         :raises FileNotFoundError: if file not found on local machine.
-        :raises ValueError: if second argument is not one of *'PG'* or *'PF'*.
+        :raises ValueError: if second argument is not an allowable field.
         """
         _check_field(field_name)
 
@@ -52,7 +52,7 @@ def _read_data(file_name):
     """Reads data.
 
     :param str file_name: file name
-    :return: (*pandas.DataFrame*) -- PG or PF as a data frame.
+    :return: (*pandas.DataFrame*) -- specified file as a data frame.
     """
     data = pd.read_pickle(os.path.join(const.LOCAL_DIR, file_name))
 
@@ -62,9 +62,9 @@ def _read_data(file_name):
 def _check_field(field_name):
     """Checks field name.
 
-    :param str field_name: *'PG'* or *'PF'*.
-    :raises ValueError: if not *'PG'* or *'PF'*.
+    :param str field_name: *'PG'*, *'PF'*, *'LMP'*, *'CONGU'*, or *'CONGL'*.
+    :raises ValueError: if not *'PG'*, *'PF'*, *'LMP'*, *'CONGU'*, or *'CONGL'*.
     """
-    possible = ['PG', 'PF']
+    possible = ['PG', 'PF', 'LMP', 'CONGU', 'CONGL']
     if field_name not in possible:
         raise ValueError('Only %s data can be loaded' % " | ".join(possible))
