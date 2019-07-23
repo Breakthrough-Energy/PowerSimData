@@ -47,6 +47,7 @@ class Scaler(object):
             for r in ['coal', 'ng', 'nuclear', 'hydro', 'solar', 'wind']:
                 if r in list(self.ct.keys()):
                     try:
+                        
                         for key, value in self.ct[r]['zone_id'].items():
                             plant_id = self._grid.plant.groupby(
                                 ['zone_id', 'type']).get_group(
