@@ -56,7 +56,7 @@ class Scaler(object):
                                     self._grid.plant.loc[i, 'GenMWMax'] * value
                                 if r in ['coal', 'ng', 'nuclear']:
                                     self._grid.plant.loc[i, 'Pmax'] = \
-                                        self._grid.plant.loc[i, 'Pmax'] * value
+                                        self._grid.plant.loc[i, 'Pmax'] * value 
                     except KeyError:
                         pass
                     try:
