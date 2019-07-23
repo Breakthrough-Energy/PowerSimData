@@ -8,16 +8,14 @@ class Scaler(object):
     """Scales grid and input profiles using information stored in change table.
 
     :param dict scenario_info: scenario information.
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
 
-    def __init__(self, scenario_info, ssh_client):
+    def __init__(self, scenario_info)
         """Constructor.
 
         """
         self.scenario_id = scenario_info['id']
         self.interconnect = scenario_info['interconnect'].split('_')
-        self._input = InputData(ssh_client)
         if scenario_info['change_table'] == 'Yes':
             self._load_ct()
         else:
