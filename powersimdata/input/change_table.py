@@ -10,9 +10,9 @@ class ChangeTable(object):
         grid as well as to the original demand, hydro, solar and wind profiles.
         A pickle file enclosing the change table in form of a dictionary can be
         created and transferred on the server. Keys are *'branch'*, *'demand'*,
-        *'hydro'*, *'solar'* and *'wind'*. If a key is missing in the
-        dictionary, then no changes will be applied. The data structure is
-        given below:
+        *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*, *'hydro'*,
+        *'solar'*, and *'wind'*. If a key is missing in the dictionary, then no
+        changes will be applied. The data structure is given below:
 
         * *'branch'*:
             value is a dictionary, which has branch id as key and a factor
@@ -23,10 +23,11 @@ class ChangeTable(object):
             value is a dictionary, which has load zones as keys and a factor
             indicating the desired increase/decrease of load in zone (1.2 would
             correspond to a 20% increase while 0.95 would be a 5% decrease).
-        * *'coal'*, *'ng'*, *'nuclear'*, *'hydro'*, *'solar'* and *'wind'*:
-            value is a dictionary, which has the plant id as key and a factor
-            indicating the desired increase/decrease of capacity of the
-            *'hydro'*/*'solar'*/*'wind'* plant (1.2 would correspond to a 20%
+        * *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*, *'hydro'*,
+            *'solar'*, and *'wind'*:
+            value is a dictionary, which has plant ids and/or zone ids as keys
+            and a factor indicating the desired increase/decrease of capacity
+            of the given plant(s) (1.2 would correspond to a 20%
             increase while 0.95 would be a 5% decrease).
 
         :param list interconnect: interconnect name(s).
@@ -51,7 +52,9 @@ class ChangeTable(object):
         :param str resource: type of generator.
         :raises ValueError: if resource cannot be changed.
         """
-        possible = ['coal', 'ng', 'nuclear', 'hydro', 'solar', 'wind']
+        possible = [
+            'coal', 'dfo', 'geothermal', 'ng', 'nuclear',
+            'hydro', 'solar', 'wind']
         if resource not in possible:
             print("-----------------------")
             print("Possible Generator type")

@@ -10,6 +10,10 @@ class Scaler(object):
     :param dict scenario_info: scenario information.
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
+    
+    _gen_types = [
+        'coal', 'dfo', 'geothermal', 'ng', 'nuclear', 'hydro', 'solar', 'wind']
+    _thermal_gen_types = ['coal', 'dfo', 'geothermal', 'ng', 'nuclear']
 
     def __init__(self, scenario_info, ssh_client):
         """Constructor.
@@ -46,7 +50,7 @@ class Scaler(object):
         """
         self._grid = copy.deepcopy(self._original_grid)
         if bool(self.ct):
-            for r in ['coal', 'ng', 'nuclear', 'hydro', 'solar', 'wind']:
+            for r in self._gen_types:
                 if r in list(self.ct.keys()):
                     try:
                         for key, value in self.ct[r]['zone_id'].items():
@@ -56,7 +60,7 @@ class Scaler(object):
                             for i in plant_id:
                                 self._grid.plant.loc[i, 'GenMWMax'] = \
                                     self._grid.plant.loc[i, 'GenMWMax'] * value
-                                if r in ['coal', 'ng', 'nuclear']:
+                                if r in self._thermal_gen_types:
                                     self._grid.plant.loc[i, 'Pmax'] = \
                                         self._grid.plant.loc[i, 'Pmax'] * value
                     except KeyError:
@@ -65,7 +69,7 @@ class Scaler(object):
                         for key, value in self.ct[r]['plant_id'].items():
                             self._grid.plant.loc[key, 'GenMWMax'] = \
                                 self._grid.plant.loc[key, 'GenMWMax'] * value
-                            if r in ['coal', 'ng', 'nuclear']:
+                            if r in self._thermal_gen_types:
                                 self._grid.plant.loc[key, 'Pmax'] = \
                                     self._grid.plant.loc[key, 'Pmax'] * value
                     except KeyError:
