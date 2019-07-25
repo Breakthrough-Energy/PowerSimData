@@ -13417,3 +13417,12 @@
 	coal
 	ng
 	ng
+	geothermal
+	geothermal
+	geothermal
+	geothermal
+	geothermal
+	geothermal
+	geothermal
+	geothermal
+	geothermal
