@@ -67,6 +67,8 @@ class Scaler(object):
                                         self._grid.plant.loc[i, 'Pmin'] * value
                                     self._grid.gencost.loc[i, 'c0'] = \
                                         self._grid.gencost.loc[i, 'c0'] * value
+                                    if value == 0:
+                                        continue
                                     self._grid.gencost.loc[i, 'c2'] = \
                                         self._grid.gencost.loc[i, 'c2'] / value
                     except KeyError:
@@ -82,6 +84,8 @@ class Scaler(object):
                                     self._grid.plant.loc[i, 'Pmin'] * value
                                 self._grid.gencost.loc[i, 'c0'] = \
                                     self._grid.gencost.loc[i, 'c0'] * value
+                                if value == 0:
+                                    continue
                                 self._grid.gencost.loc[i, 'c2'] = \
                                     self._grid.gencost.loc[i, 'c2'] / value
                     except KeyError:
