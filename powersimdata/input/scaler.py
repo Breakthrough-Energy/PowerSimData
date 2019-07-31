@@ -65,10 +65,10 @@ class Scaler(object):
                                         self._grid.plant.loc[i, 'Pmax'] * value
                                     self._grid.plant.loc[i, 'Pmin'] = \
                                         self._grid.plant.loc[i, 'Pmin'] * value
-                                    self._grid.plant.loc[i, 'c0'] = \
-                                        self._grid.plant.loc[i, 'c0'] * value
-                                    self._grid.plant.loc[i, 'c2'] = \
-                                        self._grid.plant.loc[i, 'c2'] / value
+                                    self._grid.gencost.loc[i, 'c0'] = \
+                                        self._grid.gencost.loc[i, 'c0'] * value
+                                    self._grid.gencost.loc[i, 'c2'] = \
+                                        self._grid.gencost.loc[i, 'c2'] / value
                     except KeyError:
                         pass
                     try:
@@ -80,10 +80,10 @@ class Scaler(object):
                                     self._grid.plant.loc[key, 'Pmax'] * value
                                 self._grid.plant.loc[i, 'Pmin'] = \
                                     self._grid.plant.loc[i, 'Pmin'] * value
-                                self._grid.plant.loc[i, 'c0'] = \
-                                    self._grid.plant.loc[i, 'c0'] * value
-                                self._grid.plant.loc[i, 'c2'] = \
-                                    self._grid.plant.loc[i, 'c2'] / value
+                                self._grid.gencost.loc[i, 'c0'] = \
+                                    self._grid.gencost.loc[i, 'c0'] * value
+                                self._grid.gencost.loc[i, 'c2'] = \
+                                    self._grid.gencost.loc[i, 'c2'] / value
                     except KeyError:
                         pass
             if 'branch' in list(self.ct.keys()):
