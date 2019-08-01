@@ -128,6 +128,8 @@ class ChangeTable(object):
                     else:
                         self.ct[resource]['zone_id'][
                             self.grid.zone2id[z]] = zone_name[z]
+                if len(self.ct[resource]['zone_id']) == 0:
+                    self.ct.pop(resource)
             if plant_id is not None:
                 plant_id_interconnect = set(self.grid.plant.groupby(
                     'type').get_group(resource).index)
