@@ -206,7 +206,8 @@ class SimulationInput(object):
         branch.reset_index(inplace=True, drop=True)
         branch.drop(columns=['interconnect', 'from_lat', 'from_lon', 'to_lat',
                              'to_lon', 'from_zone_id', 'to_zone_id',
-                             'from_zone_name', 'to_zone_name'], inplace=True)
+                             'from_zone_name', 'to_zone_name',
+                             'branch_device_type'], inplace=True)
         # Format generation cost
         gencost = grid.gencost.copy()
         gencost.reset_index(inplace=True, drop=True)
