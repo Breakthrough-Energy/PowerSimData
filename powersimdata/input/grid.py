@@ -103,6 +103,33 @@ class Grid(object):
                     del self.zone2id[self.id2zone[i]]
                     del self.id2zone[i]
 
+    def _build_storage(self):
+        """Creates dictionary of DataFrames to hold storage parameters.
+
+        """
+        # See Table 5.2 of MOST manual v1.0.2
+        self.storage = {
+            # data frames to add to mpc object
+            'gen': pd.DataFrame(columns=[
+                'bus_id', 'Pg', 'Qg', 'Qmax', 'Qmin', 'Vg', 'mBase', 'status',
+                'Pmax', 'Pmin', 'Pc1', 'Pc2', 'Qc1min', 'Qc1max', 'Qc2min',
+                'Qc2max', 'ramp_agc', 'ramp_10', 'ramp_30', 'ramp_q', 'apf']),
+            'gencost': pd.DataFrame(columns=[
+                'type', 'startup', 'shutdown', 'n', 'c2', 'c1', 'c0']),
+            'StorageData': pd.DataFrame(columns=[
+                'UnitIdx', 'InitialStorage', 'InitialStorageLowerBound',
+                'InitialStorageUpperBound', 'InitialStorageCost',
+                'TerminalStoragePrice', 'MinStorageLevel', 'MaxStorageLevel',
+                'OutEff', 'InEff', 'LossFactor', 'rho']),
+            'genfuel': [],
+            # default parameters for building data frame
+            'duration': 4,      # hours
+            'min_stor': 0.05,   # ratio
+            'max_stor': 0.95,   # ratio
+            'InEff': 0.9,
+            'OutEff': 0.9,
+            'energy_price': 20}  # $/MWh
+
     def _add_information(self):
         """Adds information to data frames.
 
@@ -156,6 +183,7 @@ class Grid(object):
         self._read_gencost()
         self._read_branch()
         self._read_dcline()
+        self._build_storage()
 
     def _read_sub(self):
         """Reads the substation file.
@@ -201,8 +229,10 @@ class Grid(object):
         """
         print("Loading plant")
         # Read and format
-        plant_type = pd.read_csv(self.data_loc + 'gentype_case.csv', index_col=0)
-        self.plant = pd.read_csv(self.data_loc + 'genbus_case.csv', index_col=0)
+        plant_type = pd.read_csv(self.data_loc + 'gentype_case.csv',
+                                 index_col=0)
+        self.plant = pd.read_csv(self.data_loc + 'genbus_case.csv',
+                                 index_col=0)
         self._plant_aux = pd.read_pickle(self.data_loc + 'USAGenbus_aux.pkl')
         self.plant.rename(columns={'bus': 'bus_id'}, inplace=True)
 
@@ -225,7 +255,8 @@ class Grid(object):
         """
         print("Loading plant cost")
         # Read and format
-        self.gencost = pd.read_csv(self.data_loc + 'gencost_case.csv', index_col=0)
+        self.gencost = pd.read_csv(self.data_loc + 'gencost_case.csv',
+                                   index_col=0)
 
         # Interconnect
         self.gencost['interconnect'] = self.plant.interconnect
@@ -238,7 +269,8 @@ class Grid(object):
         """
         print("Loading DC line")
         # Read and format
-        self.dcline = pd.read_csv(self.data_loc + 'dcline_case.csv', index_col=0)
+        self.dcline = pd.read_csv(self.data_loc + 'dcline_case.csv',
+                                  index_col=0)
         self.dcline.rename(columns={'fbus': 'from_bus_id',
                                     'tbus': 'to_bus_id'}, inplace=True)
 
@@ -261,7 +293,8 @@ class Grid(object):
 
         """
         print("Loading branch")
-        self.branch = pd.read_csv(self.data_loc + 'branch_case.csv', index_col=0)
+        self.branch = pd.read_csv(self.data_loc + 'branch_case.csv',
+                                  index_col=0)
         self._branch_aux = pd.read_pickle(
             self.data_loc + 'USABranchDeviceType.pkl')
         self.branch.rename(columns={'fbus': 'from_bus_id',
