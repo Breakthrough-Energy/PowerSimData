@@ -214,6 +214,11 @@ class Grid(object):
                                     ['GenMWMax', 'GenMWMin']]], axis=1)
         self.plant['type'] = plant_type
 
+        # Temporary fix
+        for i in self.plant.index[self.plant.type == 'geothermal'].tolist():
+            self.plant.loc[i, 'GenMWMin'] = self.plant.loc[i, 'Pmin']
+            self.plant.loc[i, 'GenMWMax'] = self.plant.loc[i, 'Pmax']
+
         # Interconnect
         self.plant['interconnect'] = 'Eastern'
         self.plant.loc[self.plant.bus_id > 2000000, 'interconnect'] = 'Western'
