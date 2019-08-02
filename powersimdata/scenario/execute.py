@@ -205,11 +205,12 @@ class SimulationInput(object):
         gen.reset_index(inplace=True, drop=True)
         genfuel = gen.type.values[np.newaxis].T
         gen.drop(columns=['GenMWMax', 'GenMWMin', 'type', 'interconnect',
-                          'lat', 'lon', 'zone_id', 'zone_name'], inplace=True)
+                          'lat', 'lon', 'zone_id', 'zone_name',
+                          'GenFuelCost', 'GenIOB', 'GenIOC', 'GenIOD'],
+                 inplace=True)
         mpc['mpc']['gen'] = gen.values
         mpc['mpc']['genid'] = genid
         mpc['mpc']['genfuel'] = genfuel
-
         # Format branch
         branch = grid.branch.copy()
         branchid = branch.index.values[np.newaxis].T
