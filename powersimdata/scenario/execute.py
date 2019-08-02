@@ -231,6 +231,9 @@ class SimulationInput(object):
         upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir,
                change_name_to='case.mat')
 
+        print("Deleting %s on local machine" % file_name)
+        os.remove(os.path.join(const.LOCAL_DIR, file_name))
+
     def prepare_profile(self, kind):
         """Prepares profile for simulation.
 
@@ -275,3 +278,6 @@ class SimulationInput(object):
 
         upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir,
                change_name_to='%s.csv' % kind)
+
+        print("Deleting %s on local machine" % file_name)
+        os.remove(os.path.join(const.LOCAL_DIR, file_name))
