@@ -14,7 +14,9 @@ class Grid(object):
                2: 'hydro',
                3: 'ng',
                4: 'nuclear',
-               5: 'coal'}
+               5: 'coal',
+               6: 'geothermal',
+               7: 'dfo'}
 
     type2id = {v: k for k, v in id2type.items()}
 
@@ -23,7 +25,9 @@ class Grid(object):
                   'hydro': sns.xkcd_rgb["light blue"],
                   'ng': sns.xkcd_rgb["orchid"],
                   'nuclear': sns.xkcd_rgb["silver"],
-                  'coal': sns.xkcd_rgb["light brown"]}
+                  'coal': sns.xkcd_rgb["light brown"],
+                  'geothermal': sns.xkcd_rgb["hot pink"],
+                  'dfo': sns.xkcd_rgb["royal blue"]}
 
     def __init__(self, interconnect):
         """Constructor.
@@ -209,6 +213,11 @@ class Grid(object):
                                 self._plant_aux.reset_index()[
                                     ['GenMWMax', 'GenMWMin']]], axis=1)
         self.plant['type'] = plant_type
+
+        # Temporary fix
+        for i in self.plant.index[self.plant.type == 'geothermal'].tolist():
+            self.plant.loc[i, 'GenMWMin'] = self.plant.loc[i, 'Pmin']
+            self.plant.loc[i, 'GenMWMax'] = self.plant.loc[i, 'Pmax']
 
         # Interconnect
         self.plant['interconnect'] = 'Eastern'
