@@ -237,9 +237,10 @@ class Grid(object):
         self.plant.rename(columns={'bus': 'bus_id'}, inplace=True)
 
         # Combine
-        self.plant = pd.concat([self.plant,
-                                self._plant_aux.reset_index()[
-                                    ['GenMWMax', 'GenMWMin']]], axis=1)
+        to_add = ['GenMWMax', 'GenMWMin', 'GenFuelCost',
+                  'GenIOB', 'GenIOC', 'GenIOD']
+        self.plant = pd.concat(
+            [self.plant, self._plant_aux.reset_index()[to_add]], axis=1)
         self.plant['type'] = plant_type
 
         # Interconnect
