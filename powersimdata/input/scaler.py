@@ -80,14 +80,14 @@ class Scaler(object):
                             if r in self._thermal_gen_types:
                                 self._grid.plant.loc[key, 'Pmax'] = \
                                     self._grid.plant.loc[key, 'Pmax'] * value
-                                self._grid.plant.loc[i, 'Pmin'] = \
-                                    self._grid.plant.loc[i, 'Pmin'] * value
-                                self._grid.gencost.loc[i, 'c0'] = \
-                                    self._grid.gencost.loc[i, 'c0'] * value
+                                self._grid.plant.loc[key, 'Pmin'] = \
+                                    self._grid.plant.loc[key, 'Pmin'] * value
+                                self._grid.gencost.loc[key, 'c0'] = \
+                                    self._grid.gencost.loc[key, 'c0'] * value
                                 if value == 0:
                                     continue
-                                self._grid.gencost.loc[i, 'c2'] = \
-                                    self._grid.gencost.loc[i, 'c2'] / value
+                                self._grid.gencost.loc[key, 'c2'] = \
+                                    self._grid.gencost.loc[key, 'c2'] / value
                     except KeyError:
                         pass
             if 'branch' in list(self.ct.keys()):
@@ -107,8 +107,8 @@ class Scaler(object):
                     for key, value in self.ct['branch']['branch_id'].items():
                         self._grid.branch.loc[key, 'rateA'] = \
                             self._grid.branch.loc[key, 'rateA'] * value
-                        self._grid.branch.loc[i, 'x'] = \
-                            self._grid.branch.loc[i, 'x'] / value
+                        self._grid.branch.loc[key, 'x'] = \
+                            self._grid.branch.loc[key, 'x'] / value
                 except KeyError:
                     pass
             if 'dcline' in list(self.ct.keys()):
