@@ -15,11 +15,23 @@ class TestScalarMethods(unittest.TestCase):
     def setUp(self):
         self._original_grid = GridMock(['plant','gencost'])
 
-    def test_typeandlocation_scaling(self):
+    def test_nonthermal_scaling(self):
         baseGrid = GridMock(['plant'])
         self.ct = {'solar': {'zone_id': {1: 2, 3: 3}},'wind':{'zone_id': {2: 5}}}
 
         newGrid = scale_generators_by_location(self, GridMock(['plant']))
+
+        self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[2*200,5*150,100,300,120],'Scaling was not applied!')
+
+        self.assertEqual(newGrid.plant[['zone_id','Pmin','Pmax']].values.tolist(),\
+                         baseGrid.plant[['zone_id','Pmin','Pmax']].values.tolist(),\
+                                        'Scaling affected other generator properties!')
+
+    def test_grid_nonthermal_scaling(self):
+        baseGrid = GridMock(['plant'])
+        self.ct = {'solar': {'zone_id': {1: 2, 3: 3}},'wind':{'zone_id': {2: 5}}}
+
+        newGrid = get_grid(self)
 
         self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[2*200,5*150,100,300,120],'Scaling was not applied!')
 
@@ -43,18 +55,6 @@ class TestScalarMethods(unittest.TestCase):
 
         self.assertEqual(newGrid.gencost['c0'].tolist(),[10,20,5*30,2*40,50],'Scaling was not applied!')
         self.assertEqual(newGrid.gencost['c2'].tolist(),[1,2,3/5,4/2,5],'Scaling was not applied!')
-
-    def test_grid_scaling(self):
-        baseGrid = GridMock(['plant'])
-        self.ct = {'solar': {'zone_id': {1: 2, 3: 3}},'wind':{'zone_id': {2: 5}}}
-
-        newGrid = get_grid(self)
-
-        self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[2*200,5*150,100,300,120],'Scaling was not applied!')
-
-        self.assertEqual(newGrid.plant[['zone_id','Pmin','Pmax']].values.tolist(),\
-                         baseGrid.plant[['zone_id','Pmin','Pmax']].values.tolist(),\
-                                        'Scaling affected other generator properties!')
 
     def test_grid_thermal_scaling(self):
         baseGrid = GridMock(['plant','gencost'])
