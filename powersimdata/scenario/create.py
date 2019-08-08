@@ -7,6 +7,7 @@ from powersimdata.input.change_table import ChangeTable
 from powersimdata.scenario.helpers import interconnect2name, check_interconnect
 
 import os
+import posixpath
 import numpy as np
 import pandas as pd
 import pickle
@@ -120,6 +121,8 @@ class Create(State):
         print("--> Uploading change table to server")
         file_name = self._scenario_info['id'] + '_ct.pkl'
         upload(self._ssh, file_name, const.LOCAL_DIR, const.INPUT_DIR)
+        print("--> Deleting change table on local machine")
+        os.remove(os.path.join(const.LOCAL_DIR, file_name))
 
     def _create_link(self):
         """Creates links to base profiles on server.
@@ -442,7 +445,7 @@ class CSV(object):
             raise NameError("Choose from %s" % " | ".join(possible))
 
         available = interconnect2name(self.interconnect) + '_' + kind + '_*'
-        query = os.path.join(const.BASE_PROFILE_DIR, available)
+        query = posixpath.join(const.BASE_PROFILE_DIR, available)
         stdin, stdout, stderr = self._ssh.exec_command("ls " + query)
         if len(stderr.readlines()) != 0:
             print("No %s profiles available." % kind)
