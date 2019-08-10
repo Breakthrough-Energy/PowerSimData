@@ -115,8 +115,8 @@ class TestScalarMethods(unittest.TestCase):
         self.assertEqual(newGrid.branch['rateA'].tolist(),[2*10,20,30,40,3*50],'Scaling was not applied to branch rateA field!')
         self.assertEqual(newGrid.branch['x'].tolist(),[0.1/2,0.2,0.3,0.4,0.5/3],'Scaling was not applied to branch x field!')
 
-        self.assertEqual(newGrid.branch[['from_zone_id','to_zone_id','branch_id']].values.tolist(),\
-                         baseGrid.branch[['from_zone_id','to_zone_id','branch_id']].values.tolist(),\
+        self.assertEqual(newGrid.branch[['from_zone_id','to_zone_id']].values.tolist(),\
+                         baseGrid.branch[['from_zone_id','to_zone_id']].values.tolist(),\
                          'Scaling affected other generator properties!')
 
     def test_genId_scaling(self):

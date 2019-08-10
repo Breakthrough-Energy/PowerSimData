@@ -32,7 +32,7 @@ def scale_location_type(self, grid, gentype, grid_transform):
 
 def get_plant_ids_by_type(grid, key, gentype):
     plant_ids = grid.plant.groupby(['zone_id', 'type']).get_group((key, gentype)).index.values.tolist()
-    print('plant_ids: ', plant_ids)
+#    print('plant_ids: ', plant_ids)
     return plant_ids
 
 def scale_GenMWMax(self, grid, gentype, plant_ids, value):
@@ -42,14 +42,14 @@ def scale_GenMWMax(self, grid, gentype, plant_ids, value):
 
 def scale_Thermal(self, grid, gentype, plant_ids, value):
     if gentype in self._thermal_gen_types:
-        print(grid.plant)
+#        print(grid.plant)
         grid.plant.loc[plant_ids, 'Pmax'] *= value
         grid.plant.loc[plant_ids, 'Pmin'] *= value
         grid.gencost.loc[plant_ids, 'c0'] *= value
         # if value == 0:
         #     continue
         grid.gencost.loc[plant_ids, 'c2'] /= value
-        print(grid.plant)
+#        print(grid.plant)
     return grid
 
 def scale_thermal_genID_power_cost(self, grid, gentype):

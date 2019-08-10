@@ -27,5 +27,7 @@ class GridMock:
             self.dcline.set_index('dcline_id', inplace=True)                        
             
         if 'gencost' in fieldNames:
-            self.gencost = pd.DataFrame({'c0': [10,20,30,40,50],\
+            self.gencost = pd.DataFrame({'plant_id': [101,102,103,104,105],\
+                                         'c0': [10,20,30,40,50],\
                                          'c2': [1,2,3,4,5]})
+            self.gencost.set_index('plant_id', inplace=True)
