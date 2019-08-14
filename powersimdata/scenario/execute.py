@@ -118,7 +118,8 @@ class Execute(State):
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
         print("--> Launching simulation on server")
-        cmd = ['ssh', const.SERVER_ADDRESS,
+        username = os.getlogin()
+        cmd = ['ssh', username+'@'+const.SERVER_ADDRESS,
                'export PYTHONPATH="/home/EGM/v2/PreREISE/:$PYTHONPATH";',
                'python3',
                '/home/EGM/v2/PreREISE/prereise/call/call.py',
@@ -136,7 +137,8 @@ class Execute(State):
         self._update_scenario_status()
         if self._scenario_status == 'finished':
             print("--> Extracting output data on server")
-            cmd = ['ssh', const.SERVER_ADDRESS,
+            username = os.getlogin()
+            cmd = ['ssh', username+'@'+const.SERVER_ADDRESS,
                    'export PYTHONPATH="/home/EGM/v2/PostREISE/:$PYTHONPATH";',
                    'python3',
                    '/home/EGM/v2/PostREISE/postreise/extract/extract_data.py',
