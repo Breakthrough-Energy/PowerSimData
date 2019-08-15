@@ -192,24 +192,34 @@ class Create(State):
         """
 
         check_interconnect(interconnect)
-        if 'Eastern' in interconnect:
-            pass
-        elif 'Texas' in interconnect:
-            pass
-        elif 'Western' in interconnect:
-            self.builder = Western(self._ssh)
-        elif 'Western' in interconnect and 'Texas' in interconnect:
-            pass
-        elif 'Eastern' in interconnect and 'Texas' in interconnect:
-            pass
-        elif 'Eastern' in interconnect and 'Western' in interconnect:
-            pass
-        elif 'USA' in interconnect:
-            pass
+        n = len(interconnect)
+        if n == 1:
+            if 'Eastern' in interconnect:
+                print('Not implemented yet')
+                return
+            elif 'Texas' in interconnect:
+                self.builder = Texas(self._ssh)
+            elif 'Western' in interconnect:
+                self.builder = Western(self._ssh)
+            elif 'USA' in interconnect:
+                print('Not implemented yet')
+                return
+        elif n == 2:
+            if 'Western' in interconnect and 'Texas' in interconnect:
+                self.builder = TexasWestern(self._ssh)
+            elif 'Eastern' in interconnect and 'Texas' in interconnect:
+                print('Not implemented yet')
+                return
+            elif 'Eastern' in interconnect and 'Western' in interconnect:
+                print('Not implemented yet')
+                return
         print("--> Summary")
         print("# Existing study")
-        plan = [p for p in self.builder.existing.plan.unique()]
-        print("%s" % " | ".join(plan))
+        if self.builder.existing.empty:
+            print('Nothing yet')
+        else:
+            plan = [p for p in self.builder.existing.plan.unique()]
+            print("%s" % " | ".join(plan))
 
         print("# Available profiles")
         for p in ['demand', 'hydro', 'solar', 'wind']:
@@ -220,11 +230,15 @@ class Create(State):
         self._scenario_info['interconnect'] = self.builder.name
 
 
-class Builder(object):
+class _Builder(object):
     """Scenario Builder.
 
     """
 
+    interconnect = None
+    change_table = None
+    profile = None
+    existing = None
     plan_name = ''
     scenario_name = ''
     start_date = '2016-01-01 00:00:00'
@@ -235,58 +249,6 @@ class Builder(object):
     solar = ''
     wind = ''
     name = 'builder'
-
-    def set_name(self, plan_name, scenario_name): pass
-
-    def set_time(self, start_date, end_date, interval): pass
-
-    def get_base_profile(self, kind): pass
-
-    def set_base_profile(self, kind, version): pass
-
-    def load_change_table(self, filename): pass
-
-    def __str__(self):
-        return self.name
-
-
-class Eastern(Builder):
-    """Builder for Eastern interconnect.
-
-    """
-    name = 'Eastern'
-
-    def __init__(self):
-        self.interconnect = ['Eastern']
-
-
-class Texas(Builder):
-    """Builder for Texas interconnect.
-
-    """
-    name = 'Texas'
-
-    def __init__(self):
-        self.interconnect = ['Texas']
-
-
-class Western(Builder):
-    """Builder for Western interconnect.
-
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
-    """
-    name = 'Western'
-
-    def __init__(self, ssh_client):
-        """Constructor.
-
-        """
-        self.interconnect = ['Western']
-        self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.interconnect)
-
-        table = get_scenario_table(ssh_client)
-        self.existing = table[table.interconnect == self.name]
 
     def set_name(self, plan_name, scenario_name):
         """Sets scenario name.
@@ -370,27 +332,83 @@ class Western(Builder):
     def load_change_table(self, filename):
         """Uploads change table.
 
-        :param str filename: full path to change table pickle file.
-        :raises FileNotFoundError: if file not found.
-        """
+         :param str filename: full path to change table pickle file.
+         :raises FileNotFoundError: if file not found.
+         """
         try:
             ct = pickle.load(open(filename, "rb"))
             self.change_table.ct = ct
         except FileNotFoundError:
             raise ("%s not found. " % filename)
 
+    def __str__(self):
+        return self.name
 
-class TexasWestern(Builder):
+
+class Eastern(_Builder):
+    """Builder for Eastern interconnect.
+
+    """
+    name = 'Eastern'
+
+    def __init__(self):
+        self.interconnect = ['Eastern']
+
+
+class Texas(_Builder):
+    """Builder for Texas interconnect.
+
+    """
+    name = 'Texas'
+
+    def __init__(self, ssh_client):
+        """Constructor.
+
+        """
+        self.interconnect = ['Texas']
+        self.profile = CSV(self.interconnect, ssh_client)
+        self.change_table = ChangeTable(self.interconnect)
+
+        table = get_scenario_table(ssh_client)
+        self.existing = table[table.interconnect == self.name]
+
+
+class Western(_Builder):
+    """Builder for Western interconnect.
+
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    """
+    name = 'Western'
+
+    def __init__(self, ssh_client):
+        """Constructor.
+
+        """
+        self.interconnect = ['Western']
+        self.profile = CSV(self.interconnect, ssh_client)
+        self.change_table = ChangeTable(self.interconnect)
+
+        table = get_scenario_table(ssh_client)
+        self.existing = table[table.interconnect == self.name]
+
+
+class TexasWestern(_Builder):
     """Builder for Texas + Western interconnect.
 
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
     name = 'Texas_Western'
 
-    def __init__(self):
+    def __init__(self, ssh_client):
         self.interconnect = ['Texas', 'Western']
+        self.profile = CSV(self.interconnect, ssh_client)
+        self.change_table = ChangeTable(self.interconnect)
+
+        table = get_scenario_table(ssh_client)
+        self.existing = table[table.interconnect == self.name]
 
 
-class TexasEastern(Builder):
+class TexasEastern(_Builder):
     """Builder for Texas + Eastern interconnect.
 
     """
@@ -400,7 +418,7 @@ class TexasEastern(Builder):
         self.interconnect = ['Texas', 'Eastern']
 
 
-class EasternWestern(Builder):
+class EasternWestern(_Builder):
     """Builder for Eastern + Western interconnect.
 
     """
@@ -410,7 +428,7 @@ class EasternWestern(Builder):
         self.interconnect = ['Eastern', 'Western']
 
 
-class USA(Builder):
+class USA(_Builder):
     """Builder for USA interconnect.
 
     """
