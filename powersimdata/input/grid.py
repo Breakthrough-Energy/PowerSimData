@@ -184,8 +184,7 @@ class Grid(object):
         print("Loading bus")
 
         # Read and format
-        self.bus = pd.read_csv(self.data_loc + 'bus_case.txt', index_col=0,
-                               sep=r'\s+')
+        self.bus = pd.read_csv(self.data_loc + 'bus_case.csv', index_col=0)
         self.bus.drop(columns='zone', inplace=True)
         self.bus.rename(columns={'area': 'zone_id'}, inplace=True)
 
@@ -202,9 +201,8 @@ class Grid(object):
         """
         print("Loading plant")
         # Read and format
-        plant_type = pd.read_csv(self.data_loc + 'gentype_case.txt',
-                                 sep=r'\s+', header=None)
-        self.plant = pd.read_csv(self.data_loc + 'genbus_case.txt', sep=r'\s+')
+        plant_type = pd.read_csv(self.data_loc + 'gentype_case.csv', index_col=0)
+        self.plant = pd.read_csv(self.data_loc + 'genbus_case.csv', index_col=0)
         self._plant_aux = pd.read_pickle(self.data_loc + 'USAGenbus_aux.pkl')
         self.plant.rename(columns={'bus': 'bus_id'}, inplace=True)
 
@@ -232,8 +230,7 @@ class Grid(object):
         """
         print("Loading plant cost")
         # Read and format
-        self.gencost = pd.read_csv(self.data_loc + 'gencost_case.txt',
-                                   sep=r'\s+')
+        self.gencost = pd.read_csv(self.data_loc + 'gencost_case.csv', index_col=0)
 
         # Interconnect
         self.gencost['interconnect'] = self.plant.interconnect
@@ -246,8 +243,7 @@ class Grid(object):
         """
         print("Loading DC line")
         # Read and format
-        self.dcline = pd.read_csv(self.data_loc + 'dcline_case.txt',
-                                  sep=r'\s+')
+        self.dcline = pd.read_csv(self.data_loc + 'dcline_case.csv', index_col=0)
         self.dcline.rename(columns={'fbus': 'from_bus_id',
                                     'tbus': 'to_bus_id'}, inplace=True)
 
@@ -270,8 +266,7 @@ class Grid(object):
 
         """
         print("Loading branch")
-        self.branch = pd.read_csv(self.data_loc + 'branch_case.txt',
-                                  sep=r'\s+')
+        self.branch = pd.read_csv(self.data_loc + 'branch_case.csv', index_col=0)
         self._branch_aux = pd.read_pickle(
             self.data_loc + 'USABranchDeviceType.pkl')
         self.branch.rename(columns={'fbus': 'from_bus_id',
