@@ -68,7 +68,9 @@ class Analyze(State):
                                   freq=self._scenario_info['interval'])
             for key, value in infeasibilities.items():
                 print("demand in %s - %s interval has been reduced by %d%%" %
-                      (dates[key], dates[key+1], value))
+                      (dates[key],
+                       dates[key]+pd.Timedelta(self._scenario_info['interval']),
+                       value))
 
     def get_pg(self):
         """Returns PG data frame.
@@ -156,7 +158,11 @@ class Analyze(State):
                 return demand
             else:
                 for key, value in infeasibilities.items():
-                    demand[dates[key]:dates[key+1]] *= 1. - value / 100.
+                    start = dates[key]
+                    end = dates[key] + \
+                          pd.Timedelta(self._scenario_info['interval']) - \
+                          pd.Timedelta('1H')
+                    demand[start:end] *= 1. - value / 100.
                 return demand
 
     def get_hydro(self):
