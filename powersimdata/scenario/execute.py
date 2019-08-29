@@ -216,6 +216,7 @@ class SimulationInput(object):
         gencost.drop(columns=['interconnect'], inplace=True)
         # Format DC line
         dcline = grid.dcline.copy()
+        dclineid = dcline.index.values[np.newaxis].T
         dcline.reset_index(inplace=True, drop=True)
         dcline.drop(columns=['from_interconnect', 'to_interconnect'],
                     inplace=True)
@@ -226,6 +227,7 @@ class SimulationInput(object):
                        'branch': branch.values, 'branchid': branchid}}
         if len(dcline) > 0:
             mpc['mpc']['dcline'] = dcline.values
+            mpc['mpc']['dclineid'] = dclineid
         # Write MPC file
         file_name = '%s_case.mat' % self.scaler.scenario_id
         savemat(os.path.join(const.LOCAL_DIR, file_name), mpc, appendmat=False)
