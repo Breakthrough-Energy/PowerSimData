@@ -70,12 +70,14 @@ class Create(State):
         script = ("(flock -e 200; \
                    id=$(awk -F',' 'END{print $1+1}' %s); \
                    echo $id, >> %s; \
-                   echo $id) 200>/tmp/scenario.lockfile" %
-                  (const.SCENARIO_LIST, const.SCENARIO_LIST))
+                   echo $id) 200>%s" %
+                  (const.SCENARIO_LIST, const.SCENARIO_LIST,
+                   os.path.join(const.HOME_DIR, 'scenario.lockfile')))
 
         stdin, stdout, stderr = self._ssh.exec_command(script)
-        if len(stderr.readlines()) != 0:
-            raise IOError("Failed to update %s on server" % const.SCENARIO_LIST)
+        err_message = stderr.readlines()
+        if err_message:
+            raise IOError(err_message[0].strip())
         else:
             scenario_id = stdout.readlines()[0].splitlines()[0]
             self._scenario_info['id'] = scenario_id
