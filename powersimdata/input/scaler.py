@@ -116,6 +116,8 @@ class Scaler(object):
                     if value == 0.0:
                         self._grid.dcline.loc[key, 'status'] = 0
                     else:
+                        self._grid.dcline.loc[key, 'Pmin'] = \
+                            self._grid.dcline.loc[key, 'Pmin'] * value
                         self._grid.dcline.loc[key, 'Pmax'] = \
                             self._grid.dcline.loc[key, 'Pmax'] * value
 
