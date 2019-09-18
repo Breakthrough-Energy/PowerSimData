@@ -72,7 +72,7 @@ class Create(State):
                    echo $id, >> %s; \
                    echo $id) 200>%s" %
                   (const.SCENARIO_LIST, const.SCENARIO_LIST,
-                   os.path.join(const.HOME_DIR, 'scenario.lockfile')))
+                   posixpath.join(const.HOME_DIR, 'scenario.lockfile')))
 
         stdin, stdout, stderr = self._ssh.exec_command(script)
         err_message = stderr.readlines()
