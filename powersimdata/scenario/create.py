@@ -197,8 +197,7 @@ class Create(State):
         n = len(interconnect)
         if n == 1:
             if 'Eastern' in interconnect:
-                print('Not implemented yet')
-                return
+                self.builder = Eastern(self._ssh)
             elif 'Texas' in interconnect:
                 self.builder = Texas(self._ssh)
             elif 'Western' in interconnect:
@@ -353,8 +352,13 @@ class Eastern(_Builder):
     """
     name = 'Eastern'
 
-    def __init__(self):
+    def __init__(self, ssh_client):
         self.interconnect = ['Eastern']
+        self.profile = CSV(self.interconnect, ssh_client)
+        self.change_table = ChangeTable(self.interconnect)
+
+        table = get_scenario_table(ssh_client)
+        self.existing = table[table.interconnect == self.name]
 
 
 class Texas(_Builder):
