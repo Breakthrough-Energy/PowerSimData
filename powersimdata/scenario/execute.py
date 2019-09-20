@@ -242,7 +242,8 @@ class SimulationInput(object):
             storage = grid.storage.copy()
 
             mpc_storage = {'storage': {
-                'gen': storage['gen'].values,
+                'xgd_table': np.array([]),
+                'gen': np.array(storage['gen'].values, dtype=np.float64),
                 'sd_table': {'colnames': storage['StorageData'].columns.values[
                             np.newaxis],
                              'data': storage['StorageData'].values}}}

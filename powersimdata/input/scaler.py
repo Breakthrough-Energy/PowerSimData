@@ -169,7 +169,7 @@ class Scaler(object):
                     data['TerminalStoragePrice'] = storage['energy_price']
                     data['MinStorageLevel'] = \
                         value * storage['duration'] * storage['min_stor']
-                    data['MinStorageLevel'] = \
+                    data['MaxStorageLevel'] = \
                         value * storage['duration'] * storage['max_stor']
                     data['OutEff'] = storage['OutEff']
                     data['InEff'] = storage['InEff']
