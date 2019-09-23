@@ -9,26 +9,37 @@ class ChangeTable(object):
     """Create change table for changes that need to be applied to the original
         grid as well as to the original demand, hydro, solar and wind profiles.
         A pickle file enclosing the change table in form of a dictionary can be
-        created and transferred on the server. Keys are *'branch'*, *'demand'*,
+        created and transferred on the server. Keys are *'demand'*, *'branch'*,
         *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*, *'hydro'*,
-        *'solar'*, and *'wind'*. If a key is missing in the dictionary, then no
-        changes will be applied. The data structure is given below:
+        *'solar'*, *'wind'* and *'storage'*. If a key is missing in the
+        dictionary, then no changes will be applied. The data structure is
+        given below:
 
-        * *'branch'*:
-            value is a dictionary, which has branch id as key and a factor
-            indicating the desired increase/decrease of capacity of the line
-            (1.2 would correspond to a 20% increase while 0.95 would be a 5%
-            decrease).
         * *'demand'*:
-            value is a dictionary, which has load zones as keys and a factor
-            indicating the desired increase/decrease of load in zone (1.2 would
-            correspond to a 20% increase while 0.95 would be a 5% decrease).
+            value is a dictionary. The latter has *'zone_id'* as keys and a
+            factor indicating the desired increase/decrease of load in zone
+            (1.2 would correspond to a 20% increase while 0.95 would be a 5%
+            decrease) as value.
+        * *'branch'*:
+            value is a dictionary. The latter has *'branch_id'* and/or
+            *'zone_id'* as keys. The *'branch_id'* dictionary has the branch
+            ids as keys while the *'zone_id'* dictionary has the zone ids as
+            keys. The value of those dictionaries is a factor indicating the
+            desired increase/decrease of capacity of the line or the lines in
+            the zone (1.2 would correspond to a 20% increase while 0.95 would
+            be a 5% decrease).
         * *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*, *'hydro'*,
             *'solar'*, and *'wind'*:
-            value is a dictionary, which has plant ids and/or zone ids as keys
-            and a factor indicating the desired increase/decrease of capacity
-            of the given plant(s) (1.2 would correspond to a 20%
-            increase while 0.95 would be a 5% decrease).
+            value is a dictionary. The latter has *'plant_id'* and/or
+            *'zone_id'* as keys. The *'plant_id'* dictionary has the plant ids
+            as keys while the *'zone_id'* dictionary has the zone ids as keys.
+            The value of those dictionaries is a factor indicating the desired
+            increase/decrease of capacity of the plant or plants in the zone
+            (1.2 would correspond to a 20% increase while 0.95 would be a 5%
+            decrease).
+        * *'storage'*:
+            value is a dictionary. The latter has *'bus_id'* as keys and the
+             capacity of storage (in MW) to add as value.
 
         :param list interconnect: interconnect name(s).
     """
@@ -82,12 +93,12 @@ class ChangeTable(object):
 
     def _get_plant_id(self, zone_name, resource):
         """Returns the plant identification number of all the generators
-            located in one zone and using one specific resource.
+            located in specified zone and fueled by specified resource.
 
         :param str zone_name: load zone to consider.
         :param str resource: type of generator to consider.
         :return: (*list*) -- plant identification number of all the generators
-            located in zone and using resource.
+            located in zone and fueled by resource.
         """
         plant_id = []
         try:
@@ -215,9 +226,9 @@ class ChangeTable(object):
         :param dict zone_name: load zones. The key(s) is (are) the name of the
             load zone(s) and the value is the scaling factor for the
             increase/decrease in load.
-        :param dict zone_id: identification numbers of zones. The key(s) is
-            (are) the id of the zone(s) and the associated value is the scaling
-            factor for the increase/decrease in load.
+        :param dict zone_id: identification numbers of the load zones. The
+            key(s) is (are) the id of the zone(s) and the associated value is
+            the scaling factor for the increase/decrease in load.
         """
         if bool(zone_name) or bool(zone_id) is True:
             self.ct['demand'] = {}
@@ -247,6 +258,25 @@ class ChangeTable(object):
         else:
             print("<zone> and/or <zone_id> must be set. Return.")
             return
+
+    def add_storage_capacity(self, bus_id):
+        """Sets storage parameters in change table.
+
+        :param dict bus_id: key(s) for the id of bus(es), value(s) is (are)
+            capacity of the energy storage system in MW.
+        """
+        self.ct['storage'] = {}
+        self.ct['storage']['bus_id'] = {}
+        diff = set(bus_id.keys()).difference(set(self.grid.bus.index))
+        if len(diff) != 0:
+            print("No bus with the following id:")
+            for i in list(diff):
+                print(i)
+            self.ct.pop('storage')
+            return
+        else:
+            for i in bus_id.keys():
+                self.ct['storage']['bus_id'][i] = bus_id[i]
 
     def write(self, scenario_id):
         """Saves change table to disk.

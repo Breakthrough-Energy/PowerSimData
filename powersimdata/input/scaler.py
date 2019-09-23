@@ -120,6 +120,66 @@ class Scaler(object):
                             self._grid.dcline.loc[key, 'Pmin'] * value
                         self._grid.dcline.loc[key, 'Pmax'] = \
                             self._grid.dcline.loc[key, 'Pmax'] * value
+            if 'storage' in list(self.ct.keys()):
+                storage = copy.deepcopy(self._grid.storage)
+                storage_id = self._grid.plant.shape[0]
+                for key, value in self.ct['storage']['bus_id'].items():
+                    # need new index for this new generator
+                    storage_id += 1
+
+                    # build and append new row of gen
+                    gen = {g: 0
+                           for g in self._grid.storage['gen'].columns}
+                    gen['bus_id'] = key
+                    gen['Vg'] = 1
+                    gen['mBase'] = 100
+                    gen['status'] = 1
+                    gen['Pmax'] = value
+                    gen['Pmin'] = -1 * value
+                    gen['ramp_10'] = value
+                    gen['ramp_30'] = value
+                    storage['gen'] = storage['gen'].append(
+                        gen, ignore_index=True)
+
+                    # build and append new row of gencost
+                    gencost = {g: 0
+                               for g in self._grid.storage['gencost'].columns}
+                    gencost['type'] = 2
+                    gencost['n'] = 3
+                    storage['gencost'] = storage['gencost'].append(
+                        gencost, ignore_index=True)
+
+                    # build and append new row of genfuel
+                    storage['genfuel'].append('ess')
+
+                    # build and append new row of StorageData.
+                    data = {g: 0
+                            for g in self._grid.storage['StorageData'].columns}
+                    data['UnitIdx'] = storage_id
+                    data['ExpectedTerminalStorageMax'] = \
+                        value * storage['duration'] * storage['max_stor']
+                    data['ExpectedTerminalStorageMin'] = \
+                        value * storage['duration'] / 2
+                    data['InitialStorage'] = value * storage['duration'] / 2
+                    data['InitialStorageLowerBound'] = \
+                        value * storage['duration'] / 2
+                    data['InitialStorageUpperBound'] = \
+                        value * storage['duration'] / 2
+                    data['InitialStorageCost'] = storage['energy_price']
+                    data['TerminalStoragePrice'] = storage['energy_price']
+                    data['MinStorageLevel'] = \
+                        value * storage['duration'] * storage['min_stor']
+                    data['MaxStorageLevel'] = \
+                        value * storage['duration'] * storage['max_stor']
+                    data['OutEff'] = storage['OutEff']
+                    data['InEff'] = storage['InEff']
+                    data['LossFactor'] = 0
+                    data['rho'] = 1
+                    storage['StorageData'] = storage['StorageData'].append(
+                        data, ignore_index=True)
+            else:
+                storage = []
+            self._grid.storage = storage
 
         return self._grid
 
