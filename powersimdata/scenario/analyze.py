@@ -46,7 +46,7 @@ class Analyze(State):
             the decrease in percent (%) applied to the original demand profile.
         """
         field = self._scenario_info['infeasibilities']
-        if field == 'No':
+        if field == '':
             return None
         else:
             infeasibilities = {}
