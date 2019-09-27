@@ -177,9 +177,7 @@ class Scaler(object):
                     data['rho'] = 1
                     storage['StorageData'] = storage['StorageData'].append(
                         data, ignore_index=True)
-            else:
-                storage = []
-            self._grid.storage = storage
+                self._grid.storage = storage
 
         return self._grid
 
