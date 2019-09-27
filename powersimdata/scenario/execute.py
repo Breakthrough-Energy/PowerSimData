@@ -238,7 +238,7 @@ class SimulationInput(object):
             mpc['mpc']['dclineid'] = dclineid
 
         # Format energy storage and write MPC storage
-        if len(grid.storage) > 0:
+        if len(grid.storage['gen']) > 0:
             storage = grid.storage.copy()
 
             mpc_storage = {'storage': {
