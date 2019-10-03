@@ -98,7 +98,7 @@ class Scenario(object):
         status = execute_table[execute_table.id == self.info['id']]
         if status.shape[0] == 0:
             raise Exception("Scenario not found in %s on server" %
-                            const.EXECUTE_DIR)
+                            const.EXECUTE_LIST)
         elif status.shape[0] == 1:
             self.status = status.status.values[0]
 
