@@ -91,7 +91,17 @@ class Analyze(State):
         pf = od.get_data(self._scenario_info['id'], 'PF')
 
         return pf
-    
+
+    def get_dcline_pf(self):
+        """Returns PF_DCLINE data frame.
+
+        :return: (*pandas.DataFrame*) -- data frame of power flow on DC line(s).
+        """
+        od = OutputData(self._ssh)
+        dcline_pf = od.get_data(self._scenario_info['id'], 'PF_DCLINE')
+
+        return dcline_pf
+
     def get_lmp(self):
         """Returns LMP data frame. LMP = locational marginal price
 
