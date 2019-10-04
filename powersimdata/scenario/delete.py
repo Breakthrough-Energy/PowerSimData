@@ -1,7 +1,8 @@
 from postreise.process import const
 from powersimdata.scenario.state import State
 
-import os, re
+import os
+import glob
 
 
 class Delete(State):
@@ -76,9 +77,11 @@ class Delete(State):
 
         # Delete local files
         print("--> Deleting MPC file and profiles on local machine")
-        for f in os.listdir(const.LOCAL_DIR):
-            if re.search(self._scenario_info['id'], f):
-                os.remove(os.path.join(const.LOCAL_DIR, f))
+        local_file = glob.glob(os.path.join(const.LOCAL_DIR,
+                                            self._scenario_info['id'] + '_*'))
+        if local_file:
+            for f in local_file:
+                os.remove(f)
 
         # Delete attributes
         self._clean()
