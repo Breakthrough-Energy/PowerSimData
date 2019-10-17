@@ -6,13 +6,13 @@ def apply_change_table(self, ct, grid):
         for gridElement, scale_info in ct.items():
             if 'zone_id' in scale_info.keys():
                 if gridElement in self._gen_types:
-                    grid = scale_location_type(ct, grid, gridElement, scale_GenMWMax)
+                    grid = scale_location_by_gentype(ct, grid, gridElement, scale_GenMWMax)
 
                 if gridElement in self._thermal_gen_types:
-                    grid = scale_location_type(ct, grid, gridElement, scale_Thermal)
+                    grid = scale_location_by_gentype(ct, grid, gridElement, scale_Thermal)
 
                 if gridElement == 'branch':
-                    grid = scale_location_type(ct, grid, gridElement, scale_Branch)
+                    grid = scale_location_by_gentype(ct, grid, gridElement, scale_Branch)
 
             if 'plant_id' in scale_info.keys():
                 if gridElement in self._gen_types:
@@ -23,7 +23,7 @@ def apply_change_table(self, ct, grid):
 
             if 'branch_id' in scale_info.keys():
                 if gridElement == 'branch':
-                    grid = scale_branches_by_id(ct, grid)
+                    grid = scale_branches_by_id(ct, grid, scale_Branch)
 
             if gridElement == 'dcline' in list(ct.keys()):
                 grid = scale_dc_line(ct, grid)
@@ -32,16 +32,16 @@ def apply_change_table(self, ct, grid):
 
 # scale generators by location
 
-def scale_location_type(ct, grid, gentype, grid_transform):
+def scale_location_by_gentype(ct, grid, gentype, grid_transform):
     try:
         for zoneid, value in ct[gentype]['zone_id'].items():
-            plant_ids = get_plant_ids_by_type(grid, zoneid, gentype)
+            plant_ids = get_plant_ids_by_gentype(grid, zoneid, gentype)
             grid = grid_transform(grid, plant_ids, value)
     except KeyError:
         pass
     return grid
 
-def get_plant_ids_by_type(grid, zoneid, gentype):
+def get_plant_ids_by_gentype(grid, zoneid, gentype):
     plant_ids = grid.plant.groupby(['zone_id', 'type']).get_group((zoneid, gentype)).index.values.tolist()
     return plant_ids
 
@@ -73,11 +73,11 @@ def scale_Thermal(grid, plant_ids, value):
 
 # scale branches
 
-def scale_branches_by_location(ct, grid):
+def scale_branches_by_location(ct, grid, grid_transform):
     try:
         for zoneid, value in ct['branch']['zone_id'].items():
             branch_ids = find_branches_within_zone(grid, zoneid)
-            scale_Branch(grid, branch_ids, value)
+            grid_transform(grid, branch_ids, value)
     except KeyError:
         pass
     return grid
@@ -86,10 +86,10 @@ def find_branches_within_zone(grid, zoneid):
     branch_ids = grid.branch.groupby(['from_zone_id', 'to_zone_id']).get_group((zoneid, zoneid)).index.values.tolist()
     return branch_ids
 
-def scale_branches_by_id(ct, grid):
+def scale_branches_by_id(ct, grid, grid_transform):
     try:
         for branchid, value in ct['branch']['branch_id'].items():
-            scale_Branch(grid, branchid, value)
+            grid_transform(grid, branchid, value)
     except KeyError:
         pass
     return grid

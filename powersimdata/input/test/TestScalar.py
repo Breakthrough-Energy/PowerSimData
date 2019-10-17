@@ -70,8 +70,8 @@ class TestScalarMethods(unittest.TestCase):
         ct = {'solar': {'zone_id': {1: 2, 3: 3}},'wind':{'zone_id': {2: 5}}}
 
         newGrid = GridMock(['plant'])
-        newGrid = scale_location_type(ct, newGrid, 'solar', scale_GenMWMax)
-        newGrid = scale_location_type(ct, newGrid, 'wind', scale_GenMWMax)
+        newGrid = scale_location_by_gentype(ct, newGrid, 'solar', scale_GenMWMax)
+        newGrid = scale_location_by_gentype(ct, newGrid, 'wind', scale_GenMWMax)
 
         self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[2*200,5*150,100,300,120],'Scaling was not applied!')
 
@@ -85,11 +85,11 @@ class TestScalarMethods(unittest.TestCase):
 
         newGrid = GridMock(['plant','gencost'])
 
-        newGrid = scale_location_type(ct, newGrid, 'coal', scale_GenMWMax)
-        newGrid = scale_location_type(ct, newGrid, 'coal', scale_Thermal)
+        newGrid = scale_location_by_gentype(ct, newGrid, 'coal', scale_GenMWMax)
+        newGrid = scale_location_by_gentype(ct, newGrid, 'coal', scale_Thermal)
        
-        newGrid = scale_location_type(ct, newGrid, 'ng', scale_GenMWMax)
-        newGrid = scale_location_type(ct, newGrid, 'ng', scale_Thermal)
+        newGrid = scale_location_by_gentype(ct, newGrid, 'ng', scale_GenMWMax)
+        newGrid = scale_location_by_gentype(ct, newGrid, 'ng', scale_Thermal)
 
         self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[200,150,5*100,2*300,120],'Scaling was not applied to GenMWMax!')
         self.assertEqual(newGrid.plant['Pmax'].tolist(),[40,80,5*50,2*150,80],'Scaling was not applied to Pmax!')
@@ -108,9 +108,9 @@ class TestScalarMethods(unittest.TestCase):
 
         newGrid = GridMock(['plant','gencost'])
 
-        newGrid = scale_location_type(ct, newGrid, 'solar', scale_GenMWMax)
-        newGrid = scale_location_type(ct, newGrid, 'ng', scale_GenMWMax)
-        newGrid = scale_location_type(ct, newGrid, 'ng', scale_Thermal)
+        newGrid = scale_location_by_gentype(ct, newGrid, 'solar', scale_GenMWMax)
+        newGrid = scale_location_by_gentype(ct, newGrid, 'ng', scale_GenMWMax)
+        newGrid = scale_location_by_gentype(ct, newGrid, 'ng', scale_Thermal)
 
         self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[2*200,150,5*100,300,120],'Scaling was not applied to GenMWMax!')
         self.assertEqual(newGrid.plant['Pmax'].tolist(),[40,80,5*50,150,80],'Scaling was not applied to Pmax!')
@@ -127,7 +127,7 @@ class TestScalarMethods(unittest.TestCase):
         baseGrid = GridMock(['branch'])
         ct = {'branch': {'zone_id': {1: 2, 3: 3}}}
 
-        newGrid = scale_branches_by_location(ct, GridMock(['branch']))
+        newGrid = scale_branches_by_location(ct, GridMock(['branch']), scale_Branch)
 
         self.assertEqual(newGrid.branch['rateA'].tolist(),[2*10,20,30,40,3*50],'Scaling was not applied to branch rateA field!')
         self.assertEqual(newGrid.branch['x'].tolist(),[0.1/2,0.2,0.3,0.4,0.5/3],'Scaling was not applied to branch x field!')
