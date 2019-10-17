@@ -5,7 +5,7 @@ class GridMock:
     def __init__(self, fieldNames):
         if 'plant' in fieldNames:
             self.plant = pd.DataFrame( {'plant_id': [101,102,103,104,105],
-                                        'type': ['solar','wind','ng','coal','thermal'],\
+                                        'type': ['solar','wind','ng','coal','dfo'],\
                                         'zone_id': [1,2,3,1,3],\
                                         'GenMWMax':[200,150,100,300,120],\
                                         'Pmin':    [20,30,25,100,20],\
