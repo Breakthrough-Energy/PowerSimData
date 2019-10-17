@@ -151,12 +151,14 @@ class TestScalarMethods(unittest.TestCase):
                          baseGrid.plant[['zone_id','Pmin','Pmax']].values.tolist(),\
                                         'Scaling affected other generator properties!')
 
-    def test_genId_Thermal_scaling(self):
+    def test_genId_thermal_scaling(self):
         baseGrid = GridMock(['plant','gencost'])
         self.ct = {'ng': {'plant_id': {103: 5, 104: 6, 105: 8}}}
 
         newGrid = GridMock(['plant','gencost'])
+
         newGrid = scale_generators_by_id(self, newGrid, 'ng', scale_GenMWMax)
+        newGrid = scale_generators_by_id(self, newGrid, 'ng', scale_Thermal)
 
         self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[200,150,5*100,6*300,8*120],'Scaling was not applied!')
         self.assertEqual(newGrid.plant['Pmax'].tolist(),[40,80,5*50,6*150,8*80],'Scaling was not applied to Pmax!')

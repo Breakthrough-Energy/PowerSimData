@@ -4,7 +4,7 @@ def apply_change_table(self, grid):
 
     if bool(self.ct):
         for gridElement, scale_info in self.ct.items():
-            print(gridElement)
+            #print(gridElement)
             if 'zone_id' in scale_info.keys():
                 if gridElement in self._gen_types:
                     grid = scale_location_type(self, grid, gridElement, scale_GenMWMax)
@@ -69,13 +69,11 @@ def scale_GenMWMax(self, grid, gentype, plant_ids, value):
 
 def scale_Thermal(self, grid, gentype, plant_ids, value):
     if gentype in self._thermal_gen_types:
-#        print(grid.plant)
         grid.plant.loc[plant_ids, 'Pmax'] *= value
         grid.plant.loc[plant_ids, 'Pmin'] *= value
         grid.gencost.loc[plant_ids, 'c0'] *= value
         if value != 0:
             grid.gencost.loc[plant_ids, 'c2'] /= value
-        print(grid.plant)
     return grid
 
 # scale branches
