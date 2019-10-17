@@ -17,10 +17,10 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_grid_nonthermal_scaling(self):
         baseGrid = GridMock(['plant'])
-        self.ct = {'solar': {'zone_id': {1: 2, 3: 3}},'wind':{'zone_id': {2: 5}}}
+        ct = {'solar': {'zone_id': {1: 2, 3: 3}},'wind':{'zone_id': {2: 5}}}
 
         newGrid = GridMock(['plant'])
-        newGrid = apply_change_table(self, newGrid)
+        newGrid = apply_change_table(self, ct, newGrid)
 
         self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[2*200,5*150,100,300,120],'Scaling was not applied!')
 
@@ -30,10 +30,10 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_grid_thermal_scaling(self):
         baseGrid = GridMock(['plant','gencost'])
-        self.ct = {'coal': {'zone_id': {1: 2, 3: 3}},'ng':{'zone_id': {3: 5}}}
+        ct = {'coal': {'zone_id': {1: 2, 3: 3}},'ng':{'zone_id': {3: 5}}}
 
         newGrid = GridMock(['plant','gencost'])
-        newGrid = apply_change_table(self, newGrid)
+        newGrid = apply_change_table(self, ct, newGrid)
 
         self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[200,150,5*100,2*300,120],'Scaling was not applied to GenMWMax!')
         self.assertEqual(newGrid.plant['Pmax'].tolist(),[40,80,5*50,2*150,80],'Scaling was not applied to Pmax!')
@@ -48,10 +48,10 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_grid_mixed_generator_scaling(self):
         baseGrid = GridMock(['plant','gencost'])
-        self.ct = {'solar': {'zone_id': {1: 2, 3: 3}},'ng':{'zone_id': {3: 5}}}
+        ct = {'solar': {'zone_id': {1: 2, 3: 3}},'ng':{'zone_id': {3: 5}}}
 
         newGrid = GridMock(['plant','gencost'])
-        newGrid = apply_change_table(self, newGrid)
+        newGrid = apply_change_table(self, ct, newGrid)
 
         self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[2*200,150,5*100,300,120],'Scaling was not applied to GenMWMax!')
         self.assertEqual(newGrid.plant['Pmax'].tolist(),[40,80,5*50,150,80],'Scaling was not applied to Pmax!')
@@ -67,11 +67,11 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_nonthermal_scaling(self):
         baseGrid = GridMock(['plant'])
-        self.ct = {'solar': {'zone_id': {1: 2, 3: 3}},'wind':{'zone_id': {2: 5}}}
+        ct = {'solar': {'zone_id': {1: 2, 3: 3}},'wind':{'zone_id': {2: 5}}}
 
         newGrid = GridMock(['plant'])
-        newGrid = scale_location_type(self, newGrid, 'solar', scale_GenMWMax)
-        newGrid = scale_location_type(self, newGrid, 'wind', scale_GenMWMax)
+        newGrid = scale_location_type(ct, newGrid, 'solar', scale_GenMWMax)
+        newGrid = scale_location_type(ct, newGrid, 'wind', scale_GenMWMax)
 
         self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[2*200,5*150,100,300,120],'Scaling was not applied!')
 
@@ -81,15 +81,15 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_thermal_scaling(self):
         baseGrid = GridMock(['plant','gencost'])
-        self.ct = {'coal': {'zone_id': {1: 2, 3: 3}},'ng':{'zone_id': {3: 5}}}
+        ct = {'coal': {'zone_id': {1: 2, 3: 3}},'ng':{'zone_id': {3: 5}}}
 
         newGrid = GridMock(['plant','gencost'])
 
-        newGrid = scale_location_type(self, newGrid, 'coal', scale_GenMWMax)
-        newGrid = scale_location_type(self, newGrid, 'coal', scale_Thermal)
+        newGrid = scale_location_type(ct, newGrid, 'coal', scale_GenMWMax)
+        newGrid = scale_location_type(ct, newGrid, 'coal', scale_Thermal)
        
-        newGrid = scale_location_type(self, newGrid, 'ng', scale_GenMWMax)
-        newGrid = scale_location_type(self, newGrid, 'ng', scale_Thermal)
+        newGrid = scale_location_type(ct, newGrid, 'ng', scale_GenMWMax)
+        newGrid = scale_location_type(ct, newGrid, 'ng', scale_Thermal)
 
         self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[200,150,5*100,2*300,120],'Scaling was not applied to GenMWMax!')
         self.assertEqual(newGrid.plant['Pmax'].tolist(),[40,80,5*50,2*150,80],'Scaling was not applied to Pmax!')
@@ -104,15 +104,13 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_mixed_generator_scaling(self):
         baseGrid = GridMock(['plant','gencost'])
-        self.ct = {'solar': {'zone_id': {1: 2, 3: 3}},'ng':{'zone_id': {3: 5}}}
+        ct = {'solar': {'zone_id': {1: 2, 3: 3}},'ng':{'zone_id': {3: 5}}}
 
         newGrid = GridMock(['plant','gencost'])
 
-        newGrid = scale_location_type(self, newGrid, 'solar', scale_GenMWMax)
-        newGrid = scale_location_type(self, newGrid, 'solar', scale_Thermal)
-       
-        newGrid = scale_location_type(self, newGrid, 'ng', scale_GenMWMax)
-        newGrid = scale_location_type(self, newGrid, 'ng', scale_Thermal)
+        newGrid = scale_location_type(ct, newGrid, 'solar', scale_GenMWMax)
+        newGrid = scale_location_type(ct, newGrid, 'ng', scale_GenMWMax)
+        newGrid = scale_location_type(ct, newGrid, 'ng', scale_Thermal)
 
         self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[2*200,150,5*100,300,120],'Scaling was not applied to GenMWMax!')
         self.assertEqual(newGrid.plant['Pmax'].tolist(),[40,80,5*50,150,80],'Scaling was not applied to Pmax!')
@@ -127,9 +125,9 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_branch_scaling(self):
         baseGrid = GridMock(['branch'])
-        self.ct = {'branch': {'zone_id': {1: 2, 3: 3}}}
+        ct = {'branch': {'zone_id': {1: 2, 3: 3}}}
 
-        newGrid = scale_branches_by_location(self, GridMock(['branch']))
+        newGrid = scale_branches_by_location(ct, GridMock(['branch']))
 
         self.assertEqual(newGrid.branch['rateA'].tolist(),[2*10,20,30,40,3*50],'Scaling was not applied to branch rateA field!')
         self.assertEqual(newGrid.branch['x'].tolist(),[0.1/2,0.2,0.3,0.4,0.5/3],'Scaling was not applied to branch x field!')
@@ -140,10 +138,10 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_genId_nonThermal_scaling(self):
         baseGrid = GridMock(['plant'])
-        self.ct = {'solar': {'plant_id': {101: 7, 102: 3}}}
+        ct = {'solar': {'plant_id': {101: 7, 102: 3}}}
 
         newGrid = GridMock(['plant'])
-        newGrid = scale_generators_by_id(self, newGrid, 'solar', scale_GenMWMax)
+        newGrid = scale_generators_by_id(ct, newGrid, 'solar', scale_GenMWMax)
 
         self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[7*200,3*150,100,300,120],'Scaling was not applied!')
 
@@ -153,12 +151,12 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_genId_thermal_scaling(self):
         baseGrid = GridMock(['plant','gencost'])
-        self.ct = {'ng': {'plant_id': {103: 5, 104: 6, 105: 8}}}
+        ct = {'ng': {'plant_id': {103: 5, 104: 6, 105: 8}}}
 
         newGrid = GridMock(['plant','gencost'])
 
-        newGrid = scale_generators_by_id(self, newGrid, 'ng', scale_GenMWMax)
-        newGrid = scale_generators_by_id(self, newGrid, 'ng', scale_Thermal)
+        newGrid = scale_generators_by_id(ct, newGrid, 'ng', scale_GenMWMax)
+        newGrid = scale_generators_by_id(ct, newGrid, 'ng', scale_Thermal)
 
         self.assertEqual(newGrid.plant['GenMWMax'].tolist(),[200,150,5*100,6*300,8*120],'Scaling was not applied!')
         self.assertEqual(newGrid.plant['Pmax'].tolist(),[40,80,5*50,6*150,8*80],'Scaling was not applied to Pmax!')
