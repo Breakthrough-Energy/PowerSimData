@@ -33,12 +33,9 @@ def apply_change_table(self, ct, grid):
 # scale generators by location
 
 def scale_location_by_gentype(ct, grid, gentype, grid_transform):
-    try:
-        for zoneid, value in ct[gentype]['zone_id'].items():
-            plant_ids = get_plant_ids_by_gentype(grid, zoneid, gentype)
-            grid = grid_transform(grid, plant_ids, value)
-    except KeyError:
-        pass
+    for zoneid, value in ct[gentype]['zone_id'].items():
+        plant_ids = get_plant_ids_by_gentype(grid, zoneid, gentype)
+        grid = grid_transform(grid, plant_ids, value)
     return grid
 
 def get_plant_ids_by_gentype(grid, zoneid, gentype):
@@ -48,11 +45,8 @@ def get_plant_ids_by_gentype(grid, zoneid, gentype):
 # scale generators by id
 
 def scale_generators_by_id(ct, grid, gentype, grid_transform):
-    try:
-        for plant_ids, scaling in ct[gentype]['plant_id'].items():
-            grid_transform(grid, plant_ids, scaling)
-    except KeyError:
-        pass
+    for plant_ids, scaling in ct[gentype]['plant_id'].items():
+        grid_transform(grid, plant_ids, scaling)
     return grid
 
 # scale non-thermal generators
@@ -74,12 +68,9 @@ def scale_Thermal(grid, plant_ids, value):
 # scale branches
 
 def scale_branches_by_location(ct, grid, grid_transform):
-    try:
-        for zoneid, value in ct['branch']['zone_id'].items():
-            branch_ids = find_branches_within_zone(grid, zoneid)
-            grid_transform(grid, branch_ids, value)
-    except KeyError:
-        pass
+    for zoneid, value in ct['branch']['zone_id'].items():
+        branch_ids = find_branches_within_zone(grid, zoneid)
+        grid_transform(grid, branch_ids, value)
     return grid
 
 def find_branches_within_zone(grid, zoneid):
@@ -87,11 +78,8 @@ def find_branches_within_zone(grid, zoneid):
     return branch_ids
 
 def scale_branches_by_id(ct, grid, grid_transform):
-    try:
-        for branchid, value in ct['branch']['branch_id'].items():
-            grid_transform(grid, branchid, value)
-    except KeyError:
-        pass
+    for branchid, value in ct['branch']['branch_id'].items():
+        grid_transform(grid, branchid, value)
     return grid
 
 def scale_Branch(grid, branch_ids, value):

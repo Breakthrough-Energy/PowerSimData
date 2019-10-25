@@ -17,7 +17,7 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_grid_nonthermal_scaling(self):
         baseGrid = GridMock(['plant'])
-        ct = {'solar': {'zone_id': {1: 2, 3: 3}},'wind':{'zone_id': {2: 5}}}
+        ct = {'solar': {'zone_id': {1: 2}},'wind':{'zone_id': {2: 5}}}
 
         newGrid = GridMock(['plant'])
         newGrid = apply_change_table(self, ct, newGrid)
@@ -30,7 +30,7 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_grid_thermal_scaling(self):
         baseGrid = GridMock(['plant','gencost'])
-        ct = {'coal': {'zone_id': {1: 2, 3: 3}},'ng':{'zone_id': {3: 5}}}
+        ct = {'coal': {'zone_id': {1: 2}},'ng':{'zone_id': {3: 5}}}
 
         newGrid = GridMock(['plant','gencost'])
         newGrid = apply_change_table(self, ct, newGrid)
@@ -48,7 +48,7 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_grid_mixed_generator_scaling(self):
         baseGrid = GridMock(['plant','gencost'])
-        ct = {'solar': {'zone_id': {1: 2, 3: 3}},'ng':{'zone_id': {3: 5}}}
+        ct = {'solar': {'zone_id': {1: 2}},'ng':{'zone_id': {3: 5}}}
 
         newGrid = GridMock(['plant','gencost'])
         newGrid = apply_change_table(self, ct, newGrid)
@@ -67,7 +67,7 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_nonthermal_scaling(self):
         baseGrid = GridMock(['plant'])
-        ct = {'solar': {'zone_id': {1: 2, 3: 3}},'wind':{'zone_id': {2: 5}}}
+        ct = {'solar': {'zone_id': {1: 2}},'wind':{'zone_id': {2: 5}}}
 
         newGrid = GridMock(['plant'])
         newGrid = scale_location_by_gentype(ct, newGrid, 'solar', scale_GenMWMax)
@@ -81,7 +81,7 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_thermal_scaling(self):
         baseGrid = GridMock(['plant','gencost'])
-        ct = {'coal': {'zone_id': {1: 2, 3: 3}},'ng':{'zone_id': {3: 5}}}
+        ct = {'coal': {'zone_id': {1: 2}},'ng':{'zone_id': {3: 5}}}
 
         newGrid = GridMock(['plant','gencost'])
 
@@ -104,7 +104,7 @@ class TestScalarMethods(unittest.TestCase):
 
     def test_mixed_generator_scaling(self):
         baseGrid = GridMock(['plant','gencost'])
-        ct = {'solar': {'zone_id': {1: 2, 3: 3}},'ng':{'zone_id': {3: 5}}}
+        ct = {'solar': {'zone_id': {1: 2}},'ng':{'zone_id': {3: 5}}}
 
         newGrid = GridMock(['plant','gencost'])
 
