@@ -12,7 +12,8 @@ class Scaler(object):
     """
     
     _gen_types = [
-        'coal', 'dfo', 'geothermal', 'ng', 'nuclear', 'hydro', 'solar', 'wind']
+        'biomass', 'coal', 'dfo', 'geothermal', 'ng', 'nuclear', 'hydro',
+        'solar', 'wind', 'other']
     _thermal_gen_types = ['coal', 'dfo', 'geothermal', 'ng', 'nuclear']
 
     def __init__(self, scenario_info, ssh_client):

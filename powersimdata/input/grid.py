@@ -17,7 +17,9 @@ class Grid(object):
                5: 'coal',
                6: 'geothermal',
                7: 'dfo',
-               8: 'storage'}
+               8: 'biomass',
+               9: 'other',
+               10: 'storage'}
 
     type2id = {v: k for k, v in id2type.items()}
 
@@ -29,6 +31,8 @@ class Grid(object):
                   'coal': sns.xkcd_rgb["light brown"],
                   'geothermal': sns.xkcd_rgb["hot pink"],
                   'dfo': sns.xkcd_rgb["royal blue"],
+                  'biomass': sns.xkcd_rgb["dark green"],
+                  'other': sns.xkcd_rgb["melon"],
                   'storage': sns.xkcd_rgb["orange"]}
 
     def __init__(self, interconnect):

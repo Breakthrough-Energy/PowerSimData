@@ -10,10 +10,10 @@ class ChangeTable(object):
         grid as well as to the original demand, hydro, solar and wind profiles.
         A pickle file enclosing the change table in form of a dictionary can be
         created and transferred on the server. Keys are *'demand'*, *'branch'*,
-        *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*, *'hydro'*,
-        *'solar'*, *'wind'* and *'storage'*. If a key is missing in the
-        dictionary, then no changes will be applied. The data structure is
-        given below:
+        *'biomass'*, *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*,
+        *'hydro'*, *'solar'*, *'wind'*, *'other'*, and *'storage'*.
+        If a key is missing in the dictionary, then no changes will be applied.
+        The data structure is given below:
 
         * *'demand'*:
             value is a dictionary. The latter has *'zone_id'* as keys and a
@@ -28,8 +28,8 @@ class ChangeTable(object):
             desired increase/decrease of capacity of the line or the lines in
             the zone (1.2 would correspond to a 20% increase while 0.95 would
             be a 5% decrease).
-        * *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*, *'hydro'*,
-            *'solar'*, and *'wind'*:
+        * *'biomass'*, *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*,
+            *'hydro'*, *'solar'*, *'wind'*, and *'other'*:
             value is a dictionary. The latter has *'plant_id'* and/or
             *'zone_id'* as keys. The *'plant_id'* dictionary has the plant ids
             as keys while the *'zone_id'* dictionary has the zone ids as keys.
