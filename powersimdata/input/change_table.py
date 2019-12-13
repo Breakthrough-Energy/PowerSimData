@@ -65,7 +65,7 @@ class ChangeTable(object):
         """
         possible = [
             'coal', 'dfo', 'geothermal', 'ng', 'nuclear',
-            'hydro', 'solar', 'wind']
+            'hydro', 'solar', 'wind', 'biomass', 'other']
         if resource not in possible:
             print("-----------------------")
             print("Possible Generator type")
