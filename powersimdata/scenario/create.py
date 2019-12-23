@@ -4,6 +4,7 @@ from postreise.process.transferdata import upload
 from powersimdata.scenario.state import State
 from powersimdata.scenario.execute import Execute
 from powersimdata.input.change_table import ChangeTable
+from powersimdata.input.design import scale_renewable_stubs
 from powersimdata.scenario.helpers import interconnect2name, check_interconnect
 
 import os
@@ -340,6 +341,11 @@ class _Builder(object):
             self.change_table.ct = ct
         except FileNotFoundError:
             raise ("%s not found. " % filename)
+
+    def scale_renewable_stubs(self):
+        """Scales undersized stub branches connected to renewable generators.
+        """
+        scale_renewable_stubs(self)
 
     def __str__(self):
         return self.name
