@@ -5,6 +5,7 @@ from powersimdata.scenario.state import State
 from powersimdata.scenario.execute import Execute
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.design import scale_renewable_stubs
+from powersimdata.input.grid import Grid
 from powersimdata.scenario.helpers import interconnect2name, check_interconnect
 
 import os
@@ -342,10 +343,13 @@ class _Builder(object):
         except FileNotFoundError:
             raise ("%s not found. " % filename)
 
-    def scale_renewable_stubs(self):
+    def scale_renewable_stubs(self, **kwargs):
         """Scales undersized stub branches connected to renewable generators.
+        Optional kwargs as documented in powersimdata.input.design.
         """
-        scale_renewable_stubs(self)
+        ref_grid = Grid(self.interconnect)
+        ct = self.change_table.ct
+        scale_renewable_stubs(ref_grid, ct, **kwargs)
 
     def __str__(self):
         return self.name
