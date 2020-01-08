@@ -6,6 +6,10 @@ from powersimdata.input.grid import Grid
 from postreise.process import const
 
 
+_resources = ('coal', 'dfo', 'geothermal', 'ng', 'nuclear',
+              'hydro', 'solar', 'wind', 'biomass', 'other')
+
+
 class ChangeTable(object):
     """Create change table for changes that need to be applied to the original
         grid as well as to the original demand, hydro, solar and wind profiles.
@@ -64,9 +68,7 @@ class ChangeTable(object):
         :param str resource: type of generator.
         :raises ValueError: if resource cannot be changed.
         """
-        possible = [
-            'coal', 'dfo', 'geothermal', 'ng', 'nuclear',
-            'hydro', 'solar', 'wind', 'biomass', 'other']
+        possible = _resources
         if resource not in possible:
             print("-----------------------")
             print("Possible Generator type")
@@ -111,6 +113,29 @@ class ChangeTable(object):
 
         return plant_id
 
+    def clear(self, which=None):
+        """Clear all or part of the change table.
+
+        :param set which: set of strings of what to clear from self.ct
+        """
+        if which is None:
+            which = {'all'}
+        if isinstance(which, str):
+            which = {which}
+        allowed = {'all', 'branch', 'dcline', 'plant', 'storage'}
+        if not which <= allowed:
+            raise ValueError('which must contain only: ' + ' | '.join(allowed))
+        if 'all' in which:
+            self.ct = {}
+            return
+        for key in ('branch', 'dcline', 'storage'):
+            if key in which:
+                del self.ct[key]
+        if 'plant' in which:
+            for r in _resources:
+                if r in self.ct:
+                    del self.ct[r]
+
     def scale_plant_capacity(self, resource, zone_name=None, plant_id=None):
         """Sets plant capacity scaling factor in change table.
 
@@ -126,14 +151,16 @@ class ChangeTable(object):
         """
         self._check_resource(resource)
         if bool(zone_name) or bool(plant_id) is True:
-            self.ct[resource] = {}
+            if resource not in self.ct:
+                self.ct[resource] = {}
             if zone_name is not None:
                 try:
                     self._check_zone(list(zone_name.keys()))
                 except ValueError:
                     self.ct.pop(resource)
                     return
-                self.ct[resource]['zone_id'] = {}
+                if 'zone_id' not in self.ct[resource]:
+                    self.ct[resource]['zone_id'] = {}
                 for z in zone_name.keys():
                     if len(self._get_plant_id(z, resource)) == 0:
                         print("No %s plants in %s." % (resource, z))
@@ -153,7 +180,8 @@ class ChangeTable(object):
                     self.ct.pop(resource)
                     return
                 else:
-                    self.ct[resource]['plant_id'] = {}
+                    if 'plant_id' not in self.ct[resource]:
+                        self.ct[resource]['plant_id'] = {}
                     for i in plant_id.keys():
                         self.ct[resource]['plant_id'][i] = plant_id[i]
         else:
@@ -172,14 +200,16 @@ class ChangeTable(object):
             scaling factor for the increase/decrease in capacity of the line(s).
         """
         if bool(zone_name) or bool(branch_id) is True:
-            self.ct['branch'] = {}
+            if 'branch' not in self.ct:
+                self.ct['branch'] = {}
             if zone_name is not None:
                 try:
                     self._check_zone(list(zone_name.keys()))
                 except ValueError:
                     self.ct.pop('branch')
                     return
-                self.ct['branch']['zone_id'] = {}
+                if 'zone_id' not in self.ct['branch']:
+                    self.ct['branch']['zone_id'] = {}
                 for z in zone_name.keys():
                     self.ct['branch']['zone_id'][
                         self.grid.zone2id[z]] = zone_name[z]
@@ -193,7 +223,8 @@ class ChangeTable(object):
                     self.ct.pop('branch')
                     return
                 else:
-                    self.ct['branch']['branch_id'] = {}
+                    if 'branch_id' not in self.ct['branch']:
+                        self.ct['branch']['branch_id'] = {}
                     for i in branch_id.keys():
                         self.ct['branch']['branch_id'][i] = branch_id[i]
         else:
@@ -207,8 +238,8 @@ class ChangeTable(object):
             (are) the id of the line(s) and the associated value is the scaling
             factor for the increase/decrease in capacity of the line(s).
         """
-        self.ct['dcline'] = {}
-        self.ct['dcline']['dcline_id'] = {}
+        if 'dcline' not in self.ct:
+            self.ct['dcline'] = {}
         diff = set(dcline_id.keys()).difference(set(self.grid.dcline.index))
         if len(diff) != 0:
             print("No dc line with the following id:")
@@ -217,7 +248,8 @@ class ChangeTable(object):
             self.ct.pop('dcline')
             return
         else:
-            self.ct['dcline']['dcline_id'] = {}
+            if 'dcline_id' not in self.ct['dcline']:
+                self.ct['dcline']['dcline_id'] = {}
             for i in dcline_id.keys():
                 self.ct['dcline']['dcline_id'][i] = dcline_id[i]
 
@@ -232,14 +264,16 @@ class ChangeTable(object):
             the scaling factor for the increase/decrease in load.
         """
         if bool(zone_name) or bool(zone_id) is True:
-            self.ct['demand'] = {}
+            if 'demand' not in self.ct:
+                self.ct['demand'] = {}
+            if 'zone_id' not in self.ct['demand']:
+                self.ct['demand']['zone_id'] = {}
             if zone_name is not None:
                 try:
                     self._check_zone(list(zone_name.keys()))
                 except ValueError:
                     self.ct.pop('demand')
                     return
-                self.ct['demand']['zone_id'] = {}
                 for z in zone_name.keys():
                     self.ct['demand']['zone_id'][
                         self.grid.zone2id[z]] = zone_name[z]
@@ -253,7 +287,6 @@ class ChangeTable(object):
                     self.ct.pop('demand')
                     return
                 else:
-                    self.ct['demand']['zone_id'] = {}
                     for i in zone_id.keys():
                         self.ct['demand']['zone_id'][i] = zone_id[i]
         else:
@@ -272,8 +305,9 @@ class ChangeTable(object):
         :param dict bus_id: key(s) for the id of bus(es), value(s) is (are)
             capacity of the energy storage system in MW.
         """
-        self.ct['storage'] = {}
-        self.ct['storage']['bus_id'] = {}
+        if 'storage' not in self.ct:
+            self.ct['storage'] = {}
+
         diff = set(bus_id.keys()).difference(set(self.grid.bus.index))
         if len(diff) != 0:
             print("No bus with the following id:")
@@ -282,6 +316,8 @@ class ChangeTable(object):
             self.ct.pop('storage')
             return
         else:
+            if 'bus_id' not in self.ct['storage']:
+                self.ct['storage']['bus_id'] = {}
             for i in bus_id.keys():
                 self.ct['storage']['bus_id'][i] = bus_id[i]
 
