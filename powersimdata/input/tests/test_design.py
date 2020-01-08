@@ -1,6 +1,7 @@
 import unittest
 
 from postreise.tests.mock_grid import MockGrid
+from powersimdata.tests.mock_change_table import MockChangeTable
 from powersimdata.input.design import (
     _find_branches_connected_to_bus, _find_first_degree_branches,
     _find_stub_degree, _find_capacity_at_bus, scale_renewable_stubs)
@@ -102,59 +103,62 @@ class TestScaleRenewableStubs(unittest.TestCase):
     
     def test_empty_ct_inplace_default(self):
         expected_ct = {'branch':{'branch_id':{103: (11/8), 107: (21/15)}}}
-        ct = {}
-        returned = scale_renewable_stubs(mock_grid, ct, verbose=False)
+        change_table = MockChangeTable(mock_grid)
+        returned = scale_renewable_stubs(change_table, verbose=False)
         self.assertIsNone(returned)
-        self.assertEqual(ct, expected_ct)
+        self.assertEqual(change_table.ct, expected_ct)
     
     def test_empty_ct_inplace_true(self):
         expected_ct = {'branch':{'branch_id':{103: (11/8), 107: (21/15)}}}
-        ct = {}
-        returned = scale_renewable_stubs(mock_grid, ct, verbose=False)
+        change_table = MockChangeTable(mock_grid)
+        returned = scale_renewable_stubs(change_table, verbose=False)
         self.assertIsNone(returned)
-        self.assertEqual(ct, expected_ct)
+        self.assertEqual(change_table.ct, expected_ct)
     
     def test_empty_ct_inplace_false(self):
         expected_ct = {'branch':{'branch_id':{103: (11/8), 107: (21/15)}}}
-        ct = {}
+        change_table = MockChangeTable(mock_grid)
         returned = scale_renewable_stubs(
-            mock_grid, ct, inplace=False, verbose=False)
-        self.assertEqual(ct, {})
+            change_table, inplace=False, verbose=False)
+        self.assertEqual(change_table.ct, {})
         self.assertEqual(returned, expected_ct)
     
     def test_empty_ct_no_fuzz(self):
         expected_ct = {'branch':{'branch_id':{103: (10/8), 107: (20/15)}}}
-        ct = {}
-        returned = scale_renewable_stubs(mock_grid, ct, fuzz=0, verbose=False)
+        change_table = MockChangeTable(mock_grid)
+        returned = scale_renewable_stubs(change_table, fuzz=0, verbose=False)
         self.assertIsNone(returned)
-        self.assertEqual(ct, expected_ct)
+        self.assertEqual(change_table.ct, expected_ct)
     
     def test_existing_ct_unrelated_branch_id(self):
         ct = {'branch':{'branch_id':{105: 2}}}
+        change_table = MockChangeTable(mock_grid, ct=ct)
         expected_ct = {
             'branch':{'branch_id':{103: (11/8), 105:2, 107: (21/15)}}}
-        scale_renewable_stubs(mock_grid, ct, verbose=False)
-        self.assertEqual(ct, expected_ct)
+        scale_renewable_stubs(change_table, verbose=False)
+        self.assertEqual(change_table.ct, expected_ct)
     
     def test_existing_ct_zone_id_wind(self):
         ct = {'wind':{'zone_id':{'E': 2}}}
+        change_table = MockChangeTable(mock_grid, ct=ct)
         expected_ct = {
             'wind':{'zone_id':{'E': 2}},
             'branch':{'branch_id':{103: (21/8), 104: (31/25), 107: (21/15)}}
             }
-        scale_renewable_stubs(mock_grid, ct, verbose=False)
-        self.assertEqual(ct, expected_ct)
+        scale_renewable_stubs(change_table, verbose=False)
+        self.assertEqual(change_table.ct, expected_ct)
 
     def test_existing_ct_zone_id_solar_wind(self):
         ct = {
             'wind':{'zone_id':{'E': 2}},
             'solar':{'zone_id':{'W': 3}},
             }
+        change_table = MockChangeTable(mock_grid, ct=ct)
         expected_ct = {
             'wind':{'zone_id':{'E': 2}},
             'solar':{'zone_id':{'W': 3}},
             'branch':{'branch_id':{
                 103: (21/8), 104: (31/25), 107: (61/15), 108: (61/25)}},
             }
-        scale_renewable_stubs(mock_grid, ct, verbose=False)
-        self.assertEqual(ct, expected_ct)
+        scale_renewable_stubs(change_table, verbose=False)
+        self.assertEqual(change_table.ct, expected_ct)

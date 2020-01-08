@@ -77,7 +77,7 @@ def _find_capacity_at_bus(plant, bus_id, gentypes):
     return gentype_capacity
 
 
-def scale_renewable_stubs(grid, ct, fuzz=1, inplace=True, verbose=True):
+def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=True):
     """Identify renewable gens behind 'stub' branches, scale up branch capacity
         (via change_table entries) to match generator capacity.
 
@@ -90,11 +90,13 @@ def scale_renewable_stubs(grid, ct, fuzz=1, inplace=True, verbose=True):
     :return: (*None*/*dict*) -- if inplace == True, return modified ct dict.
     """
 
-    if not inplace:
-        ct = ct.copy()
-    ref_plant = grid.plant
-    ref_branch = grid.branch
-    ref_bus = grid.bus
+    if inplace:
+        ct = change_table.ct
+    else:
+        ct = change_table.ct.copy()
+    ref_plant = change_table.grid.plant
+    ref_branch = change_table.grid.branch
+    ref_bus = change_table.grid.bus
     if 'branch' not in ct:
         ct['branch'] = {}
     if 'branch_id' not in ct['branch']:

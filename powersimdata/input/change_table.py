@@ -1,6 +1,7 @@
 import os
 import pickle
 
+from powersimdata.input.design import scale_renewable_stubs
 from powersimdata.input.grid import Grid
 from postreise.process import const
 
@@ -258,6 +259,12 @@ class ChangeTable(object):
         else:
             print("<zone> and/or <zone_id> must be set. Return.")
             return
+
+    def scale_renewable_stubs(self, **kwargs):
+        """Scales undersized stub branches connected to renewable generators.
+        Optional kwargs as documented in powersimdata.input.design.
+        """
+        scale_renewable_stubs(self, **kwargs)
 
     def add_storage_capacity(self, bus_id):
         """Sets storage parameters in change table.

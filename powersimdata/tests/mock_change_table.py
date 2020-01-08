@@ -1,12 +1,14 @@
 from powersimdata.input.change_table import ChangeTable
+from powersimdata.input.grid import Grid
 
 
 class MockChangeTable:
-    def __init__(self, ct=None):
+    def __init__(self, grid, ct=None):
         """Constructor.
 
         :param dict ct: change table dict to be sent to ct attribute.
         """
+        self.grid = grid
         if ct is None:
             ct = {}
         self.ct = ct
