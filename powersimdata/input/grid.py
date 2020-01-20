@@ -41,7 +41,7 @@ class Grid(object):
         """
         top_dirname = os.path.dirname(__file__)
         data_dirname = os.path.join(top_dirname, 'data')
-        self.data_loc = os.path.join(data_dirname, 'usa', '')
+        self.data_loc = os.path.join(data_dirname, 'usa_tamu', '')
 
         self._set_interconnect(interconnect)
         self._build_network()
