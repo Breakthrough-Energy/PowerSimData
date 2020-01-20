@@ -35,13 +35,22 @@ class Grid(object):
                   'other': sns.xkcd_rgb["melon"],
                   'storage': sns.xkcd_rgb["orange"]}
 
-    def __init__(self, interconnect):
+    def __init__(self, interconnect, source='usa_tamu'):
         """Constructor.
 
+        :param str source: name of directory enclosing network files
+        :raises TypeError: if source is not a string.
+        :raises IOError: if directory does not exist.
         """
+        if not isinstance(source, str):
+            raise TypeError('string is expected for source')
         top_dirname = os.path.dirname(__file__)
         data_dirname = os.path.join(top_dirname, 'data')
-        self.data_loc = os.path.join(data_dirname, 'usa_tamu', '')
+        self.data_loc = os.path.join(data_dirname, source, '')
+        if os.path.isdir(self.data_loc) is False:
+            raise IOError('%s directory not found' % source)
+
+
 
         self._set_interconnect(interconnect)
         self._build_network()
