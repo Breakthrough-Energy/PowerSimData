@@ -59,8 +59,6 @@ class Scaler(object):
                                 ['zone_id', 'type']).get_group(
                                 (key, r)).index.values.tolist()
                             for i in plant_id:
-                                self._grid.plant.loc[i, 'GenMWMax'] = \
-                                    self._grid.plant.loc[i, 'GenMWMax'] * value
                                 self._grid.plant.loc[i, 'Pmax'] = \
                                     self._grid.plant.loc[i, 'Pmax'] * value
                                 self._grid.plant.loc[i, 'Pmin'] = \
@@ -76,8 +74,6 @@ class Scaler(object):
                         pass
                     try:
                         for key, value in self.ct[r]['plant_id'].items():
-                            self._grid.plant.loc[key, 'GenMWMax'] = \
-                                self._grid.plant.loc[key, 'GenMWMax'] * value
                             self._grid.plant.loc[key, 'Pmax'] = \
                                 self._grid.plant.loc[key, 'Pmax'] * value
                             self._grid.plant.loc[key, 'Pmin'] = \

@@ -1,4 +1,4 @@
-plant_id,bus_id,Pg,Qg,Qmax,Qmin,Vg,mBase,status,GenMWMax,GenMWMin,Pc1,Pc2,Qc1min,Qc1max,Qc2min,Qc2max,ramp_agc,ramp_10,ramp_30,ramp_q,apf,mu_Pmax,mu_Pmin,mu_Qmax,mu_Qmin,type,interconnect,GenFuelCost,GenIOB,GenIOC,GenIOD
+plant_id,bus_id,Pg,Qg,Qmax,Qmin,Vg,mBase,status,Pmax,Pmin,Pc1,Pc2,Qc1min,Qc1max,Qc2min,Qc2max,ramp_agc,ramp_10,ramp_30,ramp_q,apf,mu_Pmax,mu_Pmin,mu_Qmax,mu_Qmin,type,interconnect,GenFuelCost,GenIOB,GenIOC,GenIOD
 0,845,186.58,40.25,95.08,-20.73,1.009,224.16,1,186.8,36.02,0,0,0,0,0,0,0,0,0,0,186.8,0,0,0,0,ng,Eastern,3.36867,4.82144,0.007515,0
 1,850,211.25,32.45,98.56,-25.8,1.0488,253.8,1,211.5,83.04,0,0,0,0,0,0,0,0,0,0,211.5,0,0,0,0,dfo,Eastern,9.863,8.01688,0.017094,0
 2,851,211.25,53.96,98.56,-25.8,1.05,253.8,1,211.5,80.7,0,0,0,0,0,0,0,0,0,0,211.5,0,0,0,0,dfo,Eastern,9.863,8.01688,0.01725,0
