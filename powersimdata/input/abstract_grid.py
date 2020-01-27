@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-class _GridBuilder(object):
+class AbstractGrid(object):
     """Grid Builder.
 
     """

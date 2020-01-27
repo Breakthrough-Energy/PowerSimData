@@ -196,7 +196,6 @@ class SimulationInput(object):
         bus = grid.bus.copy()
         bus.reset_index(level=0, inplace=True)
         bus.drop(columns=['interconnect', 'lat', 'lon'], inplace=True)
-        bus.insert(10, 'loss_zone', [1] * len(bus))
         mpc['mpc']['bus'] = bus.values
 
         # Format generator
@@ -204,9 +203,9 @@ class SimulationInput(object):
         genid = gen.index.values[np.newaxis].T
         gen.reset_index(inplace=True, drop=True)
         genfuel = gen.type.values[np.newaxis].T
-        gen.drop(columns=['GenMWMax', 'GenMWMin', 'type', 'interconnect',
-                          'lat', 'lon', 'zone_id', 'zone_name',
-                          'GenFuelCost', 'GenIOB', 'GenIOC', 'GenIOD'],
+        gen.drop(columns=['type', 'interconnect', 'lat', 'lon', 'zone_id',
+                          'zone_name', 'GenFuelCost', 'GenIOB', 'GenIOC',
+                          'GenIOD'],
                  inplace=True)
         mpc['mpc']['gen'] = gen.values
         mpc['mpc']['genid'] = genid

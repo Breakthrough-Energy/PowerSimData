@@ -1,9 +1,8 @@
-from powersimdata.input.grid_builder import _GridBuilder
 from powersimdata.input.usa_tamu_model import TAMU
 from powersimdata.input.mat_reader import MATReader
 
 
-class Grid(_GridBuilder):
+class Grid(object):
     """Grid
 
     """
@@ -15,8 +14,6 @@ class Grid(_GridBuilder):
         :raises TypeError: if source is not a string.
         :raises ValueError: if model does not exist.
         """
-        super().__init__()
-
         if not isinstance(source, str):
             raise TypeError('source must be a string')
         if source == 'usa_tamu':

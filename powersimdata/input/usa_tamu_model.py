@@ -1,10 +1,11 @@
 import os
 import seaborn as sns
 
+from powersimdata.input.abstract_grid import AbstractGrid
 from powersimdata.input.mpc_reader import MPCReader, get_storage
 
 
-class TAMU(object):
+class TAMU(AbstractGrid):
     """TAMU network.
 
     """
@@ -13,6 +14,7 @@ class TAMU(object):
 
         :param list interconnect: interconnect name(s).
         """
+        super().__init__()
         self.data_loc = self.get_data_loc()
 
         if self._check_interconnect(interconnect):
