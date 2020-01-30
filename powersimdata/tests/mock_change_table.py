@@ -1,5 +1,4 @@
 from powersimdata.input.change_table import ChangeTable
-from powersimdata.input.grid import Grid
 
 
 class MockChangeTable:
