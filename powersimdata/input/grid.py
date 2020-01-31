@@ -1,3 +1,5 @@
+import os
+
 from powersimdata.input.usa_tamu_model import TAMU
 from powersimdata.input.mat_reader import MATReader
 
@@ -18,8 +20,8 @@ class Grid(object):
             raise TypeError('source must be a string')
         if source == 'usa_tamu':
             data = TAMU(interconnect)
-        elif source == 'output':
-            data = MATReader()
+        elif os.path.splitext(source)[1] == '.mat':
+            data = MATReader(source)
         else:
             raise ValueError('%s not implemented' % source)
 
