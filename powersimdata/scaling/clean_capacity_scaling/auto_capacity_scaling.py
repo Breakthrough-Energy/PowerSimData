@@ -47,42 +47,42 @@ class CollaborativeManager(AbstractStrategy):
 
     def calculate_total_shortfall(self):
         """
-
-        :return:
+        Calculate total clean energy shortfall
+        :return: total clean energy shortfall
         """
         total_ce_shortfall = 0
         for tar in self.targets:
-            total_ce_shortfall  += self.targets[tar].CE_shortfall
+            total_ce_shortfall += self.targets[tar].CE_shortfall
         return total_ce_shortfall
 
     def calculate_total_prev_ce_generation(self):
         """
-
-        :return:
+        Calculate total allowed clean energy generation
+        :return: total allowed clean energy generation
         """
         total_prev_ce_generation = 0
         for tar in self.targets:
             total_prev_ce_generation += self.targets[tar].calculate_prev_ce_generation()
         return total_prev_ce_generation
 
-    def calculate_added_capacity(self, solar_percentage=None):
+    def calculate_added_capacity(self, solar_fraction=None):
         """
-
-        :param solar_percentage:
-        :return:
+        Calculate the capacity to add from total clean energy shortfall
+        :param solar_fraction: solar fraction to be used in calculation, default is to maintain from previous result
+        :return: solar and wind added capacities
         """
         solar_prev_capacity = self.calculate_total_capacity('solar')
         wind_prev_capacity = self.calculate_total_capacity('wind')
 
-        if solar_percentage is None:
-            solar_percentage = solar_prev_capacity/(solar_prev_capacity + wind_prev_capacity)
+        if solar_fraction is None:
+            solar_fraction = solar_prev_capacity / (solar_prev_capacity + wind_prev_capacity)
 
         ce_shortfall = self.calculate_total_shortfall()
         solar_exp_cap_factor = self.calculate_total_expected_capacity('solar')
         wind_exp_cap_factor = self.calculate_total_expected_capacity('wind')
 
-        if solar_percentage != 0:
-            ac_scaling_factor = (1-solar_percentage)/solar_percentage
+        if solar_fraction != 0:
+            ac_scaling_factor = (1 - solar_fraction) / solar_fraction
             solar_added_capacity = 1000/8784*ce_shortfall/(solar_exp_cap_factor+wind_exp_cap_factor*ac_scaling_factor)
             wind_added_capacity = ac_scaling_factor*solar_added_capacity
         else:
@@ -92,9 +92,9 @@ class CollaborativeManager(AbstractStrategy):
 
     def calculate_total_capacity(self, category):
         """
-
-        :param category:
-        :return:
+        Calculate total capacity for a resource
+        :param category: resource category
+        :return: total capacity for a resource
         """
         total_prev_capacity = 0
         for tar in self.targets:
@@ -103,9 +103,9 @@ class CollaborativeManager(AbstractStrategy):
 
     def calculate_total_generation(self, category):
         """
-
-        :param category:
-        :return:
+        Calculate total generation for a resource
+        :param category: resource category
+        :return: total generation for a resource
         """
         total_prev_generation = 0
         for tar in self.targets:
@@ -114,9 +114,9 @@ class CollaborativeManager(AbstractStrategy):
 
     def calculate_total_capacity_factor(self, category):
         """
-
-        :param category:
-        :return:
+        Calculate total capacity factor for a target resource
+        :param category: resource category
+        :return: total capacity factor
         """
         total_cap_factor = (self.calculate_total_generation(category) /
                             (self.calculate_total_capacity(category)) * (1000/8784))
@@ -124,18 +124,18 @@ class CollaborativeManager(AbstractStrategy):
 
     def calculate_total_expected_capacity(self, category, addl_curtailment=0):
         """
-
-        :param category:
-        :param addl_curtailment:
-        :return:
+        Calculate the total expected capacity for a target resource
+        :param category: resource category
+        :param addl_curtailment: option to add additional curtailment
+        :return: total expected capacity factor
         """
         total_exp_cap_factor = self.calculate_total_capacity_factor(category) * (1 - addl_curtailment)
         return total_exp_cap_factor
 
     def calculate_capacity_scaling(self):
         """
-
-        :return:
+        Calculate the aggregate capacity scaling factor for solar and wind
+        :return: solar and wind capacity scaling factors
         """
         solar_prev_capacity = self.calculate_total_capacity('solar')
         wind_prev_capacity = self.calculate_total_capacity('wind')
@@ -148,19 +148,19 @@ class CollaborativeManager(AbstractStrategy):
 
 class TargetManager:
 
-    def __init__(self, name, ce_target_percentage, ce_category, total_demand):
+    def __init__(self, name, ce_target_fraction, ce_category, total_demand):
         """
-
-        :param name:
-        :param ce_target_percentage:
-        :param ce_category:
-        :param total_demand:
+        Class manages the regional target data and calculations
+        :param name: region name
+        :param ce_target_fraction: target fraction for clean energy
+        :param ce_category: type of energy target, i.e. renewable, clean energy, etc.
+        :param total_demand: total demand for region
         """
         self.name = name
         self.CE_category = ce_category
 
         self.total_demand = total_demand
-        self.CE_target_percentage = ce_target_percentage
+        self.CE_target_percentage = ce_target_fraction
         self.CE_target = self.total_demand * self.CE_target_percentage
 
         self.allowed_resources = ['geo', 'solar', 'wind']
@@ -206,7 +206,7 @@ class TargetManager:
     def add_resource(self, resource):
         """
         Adds resource to TargetManager
-        :param resource:
+        :param resource: resource to be added
         """
         self.resources[resource.name] = resource
 
@@ -214,32 +214,34 @@ class TargetManager:
         # todo: add error handling
         self.resources[resource_name]
 
-    def calculate_ce_shortfall(self, prev_CE_generation, external_CE_historical_amount):
+    def calculate_ce_shortfall(self, prev_ce_generation, external_ce_historical_amount):
         """
-        Calculates the clean energy shortfall for target area
-        :param prev_CE_generation:
-        :param external_CE_historical_amount:
-        :return:
+        Calculates the clean energy shortfall for target area, subtracts the external value if greater than total
+        allowed clean energy generation
+        :param prev_ce_generation: clean energy generation for allowed resources
+        :param external_ce_historical_amount: outside clean energy generation value
+        :return: clean energy shortfall
         """
-        if external_CE_historical_amount > prev_CE_generation:
-            offset = external_CE_historical_amount
+        if external_ce_historical_amount > prev_ce_generation:
+            offset = external_ce_historical_amount
         else:
-            offset = prev_CE_generation
+            offset = prev_ce_generation
 
         if offset > self.CE_target: 
-                CE_shortfall = 0
+            ce_shortfall = 0
         else:
-            CE_shortfall = self.CE_target - offset
+            ce_shortfall = self.CE_target - offset
 
-        self.CE_shortfall = CE_shortfall
-        return CE_shortfall
+        self.CE_shortfall = ce_shortfall
+        return ce_shortfall
 
     def calculate_ce_overgeneration(self, prev_ce_generation, external_ce_historical_amount):
         """
-
+        Calculates the clean energy overgeneration for target area, subtracts from external value if greater than total
+        allowed clean energy generation
         :param prev_ce_generation:
         :param external_ce_historical_amount:
-        :return:
+        :return: clean energy overgeneration
         """
         if external_ce_historical_amount > prev_ce_generation:
             offset = external_ce_historical_amount
@@ -255,15 +257,16 @@ class TargetManager:
 
     def set_allowed_resources(self, allowed_resources):
         """
-
-        :param allowed_resources:
-        :return:
+        Sets a list of allow resources
+        :param allowed_resources: list of allow resources
         """
+        # todo: input validation
         self.allowed_resources =  allowed_resources
 
 
 class Resource:
     def __init__(self, name, prev_scenario_num):
+        #todo: input validation
         self.name = name
         self.prev_scenario_num = prev_scenario_num
         self.no_congestion_cap_factor = 0
@@ -276,11 +279,10 @@ class Resource:
     # todo: calculate directly from scenario results
     def set_capacity(self, no_congestion_cap_factor, prev_capacity, prev_cap_factor):
         """
-
-        :param no_congestion_cap_factor:
-        :param prev_capacity:
-        :param prev_cap_factor:
-        :return:
+        Sets capacity information for resource
+        :param no_congestion_cap_factor: capacity factor with no congestion
+        :param prev_capacity: capacity from scenario run
+        :param prev_cap_factor: capacity factor from scenario run
         """
         self.no_congestion_cap_factor = no_congestion_cap_factor
         self.prev_capacity = prev_capacity
@@ -289,42 +291,40 @@ class Resource:
     # todo: calculate directly from scenario results
     def set_generation(self, prev_generation):
         """
-
-        :param prev_generation:
-        :return:
+        Set generation from scenario run
+        :param prev_generation: generation from scenario run
         """
         self.prev_generation = prev_generation
 
     # todo: calculate directly from scenario results
     def set_curtailment(self, prev_curtailment):
         """
-
-        :param prev_curtailment:
+        Set curtailment from scenario run
+        :param prev_curtailment: calculated curtailment from scenario run
         :return:
         """
         self.prev_curtailment = prev_curtailment
 
     def set_addl_curtailment(self, addl_curtailment):
         """
-
-        :param addl_curtailment:
-        :return:
+        Set additional curtailment to included in capacity calculations
+        :param addl_curtailment: additional curtailment
         """
         self.addl_curtailment = addl_curtailment
 
     def calculate_expected_cap_factor(self):
         """
-
-        :return:
+        Calculates the capacity factor including additional curtailment
+        :return: capacity factor for resource
         """
         exp_cap_factor = self.prev_cap_factor * (1-self.addl_curtailment)
         return exp_cap_factor
 
     def calculate_next_capacity(self, added_capacity):
         """
-
-        :param added_capacity:
-        :return:
+        Calculates next capacity to be used for scenario
+        :param added_capacity: calculated added capacity
+        :return: next capacity to be used for scenario
         """
         next_capacity = self.prev_capacity + added_capacity
         return next_capacity

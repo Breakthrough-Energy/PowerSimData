@@ -1,4 +1,4 @@
-from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager, CollaborativeManager, AbstractStrategy
+from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager, CollaborativeManager
 from pytest import approx
 
 def test_independent_capacity_strategy():
@@ -80,7 +80,7 @@ def test_independent_capacity_strategy_Atlantic_2():
     target.add_resource(nuclear)
 
     prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_CE_generation == approx(39672.88)
+#     assert prev_ce_generation == approx(39672.88)
     CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
 #     CE_shortfall = target.CalculateCEShortfall(39672.88, 0)
 #     assert CE_shortfall == approx(50327.12)
@@ -130,7 +130,7 @@ def test_independent_capacity_strategy_Pacific_3():
     target.add_resource(nuclear)
 
     prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_CE_generation == approx(26000)
+#     assert prev_ce_generation == approx(26000)
     CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
 #     CE_shortfall = target.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
@@ -180,7 +180,7 @@ def test_independent_capacity_strategy_Atlantic_4():
     target.add_resource(nuclear)
 
     prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_CE_generation == approx(44500)
+#     assert prev_ce_generation == approx(44500)
     CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
 #     CE_shortfall = target.CalculateCEShortfall(44500, 0)
 #     assert CE_shortfall == approx(75500)
@@ -230,7 +230,7 @@ def test_independent_capacity_strategy_Pacific_external_6():
     target.add_resource(nuclear)
 
     prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_CE_generation == 26000
+#     assert prev_ce_generation == 26000
     CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 40000)
 #     CE_shortfall = target.CalculateCEShortfall(26000, 40000)
 #     assert CE_shortfall == approx(10000)
@@ -279,7 +279,7 @@ def test_independent_capacity_strategy_Pacific_solar0_7():
     target.add_resource(nuclear)
 
     prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_CE_generation == 26000
+#     assert prev_ce_generation == 26000
     CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
 #     CE_shortfall = target.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
@@ -328,7 +328,7 @@ def test_independent_capacity_strategy_Pacific_solar75_8():
     target.add_resource(nuclear)
 
     prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_CE_generation == 26000
+#     assert prev_ce_generation == 26000
     CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
 #     CE_shortfall = target.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
@@ -377,7 +377,7 @@ def test_independent_capacity_strategy_Pacific_solar100_9():
     target.add_resource(nuclear)
 
     prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_CE_generation == 26000
+#     assert prev_ce_generation == 26000
     CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
 #     CE_shortfall = target.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
@@ -426,7 +426,7 @@ def test_independent_capacity_strategy_windcurtail_10():
     target.add_resource(nuclear)
 
     prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_CE_generation == 26000
+#     assert prev_ce_generation == 26000
     CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
 #     CE_shortfall = target.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
@@ -476,7 +476,7 @@ def test_collaborative_capacity_strategy():
     pacific_target.add_resource(pacific_nuclear)
 
     prev_CE_generation = pacific_target.calculate_prev_ce_generation()
-#     assert prev_CE_generation == approx(26000)
+#     assert prev_ce_generation == approx(26000)
     CE_shortfall = pacific_target.calculate_ce_shortfall(prev_CE_generation, 0)
 #     CE_shortfall = target.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
