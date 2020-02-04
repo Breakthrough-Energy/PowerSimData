@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd
+
 from postreise.process import const
 from postreise.process.transferdata import download
 from powersimdata.input.profiles import _read_data
@@ -129,3 +132,109 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=True):
 
     if not inplace:
         return ct
+
+
+def scale_congested_mesh_branches(change_table, ref_scenario, upgrade_n=100,
+                                  quantile=0.95, increment=1):
+    """Use a reference scenario as a baseline for branch scaling, and further
+    increment branch scaling based on observed congestion duals.
+    
+    :param powersimdata.input.change_table.ChangeTable change_table: the
+        change table instance we are operating on.
+    :param powersimdata.scenario.scenario.Scenario ref_scenario: the reference
+        scenario to be used in bootstrapping the branch scaling factors.
+    :param int upgrade_n: the number of branches to upgrade.
+    :param float quantile: the quantile to use to judge branch congestion.
+    :param [float/int] increment: branch increment, relative to original
+        capacity.
+    :return: (*None*) -- the change_table is modified in-place.
+    """
+    # To do: better type checking of inputs.
+    # We need a Scenario object that's in Analyze state to get congu/congl,
+    # but we can't import Scenario to check against, because circular imports.
+    branches_to_upgrade = _identify_mesh_branch_upgrades(
+        ref_scenario, upgrade_n=upgrade_n, quantile=quantile)
+    _increment_branch_scaling(
+        change_table, branches_to_upgrade, ref_scenario, value=increment)
+
+
+def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95):
+    """Identify the N most congested branches in a previous scenario, based on
+    the quantile value of congestion duals. A quantile value of 0.95 obtains
+    the branches with highest dual in top 5% of hours.
+    
+    :param powersimdata.scenario.scenario.Scenario ref_scenario: the reference
+        scenario to be used to determine the most congested branches.
+    :param int upgrade_n: the number of branches to upgrade.
+    :param float quantile: the quantile to use to judge branch congestion.
+    :return: (*Set*) -- A set of ints representing branch indices.
+    """
+    
+    # How big does a dual value have to be to be 'real' and not barrier cruft?
+    cong_significance_cutoff = 1e-6
+    
+    # Get raw congestion dual values
+    ref_congu = ref_scenario.state.get_congu()
+    ref_congl = ref_scenario.state.get_congl()
+    ref_cong_abs = pd.DataFrame(
+        np.maximum(ref_congu.to_numpy(), ref_congl.to_numpy()),
+        index=ref_congu.index,
+        columns=ref_congu.columns)
+    # Free up some memory, since we don't need two directional arrays anymore
+    ref_congu = ''
+    ref_congl = ''
+    
+    # Parse 2-D array to vector of quantile values, filter out non-significant
+    quantile_cong_abs = ref_cong_abs.quantile(quantile).sort_values()
+    significance_bitmask = (quantile_cong_abs > cong_significance_cutoff)
+    quantile_cong_abs = quantile_cong_abs.where(significance_bitmask).dropna()
+    
+    # Ensure that we have enough congested branches to upgrade
+    num_congested = len(quantile_cong_abs)
+    if num_congested < upgrade_n:
+        err_msg = 'not enough congested branches: '
+        err_msg += f'{upgrade_n} desired, but only {num_congested} congested.'
+        raise ValueError(err_msg)
+    
+    quantile_branches = set(quantile_cong_abs.tail(upgrade_n).index)
+    return quantile_branches
+
+
+def _increment_branch_scaling(change_table, branch_ids, ref_scenario, value=1):
+    """Modify the ct dict of a ChangeTable object based on branch scaling from
+    both a reference scenario and a set of branches to increment by a value.
+    
+    :param powersimdata.input.change_table.ChangeTable change_table: the
+        change table instance we are operating on.
+    :param [list/set/tuple] branch_ids: an iterable of branch indices.
+    :param powersimdata.scenario.scenario.Scenario ref_scenario: the reference
+        scenario to copy branch scaling from.
+    :param [int/float] value: branch increment, relative to original capacity.
+    :return: (*None*) -- the change_table is modified in-place.
+    """
+    # Ensure that ct has proper keys
+    ct = change_table.ct
+    if 'branch' not in ct:
+        ct['branch'] = {}
+    if 'branch_id' not in ct['branch']:
+        ct['branch']['branch_id'] = {}
+    branch_scaling = ct['branch']['branch_id']
+    
+    # Get previous scenario's branch scaling
+    ref_ct = ref_scenario.state.get_ct()
+    ref_branch_scaling = ref_ct['branch']['branch_id'].copy()
+    
+    # Merge branch scaling dicts together: this ct + ref ct
+    for branch in ref_branch_scaling:
+        if branch in branch_scaling:
+            new_scale = max(branch_scaling[branch], ref_branch_scaling[branch])
+            branch_scaling[branch] = new_scale
+        else:
+            branch_scaling[branch] = ref_branch_scaling[branch]
+    
+    # Merge branch scaling dicts together: this ct + new increment
+    for branch in branch_ids:
+        if branch in branch_scaling:
+            branch_scaling[branch] += value
+        else:
+            branch_scaling[branch] = 1 + value
