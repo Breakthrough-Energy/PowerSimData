@@ -1,8 +1,8 @@
-from prereise.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager
+from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager, CollaborativeManager, AbstractStrategy
 from pytest import approx
 
 
-def test_logic():
+def test_can_pass():
     assert 1 == 1
 
 

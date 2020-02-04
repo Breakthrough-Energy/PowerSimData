@@ -1,4 +1,4 @@
-from prereise.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager, CollaborativeManager, AbstractStrategy
+from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager, CollaborativeManager, AbstractStrategy
 from pytest import approx
 
 def test_independent_capacity_strategy():
