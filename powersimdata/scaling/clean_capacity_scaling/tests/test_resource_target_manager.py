@@ -68,6 +68,7 @@ def test_calculate_ce_overgeneration_external_gt_prev():
     result = target.calculate_ce_overgeneration(28774.16, 40000)
     assert result == 0
 
+
 def test_calculate_ce_no_overgeneration_prev_gt_external():
     target = TargetManager('Pacific', 0.25, 'renewables', 200000)
     result = target.calculate_ce_overgeneration(68774.16, 56000)
@@ -108,7 +109,7 @@ def test_cal_prev_solar():
     assert result == 8125
 
 
-def test_cal_prev_Pacific():
+def test_cal_prev_pacific():
     solar = Resource('solar', 3)
     solar.set_capacity(0.25, 3700, 0.25)
     solar.set_generation(8125)

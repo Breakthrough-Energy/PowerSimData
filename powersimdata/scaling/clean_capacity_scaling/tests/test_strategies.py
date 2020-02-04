@@ -1,6 +1,7 @@
 from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager, CollaborativeManager
 from pytest import approx
 
+
 def test_independent_capacity_strategy():
     solar = Resource('solar', 3)
     solar.set_capacity(0.25, 3700, 0.25)
@@ -90,7 +91,7 @@ def test_independent_capacity_strategy_Atlantic_2():
     assert wind_added == approx(8716.354)
 
 
-def test_independent_capacity_strategy_Pacific_3():
+def test_independent_capacity_strategy_pacific_3():
     solar = Resource('solar', 3)
     solar.set_capacity(0.25, 3700, 0.215379)
     solar.set_generation(7000)
@@ -140,7 +141,7 @@ def test_independent_capacity_strategy_Pacific_3():
     assert wind_added == approx(4800)
 
 
-def test_independent_capacity_strategy_Atlantic_4():
+def test_independent_capacity_strategy_atlantic_4():
     solar = Resource('solar', 3)
     solar.set_capacity(0.3, 4200, 0.284608)
     solar.set_generation(10500)
@@ -190,7 +191,7 @@ def test_independent_capacity_strategy_Atlantic_4():
     assert wind_added == approx(14070.455)
 
 
-def test_independent_capacity_strategy_Pacific_external_6():
+def test_independent_capacity_strategy_pacific_external_6():
     solar = Resource('solar', 3)
     solar.set_capacity(0.25, 3700, 0.215379)
     solar.set_generation(7000)
@@ -239,7 +240,7 @@ def test_independent_capacity_strategy_Pacific_external_6():
     assert wind_added == approx(2000)
 
 
-def test_independent_capacity_strategy_Pacific_solar0_7():
+def test_independent_capacity_strategy_pacific_solar0_7():
     solar = Resource('solar', 3)
     solar.set_capacity(0.25, 3700, 0.215379)
     solar.set_generation(7000)
@@ -288,7 +289,7 @@ def test_independent_capacity_strategy_Pacific_solar0_7():
     assert wind_added == approx(7854.545)
 
 
-def test_independent_capacity_strategy_Pacific_solar75_8():
+def test_independent_capacity_strategy_pacific_solar75_8():
     solar = Resource('solar', 3)
     solar.set_capacity(0.25, 3700, 0.215379)
     solar.set_generation(7000)
@@ -337,7 +338,7 @@ def test_independent_capacity_strategy_Pacific_solar75_8():
     assert wind_added == approx(2748.753)
 
 
-def test_independent_capacity_strategy_Pacific_solar100_9():
+def test_independent_capacity_strategy_pacific_solar100_9():
     solar = Resource('solar', 3)
     solar.set_capacity(0.25, 3700, 0.215379314)
     solar.set_generation(7000)

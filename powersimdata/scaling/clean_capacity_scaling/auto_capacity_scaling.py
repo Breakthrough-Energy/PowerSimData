@@ -98,7 +98,7 @@ class CollaborativeManager(AbstractStrategy):
         """
         total_prev_capacity = 0
         for tar in self.targets:
-            total_prev_capacity  += self.targets[tar].resources[category].prev_capacity
+            total_prev_capacity += self.targets[tar].resources[category].prev_capacity
         return total_prev_capacity
 
     def calculate_total_generation(self, category):
@@ -109,7 +109,7 @@ class CollaborativeManager(AbstractStrategy):
         """
         total_prev_generation = 0
         for tar in self.targets:
-            total_prev_generation  += self.targets[tar].resources[category].prev_generation
+            total_prev_generation += self.targets[tar].resources[category].prev_generation
         return total_prev_generation
 
     def calculate_total_capacity_factor(self, category):
@@ -212,7 +212,7 @@ class TargetManager:
 
     def get_resource(self, resource_name):
         # todo: add error handling
-        self.resources[resource_name]
+        return self.resources[resource_name]
 
     def calculate_ce_shortfall(self, prev_ce_generation, external_ce_historical_amount):
         """
@@ -261,12 +261,12 @@ class TargetManager:
         :param allowed_resources: list of allow resources
         """
         # todo: input validation
-        self.allowed_resources =  allowed_resources
+        self.allowed_resources = allowed_resources
 
 
 class Resource:
     def __init__(self, name, prev_scenario_num):
-        #todo: input validation
+        # todo: input validation
         self.name = name
         self.prev_scenario_num = prev_scenario_num
         self.no_congestion_cap_factor = 0
