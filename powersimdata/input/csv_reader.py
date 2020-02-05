@@ -3,7 +3,7 @@ import pandas as pd
 from powersimdata.input.helpers import csv_to_data_frame
 
 
-class MPCReader(object):
+class CSVReader(object):
     """MPC files reader
 
     """

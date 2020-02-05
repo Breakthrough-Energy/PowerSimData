@@ -3,7 +3,7 @@ import pandas as pd
 import seaborn as sns
 
 from powersimdata.input.abstract_grid import AbstractGrid
-from powersimdata.input.mpc_reader import MPCReader, get_storage
+from powersimdata.input.csv_reader import CSVReader, get_storage
 from powersimdata.input.helpers import (csv_to_data_frame,
                                         add_column_to_data_frame)
 
@@ -55,7 +55,7 @@ class TAMU(AbstractGrid):
         """Build network.
 
         """
-        reader = MPCReader(self.data_loc)
+        reader = CSVReader(self.data_loc)
         for key, value in vars(reader).items():
             setattr(self, key, value)
 
