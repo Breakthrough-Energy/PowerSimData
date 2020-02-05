@@ -224,17 +224,17 @@ def _increment_branch_scaling(change_table, branch_ids, ref_scenario, value=1):
     ref_ct = ref_scenario.state.get_ct()
     ref_branch_scaling = ref_ct['branch']['branch_id'].copy()
     
-    # Merge branch scaling dicts together: this ct + ref ct
+    # Determine the final ref branch scaling after incrementing
+    for branch in branch_ids:
+        if branch in ref_branch_scaling:
+            ref_branch_scaling[branch] += value
+        else:
+            ref_branch_scaling[branch] = 1 + value
+
+    # Then merge the ref branch scaling in, unless original scaling is greater
     for branch in ref_branch_scaling:
         if branch in branch_scaling:
             new_scale = max(branch_scaling[branch], ref_branch_scaling[branch])
             branch_scaling[branch] = new_scale
         else:
             branch_scaling[branch] = ref_branch_scaling[branch]
-    
-    # Merge branch scaling dicts together: this ct + new increment
-    for branch in branch_ids:
-        if branch in branch_scaling:
-            branch_scaling[branch] += value
-        else:
-            branch_scaling[branch] = 1 + value
