@@ -23,8 +23,7 @@ branch_columns = [
     'ratio', 'angle', 'status', 'angmin', 'angmax', 'Pf', 'Qf', 'Pt', 'Qt',
     'mu_Sf', 'mu_St', 'mu_angmin', 'mu_angmax', 'branch_device_type',
     'interconnect', 'from_zone_id', 'to_zone_id', 'from_zone_name',
-    'to_zone_name', 'from_lat', 'from_lon', 'to_lat', 'to_lon',
-    ]
+    'to_zone_name', 'from_lat', 'from_lon', 'to_lat', 'to_lon']
 
 bus_columns = [
     'type', 'Pd', 'Qd', 'Gs', 'Bs', 'zone_id', 'Vm', 'Va', 'loss_zone',
