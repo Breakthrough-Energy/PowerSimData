@@ -14,14 +14,11 @@ def csv_to_data_frame(data_loc, filename):
 
 
 def add_column_to_data_frame(data_frame, column_dict):
-    """Adds column(s) to data frame
+    """Adds column(s) to data frame. Done inplace.
 
     :param pandas.DataFrame data_frame: input data frame
     :param dict column_dict: column to be added. Keys are column name and
         values a list of of values.
-    :return: (*pandas.DataFrame*) -- data frame with extra column(s)
     """
     for key, value in column_dict.items():
         data_frame[key] = value
-
-    return data_frame

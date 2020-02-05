@@ -183,14 +183,14 @@ def add_information_to_model(model):
     extra_col_bus = {
         'lat': get_lat(model.bus.index),
         'lon': get_lon(model.bus.index)}
-    model.bus = add_column_to_data_frame(model.bus, extra_col_bus)
+    add_column_to_data_frame(model.bus, extra_col_bus)
 
     extra_col_plant = {
         'lat': get_lat(model.plant.bus_id),
         'lon': get_lon(model.plant.bus_id),
         'zone_id': get_zone_id(model.plant.bus_id),
         'zone_name': get_zone_name(model.plant.bus_id)}
-    model.plant = add_column_to_data_frame(model.plant, extra_col_plant)
+    add_column_to_data_frame(model.plant, extra_col_plant)
 
     extra_col_branch = {
         'from_zone_id': get_zone_id(model.branch.from_bus_id),
@@ -201,5 +201,5 @@ def add_information_to_model(model):
         'from_lon': get_lon(model.branch.from_bus_id),
         'to_lat': get_lat(model.branch.to_bus_id),
         'to_lon': get_lon(model.branch.to_bus_id)}
-    model.branch = add_column_to_data_frame(model.branch, extra_col_branch)
+    add_column_to_data_frame(model.branch, extra_col_branch)
     return model
