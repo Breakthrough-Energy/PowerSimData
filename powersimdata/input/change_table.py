@@ -1,7 +1,8 @@
 import os
 import pickle
 
-from powersimdata.input.design import scale_renewable_stubs
+from powersimdata.input.design_transmission import (
+    scale_congested_mesh_branches, scale_renewable_stubs)
 from powersimdata.input.grid import Grid
 from postreise.process import const
 
@@ -298,6 +299,14 @@ class ChangeTable(object):
         Optional kwargs as documented in powersimdata.input.design.
         """
         scale_renewable_stubs(self, **kwargs)
+    
+    def scale_congested_mesh_branches(self, ref_scenario, **kwargs):
+        """Scales congested branches based on previous scenario results.
+        :param powersimdata.scenario.scenario.Scenario ref_scenario: the
+            reference scenario to be used in determining branch scaling.
+        Optional kwargs as documented in powersimdata.input.design.
+        """
+        scale_congested_mesh_branches(self, ref_scenario, **kwargs)
 
     def add_storage_capacity(self, bus_id):
         """Sets storage parameters in change table.
