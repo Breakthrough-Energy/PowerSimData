@@ -34,6 +34,6 @@ def test_interconnect_usa_is_unique():
 def test_add_column_to_data_frame():
     df = pd.DataFrame({'a': [1, 2, 3], 'b': [4, 5, 6]})
     column_to_add = {'c': [True, True, False], 'd': ['one', 2, 'three']}
-    df = add_column_to_data_frame(df, column_to_add)
+    add_column_to_data_frame(df, column_to_add)
     assert len(df.columns) == 4
     assert np.array_equal(df.c.values, [True, True, False])

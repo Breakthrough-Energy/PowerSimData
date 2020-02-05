@@ -7,5 +7,5 @@ setup(name='powersimdata',
       author='Kaspar Mueller',
       author_email='kmueller@intven.com',
       packages=find_packages(),
-      package_data={'powersimdata': ['input/data/usa/*']},
+      package_data={'powersimdata': ['input/data/*/*']},
       zip_safe=False)
