@@ -1,4 +1,4 @@
-function status = TestGurobi()
+function status = TestGurobiSpecificPool()
 
 TorF = exist('gurobi', 'file') == 3;
 if TorF
