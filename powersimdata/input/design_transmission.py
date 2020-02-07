@@ -71,7 +71,7 @@ def _find_capacity_at_bus(plant, bus_id, gentypes):
     gentype_plants = plant[plant['type'].isin(gentypes)]
     at_bus = gentype_plants['bus_id'] == bus_id
     gentype_plants_at_bus = gentype_plants[at_bus]
-    gentype_capacity = gentype_plants_at_bus['GenMWMax'].sum()
+    gentype_capacity = gentype_plants_at_bus['Pmax'].sum()
 
     return gentype_capacity
 

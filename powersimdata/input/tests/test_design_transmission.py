@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from postreise.tests.mock_grid import MockGrid
+from powersimdata.tests.mock_grid import MockGrid
 from postreise.tests.mock_scenario import MockScenario
 from powersimdata.tests.mock_change_table import MockChangeTable
 from powersimdata.input.design_transmission import (
@@ -35,7 +35,7 @@ mock_plant = {
     'plant_id': ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
     'bus_id': [1, 1, 5, 7, 7, 7, 8],
     'type': ['solar', 'coal', 'wind', 'solar', 'solar', 'ng', 'wind'],
-    'GenMWMax': [15, 30, 10, 12, 8, 20, 15]
+    'Pmax': [15, 30, 10, 12, 8, 20, 15]
     }
 
 mock_grid = MockGrid(
