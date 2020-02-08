@@ -18,7 +18,7 @@ class AbstractGrid(object):
         self.type2color = {}
         self.sub = pd.DataFrame()
         self.plant = pd.DataFrame()
-        self.gencost = pd.DataFrame()
+        self.gencost = {'before': pd.DataFrame(), 'after': pd.DataFrame()}
         self.dcline = pd.DataFrame()
         self.bus2sub = pd.DataFrame()
         self.bus = pd.DataFrame()
