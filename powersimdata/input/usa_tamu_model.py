@@ -56,8 +56,11 @@ class TAMU(AbstractGrid):
 
         """
         reader = CSVReader(self.data_loc)
-        for key, value in vars(reader).items():
-            setattr(self, key, value)
+        self.bus = reader.bus
+        self.plant = reader.plant
+        self.branch = reader.branch
+        self.dcline = reader.dcline
+        self.gencost['after'] = self.gencost['before'] = reader.gencost
 
         self._set_storage()
 
@@ -72,8 +75,12 @@ class TAMU(AbstractGrid):
 
         """
         for key, value in self.__dict__.items():
-            if key in ['sub', 'bus2sub', 'bus', 'plant', 'gencost', 'branch']:
-                value.query('interconnect == @self.interconnect', inplace=True)
+            if key in ['sub', 'bus2sub', 'bus', 'plant', 'branch']:
+                value.query('interconnect == @self.interconnect',
+                            inplace=True)
+            elif key == 'gencost':
+                value['before'].query('interconnect == @self.interconnect',
+                                      inplace=True)
             elif key == 'dcline':
                 value.query('from_interconnect == @self.interconnect &'
                             'to_interconnect == @self.interconnect',
