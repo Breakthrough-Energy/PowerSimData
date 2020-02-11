@@ -13,9 +13,6 @@ class AbstractGrid(object):
         self.interconnect = None
         self.zone2id = {}
         self.id2zone = {}
-        self.type2id = {}
-        self.id2type = {}
-        self.type2color = {}
         self.sub = pd.DataFrame()
         self.plant = pd.DataFrame()
         self.gencost = {'before': pd.DataFrame(), 'after': pd.DataFrame()}
