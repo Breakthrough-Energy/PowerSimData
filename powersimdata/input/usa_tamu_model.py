@@ -1,6 +1,5 @@
 import os
 import pandas as pd
-import seaborn as sns
 
 from powersimdata.input.abstract_grid import AbstractGrid
 from powersimdata.input.csv_reader import CSVReader, get_storage
@@ -23,9 +22,6 @@ class TAMU(AbstractGrid):
         if check_interconnect(interconnect):
             self.interconnect = interconnect
             self._build_network()
-            self.type2color = get_type2color()
-            self.id2type = get_id2type()
-            self.type2id = {value: key for key, value in self.id2type.items()}
 
     def _set_data_loc(self):
         """Sets data location.
@@ -115,52 +111,10 @@ def check_interconnect(interconnect):
     return True
 
 
-def get_type2color():
-    """Defines generator type to generator color mapping for TAMU. Used for
-        plotting.
-
-    :return: (*dict*) -- generator type to color mapping.
-    """
-    type2color = {
-        'wind': sns.xkcd_rgb["green"],
-        'solar': sns.xkcd_rgb["amber"],
-        'hydro': sns.xkcd_rgb["light blue"],
-        'ng': sns.xkcd_rgb["orchid"],
-        'nuclear': sns.xkcd_rgb["silver"],
-        'coal': sns.xkcd_rgb["light brown"],
-        'geothermal': sns.xkcd_rgb["hot pink"],
-        'dfo': sns.xkcd_rgb["royal blue"],
-        'biomass': sns.xkcd_rgb["dark green"],
-        'other': sns.xkcd_rgb["melon"],
-        'storage': sns.xkcd_rgb["orange"]}
-    return type2color
-
-
-def get_id2type():
-    """Defines generator type to generator id mapping.
-
-    :return: (*tuple*) -- generator type to generator id mapping.
-    """
-    id2type = {
-        0: 'wind',
-        1: 'solar',
-        2: 'hydro',
-        3: 'ng',
-        4: 'nuclear',
-        5: 'coal',
-        6: 'geothermal',
-        7: 'dfo',
-        8: 'biomass',
-        9: 'other',
-        10: 'storage'}
-    return id2type
-
-
 def add_information_to_model(model):
-    """Adds information to TAMU model.
+    """Adds information to TAMU model. This is done inplace.
 
     :param powersimdata.input.TAMU model: TAMU instance.
-    :return: (*powersimdata.input.TAMU*) -- modified TAMU model.
     """
     model.sub = csv_to_data_frame(model.data_loc, 'sub.csv')
     model.bus2sub = csv_to_data_frame(model.data_loc, 'bus2sub.csv')
@@ -209,4 +163,3 @@ def add_information_to_model(model):
         'to_lat': get_lat(model.branch.to_bus_id),
         'to_lon': get_lon(model.branch.to_bus_id)}
     add_column_to_data_frame(model.branch, extra_col_branch)
-    return model
