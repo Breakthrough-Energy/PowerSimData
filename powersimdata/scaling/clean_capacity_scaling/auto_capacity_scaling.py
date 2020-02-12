@@ -79,8 +79,8 @@ class CollaborativeManager(AbstractStrategy):
             solar_fraction = solar_prev_capacity / (solar_prev_capacity + wind_prev_capacity)
 
         ce_shortfall = self.calculate_total_shortfall()
-        solar_exp_cap_factor = self.calculate_total_expected_capacity('solar')
-        wind_exp_cap_factor = self.calculate_total_expected_capacity('wind')
+        solar_exp_cap_factor = self.calculate_total_expected_capacity_factor('solar')
+        wind_exp_cap_factor = self.calculate_total_expected_capacity_factor('wind')
 
         if solar_fraction != 0:
             ac_scaling_factor = (1 - solar_fraction) / solar_fraction
@@ -123,7 +123,7 @@ class CollaborativeManager(AbstractStrategy):
                             (self.calculate_total_capacity(category)) * (1000/8784))
         return total_cap_factor
 
-    def calculate_total_expected_capacity(self, category, addl_curtailment=0):
+    def calculate_total_expected_capacity_factor(self, category, addl_curtailment=0):
         """
         Calculate the total expected capacity for a target_manager_obj resource
         :param category: resource category
