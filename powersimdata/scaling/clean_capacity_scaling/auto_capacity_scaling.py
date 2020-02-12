@@ -5,13 +5,13 @@ class AbstractStrategy:
     def __init__(self):
         self.targets = {}
 
-    def add_target(self, target):
+    def add_target(self, target_manager_obj):
         """
 
-        :param target:
+        :param target_manager_obj:
         :return:
         """
-        self.targets[target.name] = target
+        self.targets[target_manager_obj.name] = target_manager_obj
 
 
 class IndependentManager(AbstractStrategy):
@@ -52,7 +52,8 @@ class CollaborativeManager(AbstractStrategy):
         """
         total_ce_shortfall = 0
         for tar in self.targets:
-            total_ce_shortfall += self.targets[tar].CE_shortfall
+            total_ce_shortfall += self.targets[tar].calculate_ce_shortfall()
+            print(total_ce_shortfall)
         return total_ce_shortfall
 
     def calculate_total_prev_ce_generation(self):
@@ -114,7 +115,7 @@ class CollaborativeManager(AbstractStrategy):
 
     def calculate_total_capacity_factor(self, category):
         """
-        Calculate total capacity factor for a target resource
+        Calculate total capacity factor for a target_manager_obj resource
         :param category: resource category
         :return: total capacity factor
         """
@@ -124,7 +125,7 @@ class CollaborativeManager(AbstractStrategy):
 
     def calculate_total_expected_capacity(self, category, addl_curtailment=0):
         """
-        Calculate the total expected capacity for a target resource
+        Calculate the total expected capacity for a target_manager_obj resource
         :param category: resource category
         :param addl_curtailment: option to add additional curtailment
         :return: total expected capacity factor
@@ -148,22 +149,22 @@ class CollaborativeManager(AbstractStrategy):
 
 class TargetManager:
 
-    def __init__(self, name, ce_target_fraction, ce_category, total_demand):
+    def __init__(self, region_name, ce_target_fraction, ce_category, total_demand):
         """
-        Class manages the regional target data and calculations
-        :param name: region name
-        :param ce_target_fraction: target fraction for clean energy
-        :param ce_category: type of energy target, i.e. renewable, clean energy, etc.
+        Class manages the regional target_manager_obj data and calculations
+        :param region_name: region name
+        :param ce_target_fraction: target_manager_obj fraction for clean energy
+        :param ce_category: type of energy target_manager_obj, i.e. renewable, clean energy, etc.
         :param total_demand: total demand for region
         """
-        self.name = name
-        self.CE_category = ce_category
+        self.name = region_name
+        self.ce_category = ce_category
 
         self.total_demand = total_demand
-        self.CE_target_percentage = ce_target_fraction
-        self.CE_target = self.total_demand * self.CE_target_percentage
+        self.ce_target_fraction = ce_target_fraction
+        self.CE_target = self.total_demand * self.ce_target_fraction
 
-        self.allowed_resources = ['geo', 'solar', 'wind']
+        self.allowed_resources = []
         self.resources = {}
 
         self.CE_shortfall = 0
@@ -178,7 +179,7 @@ class TargetManager:
         wind = self.resources['wind']
         if solar_percentage is None:
             solar_percentage = solar.prev_capacity/(solar.prev_capacity + wind.prev_capacity)
-        ce_shortfall = self.CE_shortfall
+        ce_shortfall = self.calculate_ce_shortfall()
 
         if solar_percentage != 0:
             ac_scaling_factor = (1-solar_percentage)/solar_percentage
@@ -214,14 +215,16 @@ class TargetManager:
         # todo: add error handling
         return self.resources[resource_name]
 
-    def calculate_ce_shortfall(self, prev_ce_generation, external_ce_historical_amount):
+    def calculate_ce_shortfall(self, external_ce_historical_amount=0):
         """
-        Calculates the clean energy shortfall for target area, subtracts the external value if greater than total
+        Calculates the clean energy shortfall for target_manager_obj area, subtracts the external value if greater than total
         allowed clean energy generation
         :param prev_ce_generation: clean energy generation for allowed resources
         :param external_ce_historical_amount: outside clean energy generation value
         :return: clean energy shortfall
         """
+        prev_ce_generation = self.calculate_prev_ce_generation()
+
         if external_ce_historical_amount > prev_ce_generation:
             offset = external_ce_historical_amount
         else:
@@ -232,17 +235,18 @@ class TargetManager:
         else:
             ce_shortfall = self.CE_target - offset
 
-        self.CE_shortfall = ce_shortfall
         return ce_shortfall
 
-    def calculate_ce_overgeneration(self, prev_ce_generation, external_ce_historical_amount):
+    def calculate_ce_overgeneration(self, external_ce_historical_amount=0):
         """
-        Calculates the clean energy overgeneration for target area, subtracts from external value if greater than total
+        Calculates the clean energy overgeneration for target_manager_obj area, subtracts from external value if greater than total
         allowed clean energy generation
         :param prev_ce_generation:
         :param external_ce_historical_amount:
         :return: clean energy overgeneration
         """
+        prev_ce_generation = self.calculate_prev_ce_generation()
+
         if external_ce_historical_amount > prev_ce_generation:
             offset = external_ce_historical_amount
         else:

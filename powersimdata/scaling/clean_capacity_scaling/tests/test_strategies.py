@@ -35,7 +35,7 @@ def test_independent_capacity_strategy():
     target.add_resource(hydro)
 
     prev_CE_generation = target.calculate_prev_ce_generation()
-    CE_shortfall = target.calculate_ce_shortfall(28774.16, 0)
+    CE_shortfall = target.calculate_ce_shortfall(0)
     solar_added, wind_added = target.calculate_added_capacity()
     assert wind_added == approx(4360.459)
     assert solar_added == approx(4481.582)
@@ -82,8 +82,8 @@ def test_independent_capacity_strategy_Atlantic_2():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == approx(39672.88)
-    CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
-#     CE_shortfall = target.CalculateCEShortfall(39672.88, 0)
+    CE_shortfall = target.calculate_ce_shortfall(0)
+#     CE_shortfall = target_manager_obj.CalculateCEShortfall(39672.88, 0)
 #     assert CE_shortfall == approx(50327.12)
 
     solar_added, wind_added = target.calculate_added_capacity()
@@ -132,8 +132,8 @@ def test_independent_capacity_strategy_pacific_3():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == approx(26000)
-    CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
-#     CE_shortfall = target.CalculateCEShortfall(26000, 0)
+    CE_shortfall = target.calculate_ce_shortfall(0)
+#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
 
     solar_added, wind_added = target.calculate_added_capacity()
@@ -182,8 +182,8 @@ def test_independent_capacity_strategy_atlantic_4():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == approx(44500)
-    CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
-#     CE_shortfall = target.CalculateCEShortfall(44500, 0)
+    CE_shortfall = target.calculate_ce_shortfall(0)
+#     CE_shortfall = target_manager_obj.CalculateCEShortfall(44500, 0)
 #     assert CE_shortfall == approx(75500)
 
     solar_added, wind_added = target.calculate_added_capacity()
@@ -232,9 +232,9 @@ def test_independent_capacity_strategy_pacific_external_6():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 40000)
-#     CE_shortfall = target.CalculateCEShortfall(26000, 40000)
-#     assert CE_shortfall == approx(10000)
+    CE_shortfall = target.calculate_ce_shortfall(40000)
+#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 40000)
+    assert CE_shortfall == approx(10000)
     solar_added, wind_added = target.calculate_added_capacity()
     assert solar_added == approx(2055.556)
     assert wind_added == approx(2000)
@@ -281,8 +281,8 @@ def test_independent_capacity_strategy_pacific_solar0_7():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
-#     CE_shortfall = target.CalculateCEShortfall(26000, 0)
+    CE_shortfall = target.calculate_ce_shortfall(0)
+#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
     solar_added, wind_added = target.calculate_added_capacity(0)
     assert solar_added == approx(0)
@@ -330,8 +330,8 @@ def test_independent_capacity_strategy_pacific_solar75_8():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
-#     CE_shortfall = target.CalculateCEShortfall(26000, 0)
+    CE_shortfall = target.calculate_ce_shortfall(0)
+#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
     solar_added, wind_added = target.calculate_added_capacity(0.75)
     assert solar_added == approx(8246.26)
@@ -379,8 +379,8 @@ def test_independent_capacity_strategy_pacific_solar100_9():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
-#     CE_shortfall = target.CalculateCEShortfall(26000, 0)
+    CE_shortfall = target.calculate_ce_shortfall(0)
+#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
     solar_added, wind_added = target.calculate_added_capacity(1)
     assert solar_added == approx(12685.714)
@@ -428,8 +428,8 @@ def test_independent_capacity_strategy_windcurtail_10():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall(prev_CE_generation, 0)
-#     CE_shortfall = target.CalculateCEShortfall(26000, 0)
+    CE_shortfall = target.calculate_ce_shortfall(0)
+#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
     solar_added, wind_added = target.calculate_added_capacity(0.75)
     assert solar_added == approx(8703.117)
@@ -478,8 +478,9 @@ def test_collaborative_capacity_strategy():
 
     prev_CE_generation = pacific_target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == approx(26000)
-    CE_shortfall = pacific_target.calculate_ce_shortfall(prev_CE_generation, 0)
-#     CE_shortfall = target.CalculateCEShortfall(26000, 0)
+    CE_shortfall = pacific_target.calculate_ce_shortfall(0)
+    print(CE_shortfall)
+#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
 
     # create Atlantic
@@ -523,8 +524,9 @@ def test_collaborative_capacity_strategy():
 
     prev_CE_generation = atlantic_target.calculate_prev_ce_generation()
     assert prev_CE_generation == approx(44500)
-    CE_shortfall = atlantic_target.calculate_ce_shortfall(prev_CE_generation, 0)
-#     CE_shortfall = target.CalculateCEShortfall(44500, 0)
+    CE_shortfall = atlantic_target.calculate_ce_shortfall(0)
+    print(CE_shortfall)
+#     CE_shortfall = target_manager_obj.CalculateCEShortfall(44500, 0)
     assert CE_shortfall == approx(75500)
 
     collab = CollaborativeManager()
