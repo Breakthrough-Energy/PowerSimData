@@ -3,6 +3,7 @@ import pandas as pd
 from scipy.io import loadmat
 
 from powersimdata.input.abstract_grid import AbstractGrid
+from powersimdata.input.csv_reader import get_storage
 
 
 class MATReader(AbstractGrid):
@@ -32,74 +33,88 @@ class MATReader(AbstractGrid):
 
     def _build_network(self):
         data = loadmat(self.data_loc, squeeze_me=True, struct_as_record=False)
-        self.plant = build_data_frame('plant',
-                                      data['mdi'].mpc.gen,
-                                      data['mdi'].mpc.genid)
 
-        self.branch = build_data_frame('branch',
-                                       data['mdi'].mpc.branch,
-                                       data['mdi'].mpc.branchid)
+        self.branch, _ = frame('branch',
+                               data['mdi'].mpc.branch,
+                               data['mdi'].mpc.branchid)
+        self.plant, storage_gen = frame('plant',
+                                        data['mdi'].mpc.gen,
+                                        data['mdi'].mpc.genid)
+        self.gencost['after'], storage_gencost = frame('gencost_after',
+                                                       data['mdi'].mpc.gencost,
+                                                       data['mdi'].mpc.genid)
 
-        self.gencost['after'] = build_data_frame('gencost_after',
-                                                 data['mdi'].mpc.gencost,
-                                                 data['mdi'].mpc.genid)
+        if storage_gen is not None:
+            self.storage = get_storage()
+            self.storage['gen'] = storage_gen
+            self.storage['gencost'] = storage_gencost
+            col_name = self.storage['StorageData'].columns
+            for c in col_name:
+                self.storage['StorageData'][c] = eval('data["mdi"].Storage.'+c)
+        else:
+            self.storage = get_storage()
+
         """
-        self.sub = build_data_frame('sub',
-                                    data['mdi'].mpc.sub,
-                                    data['mdi'].mpc.subid)
+        self.sub, _ = frame('sub',
+                            data['mdi'].mpc.sub,
+                            data['mdi'].mpc.subid)
 
-        self.bus = build_data_frame('bus',
-                                    data['mdi'].mpc.bus,
-                                    data['mdi'].mpc.busid)
+        self.bus, _ = frame('bus',
+                            data['mdi'].mpc.bus,
+                            data['mdi'].mpc.busid)
 
-        self.bus2sub = build_data_frame('bus2sub',
-                                        data['mdi'].mpc.bus2sub,
-                                        data['mdi'].mpc.busid)
+        self.bus2sub, _ = frame('bus2sub',
+                                data['mdi'].mpc.bus2sub,
+                                data['mdi'].mpc.busid)
 
-        self.dcline = build_data_frame('dcline',
-                                       data['mdi'].mpc.dcline,
-                                       data['mdi'].mpc.dclineid)
+        self.dcline, _ = frame('dcline',
+                               data['mdi'].mpc.dcline,
+                               data['mdi'].mpc.dclineid)
 
-        self.gencost['before'] = build_data_frame('gencost_before',
-                                                  data['mdi'].mpc.gencost_orig,
-                                                  data['mdi'].mpc.genid)
+        self.gencost['before'], _ = frame('gencost_before',
+                                          data['mdi'].mpc.gencost_orig,
+                                          data['mdi'].mpc.genid)
         self.interconnect = data['mdi'].mpc.interconnect
         self.id2zone = {k: self.id2zone[k] for k in self.bus.zone_id.unique()}
         self.zone2id = {value: key for key, value in self.id2zone.items()}
         """
 
 
-def build_data_frame(name, table, index):
+def frame(name, table, index):
     """Builds data frame from MAT-file.
 
-    :param str name: data frame name.
-    :param numpy.array table: table to be used to generate data frame.
+    :param str name: structure name.
+    :param numpy.array table: table to be used to build data frame.
     :param numpy.array index: array to be used as data frame indices.
-    :return: (pandas.DataFrame) -- data frame.
+    :return: (tuple) -- first element is a data frame. Second element is None
+        or a data frame when energy storage system are included.
     :raises ValueError: if name does not exist and table has wrong shape.
     """
-    if name not in index_name_provider().keys():
-        raise ValueError('Unknown %s table' % name)
-
+    storage = None
     print('Loading %s' % name)
     if name.split('_')[0] == 'gencost':
         if table.shape[0] == index.shape[0]:
-            data_frame = pd.DataFrame(table, index=index)
-            data_frame = format_gencost(data_frame)
+            data = format_gencost(pd.DataFrame(table, index=index))
         else:
-            raise ValueError('Length of %s is %s. Indices imply %s' %
-                             (name, table.shape[0], index.shape[0]))
-    else:
+            data = format_gencost(pd.DataFrame(table[:index.shape[0]],
+                                               index=index))
+            storage = format_gencost(pd.DataFrame(table[index.shape[0]:]))
+    elif name in ['branch', 'bus', 'bus2sub', 'dcline', 'plant', 'sub']:
         col_name = column_name_provider()[name]
         expected_shape = (index.shape[0], len(col_name))
         if table.shape == expected_shape:
-            data_frame = pd.DataFrame(table, columns=col_name, index=index)
+            data = pd.DataFrame(table, columns=col_name, index=index)
         else:
-            raise ValueError('Shape of %s is %s. Indices and columns imply %s' %
-                             (name, table.shape, expected_shape))
+            data = pd.DataFrame(table[:index.shape[0]],
+                                columns=col_name,
+                                index=index)
+            storage = pd.DataFrame(table[index.shape[0]:],
+                                   columns=col_name)
+    else:
+        raise ValueError('Unknown %s table' % name)
 
-    data_frame.index.name = index_name_provider()[name]
-    return data_frame
+    data.index.name = index_name_provider()[name]
+    return data, storage
 
 
 def index_name_provider():
@@ -144,19 +159,6 @@ def column_name_provider():
                 'plant': col_name_plant,
                 }
     return col_name
-
-
-def get_gencost(table, index):
-    """Sets gencost data frame.
-
-    :param numpy.array table: generation cost table enclosed in MAT-file.
-    :param numpy.array index: array of plant indices enclosed in MAT-file.
-    :return: (pandas.DataFrame) -- gencost data frame.
-    """
-    gencost = pd.DataFrame(table, index=index)
-    gencost = format_gencost(gencost)
-    gencost.index.name = 'plant_id'
-    return gencost
 
 
 def format_gencost(data):
