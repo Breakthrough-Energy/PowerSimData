@@ -4,7 +4,6 @@ from postreise.process.transferdata import upload
 from powersimdata.scenario.state import State
 from powersimdata.scenario.execute import Execute
 from powersimdata.input.change_table import ChangeTable
-from powersimdata.input.grid import Grid
 from powersimdata.scenario.helpers import interconnect2name, check_interconnect
 
 import os
