@@ -192,17 +192,35 @@ class SimulationInput(object):
         print("Building MPC file")
         mpc = {'mpc': {'version': '2', 'baseMVA': 100.0}}
 
-        # Format bus
+        # sub
+        sub = grid.sub.copy()
+        subid = sub.index.values[np.newaxis].T
+        mpc['mpc']['sub'] = sub.values
+        mpc['mpc']['subid'] = subid
+
+        # bus
         bus = grid.bus.copy()
+        busid = bus.index.values[np.newaxis].T
         bus.reset_index(level=0, inplace=True)
         bus.drop(columns=['interconnect', 'lat', 'lon'], inplace=True)
         mpc['mpc']['bus'] = bus.values
+        mpc['mpc']['busid'] = busid
 
-        # Format generator
+        # bus2sub
+        bus2sub = grid.bus2sub.copy()
+        mpc['mpc']['bus2sub'] = bus2sub.values
+
+        # plant
         gen = grid.plant.copy()
         genid = gen.index.values[np.newaxis].T
-        gen.reset_index(inplace=True, drop=True)
         genfuel = gen.type.values[np.newaxis].T
+        zoneid = gen.zone_id.values[np.newaxis].T
+        zonename = gen.zone_name.values[np.newaxis].T
+        genfuelcost = gen.GenFuelCost.values[np.newaxis].T
+        geniob = gen.GenIOB.values[np.newaxis].T
+        genioc = gen.GenIOC.values[np.newaxis].T
+        geniod = gen.GenIOD.values[np.newaxis].T
+        gen.reset_index(inplace=True, drop=True)
         gen.drop(columns=['type', 'interconnect', 'lat', 'lon', 'zone_id',
                           'zone_name', 'GenFuelCost', 'GenIOB', 'GenIOC',
                           'GenIOD'],
@@ -210,9 +228,17 @@ class SimulationInput(object):
         mpc['mpc']['gen'] = gen.values
         mpc['mpc']['genid'] = genid
         mpc['mpc']['genfuel'] = genfuel
-        # Format branch
+        mpc['mpc']['zoneid'] = zoneid
+        mpc['mpc']['zonename'] = zonename
+        mpc['mpc']['genfuelcost'] = genfuelcost
+        mpc['mpc']['geniob'] = geniob
+        mpc['mpc']['genioc'] = genioc
+        mpc['mpc']['geniod'] = geniod
+
+        # branch
         branch = grid.branch.copy()
         branchid = branch.index.values[np.newaxis].T
+        branchdevicetype = branch.branch_device_type.values[np.newaxis].T
         branch.reset_index(inplace=True, drop=True)
         branch.drop(columns=['interconnect', 'from_lat', 'from_lon', 'to_lat',
                              'to_lon', 'from_zone_id', 'to_zone_id',
@@ -220,14 +246,15 @@ class SimulationInput(object):
                              'branch_device_type'], inplace=True)
         mpc['mpc']['branch'] = branch.values
         mpc['mpc']['branchid'] = branchid
+        mpc['mpc']['branchdevicetype'] = branchdevicetype
 
-        # Format generation cost
+        # generation cost
         gencost = grid.gencost.copy()
-        gencost.reset_index(inplace=True, drop=True)
-        gencost.drop(columns=['interconnect'], inplace=True)
-        mpc['mpc']['gencost'] = gencost.values
+        gencost['before'].reset_index(inplace=True, drop=True)
+        gencost['before'].drop(columns=['interconnect'], inplace=True)
+        mpc['mpc']['gencost'] = gencost['before'].values
 
-        # Format DC line
+        # DC line
         if len(grid.dcline) > 0:
             dcline = grid.dcline.copy()
             dclineid = dcline.index.values[np.newaxis].T
@@ -237,7 +264,7 @@ class SimulationInput(object):
             mpc['mpc']['dcline'] = dcline.values
             mpc['mpc']['dclineid'] = dclineid
 
-        # Format energy storage and write MPC storage
+        # energy storage
         if len(grid.storage['gen']) > 0:
             storage = grid.storage.copy()
 
@@ -254,7 +281,7 @@ class SimulationInput(object):
             upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir,
                    change_name_to='case_storage.mat')
 
-        # Write MPC file
+        # MPC file
         file_name = '%s_case.mat' % self.scaler.scenario_id
         savemat(os.path.join(const.LOCAL_DIR, file_name), mpc, appendmat=False)
 
