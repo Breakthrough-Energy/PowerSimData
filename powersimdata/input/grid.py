@@ -26,9 +26,18 @@ class Grid(object):
         else:
             raise ValueError('%s not implemented' % source)
 
-        for key, value in vars(data).items():
-            setattr(self, key, value)
-
+        self.data_loc = data.data_loc
+        self.interconnect = data.interconnect
+        self.zone2id = data.zone2id
+        self.id2zone = data.id2zone
+        self.sub = data.sub
+        self.plant = data.plant
+        self.gencost = data.gencost
+        self.dcline = data.dcline
+        self.bus2sub = data.bus2sub
+        self.bus = data.bus
+        self.branch = data.branch
+        self.storage = data.storage
         self.type2color = get_type2color()
         self.id2type = get_id2type()
         self.type2id = {value: key for key, value in self.id2type.items()}
