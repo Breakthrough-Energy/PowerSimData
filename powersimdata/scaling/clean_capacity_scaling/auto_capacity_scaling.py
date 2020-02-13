@@ -5,6 +5,10 @@ class AbstractStrategy:
     def __init__(self):
         self.targets = {}
 
+    def targets_from_data_frame(self, data_frame):
+        for row in data_frame.itertuples():
+            self.add_target(TargetManager(row.region_name, row.ce_target_fraction, row.ce_category, row.total_demand))
+
     def add_target(self, target_manager_obj):
         """
 
