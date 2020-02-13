@@ -1,4 +1,5 @@
 import os
+import sys
 import pandas as pd
 
 
@@ -22,3 +23,17 @@ def add_column_to_data_frame(data_frame, column_dict):
     """
     for key, value in column_dict.items():
         data_frame[key] = value
+
+
+def block_print():
+    """Suppresses print
+
+    """
+    sys.stdout = open(os.devnull, 'w')
+
+
+def enable_print():
+    """Suppresses print
+
+    """
+    sys.stdout = sys.__stdout__
