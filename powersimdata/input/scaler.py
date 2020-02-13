@@ -1,6 +1,7 @@
 from powersimdata.input.grid import Grid
 from powersimdata.input.profiles import InputData
 
+from powersimdata.input.helpers import block_print, enable_print
 import copy
 
 
@@ -20,6 +21,7 @@ class Scaler(object):
         """Constructor.
 
         """
+        block_print()
         self.scenario_id = scenario_info['id']
         self.interconnect = scenario_info['interconnect'].split('_')
         self._input = InputData(ssh_client)
@@ -28,6 +30,7 @@ class Scaler(object):
         else:
             self.ct = {}
         self._load_grid()
+        enable_print()
 
     def _load_ct(self):
         """Loads change table.
@@ -42,14 +45,13 @@ class Scaler(object):
         """Loads original grid.
 
         """
-        self._original_grid = Grid(self.interconnect)
+        self._grid = copy.deepcopy(Grid(self.interconnect))
 
     def get_grid(self):
         """Returns modified grid.
 
         :return: (*powersimdata.input.grid.Grid*) -- instance of grid object.
         """
-        self._grid = copy.deepcopy(self._original_grid)
         if bool(self.ct):
             for r in self._gen_types:
                 if r in list(self.ct.keys()):
@@ -64,12 +66,16 @@ class Scaler(object):
                                 self._grid.plant.loc[i, 'Pmin'] = \
                                     self._grid.plant.loc[i, 'Pmin'] * value
                                 if r in self._thermal_gen_types:
-                                    self._grid.gencost.loc[i, 'c0'] = \
-                                        self._grid.gencost.loc[i, 'c0'] * value
+                                    self._grid.gencost[
+                                        'before'].loc[i, 'c0'] = \
+                                        self._grid.gencost[
+                                            'before'].loc[i, 'c0'] * value
                                     if value == 0:
                                         continue
-                                    self._grid.gencost.loc[i, 'c2'] = \
-                                        self._grid.gencost.loc[i, 'c2'] / value
+                                    self._grid.gencost[
+                                        'before'].loc[i, 'c2'] = \
+                                        self._grid.gencost[
+                                            'before'].loc[i, 'c2'] / value
                     except KeyError:
                         pass
                     try:
@@ -79,12 +85,16 @@ class Scaler(object):
                             self._grid.plant.loc[key, 'Pmin'] = \
                                 self._grid.plant.loc[key, 'Pmin'] * value
                             if r in self._thermal_gen_types:
-                                self._grid.gencost.loc[key, 'c0'] = \
-                                    self._grid.gencost.loc[key, 'c0'] * value
+                                self._grid.gencost[
+                                    'before'].loc[key, 'c0'] = \
+                                    self._grid.gencost[
+                                        'before'].loc[key, 'c0'] * value
                                 if value == 0:
                                     continue
-                                self._grid.gencost.loc[key, 'c2'] = \
-                                    self._grid.gencost.loc[key, 'c2'] / value
+                                self._grid.gencost[
+                                    'before'].loc[key, 'c2'] = \
+                                    self._grid.gencost[
+                                        'before'].loc[key, 'c2'] / value
                     except KeyError:
                         pass
             if 'branch' in list(self.ct.keys()):
@@ -198,7 +208,7 @@ class Scaler(object):
         if bool(self.ct) and resource in list(self.ct.keys()):
             try:
                 for key, value in self.ct[resource]['zone_id'].items():
-                    plant_id = self._original_grid.plant.groupby(
+                    plant_id = self._grid.plant.groupby(
                         ['zone_id', 'type']).get_group(
                         (key, resource)).index.values.tolist()
                     for i in plant_id:
@@ -243,6 +253,6 @@ class Scaler(object):
         if bool(self.ct) and 'demand' in list(self.ct.keys()):
             for key, value in self.ct['demand']['zone_id'].items():
                 print('Multiply demand in %s (#%d) by %.2f' %
-                      (self._original_grid.id2zone[key], key, value))
+                      (self._grid.id2zone[key], key, value))
                 demand.loc[:, key] *= value
         return demand
