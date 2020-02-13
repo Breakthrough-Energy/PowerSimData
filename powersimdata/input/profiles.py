@@ -1,5 +1,6 @@
 from postreise.process.transferdata import download
 from postreise.process import const
+from powersimdata.input.grid import Grid
 
 import os
 import pandas as pd
@@ -18,16 +19,21 @@ class InputData(object):
         if not os.path.exists(const.LOCAL_DIR):
             os.makedirs(const.LOCAL_DIR)
 
-        self.file_extension = {'demand': 'csv', 'hydro': 'csv', 'solar': 'csv',
-                               'wind': 'csv', 'ct': 'pkl'}
+        self.file_extension = {'demand': 'csv',
+                               'hydro': 'csv',
+                               'solar': 'csv',
+                               'wind': 'csv',
+                               'ct': 'pkl',
+                               'grid': 'mat'}
         self._ssh = ssh_client
 
     def _check_field(self, field_name):
         """Checks field name.
 
-        :param str field_name: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
+        :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
+            *'ct'* or *'grid'*.
         :raises ValueError: if not *'demand'*, *'hydro'*, *'solar'*, *'wind'*
-            or *'ct'*.
+            *'ct'* or *'grid'*
         """
         possible = list(self.file_extension.keys())
         if field_name not in possible:
@@ -38,9 +44,11 @@ class InputData(object):
         """Returns data either from server or local directory.
 
         :param str scenario_id: scenario id.
-        :param str field_name: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
-        :return: (*pandas.DataFrame* or *dict*) -- demand, hydro, solar or wind
-            as a data frame or change table as a dictionary.
+        :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
+            *'ct'* or *'grid'*.
+        :return: (*pandas.DataFrame*, *dict* or *powersimdata.input.Grid*) --
+            demand, hydro, solar or wind as a data frame, change table as a
+            dictionary or grid instance.
         :raises FileNotFoundError: if file not found on local machine.
         """
         self._check_field(field_name)
@@ -74,9 +82,11 @@ def _read_data(file_name):
     ext = file_name.split(".")[-1]
     if ext == 'pkl':
         data = pd.read_pickle(os.path.join(const.LOCAL_DIR, file_name))
-    else:
+    elif ext == 'csv':
         data = pd.read_csv(os.path.join(const.LOCAL_DIR, file_name),
                            index_col=0, parse_dates=True)
         data.columns = data.columns.astype(int)
+    else:
+        data = Grid([None], source=os.path.join(const.LOCAL_DIR, file_name))
 
     return data
