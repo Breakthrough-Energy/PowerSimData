@@ -70,7 +70,7 @@ class CollaborativeManager(AbstractStrategy):
             total_prev_ce_generation += self.targets[tar].calculate_prev_ce_generation()
         return total_prev_ce_generation
 
-    def calculate_added_capacity(self, solar_fraction=None):
+    def calculate_total_added_capacity(self, solar_fraction=None):
         """
         Calculate the capacity to add from total clean energy shortfall
         :param solar_fraction: solar fraction to be used in calculation, default is to maintain from previous result
@@ -144,7 +144,7 @@ class CollaborativeManager(AbstractStrategy):
         """
         solar_prev_capacity = self.calculate_total_capacity('solar')
         wind_prev_capacity = self.calculate_total_capacity('wind')
-        solar_added, wind_added = self.calculate_added_capacity()
+        solar_added, wind_added = self.calculate_total_added_capacity()
 
         solar_cap_scaling = solar_added/solar_prev_capacity
         wind_cap_scaling = wind_added/wind_prev_capacity
@@ -153,7 +153,7 @@ class CollaborativeManager(AbstractStrategy):
 
 class TargetManager:
 
-    def __init__(self, region_name, ce_target_fraction, ce_category, total_demand):
+    def __init__(self, region_name, ce_target_fraction, ce_category, total_demand, external_ce_historical_amount=0):
         """
         Class manages the regional target_manager_obj data and calculations
         :param region_name: region name
@@ -167,11 +167,13 @@ class TargetManager:
         self.total_demand = total_demand
         self.ce_target_fraction = ce_target_fraction
         self.CE_target = self.total_demand * self.ce_target_fraction
+        self.external_ce_historical_amount = external_ce_historical_amount
+        # solar percentage
 
         self.allowed_resources = []
         self.resources = {}
 
-        self.CE_shortfall = 0
+    #    self.CE_shortfall = 0
 
     def calculate_added_capacity(self, solar_percentage=None):
         """
@@ -183,7 +185,9 @@ class TargetManager:
         wind = self.resources['wind']
         if solar_percentage is None:
             solar_percentage = solar.prev_capacity/(solar.prev_capacity + wind.prev_capacity)
+            print(solar_percentage)
         ce_shortfall = self.calculate_ce_shortfall()
+        print(ce_shortfall)
 
         if solar_percentage != 0:
             ac_scaling_factor = (1-solar_percentage)/solar_percentage
@@ -219,7 +223,7 @@ class TargetManager:
         # todo: add error handling
         return self.resources[resource_name]
 
-    def calculate_ce_shortfall(self, external_ce_historical_amount=0):
+    def calculate_ce_shortfall(self):
         """
         Calculates the clean energy shortfall for target_manager_obj area, subtracts the external value if greater than total
         allowed clean energy generation
@@ -229,8 +233,8 @@ class TargetManager:
         """
         prev_ce_generation = self.calculate_prev_ce_generation()
 
-        if external_ce_historical_amount > prev_ce_generation:
-            offset = external_ce_historical_amount
+        if self.external_ce_historical_amount > prev_ce_generation:
+            offset = self.external_ce_historical_amount
         else:
             offset = prev_ce_generation
 
@@ -241,7 +245,7 @@ class TargetManager:
 
         return ce_shortfall
 
-    def calculate_ce_overgeneration(self, external_ce_historical_amount=0):
+    def calculate_ce_overgeneration(self):
         """
         Calculates the clean energy overgeneration for target_manager_obj area, subtracts from external value if greater than total
         allowed clean energy generation
@@ -251,8 +255,8 @@ class TargetManager:
         """
         prev_ce_generation = self.calculate_prev_ce_generation()
 
-        if external_ce_historical_amount > prev_ce_generation:
-            offset = external_ce_historical_amount
+        if self.external_ce_historical_amount > prev_ce_generation:
+            offset = self.external_ce_historical_amount
         else:
             offset = prev_ce_generation
 

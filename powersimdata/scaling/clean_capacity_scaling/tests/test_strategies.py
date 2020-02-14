@@ -5,13 +5,13 @@ from pytest import approx
 def test_independent_capacity_strategy():
     solar = Resource('solar', 3)
     solar.set_capacity(0.25, 3700, 0.25)
-    solar.set_generation(8125)
+    solar.set_generation(8125.2)
     solar.set_curtailment(0)
     solar.set_addl_curtailment(0.40)
 
     wind = Resource('wind', 3)
     wind.set_capacity(0.4, 3600, 0.4)
-    wind.set_generation(12649)
+    wind.set_generation(12648.96)
     wind.set_curtailment(0)
     wind.set_addl_curtailment(0)
 
@@ -35,7 +35,7 @@ def test_independent_capacity_strategy():
     target.add_resource(hydro)
 
     prev_CE_generation = target.calculate_prev_ce_generation()
-    CE_shortfall = target.calculate_ce_shortfall(0)
+    CE_shortfall = target.calculate_ce_shortfall()
     solar_added, wind_added = target.calculate_added_capacity()
     assert wind_added == approx(4360.459)
     assert solar_added == approx(4481.582)
@@ -82,7 +82,7 @@ def test_independent_capacity_strategy_Atlantic_2():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == approx(39672.88)
-    CE_shortfall = target.calculate_ce_shortfall(0)
+    CE_shortfall = target.calculate_ce_shortfall()
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(39672.88, 0)
 #     assert CE_shortfall == approx(50327.12)
 
@@ -132,7 +132,7 @@ def test_independent_capacity_strategy_pacific_3():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == approx(26000)
-    CE_shortfall = target.calculate_ce_shortfall(0)
+    CE_shortfall = target.calculate_ce_shortfall()
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
 
@@ -182,7 +182,7 @@ def test_independent_capacity_strategy_atlantic_4():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == approx(44500)
-    CE_shortfall = target.calculate_ce_shortfall(0)
+    CE_shortfall = target.calculate_ce_shortfall()
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(44500, 0)
 #     assert CE_shortfall == approx(75500)
 
@@ -222,7 +222,7 @@ def test_independent_capacity_strategy_pacific_external_6():
     nuclear.set_curtailment(0)
     nuclear.set_addl_curtailment(0)
 
-    target = TargetManager('Pacific', 0.25, 'renewables', 200000)
+    target = TargetManager('Pacific', 0.25, 'renewables', 200000, 40000)
     target.set_allowed_resources(['solar', 'wind', 'geo'])
     target.add_resource(solar)
     target.add_resource(wind)
@@ -232,7 +232,7 @@ def test_independent_capacity_strategy_pacific_external_6():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall(40000)
+    CE_shortfall = target.calculate_ce_shortfall()
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 40000)
     assert CE_shortfall == approx(10000)
     solar_added, wind_added = target.calculate_added_capacity()
@@ -281,7 +281,7 @@ def test_independent_capacity_strategy_pacific_solar0_7():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall(0)
+    CE_shortfall = target.calculate_ce_shortfall()
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
     solar_added, wind_added = target.calculate_added_capacity(0)
@@ -330,7 +330,7 @@ def test_independent_capacity_strategy_pacific_solar75_8():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall(0)
+    CE_shortfall = target.calculate_ce_shortfall()
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
     solar_added, wind_added = target.calculate_added_capacity(0.75)
@@ -379,7 +379,7 @@ def test_independent_capacity_strategy_pacific_solar100_9():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall(0)
+    CE_shortfall = target.calculate_ce_shortfall()
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
     solar_added, wind_added = target.calculate_added_capacity(1)
@@ -428,7 +428,7 @@ def test_independent_capacity_strategy_windcurtail_10():
 
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall(0)
+    CE_shortfall = target.calculate_ce_shortfall()
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
     solar_added, wind_added = target.calculate_added_capacity(0.75)
@@ -478,7 +478,7 @@ def test_collaborative_capacity_strategy():
 
     prev_CE_generation = pacific_target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == approx(26000)
-    CE_shortfall = pacific_target.calculate_ce_shortfall(0)
+    CE_shortfall = pacific_target.calculate_ce_shortfall()
     print(CE_shortfall)
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
@@ -524,7 +524,7 @@ def test_collaborative_capacity_strategy():
 
     prev_CE_generation = atlantic_target.calculate_prev_ce_generation()
     assert prev_CE_generation == approx(44500)
-    CE_shortfall = atlantic_target.calculate_ce_shortfall(0)
+    CE_shortfall = atlantic_target.calculate_ce_shortfall()
     print(CE_shortfall)
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(44500, 0)
     assert CE_shortfall == approx(75500)
@@ -538,7 +538,7 @@ def test_collaborative_capacity_strategy():
     collab_prev_CE_generation = collab.calculate_total_prev_ce_generation()
     assert collab_prev_CE_generation == approx(70500)
 
-    solar_added, wind_added = collab.calculate_added_capacity()
+    solar_added, wind_added = collab.calculate_total_added_capacity()
     assert solar_added == approx(19651.25)
     assert wind_added == approx(19153.75)
 
