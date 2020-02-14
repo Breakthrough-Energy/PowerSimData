@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 class AbstractStrategy:
     """
     Base class for strategy objects, contains common functions
@@ -13,9 +14,8 @@ class AbstractStrategy:
 
     def add_target(self, target_manager_obj):
         """
-
-        :param target_manager_obj:
-        :return:
+        Add target to strategy object
+        :param target_manager_obj: target object to be added
         """
         self.targets[target_manager_obj.name] = target_manager_obj
 
@@ -29,7 +29,8 @@ class IndependentManager(AbstractStrategy):
 
     def date_frame_of_next_capacities(self):
         """
-
+        Gathers next target capacity information into a dataframe
+        :return: data frame of next target capacities
         """
         target_capacities = []
         for tar in self.targets:
@@ -38,7 +39,7 @@ class IndependentManager(AbstractStrategy):
                                self.targets[tar].resources['wind'].calculate_added_capacity()]
             target_capacities.append(target_capacity)
         target_capacities_df = pd.DataFrame(target_capacities,
-                                            columns=['region_name', 'added_solar_capacity', 'added_wind_capacity'])
+                                            columns=['region_name', 'next_solar_capacity', 'next_wind_capacity'])
         return target_capacities_df
 
 
@@ -142,18 +143,15 @@ class CollaborativeManager(AbstractStrategy):
         :return: solar and wind capacity scaling factors
         """
         solar_prev_capacity = self.calculate_total_capacity('solar')
-        wind_prev_capacity = self.calculate_total_capacity('wind')
         solar_added, wind_added = self.calculate_total_added_capacity()
 
         scaling = solar_added / solar_prev_capacity
- #       solar_cap_scaling = solar_added/solar_prev_capacity
- #       wind_cap_scaling = wind_added/wind_prev_capacity
- #       return solar_cap_scaling, wind_cap_scaling
         return scaling
 
     def date_frame_of_next_capacities(self):
         """
-
+        Gathers next target capacity information into a dataframe
+        :return: data frame of next target capacities
         """
         scaling_factor = self.calculate_capacity_scaling()
 
@@ -164,7 +162,7 @@ class CollaborativeManager(AbstractStrategy):
                                self.targets[tar].resources['wind'].prev_capacity() * scaling_factor]
             target_capacities.append(target_capacity)
         target_capacities_df = pd.DataFrame(target_capacities,
-                                            columns=['region_name', 'added_solar_capacity', 'added_wind_capacity'])
+                                            columns=['region_name', 'next_solar_capacity', 'next_wind_capacity'])
         return target_capacities_df
 
 
@@ -240,8 +238,8 @@ class TargetManager:
 
     def calculate_ce_shortfall(self):
         """
-        Calculates the clean energy shortfall for target_manager_obj area, subtracts the external value if greater than total
-        allowed clean energy generation
+        Calculates the clean energy shortfall for target_manager_obj area, subtracts the external value if greater than
+        total allowed clean energy generation
         :param prev_ce_generation: clean energy generation for allowed resources
         :param external_ce_historical_amount: outside clean energy generation value
         :return: clean energy shortfall
@@ -262,8 +260,8 @@ class TargetManager:
 
     def calculate_ce_overgeneration(self):
         """
-        Calculates the clean energy overgeneration for target_manager_obj area, subtracts from external value if greater than total
-        allowed clean energy generation
+        Calculates the clean energy overgeneration for target_manager_obj area, subtracts from external value if greater
+        than total allowed clean energy generation
         :param prev_ce_generation:
         :param external_ce_historical_amount:
         :return: clean energy overgeneration
