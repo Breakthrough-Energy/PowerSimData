@@ -57,7 +57,6 @@ class CollaborativeManager(AbstractStrategy):
         total_ce_shortfall = 0
         for tar in self.targets:
             total_ce_shortfall += self.targets[tar].calculate_ce_shortfall()
-            print(total_ce_shortfall)
         return total_ce_shortfall
 
     def calculate_total_prev_ce_generation(self):
@@ -185,9 +184,7 @@ class TargetManager:
         wind = self.resources['wind']
         if solar_percentage is None:
             solar_percentage = solar.prev_capacity/(solar.prev_capacity + wind.prev_capacity)
-            print(solar_percentage)
         ce_shortfall = self.calculate_ce_shortfall()
-        print(ce_shortfall)
 
         if solar_percentage != 0:
             ac_scaling_factor = (1-solar_percentage)/solar_percentage
