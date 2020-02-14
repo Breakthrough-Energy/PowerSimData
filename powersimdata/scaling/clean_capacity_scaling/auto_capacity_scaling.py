@@ -1,3 +1,5 @@
+import pandas as pd
+
 class AbstractStrategy:
     """
     Base class for strategy objects, contains common functions
@@ -25,21 +27,19 @@ class IndependentManager(AbstractStrategy):
     def __init__(self):
         AbstractStrategy.__init__(self)
 
-    def calculate_added_capacities(self, demand):
+    def date_frame_of_next_capacities(self):
         """
 
-        :param demand:
-        :return:
         """
-        pass
-
-    def calculate_next_capacity(self, demand):
-        """
-
-        :param demand:
-        :return:
-        """
-        pass
+        target_capacities = []
+        for tar in self.targets:
+            target_capacity = [self.targets[tar].name,
+                               self.targets[tar].resources['solar'].calculate_added_capacity(),
+                               self.targets[tar].resources['wind'].calculate_added_capacity()]
+            target_capacities.append(target_capacity)
+        target_capacities_df = pd.DataFrame(target_capacities,
+                                            columns=['region_name', 'added_solar_capacity', 'added_wind_capacity'])
+        return target_capacities_df
 
 
 class CollaborativeManager(AbstractStrategy):
@@ -145,9 +145,27 @@ class CollaborativeManager(AbstractStrategy):
         wind_prev_capacity = self.calculate_total_capacity('wind')
         solar_added, wind_added = self.calculate_total_added_capacity()
 
-        solar_cap_scaling = solar_added/solar_prev_capacity
-        wind_cap_scaling = wind_added/wind_prev_capacity
-        return solar_cap_scaling, wind_cap_scaling
+        scaling = solar_added / solar_prev_capacity
+ #       solar_cap_scaling = solar_added/solar_prev_capacity
+ #       wind_cap_scaling = wind_added/wind_prev_capacity
+ #       return solar_cap_scaling, wind_cap_scaling
+        return scaling
+
+    def date_frame_of_next_capacities(self):
+        """
+
+        """
+        scaling_factor = self.calculate_capacity_scaling()
+
+        target_capacities = []
+        for tar in self.targets:
+            target_capacity = [self.targets[tar].name,
+                               self.targets[tar].resources['solar'].prev_capacity() * scaling_factor,
+                               self.targets[tar].resources['wind'].prev_capacity() * scaling_factor]
+            target_capacities.append(target_capacity)
+        target_capacities_df = pd.DataFrame(target_capacities,
+                                            columns=['region_name', 'added_solar_capacity', 'added_wind_capacity'])
+        return target_capacities_df
 
 
 class TargetManager:
