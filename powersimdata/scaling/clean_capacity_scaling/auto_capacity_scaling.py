@@ -27,7 +27,7 @@ class IndependentManager(AbstractStrategy):
     def __init__(self):
         AbstractStrategy.__init__(self)
 
-    def date_frame_of_next_capacities(self):
+    def data_frame_of_next_capacities(self):
         """
         Gathers next target capacity information into a dataframe
         :return: data frame of next target capacities
@@ -148,7 +148,7 @@ class CollaborativeManager(AbstractStrategy):
         scaling = solar_added / solar_prev_capacity
         return scaling
 
-    def date_frame_of_next_capacities(self):
+    def data_frame_of_next_capacities(self):
         """
         Gathers next target capacity information into a dataframe
         :return: data frame of next target capacities
