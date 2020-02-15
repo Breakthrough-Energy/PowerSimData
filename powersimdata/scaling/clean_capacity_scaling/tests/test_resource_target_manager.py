@@ -31,7 +31,7 @@ def test_calculate_next_capacity():
 
 def test_calculate_ce_target():
     target = TargetManager('Pacific', 0.25, 'renewables', 200000)
-    assert target.CE_target == 50000
+    assert target.ce_target == 50000
 
 
 @patch.object(TargetManager, 'calculate_prev_ce_generation', return_value=28774.16)

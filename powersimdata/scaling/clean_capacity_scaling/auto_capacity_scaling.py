@@ -17,7 +17,7 @@ class AbstractStrategy:
         Add target to strategy object
         :param target_manager_obj: target object to be added
         """
-        self.targets[target_manager_obj.name] = target_manager_obj
+        self.targets[target_manager_obj.region_name] = target_manager_obj
 
 
 class IndependentManager(AbstractStrategy):
@@ -171,17 +171,17 @@ class TargetManager:
     def __init__(self, region_name, ce_target_fraction, ce_category, total_demand, external_ce_historical_amount=0):
         """
         Class manages the regional target_manager_obj data and calculations
-        :param region_name: region name
+        :param region_name: region region_name
         :param ce_target_fraction: target_manager_obj fraction for clean energy
         :param ce_category: type of energy target_manager_obj, i.e. renewable, clean energy, etc.
         :param total_demand: total demand for region
         """
-        self.name = region_name
+        self.region_name = region_name
         self.ce_category = ce_category
 
         self.total_demand = total_demand
         self.ce_target_fraction = ce_target_fraction
-        self.CE_target = self.total_demand * self.ce_target_fraction
+        self.ce_target = self.total_demand * self.ce_target_fraction
         self.external_ce_historical_amount = external_ce_historical_amount
         # solar percentage
 
@@ -251,10 +251,10 @@ class TargetManager:
         else:
             offset = prev_ce_generation
 
-        if offset > self.CE_target: 
+        if offset > self.ce_target:
             ce_shortfall = 0
         else:
-            ce_shortfall = self.CE_target - offset
+            ce_shortfall = self.ce_target - offset
 
         return ce_shortfall
 
@@ -273,10 +273,10 @@ class TargetManager:
         else:
             offset = prev_ce_generation
 
-        if offset < self.CE_target: 
+        if offset < self.ce_target:
             ce_overgeneration = 0
         else:
-            ce_overgeneration = offset - self.CE_target
+            ce_overgeneration = offset - self.ce_target
 
         return ce_overgeneration
 
