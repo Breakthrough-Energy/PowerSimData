@@ -1,5 +1,8 @@
 import pandas as pd
-
+import jsonpickle
+import json
+import os
+import pickle
 
 class AbstractStrategy:
     """
@@ -18,6 +21,20 @@ class AbstractStrategy:
         :param target_manager_obj: target object to be added
         """
         self.targets[target_manager_obj.region_name] = target_manager_obj
+
+    @staticmethod
+    def load_target_from_json(target_name):
+        json_file = open(os.path.relpath(os.path.join("save_files", target_name+".json")), "r")
+        target_obj = jsonpickle.decode(json_file.read())
+        json_file.close()
+        return target_obj
+
+    @staticmethod
+    def load_target_from_pickle(target_name):
+        json_file = open(os.path.relpath(os.path.join("save_files", target_name + ".pkl")), "rb")
+        target_obj = pickle.load(json_file)
+        json_file.close()
+        return target_obj
 
 
 class IndependentManager(AbstractStrategy):
@@ -287,6 +304,19 @@ class TargetManager:
         """
         # todo: input validation
         self.allowed_resources = allowed_resources
+
+    def save_target_as_json(self):
+        print(os.getcwd())
+        json_file = open(os.path.relpath(os.path.join("save_files", self.region_name+".json")), "w")
+        obj_json = json.dumps(json.loads(jsonpickle.encode(self)), indent=4, sort_keys=True)
+        json_file.write(obj_json)
+        json_file.close()
+
+    def save_target_as_pickle(self):
+        print(os.getcwd())
+        json_file = open(os.path.relpath(os.path.join("save_files", self.region_name+".pkl")), "wb")
+        pickle.dump(self, json_file)
+        json_file.close()
 
 
 class Resource:
