@@ -1,4 +1,5 @@
-from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import IndependentStrategyManager, TargetManager, Resource
+from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling \
+    import CollaborativeStrategyManager, IndependentStrategyManager, AbstractStrategyManager, TargetManager, Resource
 import pandas as pd
 import pytest
 
@@ -75,7 +76,6 @@ def test_create_resources_from_dataframe():
 
 
 def test_load_independent_western_case():
-    strategy_manager = IndependentStrategyManager()
     western = pd.read_excel('Capacity_Scaling_Western_Test_Case.xlsx')
 
     resources_dict = {
@@ -90,8 +90,8 @@ def test_load_independent_western_case():
                  'no_congestion_cap_factor': 'no_cong_wind_cf', 'prev_cap_factor': 'prev_sim_wind_cf'}
     }
 
+    strategy_manager = IndependentStrategyManager()
     for row in western.itertuples():
-        print(row)
         target = TargetManager(row.State,
                                row.target_2030,
                                'CE category',
@@ -131,6 +131,72 @@ def test_load_independent_western_case():
             resource.set_generation(getattr(row, mapping['prev_generation']))
             target.add_resource(resource)
 
-            strategy_manager.add_target(target)
+        strategy_manager.add_target(target)
 
-            print(strategy_manager.data_frame_of_next_capacities())
+    results = strategy_manager.data_frame_of_next_capacities()
+    print(results)
+    print(western[['State', 'solar_added_capacity_independent', 'wind_added_capacity_independent']])
+    assert results.values.tolist() == western[['State', 'solar_added_capacity_independent', 'wind_added_capacity_independent']].values.tolist()
+
+def test_load_collaborative_western_case():
+    western = pd.read_excel('Capacity_Scaling_Western_Test_Case.xlsx')
+
+    resources_dict = {
+        'coal': {'prev_generation': 'coal_generation', 'prev_capacity': 'coal_capacity'},
+        'geothermal': {'prev_generation': 'geothermal_generation', 'prev_capacity': 'geothermal_capacity'},
+        'ng': {'prev_generation': 'ng_generation', 'prev_capacity': 'ng_capacity'},
+        'nuclear': {'prev_generation': 'nuclear_generation', 'prev_capacity': 'nuclear_capacity'},
+        'hydro': {'prev_generation': 'hydro_generation', 'prev_capacity': 'hydro_capacity'},
+        'solar': {'prev_generation': 'solar_generation', 'prev_capacity': 'solar_capacity',
+                  'no_congestion_cap_factor': 'no_cong_solar_cf', 'prev_cap_factor': 'prev_sim_solar_cf'},
+        'wind': {'prev_generation': 'wind_generation', 'prev_capacity': 'wind_capacity',
+                 'no_congestion_cap_factor': 'no_cong_wind_cf', 'prev_cap_factor': 'prev_sim_wind_cf'}
+    }
+
+    strategy_manager = CollaborativeStrategyManager()
+    for row in western.itertuples():
+        target = TargetManager(row.State,
+                               row.target_2030,
+                               'CE category',
+                               row.demand_2030,
+                               row.external_count,
+                               row.solar_percentage)
+
+        allowed_resources = []
+        if row.geothermal_counts == 'yes':
+            allowed_resources.append('geothermal')
+        if row.hydro_counts == 'yes':
+            allowed_resources.append('hydro')
+        if row.nuclear_counts == 'yes':
+            allowed_resources.append('nuclear')
+        if row.solar_counts == 'yes':
+            allowed_resources.append('solar')
+        if row.wind_counts == 'yes':
+            allowed_resources.append('wind')
+        target.set_allowed_resources(allowed_resources)
+
+        for res, mapping in resources_dict.items():
+            resource = Resource(res, 1)
+
+            if res == 'solar' or res == 'wind':
+                resource.set_capacity(
+                    getattr(row, mapping['no_congestion_cap_factor']),
+                    getattr(row, mapping['prev_capacity']),
+                    getattr(row, mapping['prev_cap_factor'])
+                )
+            else:
+                resource.set_capacity(
+                    None,
+                    getattr(row, mapping['prev_capacity']),
+                    None
+                )
+
+            resource.set_generation(getattr(row, mapping['prev_generation']))
+            target.add_resource(resource)
+
+        strategy_manager.add_target(target)
+
+    results = strategy_manager.data_frame_of_next_capacities()
+    print(results)
+    print(western[['State', 'solar_added_capacity_collaborative', 'wind_added_capacity_collaborative']])
+    assert results.values.tolist() == western[['State', 'solar_added_capacity_collaborative', 'wind_added_capacity_collaborative']].values.tolist()

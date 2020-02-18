@@ -182,8 +182,8 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         target_capacities = []
         for tar in self.targets:
             target_capacity = [self.targets[tar].region_name,
-                               self.targets[tar].resources['solar'].prev_capacity() * scaling_factor,
-                               self.targets[tar].resources['wind'].prev_capacity() * scaling_factor]
+                               self.targets[tar].resources['solar'].prev_capacity * scaling_factor,
+                               self.targets[tar].resources['wind'].prev_capacity * scaling_factor]
             target_capacities.append(target_capacity)
         target_capacities_df = pd.DataFrame(target_capacities,
                                             columns=['region_name', 'next_solar_capacity', 'next_wind_capacity'])
