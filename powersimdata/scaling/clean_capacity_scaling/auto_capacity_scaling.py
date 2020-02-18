@@ -4,7 +4,8 @@ import json
 import os
 import pickle
 
-class AbstractStrategy:
+
+class AbstractStrategyManager:
     """
     Base class for strategy objects, contains common functions
     """
@@ -13,7 +14,12 @@ class AbstractStrategy:
 
     def targets_from_data_frame(self, data_frame):
         for row in data_frame.itertuples():
-            self.add_target(TargetManager(row.region_name, row.ce_target_fraction, row.ce_category, row.total_demand))
+            self.add_target(TargetManager(row.region_name,
+                                          row.ce_target_fraction,
+                                          row.ce_category,
+                                          row.total_demand,
+                                          row.external_ce_historical_amount,
+                                          row.solar_percentage))
 
     def add_target(self, target_manager_obj):
         """
@@ -37,12 +43,12 @@ class AbstractStrategy:
         return target_obj
 
 
-class IndependentManager(AbstractStrategy):
+class IndependentStrategyManager(AbstractStrategyManager):
     """
     Independent strategy manager
     """
     def __init__(self):
-        AbstractStrategy.__init__(self)
+        AbstractStrategyManager.__init__(self)
 
     def data_frame_of_next_capacities(self):
         """
@@ -51,21 +57,22 @@ class IndependentManager(AbstractStrategy):
         """
         target_capacities = []
         for tar in self.targets:
-            target_capacity = [self.targets[tar].name,
-                               self.targets[tar].resources['solar'].calculate_added_capacity(),
-                               self.targets[tar].resources['wind'].calculate_added_capacity()]
+            solar_added_capacity, wind_added_capacity = self.targets[tar].calculate_added_capacity()
+            target_capacity = [self.targets[tar].region_name,
+                               solar_added_capacity,
+                               wind_added_capacity]
             target_capacities.append(target_capacity)
         target_capacities_df = pd.DataFrame(target_capacities,
                                             columns=['region_name', 'next_solar_capacity', 'next_wind_capacity'])
         return target_capacities_df
 
 
-class CollaborativeManager(AbstractStrategy):
+class CollaborativeStrategyManager(AbstractStrategyManager):
     """
     Collaborative strategy manager
     """
     def __init__(self):
-        AbstractStrategy.__init__(self)
+        AbstractStrategyManager.__init__(self)
 
     def calculate_total_shortfall(self):
         """
@@ -174,7 +181,7 @@ class CollaborativeManager(AbstractStrategy):
 
         target_capacities = []
         for tar in self.targets:
-            target_capacity = [self.targets[tar].name,
+            target_capacity = [self.targets[tar].region_name,
                                self.targets[tar].resources['solar'].prev_capacity() * scaling_factor,
                                self.targets[tar].resources['wind'].prev_capacity() * scaling_factor]
             target_capacities.append(target_capacity)
@@ -185,7 +192,8 @@ class CollaborativeManager(AbstractStrategy):
 
 class TargetManager:
 
-    def __init__(self, region_name, ce_target_fraction, ce_category, total_demand, external_ce_historical_amount=0):
+    def __init__(self, region_name, ce_target_fraction, ce_category, total_demand,
+                 external_ce_historical_amount=0, solar_percentage=None):
         """
         Class manages the regional target_manager_obj data and calculations
         :param region_name: region region_name
@@ -200,14 +208,12 @@ class TargetManager:
         self.ce_target_fraction = ce_target_fraction
         self.ce_target = self.total_demand * self.ce_target_fraction
         self.external_ce_historical_amount = external_ce_historical_amount
-        # solar percentage
+        self.solar_percentage = solar_percentage
 
         self.allowed_resources = []
         self.resources = {}
 
-    #    self.CE_shortfall = 0
-
-    def calculate_added_capacity(self, solar_percentage=None):
+    def calculate_added_capacity(self):
         """
         Calculate added capacity, maintains solar wind ratio by default
         :param solar_percentage:
@@ -215,21 +221,22 @@ class TargetManager:
         """
         solar = self.resources['solar']
         wind = self.resources['wind']
+        solar_percentage = self.solar_percentage
         if solar_percentage is None:
             solar_percentage = solar.prev_capacity/(solar.prev_capacity + wind.prev_capacity)
         ce_shortfall = self.calculate_ce_shortfall()
 
         if solar_percentage != 0:
             ac_scaling_factor = (1-solar_percentage)/solar_percentage
-            solar.added_capacity = 1000/8784*ce_shortfall/(solar.calculate_expected_cap_factor()
+            solar_added_capacity = 1000/8784*ce_shortfall/(solar.calculate_expected_cap_factor()
                                                            + wind.calculate_expected_cap_factor()*ac_scaling_factor)
-            wind.added_capacity = ac_scaling_factor*solar.added_capacity
+            wind_added_capacity = ac_scaling_factor*solar_added_capacity
 
         else:
-            solar.added_capacity = 0
-            wind.added_capacity = 1000/8784*ce_shortfall/wind.calculate_expected_cap_factor()
+            solar_added_capacity = 0
+            wind_added_capacity = 1000/8784*ce_shortfall/wind.calculate_expected_cap_factor()
 
-        return solar.added_capacity, wind.added_capacity
+        return solar_added_capacity, wind_added_capacity
 
     def calculate_prev_ce_generation(self):
         """
@@ -318,13 +325,16 @@ class TargetManager:
         pickle.dump(self, json_file)
         json_file.close()
 
+    def __str__(self):
+        return json.dumps(json.loads(jsonpickle.encode(self)), indent=4, sort_keys=True)
+
 
 class Resource:
     def __init__(self, name, prev_scenario_num):
         # todo: input validation
         self.name = name
         self.prev_scenario_num = prev_scenario_num
-        self.no_congestion_cap_factor = 0
+        self.no_congestion_cap_factor = None
         self.prev_capacity = None
         self.prev_cap_factor = None
         self.prev_generation = None
@@ -383,3 +393,6 @@ class Resource:
         """
         next_capacity = self.prev_capacity + added_capacity
         return next_capacity
+
+    def __str__(self):
+        return json.dumps(json.loads(jsonpickle.encode(self)), indent=4, sort_keys=True)

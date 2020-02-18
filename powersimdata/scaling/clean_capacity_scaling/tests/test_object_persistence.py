@@ -1,9 +1,11 @@
-from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import TargetManager, AbstractStrategy, Resource
+from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import TargetManager, AbstractStrategyManager, Resource
 import jsonpickle
 import json
 
+
 def test_can_pass():
     assert 1 == 1
+
 
 def test_create_JSON_of_target_object():
     # create Pacific
@@ -51,6 +53,7 @@ def test_create_JSON_of_target_object():
     target = jsonpickle.decode(obj_json)
     assert target.ce_target == 50000.0
 
+
 def test_write_read_json_of_target_object():
     # create Pacific
     pacific_solar = Resource('solar', 3)
@@ -93,9 +96,10 @@ def test_write_read_json_of_target_object():
 
     pacific_target.save_target_as_json()
 
-    target = AbstractStrategy.load_target_from_json('Pacific')
+    target = AbstractStrategyManager.load_target_from_json('Pacific')
 
     assert target.ce_target == 50000.0
+
 
 def test_write_read_pickle_of_target_object():
     # create Pacific
@@ -139,6 +143,9 @@ def test_write_read_pickle_of_target_object():
 
     pacific_target.save_target_as_pickle()
 
-    target = AbstractStrategy.load_target_from_pickle('Pacific')
+    target = AbstractStrategyManager.load_target_from_pickle('Pacific')
 
     assert target.ce_target == 50000.0
+
+
+# use json_normalize on json of resources dictionary

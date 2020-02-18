@@ -1,4 +1,4 @@
-from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager, CollaborativeManager
+from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager, CollaborativeStrategyManager
 from pytest import approx
 
 
@@ -271,7 +271,7 @@ def test_independent_capacity_strategy_pacific_solar0_7():
     nuclear.set_curtailment(0)
     nuclear.set_addl_curtailment(0)
 
-    target = TargetManager('Pacific', 0.25, 'renewables', 200000)
+    target = TargetManager('Pacific', 0.25, 'renewables', 200000, 0, 0)
     target.set_allowed_resources(['solar', 'wind', 'geo'])
     target.add_resource(solar)
     target.add_resource(wind)
@@ -284,7 +284,7 @@ def test_independent_capacity_strategy_pacific_solar0_7():
     CE_shortfall = target.calculate_ce_shortfall()
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
-    solar_added, wind_added = target.calculate_added_capacity(0)
+    solar_added, wind_added = target.calculate_added_capacity()
     assert solar_added == approx(0)
     assert wind_added == approx(7854.545)
 
@@ -320,7 +320,7 @@ def test_independent_capacity_strategy_pacific_solar75_8():
     nuclear.set_curtailment(0)
     nuclear.set_addl_curtailment(0)
 
-    target = TargetManager('Pacific', 0.25, 'renewables', 200000)
+    target = TargetManager('Pacific', 0.25, 'renewables', 200000, 0, 0.75)
     target.set_allowed_resources(['solar', 'wind', 'geo'])
     target.add_resource(solar)
     target.add_resource(wind)
@@ -333,7 +333,7 @@ def test_independent_capacity_strategy_pacific_solar75_8():
     CE_shortfall = target.calculate_ce_shortfall()
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
-    solar_added, wind_added = target.calculate_added_capacity(0.75)
+    solar_added, wind_added = target.calculate_added_capacity()
     assert solar_added == approx(8246.26)
     assert wind_added == approx(2748.753)
 
@@ -369,7 +369,7 @@ def test_independent_capacity_strategy_pacific_solar100_9():
     nuclear.set_curtailment(0)
     nuclear.set_addl_curtailment(0)
 
-    target = TargetManager('Pacific', 0.25, 'renewables', 200000)
+    target = TargetManager('Pacific', 0.25, 'renewables', 200000, 0, 1)
     target.set_allowed_resources(['solar', 'wind', 'geo'])
     target.add_resource(solar)
     target.add_resource(wind)
@@ -382,7 +382,7 @@ def test_independent_capacity_strategy_pacific_solar100_9():
     CE_shortfall = target.calculate_ce_shortfall()
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
-    solar_added, wind_added = target.calculate_added_capacity(1)
+    solar_added, wind_added = target.calculate_added_capacity()
     assert solar_added == approx(12685.714)
     assert wind_added == 0
 
@@ -418,7 +418,7 @@ def test_independent_capacity_strategy_windcurtail_10():
     nuclear.set_curtailment(0)
     nuclear.set_addl_curtailment(0)
 
-    target = TargetManager('Pacific', 0.25, 'renewables', 200000)
+    target = TargetManager('Pacific', 0.25, 'renewables', 200000, 0, 0.75)
     target.set_allowed_resources(['solar', 'wind', 'geo'])
     target.add_resource(solar)
     target.add_resource(wind)
@@ -431,7 +431,7 @@ def test_independent_capacity_strategy_windcurtail_10():
     CE_shortfall = target.calculate_ce_shortfall()
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
 #     assert CE_shortfall == approx(24000)
-    solar_added, wind_added = target.calculate_added_capacity(0.75)
+    solar_added, wind_added = target.calculate_added_capacity()
     assert solar_added == approx(8703.117)
     assert wind_added == approx(2901.039)
 
@@ -529,7 +529,7 @@ def test_collaborative_capacity_strategy():
 #     CE_shortfall = target_manager_obj.CalculateCEShortfall(44500, 0)
     assert CE_shortfall == approx(75500)
 
-    collab = CollaborativeManager()
+    collab = CollaborativeStrategyManager()
     collab.add_target(pacific_target)
     collab.add_target(atlantic_target)
 

@@ -67,5 +67,6 @@
             "py/object": "powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling.Resource"
         }
     },
+    "solar_percentage": null,
     "total_demand": 200000
 }
