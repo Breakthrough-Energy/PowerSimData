@@ -75,6 +75,14 @@ def test_create_resources_from_dataframe():
         targets[target_manager_obj.region_name] = target_manager_obj
 
 
+def test_load_independent_test_case():
+    pass
+
+
+def test_load_collaborative_test_case():
+    pass
+
+
 def test_load_independent_western_case():
     western = pd.read_excel('Capacity_Scaling_Western_Test_Case.xlsx')
 
