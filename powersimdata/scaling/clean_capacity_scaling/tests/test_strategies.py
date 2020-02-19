@@ -1,4 +1,4 @@
-from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager, CollaborativeStrategyManager
+from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager, AbstractStrategyManager, CollaborativeStrategyManager
 from pytest import approx
 
 
@@ -34,6 +34,7 @@ def test_independent_capacity_strategy():
     target.add_resource(geo)
     target.add_resource(hydro)
 
+    AbstractStrategyManager.set_next_sim_hours(8784)
     prev_CE_generation = target.calculate_prev_ce_generation()
     CE_shortfall = target.calculate_ce_shortfall()
     solar_added, wind_added = target.calculate_added_capacity()
@@ -80,6 +81,7 @@ def test_independent_capacity_strategy_Atlantic_2():
     target.add_resource(hydro)
     target.add_resource(nuclear)
 
+    AbstractStrategyManager.set_next_sim_hours(8784)
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == approx(39672.88)
     CE_shortfall = target.calculate_ce_shortfall()
@@ -130,6 +132,7 @@ def test_independent_capacity_strategy_pacific_3():
     target.add_resource(hydro)
     target.add_resource(nuclear)
 
+    AbstractStrategyManager.set_next_sim_hours(8784)
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == approx(26000)
     CE_shortfall = target.calculate_ce_shortfall()
@@ -180,6 +183,7 @@ def test_independent_capacity_strategy_atlantic_4():
     target.add_resource(hydro)
     target.add_resource(nuclear)
 
+    AbstractStrategyManager.set_next_sim_hours(8784)
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == approx(44500)
     CE_shortfall = target.calculate_ce_shortfall()
@@ -230,6 +234,7 @@ def test_independent_capacity_strategy_pacific_external_6():
     target.add_resource(hydro)
     target.add_resource(nuclear)
 
+    AbstractStrategyManager.set_next_sim_hours(8784)
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
     CE_shortfall = target.calculate_ce_shortfall()
@@ -279,6 +284,7 @@ def test_independent_capacity_strategy_pacific_solar0_7():
     target.add_resource(hydro)
     target.add_resource(nuclear)
 
+    AbstractStrategyManager.set_next_sim_hours(8784)
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
     CE_shortfall = target.calculate_ce_shortfall()
@@ -328,6 +334,7 @@ def test_independent_capacity_strategy_pacific_solar75_8():
     target.add_resource(hydro)
     target.add_resource(nuclear)
 
+    AbstractStrategyManager.set_next_sim_hours(8784)
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
     CE_shortfall = target.calculate_ce_shortfall()
@@ -377,6 +384,7 @@ def test_independent_capacity_strategy_pacific_solar100_9():
     target.add_resource(hydro)
     target.add_resource(nuclear)
 
+    AbstractStrategyManager.set_next_sim_hours(8784)
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
     CE_shortfall = target.calculate_ce_shortfall()
@@ -426,6 +434,7 @@ def test_independent_capacity_strategy_windcurtail_10():
     target.add_resource(hydro)
     target.add_resource(nuclear)
 
+    AbstractStrategyManager.set_next_sim_hours(8784)
     prev_CE_generation = target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == 26000
     CE_shortfall = target.calculate_ce_shortfall()
@@ -476,6 +485,7 @@ def test_collaborative_capacity_strategy():
     pacific_target.add_resource(pacific_hydro)
     pacific_target.add_resource(pacific_nuclear)
 
+    AbstractStrategyManager.set_next_sim_hours(8784)
     prev_CE_generation = pacific_target.calculate_prev_ce_generation()
 #     assert prev_ce_generation == approx(26000)
     CE_shortfall = pacific_target.calculate_ce_shortfall()

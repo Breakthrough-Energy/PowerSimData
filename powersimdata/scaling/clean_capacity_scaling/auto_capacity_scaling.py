@@ -9,8 +9,15 @@ class AbstractStrategyManager:
     """
     Base class for strategy objects, contains common functions
     """
+
+    next_sim_hours = None
+
     def __init__(self):
         self.targets = {}
+
+    @staticmethod
+    def set_next_sim_hours(next_sim_hours):
+        AbstractStrategyManager.next_sim_hours = next_sim_hours
 
     def targets_from_data_frame(self, data_frame):
         for row in data_frame.itertuples():
@@ -113,11 +120,11 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
 
         if solar_fraction != 0:
             ac_scaling_factor = (1 - solar_fraction) / solar_fraction
-            solar_added_capacity = 1000/8784*ce_shortfall/(solar_exp_cap_factor+wind_exp_cap_factor*ac_scaling_factor)
+            solar_added_capacity = ce_shortfall/(AbstractStrategyManager.next_sim_hours*solar_exp_cap_factor+wind_exp_cap_factor*ac_scaling_factor)
             wind_added_capacity = ac_scaling_factor*solar_added_capacity
         else:
             solar_added_capacity = 0
-            wind_added_capacity = 1000/8784*ce_shortfall/wind_exp_cap_factor
+            wind_added_capacity = ce_shortfall/(AbstractStrategyManager.next_sim_hours*wind_exp_cap_factor)
         return solar_added_capacity, wind_added_capacity
 
     def calculate_total_added_capacity_gen_constant(self, solar_fraction=None):
@@ -137,11 +144,11 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         wind_exp_cap_factor = self.calculate_total_expected_capacity_factor('wind')
 
         if solar_fraction != 0:
-            solar_added_capacity = 1000*ce_shortfall*solar_fraction/(8784*solar_exp_cap_factor)
-            wind_added_capacity = 1000*ce_shortfall*(1-solar_fraction)/(8784*wind_exp_cap_factor)
+            solar_added_capacity = ce_shortfall*solar_fraction/(AbstractStrategyManager.next_sim_hours*solar_exp_cap_factor)
+            wind_added_capacity = ce_shortfall*(1-solar_fraction)/(AbstractStrategyManager.next_sim_hours*wind_exp_cap_factor)
         else:
             solar_added_capacity = 0
-            wind_added_capacity = 1000*ce_shortfall/(8784*wind_exp_cap_factor)
+            wind_added_capacity = ce_shortfall/(AbstractStrategyManager.next_sim_hours*wind_exp_cap_factor)
         return solar_added_capacity, wind_added_capacity
 
     def calculate_total_capacity(self, category):
@@ -172,8 +179,8 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         :param category: resource category
         :return: total capacity factor
         """
-        total_cap_factor = (self.calculate_total_generation(category) /
-                            (self.calculate_total_capacity(category)) * (1000/8784))
+        # revisit where hourly factor comes from
+        total_cap_factor = self.calculate_total_generation(category) / (self.calculate_total_capacity(category)*8760)
         return total_cap_factor
 
     def calculate_total_expected_capacity_factor(self, category, addl_curtailment=0):
@@ -259,13 +266,15 @@ class TargetManager:
 
         if solar_percentage != 0:
             ac_scaling_factor = (1-solar_percentage)/solar_percentage
-            solar_added_capacity = 1000/8784*ce_shortfall/(solar.calculate_expected_cap_factor()
-                                                           + wind.calculate_expected_cap_factor()*ac_scaling_factor)
+            solar_added_capacity = ce_shortfall/(
+                    AbstractStrategyManager.next_sim_hours*(solar.calculate_expected_cap_factor()
+                                                            + wind.calculate_expected_cap_factor()*ac_scaling_factor))
             wind_added_capacity = ac_scaling_factor*solar_added_capacity
 
         else:
             solar_added_capacity = 0
-            wind_added_capacity = 1000/8784*ce_shortfall/wind.calculate_expected_cap_factor()
+            wind_added_capacity = ce_shortfall/(
+                    AbstractStrategyManager.next_sim_hours*wind.calculate_expected_cap_factor())
 
         return solar_added_capacity, wind_added_capacity
 
@@ -284,12 +293,14 @@ class TargetManager:
         ce_shortfall = self.calculate_ce_shortfall()
 
         if solar_percentage != 0:
-            solar_added_capacity = (ce_shortfall*solar_percentage)/(8784*solar.calculate_expected_cap_factor())
-            wind_added_capacity = (ce_shortfall*(1-solar_percentage))/(8784*wind.calculate_expected_cap_factor())
+            solar_added_capacity = (ce_shortfall*solar_percentage)/(
+                    AbstractStrategyManager.next_sim_hours*solar.calculate_expected_cap_factor())
+            wind_added_capacity = (ce_shortfall*(1-solar_percentage))/(
+                    AbstractStrategyManager.next_sim_hours*wind.calculate_expected_cap_factor())
 
         else:
             solar_added_capacity = 0
-            wind_added_capacity = ce_shortfall/8784/wind.calculate_expected_cap_factor()
+            wind_added_capacity = ce_shortfall/AbstractStrategyManager.next_sim_hours/wind.calculate_expected_cap_factor()
 
         return solar_added_capacity, wind_added_capacity
 
