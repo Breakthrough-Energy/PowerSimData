@@ -543,7 +543,7 @@ def test_collaborative_capacity_strategy():
     assert wind_added == approx(19153.75)
 
     solar_scaling, wind_scaling = collab.calculate_capacity_scaling()
-    assert collab.targets['Pacific'].resources['solar'].prev_capacity*solar_scaling == approx(9203.75)
-    assert collab.targets['Pacific'].resources['wind'].prev_capacity*wind_scaling == approx(8955)
-    assert collab.targets['Atlantic'].resources['solar'].prev_capacity*solar_scaling == approx(10447.5)
-    assert collab.targets['Atlantic'].resources['wind'].prev_capacity*wind_scaling == approx(10198.75)
+    assert collab.targets['Pacific'].resources['solar'].prev_capacity*solar_scaling == approx(3700 + 9203.75)
+    assert collab.targets['Pacific'].resources['wind'].prev_capacity*wind_scaling == approx(3600 + 8955)
+    assert collab.targets['Atlantic'].resources['solar'].prev_capacity*solar_scaling == approx(4100 + 10447.5)
+    assert collab.targets['Atlantic'].resources['wind'].prev_capacity*wind_scaling == approx(4100 + 10198.75)
