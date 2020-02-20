@@ -120,7 +120,7 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
 
         if solar_fraction != 0:
             ac_scaling_factor = (1 - solar_fraction) / solar_fraction
-            solar_added_capacity = ce_shortfall/(AbstractStrategyManager.next_sim_hours*solar_exp_cap_factor+wind_exp_cap_factor*ac_scaling_factor)
+            solar_added_capacity = ce_shortfall/(AbstractStrategyManager.next_sim_hours*(solar_exp_cap_factor+wind_exp_cap_factor*ac_scaling_factor))
             wind_added_capacity = ac_scaling_factor*solar_added_capacity
         else:
             solar_added_capacity = 0
@@ -180,7 +180,7 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         :return: total capacity factor
         """
         # revisit where hourly factor comes from
-        total_cap_factor = self.calculate_total_generation(category) / (self.calculate_total_capacity(category)*8760)
+        total_cap_factor = self.calculate_total_generation(category) / (self.calculate_total_capacity(category)*8784)
         return total_cap_factor
 
     def calculate_total_expected_capacity_factor(self, category, addl_curtailment=0):
