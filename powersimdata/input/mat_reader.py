@@ -46,7 +46,6 @@ class MATReader(AbstractGrid):
 
         # bus
         self.bus, _ = frame('bus', mpc.bus, mpc.busid)
-        self.bus.drop(columns=['bus_id'], inplace=True)
         # plant
         self.plant, plant_storage = frame(
             'plant', mpc.gen, mpc.genid, n_storage=n_storage)
@@ -78,6 +77,8 @@ class MATReader(AbstractGrid):
                 self.storage['StorageData'][c] = eval('data["mdi"].Storage.'+c)
         # interconnect
         self.interconnect = self.sub.interconnect.unique().tolist()
+
+        manipulate_data_frame(self)
 
 
 def frame(name, table, index, n_storage=0):
@@ -251,3 +252,19 @@ def format_gencost(data):
                 gencost.loc[plant_id, 'p'+str(c+1)] = p_val
                 gencost.loc[plant_id, 'f'+str(c+1)] = f_val
     return gencost
+
+
+def manipulate_data_frame(grid):
+    """Adds/Removes to data frames in grid.
+
+    :param powersimdata.input.MATReader grid: grid with missing information
+    """
+    grid.bus.drop(columns=['bus_id'], inplace=True)
+
+    def reset_id():
+        return lambda x: grid.bus.index[x - 1]
+    grid.plant['bus_id'] = grid.plant['bus_id'].apply(reset_id())
+    grid.branch['from_bus_id'] = grid.branch['from_bus_id'].apply(reset_id())
+    grid.branch['to_bus_id'] = grid.branch['to_bus_id'].apply(reset_id())
+    grid.dcline['from_bus_id'] = grid.dcline['from_bus_id'].apply(reset_id())
+    grid.dcline['to_bus_id'] = grid.dcline['to_bus_id'].apply(reset_id())
