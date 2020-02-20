@@ -4,7 +4,7 @@ import pytest
 
 from powersimdata.input.usa_tamu_model import check_interconnect
 from powersimdata.input.helpers import add_column_to_data_frame
-from powersimdata.input.mat_reader import format_gencost
+from powersimdata.input.mat_reader import format_gencost, link
 from powersimdata.input.grid import Grid
 from powersimdata.input.usa_tamu_model import TAMU
 
@@ -200,3 +200,13 @@ def test_format_gencost_both_model_same_n():
         df_output.loc[5, ['c4', 'c3', 'c2', 'c1', 'c0', 'p1', 'f1', 'p2', 'f2',
                           'p3', 'f3', 'p4', 'f4']].values,
         [0.0, 0.0, 0.0, 1.1, 6.4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+
+def test_link():
+    keys = ['a', 'b', 'c', 'd', 'e']
+    values = [1, 2, 3, 4, 5]
+    output = link(keys, values)
+    assert np.array_equal(list(output.keys()), keys)
+    assert np.array_equal(list(output.values()), values)
+    assert np.array_equal(output['a'], values[0])
+    assert np.array_equal(output['c'], values[2])
