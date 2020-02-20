@@ -1,0 +1,72 @@
+{
+    "allowed_resources": [
+        "solar",
+        "wind",
+        "geo"
+    ],
+    "ce_category": "renewables",
+    "ce_target": 50000.0,
+    "ce_target_fraction": 0.25,
+    "external_ce_historical_amount": 0,
+    "py/object": "powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling.TargetManager",
+    "region_name": "Pacific",
+    "resources": {
+        "geo": {
+            "addl_curtailment": 0,
+            "name": "geo",
+            "no_congestion_cap_factor": 1,
+            "prev_cap_factor": 1,
+            "prev_capacity": 4000,
+            "prev_curtailment": 0,
+            "prev_generation": 8000,
+            "prev_scenario_num": 3,
+            "py/object": "powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling.Resource"
+        },
+        "hydro": {
+            "addl_curtailment": 0,
+            "name": "hydro",
+            "no_congestion_cap_factor": 1,
+            "prev_cap_factor": 1,
+            "prev_capacity": 3900,
+            "prev_curtailment": 0,
+            "prev_generation": 7000,
+            "prev_scenario_num": 3,
+            "py/object": "powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling.Resource"
+        },
+        "nuclear": {
+            "addl_curtailment": 0,
+            "name": "nuclear",
+            "no_congestion_cap_factor": 1,
+            "prev_cap_factor": 1,
+            "prev_capacity": 4300,
+            "prev_curtailment": 0,
+            "prev_generation": 6500,
+            "prev_scenario_num": 3,
+            "py/object": "powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling.Resource"
+        },
+        "solar": {
+            "addl_curtailment": 0,
+            "name": "solar",
+            "no_congestion_cap_factor": 0.25,
+            "prev_cap_factor": 0.215379,
+            "prev_capacity": 3700,
+            "prev_curtailment": 0.138483,
+            "prev_generation": 7000,
+            "prev_scenario_num": 3,
+            "py/object": "powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling.Resource"
+        },
+        "wind": {
+            "addl_curtailment": 0,
+            "name": "wind",
+            "no_congestion_cap_factor": 0.4,
+            "prev_cap_factor": 0.347855,
+            "prev_capacity": 3600,
+            "prev_curtailment": 0.130363,
+            "prev_generation": 11000,
+            "prev_scenario_num": 3,
+            "py/object": "powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling.Resource"
+        }
+    },
+    "solar_percentage": null,
+    "total_demand": 200000
+}
