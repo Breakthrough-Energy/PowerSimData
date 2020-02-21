@@ -4,12 +4,25 @@ from prereise.gather.constants import abv2state, state2loadzone, \
     interconnect2loadzone
 
 
+def _check_state(scenario):
+    """Check if the state of the scenario object is 'analyze'.
+
+    :param powersimdata.scenario.scenario.Scenario scenario:
+        scenario instance
+    :raise Exception: if the scenario is not in 'analyze' state.
+    """
+    if scenario.state.name != 'analyze':
+        raise Exception('Scenario state must be \'analyze.\'')
+
+
 class ScenarioInfo:
     """Gather information from previous scenarios for capacity scaling.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
+    :raise Exception: if the scenario is not in 'analyze' state.
     """
     def __init__(self, scenario):
+        _check_state(scenario)
         self.pg = scenario.state.get_pg()
         self.grid = scenario.state.get_grid()
         solar = scenario.state.get_solar()
