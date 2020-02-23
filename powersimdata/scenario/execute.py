@@ -192,6 +192,9 @@ class SimulationInput(object):
         print("Building MPC file")
         mpc = {'mpc': {'version': '2', 'baseMVA': 100.0}}
 
+        # zone
+        mpc['mpc']['zone'] = np.array(list(grid.id2zone.items()), dtype=object)
+
         # sub
         sub = grid.sub.copy()
         subid = sub.index.values[np.newaxis].T
@@ -214,12 +217,8 @@ class SimulationInput(object):
         gen = grid.plant.copy()
         genid = gen.index.values[np.newaxis].T
         genfuel = gen.type.values[np.newaxis].T
-        zoneid = gen.zone_id.values[np.newaxis].T
-        zonename = gen.zone_name.values[np.newaxis].T
         genfuelcost = gen.GenFuelCost.values[np.newaxis].T
-        geniob = gen.GenIOB.values[np.newaxis].T
-        genioc = gen.GenIOC.values[np.newaxis].T
-        geniod = gen.GenIOD.values[np.newaxis].T
+        heatratecurve = gen[['GenIOB', 'GenIOC', 'GenIOD']].values
         gen.reset_index(inplace=True, drop=True)
         gen.drop(columns=['type', 'interconnect', 'lat', 'lon', 'zone_id',
                           'zone_name', 'GenFuelCost', 'GenIOB', 'GenIOC',
@@ -228,13 +227,8 @@ class SimulationInput(object):
         mpc['mpc']['gen'] = gen.values
         mpc['mpc']['genid'] = genid
         mpc['mpc']['genfuel'] = genfuel
-        mpc['mpc']['zoneid'] = zoneid
-        mpc['mpc']['zonename'] = zonename
         mpc['mpc']['genfuelcost'] = genfuelcost
-        mpc['mpc']['geniob'] = geniob
-        mpc['mpc']['genioc'] = genioc
-        mpc['mpc']['geniod'] = geniod
-
+        mpc['mpc']['heatratecurve'] = heatratecurve
         # branch
         branch = grid.branch.copy()
         branchid = branch.index.values[np.newaxis].T
