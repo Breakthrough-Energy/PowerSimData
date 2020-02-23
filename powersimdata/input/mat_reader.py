@@ -4,6 +4,9 @@ from scipy.io import loadmat
 
 from powersimdata.input.abstract_grid import AbstractGrid
 from powersimdata.input.csv_reader import get_storage
+from powersimdata.input.helpers import (add_coord_to_grid_data_frames,
+                                        add_zone_to_grid_data_frames,
+                                        add_interconnect_to_grid_data_frames)
 
 
 class MATReader(AbstractGrid):
@@ -46,27 +49,50 @@ class MATReader(AbstractGrid):
 
         # bus
         self.bus, _ = frame('bus', mpc.bus, mpc.busid)
+
         # plant
-        self.plant, plant_storage = frame(
-            'plant', mpc.gen, mpc.genid, n_storage=n_storage)
+        self.plant, plant_storage = frame('plant',
+                                          mpc.gen,
+                                          mpc.genid,
+                                          n_storage=n_storage)
+        self.plant['type'] = mpc.genfuel[:len(mpc.genid)]
+        self.plant['GenFuelCost'] = mpc.genfuelcost
+
+        # heat rate curve
+        self.heat_rate_curve, _ = frame('heat_rate_curve',
+                                        mpc.heatratecurve,
+                                        mpc.genid)
+
         # gencost before
-        self.gencost['before'], _ = frame(
-            'gencost_before', mpc.gencost_orig, mpc.genid)
+        self.gencost['before'], _ = frame('gencost_before',
+                                          mpc.gencost_orig,
+                                          mpc.genid)
+
         # gencost after
-        self.gencost['after'], gencost_storage = frame(
-            'gencost_after', mpc.gencost, mpc.genid, n_storage=n_storage)
+        self.gencost['after'], gencost_storage = frame('gencost_after',
+                                                       mpc.gencost,
+                                                       mpc.genid,
+                                                       n_storage=n_storage)
+
         # branch
         self.branch, _ = frame('branch', mpc.branch, mpc.branchid)
+        self.branch['branch_device_type'] = mpc.branchdevicetype
+
         # DC line
         if n_dcline > 0:
             self.dcline, _ = frame('dcline', mpc.dcline, mpc.dclineid)
+
         # substation
         self.sub, _ = frame('sub', mpc.sub, mpc.subid)
+
         # bus to sub mapping
         self.bus2sub, _ = frame('bus2sub', mpc.bus2sub, mpc.busid)
+
         # zone
-        self.zone2id = link(mpc.zonename, mpc.zoneid)
-        self.id2zone = link(mpc.zoneid, mpc.zonename)
+        zone = pd.DataFrame(mpc.zone, columns=['zone_id', 'zone_name'])
+        self.zone2id = link(zone.zone_name.values, zone.zone_id.values)
+        self.id2zone = link(zone.zone_id.values, zone.zone_name.values)
+
         # storage
         if n_storage > 0:
             self.storage = get_storage()
@@ -75,10 +101,11 @@ class MATReader(AbstractGrid):
             col_name = self.storage['StorageData'].columns
             for c in col_name:
                 self.storage['StorageData'][c] = eval('data["mdi"].Storage.'+c)
+
         # interconnect
         self.interconnect = self.sub.interconnect.unique().tolist()
 
-        manipulate_data_frame(self)
+        add_information_to_model(self)
 
 
 def frame(name, table, index, n_storage=0):
@@ -103,7 +130,7 @@ def frame(name, table, index, n_storage=0):
                 pd.DataFrame(table[:index.shape[0]], index=index))
             storage = format_gencost(
                 pd.DataFrame(table[index.shape[0]:index.shape[0]+n_storage]))
-    elif name in ['branch', 'bus', 'bus2sub', 'dcline', 'plant', 'sub']:
+    else:
         col_name = column_name_provider()[name]
         col_type = column_type_provider()[name]
         expected_shape = (index.shape[0], len(col_name))
@@ -116,8 +143,6 @@ def frame(name, table, index, n_storage=0):
                 table[index.shape[0]:index.shape[0]+n_storage:],
                 columns=col_name)
         data = data.astype(link(col_name, col_type))
-    else:
-        raise ValueError('Unknown %s table' % name)
 
     data.index.name = index_name_provider()[name]
     return data, storage
@@ -145,7 +170,8 @@ def index_name_provider():
                   'dcline': 'dcline_id',
                   'plant': 'plant_id',
                   'gencost_before': 'plant_id',
-                  'gencost_after': 'plant_id'}
+                  'gencost_after': 'plant_id',
+                  'heat_rate_curve': 'plant_id'}
     return index_name
 
 
@@ -175,13 +201,15 @@ def column_name_provider():
         'Pmin', 'Pc1', 'Pc2', 'Qc1min', 'Qc1max', 'Qc2min', 'Qc2max',
         'ramp_agc', 'ramp_10', 'ramp_30', 'ramp_q', 'apf', 'mu_Pmax', 'mu_Pmin',
         'mu_Qmax', 'mu_Qmin']
+    col_name_heat_rate_curve = ['GenIOB', 'GenIOC', 'GenIOD']
     col_name = {
         'sub': col_name_sub,
         'bus': col_name_bus,
         'bus2sub': col_name_bus2sub,
         'branch': col_name_branch,
         'dcline': col_name_dcline,
-        'plant': col_name_plant}
+        'plant': col_name_plant,
+        'heat_rate_curve': col_name_heat_rate_curve}
     return col_name
 
 
@@ -208,13 +236,15 @@ def column_type_provider():
         'int', 'float', 'float', 'float', 'float', 'float', 'float', 'int',
         'float', 'float', 'int', 'int', 'int', 'int', 'int', 'int', 'int',
         'int', 'int', 'int', 'float', 'int', 'int', 'int', 'int']
+    col_type_heat_rate_curve = ['float', 'float', 'float']
     col_type = {
         'sub': col_type_sub,
         'bus': col_type_bus,
         'bus2sub': col_type_bus2sub,
         'branch': col_type_branch,
         'dcline': col_type_dcline,
-        'plant': col_type_plant}
+        'plant': col_type_plant,
+        'heat_rate_curve': col_type_heat_rate_curve}
     return col_type
 
 
@@ -254,17 +284,24 @@ def format_gencost(data):
     return gencost
 
 
-def manipulate_data_frame(grid):
-    """Adds/Removes to data frames in grid.
+def add_information_to_model(grid):
+    """Makes a standard grid.
 
-    :param powersimdata.input.MATReader grid: grid with missing information
+    :param powersimdata.input.MATReader grid: grid with missing information.
     """
     grid.bus.drop(columns=['bus_id'], inplace=True)
 
     def reset_id():
         return lambda x: grid.bus.index[x - 1]
+
     grid.plant['bus_id'] = grid.plant['bus_id'].apply(reset_id())
     grid.branch['from_bus_id'] = grid.branch['from_bus_id'].apply(reset_id())
     grid.branch['to_bus_id'] = grid.branch['to_bus_id'].apply(reset_id())
     grid.dcline['from_bus_id'] = grid.dcline['from_bus_id'].apply(reset_id())
     grid.dcline['to_bus_id'] = grid.dcline['to_bus_id'].apply(reset_id())
+
+    add_interconnect_to_grid_data_frames(grid)
+    add_zone_to_grid_data_frames(grid)
+    add_coord_to_grid_data_frames(grid)
+
+    grid.plant = grid.plant.join(grid.heat_rate_curve)
