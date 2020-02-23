@@ -3,7 +3,6 @@ import pandas as pd
 from scipy.io import loadmat
 
 from powersimdata.input.abstract_grid import AbstractGrid
-from powersimdata.input.csv_reader import get_storage
 from powersimdata.input.helpers import (add_coord_to_grid_data_frames,
                                         add_zone_to_grid_data_frames,
                                         add_interconnect_to_grid_data_frames)
@@ -95,7 +94,6 @@ class MATReader(AbstractGrid):
 
         # storage
         if n_storage > 0:
-            self.storage = get_storage()
             self.storage['gen'] = plant_storage
             self.storage['gencost'] = gencost_storage
             col_name = self.storage['StorageData'].columns
