@@ -2,7 +2,7 @@ import os
 import pandas as pd
 
 from powersimdata.input.abstract_grid import AbstractGrid
-from powersimdata.input.csv_reader import CSVReader, get_storage
+from powersimdata.input.csv_reader import CSVReader
 from powersimdata.input.helpers import (csv_to_data_frame,
                                         add_column_to_data_frame)
 
@@ -39,7 +39,6 @@ class TAMU(AbstractGrid):
         """Sets storage properties.
 
         """
-        self.storage = get_storage()
         self.storage['duration'] = 4
         self.storage['min_stor'] = 0.05
         self.storage['max_stor'] = 0.95
