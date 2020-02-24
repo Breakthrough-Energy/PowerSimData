@@ -29,22 +29,28 @@ class AbstractStrategyManager:
                                           row.solar_percentage))
 
     def add_target(self, target_manager_obj):
-        """
-        Add target to strategy object
+        """Adds target to strategy object.
+
         :param target_manager_obj: target object to be added
         """
         self.targets[target_manager_obj.region_name] = target_manager_obj
 
     @staticmethod
     def load_target_from_json(target_name):
-        json_file = open(os.path.relpath(os.path.join("save_files", target_name+".json")), "r")
+        json_file = open(os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "save_files",
+            target_name+".json"), "r")
         target_obj = jsonpickle.decode(json_file.read())
         json_file.close()
         return target_obj
 
     @staticmethod
     def load_target_from_pickle(target_name):
-        json_file = open(os.path.relpath(os.path.join("save_files", target_name + ".pkl")), "rb")
+        json_file = open(os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "save_files", target_name+".pkl"),
+            "rb")
         target_obj = pickle.load(json_file)
         json_file.close()
         return target_obj
@@ -328,11 +334,13 @@ class TargetManager:
         return self.resources[resource_name]
 
     def calculate_ce_shortfall(self):
-        """
-        Calculates the clean energy shortfall for target_manager_obj area, subtracts the external value if greater than
-        total allowed clean energy generation
+        """ Calculates the clean energy shortfall for target_manager_obj area,
+            subtracts the external value if greater than total allowed clean
+            energy generation
+
         :param prev_ce_generation: clean energy generation for allowed resources
-        :param external_ce_historical_amount: outside clean energy generation value
+        :param external_ce_historical_amount: outside clean energy generation
+            value
         :return: clean energy shortfall
         """
         prev_ce_generation = self.calculate_prev_ce_generation()
@@ -350,9 +358,10 @@ class TargetManager:
         return ce_shortfall
 
     def calculate_ce_overgeneration(self):
-        """
-        Calculates the clean energy overgeneration for target_manager_obj area, subtracts from external value if greater
-        than total allowed clean energy generation
+        """Calculates the clean energy overgeneration for target_manager_obj
+            area, subtracts from external value if greater than total allowed
+            clean energy generation.
+
         :param prev_ce_generation:
         :param external_ce_historical_amount:
         :return: clean energy overgeneration
@@ -381,19 +390,27 @@ class TargetManager:
 
     def save_target_as_json(self):
         print(os.getcwd())
-        json_file = open(os.path.relpath(os.path.join("save_files", self.region_name+".json")), "w")
-        obj_json = json.dumps(json.loads(jsonpickle.encode(self)), indent=4, sort_keys=True)
+        json_file = open(os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "save_files",
+            self.region_name+".json"), "w")
+        obj_json = json.dumps(json.loads(jsonpickle.encode(self)), indent=4,
+                              sort_keys=True)
         json_file.write(obj_json)
         json_file.close()
 
     def save_target_as_pickle(self):
         print(os.getcwd())
-        json_file = open(os.path.relpath(os.path.join("save_files", self.region_name+".pkl")), "wb")
+        json_file = open(os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "save_files",
+            self.region_name+".pkl"), "wb")
         pickle.dump(self, json_file)
         json_file.close()
 
     def __str__(self):
-        return json.dumps(json.loads(jsonpickle.encode(self)), indent=4, sort_keys=True)
+        return json.dumps(json.loads(jsonpickle.encode(self)), indent=4,
+                          sort_keys=True)
 
 
 class Resource:
@@ -409,7 +426,8 @@ class Resource:
         self.addl_curtailment = 0
 
     # todo: calculate directly from scenario results
-    def set_capacity(self, no_congestion_cap_factor, prev_capacity, prev_cap_factor):
+    def set_capacity(self, no_congestion_cap_factor, prev_capacity,
+                     prev_cap_factor):
         """
         Sets capacity information for resource
         :param no_congestion_cap_factor: capacity factor with no congestion
@@ -462,4 +480,5 @@ class Resource:
         return next_capacity
 
     def __str__(self):
-        return json.dumps(json.loads(jsonpickle.encode(self)), indent=4, sort_keys=True)
+        return json.dumps(json.loads(jsonpickle.encode(self)), indent=4,
+                          sort_keys=True)
