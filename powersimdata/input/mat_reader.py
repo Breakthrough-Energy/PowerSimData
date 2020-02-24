@@ -117,7 +117,6 @@ def frame(name, table, index, n_storage=0):
         or a data frame when energy storage system are included.
     :raises ValueError: if name does not exist and table has wrong shape.
     """
-    data = pd.DataFrame()
     storage = None
     print('Loading %s' % name)
     if name.split('_')[0] == 'gencost':
