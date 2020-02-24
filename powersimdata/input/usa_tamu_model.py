@@ -1,10 +1,10 @@
 import os
-import pandas as pd
 
 from powersimdata.input.abstract_grid import AbstractGrid
 from powersimdata.input.csv_reader import CSVReader
 from powersimdata.input.helpers import (csv_to_data_frame,
-                                        add_column_to_data_frame)
+                                        add_zone_to_grid_data_frames,
+                                        add_coord_to_grid_data_frames)
 
 
 class TAMU(AbstractGrid):
@@ -121,44 +121,5 @@ def add_information_to_model(model):
         model.data_loc, 'zone.csv').zone_name.to_dict()
     model.zone2id = {v: k for k, v in model.id2zone.items()}
 
-    bus2zone = model.bus.zone_id.to_dict()
-    bus2coord = pd.merge(
-        model.bus2sub[['sub_id']],
-        model.sub[['lat', 'lon']],
-        on='sub_id').set_index(
-        model.bus2sub.index).drop(columns='sub_id').to_dict()
-
-    def get_lat(idx):
-        return [bus2coord['lat'][i] for i in idx]
-
-    def get_lon(idx):
-        return [bus2coord['lon'][i] for i in idx]
-
-    def get_zone_id(idx):
-        return [bus2zone[i] for i in idx]
-
-    def get_zone_name(idx):
-        return [model.id2zone[bus2zone[i]] for i in idx]
-
-    extra_col_bus = {
-        'lat': get_lat(model.bus.index),
-        'lon': get_lon(model.bus.index)}
-    add_column_to_data_frame(model.bus, extra_col_bus)
-
-    extra_col_plant = {
-        'lat': get_lat(model.plant.bus_id),
-        'lon': get_lon(model.plant.bus_id),
-        'zone_id': get_zone_id(model.plant.bus_id),
-        'zone_name': get_zone_name(model.plant.bus_id)}
-    add_column_to_data_frame(model.plant, extra_col_plant)
-
-    extra_col_branch = {
-        'from_zone_id': get_zone_id(model.branch.from_bus_id),
-        'to_zone_id': get_zone_id(model.branch.to_bus_id),
-        'from_zone_name': get_zone_name(model.branch.from_bus_id),
-        'to_zone_name': get_zone_name(model.branch.to_bus_id),
-        'from_lat': get_lat(model.branch.from_bus_id),
-        'from_lon': get_lon(model.branch.from_bus_id),
-        'to_lat': get_lat(model.branch.to_bus_id),
-        'to_lon': get_lon(model.branch.to_bus_id)}
-    add_column_to_data_frame(model.branch, extra_col_branch)
+    add_zone_to_grid_data_frames(model)
+    add_coord_to_grid_data_frames(model)
