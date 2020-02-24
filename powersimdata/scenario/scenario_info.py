@@ -25,6 +25,7 @@ class ScenarioInfo:
         _check_state(scenario)
         self.pg = scenario.state.get_pg()
         self.grid = scenario.state.get_grid()
+        self.demand = scenario.state.get_demand()
         solar = scenario.state.get_solar()
         wind = scenario.state.get_wind()
         hydro = scenario.state.get_hydro()
@@ -80,6 +81,28 @@ class ScenarioInfo:
             raise ValueError('Invalid time range: '
                              'start_time falls behind end_time!')
         return start_i, end_i
+
+    def get_demand(self, area, start_time, end_time):
+        """Calculate the total demand of the query area during the query time
+            range of the given scenario
+
+        :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+            *interconnect*, *'all'*
+        :param str start_time: start timestamp in the format
+            *'YYYY-MM-DD HH:MM:SS'*
+        :param str end_time: end timestamp in the format
+            *'YYYY-MM-DD HH:MM:SS'*
+        :return: (*float*) -- total demand (in MWh)
+            based on the specified parameters
+        """
+        loadzone_set = self.area_to_loadzone(area)
+        self.check_time_range(start_time, end_time)
+        total_demand = self.demand.loc[
+            start_time:end_time,
+            [self.grid.zone2id[loadzone]
+             for loadzone in loadzone_set]
+        ].sum().sum()
+        return float(total_demand)
 
     def get_capacity(self, gentype, area):
         """Calculate the total capacity of the query gentype in the query area
