@@ -128,6 +128,9 @@ def frame(name, table, index, n_storage=0):
                 pd.DataFrame(table[:index.shape[0]], index=index))
             storage = format_gencost(
                 pd.DataFrame(table[index.shape[0]:index.shape[0]+n_storage]))
+        else:
+            data = format_gencost(
+                pd.DataFrame(table[:index.shape[0]], index=index))
     else:
         col_name = column_name_provider()[name]
         col_type = column_type_provider()[name]
@@ -140,6 +143,9 @@ def frame(name, table, index, n_storage=0):
             storage = pd.DataFrame(
                 table[index.shape[0]:index.shape[0]+n_storage:],
                 columns=col_name)
+        else:
+            data = pd.DataFrame(
+                table[:index.shape[0]], columns=col_name, index=index)
         data = data.astype(link(col_name, col_type))
 
     data.index.name = index_name_provider()[name]
