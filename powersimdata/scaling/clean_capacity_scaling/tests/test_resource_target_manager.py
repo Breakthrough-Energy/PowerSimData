@@ -1,6 +1,6 @@
 from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager
 from pytest import approx
-from mock import patch
+from unittest.mock import patch
 
 
 def test_can_pass():
