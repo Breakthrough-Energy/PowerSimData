@@ -82,6 +82,19 @@ class ScenarioInfo:
                              'start_time falls behind end_time!')
         return start_i, end_i
 
+    def get_available_resource(self, area):
+        """Find the available resources of a specific area in the grid of the
+            given scenario
+
+        :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+            *interconnect*, *'all'*
+        :return: (*list*) -- a list of available resources in the query area
+        """
+        loadzone_set = self.area_to_loadzone(area)
+        available_resources = self.grid.plant[
+            self.grid.plant['zone_name'].isin(loadzone_set)]['type'].unique()
+        return available_resources.tolist()
+
     def get_demand(self, area, start_time, end_time):
         """Calculate the total demand of the query area during the query time
             range of the given scenario

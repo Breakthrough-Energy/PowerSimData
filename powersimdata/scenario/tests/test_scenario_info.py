@@ -33,6 +33,16 @@ mock_demand = pd.concat([
 ], axis=1)
 mock_demand.columns = [1, 2]
 
+zone1_available_resource = [mock_plant['type'][i]
+                            for i, zone in enumerate(mock_plant['zone_name'])
+                            if zone == 'zone1'
+                            ]
+
+zone2_available_resource = [mock_plant['type'][i]
+                            for i, zone in enumerate(mock_plant['zone_name'])
+                            if zone == 'zone2'
+                            ]
+
 zone1_plant_id = [plant_id
                   for i, plant_id in enumerate(mock_plant['plant_id'])
                   if mock_plant['zone_name'][i] == 'zone1']
@@ -77,6 +87,12 @@ class TestScenarioInfo(unittest.TestCase):
                                 wind=mock_wind,
                                 hydro=mock_hydro)
         self.scenario_info = ScenarioInfo(scenario)
+
+    def test_get_available_resource(self):
+        assert self.scenario_info.get_available_resource('zone1') \
+            == zone1_available_resource
+        assert self.scenario_info.get_available_resource('zone2') \
+            == zone2_available_resource
 
     def test_get_demand(self):
         assert self.scenario_info.get_demand('zone1', start_time, end_time) \
