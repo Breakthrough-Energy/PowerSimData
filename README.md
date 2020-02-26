@@ -95,8 +95,21 @@ scenario.state.builder.change_table.scale_branch_capacity(
     zone_name={'Nevada': 2, 'Wyoming': 2})
     
 print(scenario.state.builder.change_table.ct)  # print change table
+```
+There are also a couple of more advanced methods which can selectively scale
+branches based on the topology of the existing grid, or based on powerflow
+results from a previous scenario. These can be called as:
+```
+scenario.state.builder.change_table.scale_renewable_stubs()
+```
+or
+```
+scenario.state.builder.change_table.scale_congested_mesh_branches(ref_scenario)
+```
+where `ref_scenario` is a Scenario object in Analyze state.
 
-
+The final step is to run `create_scenario()`:
+```
 # Create scenario
 scenario.state.print_scenario_info()  # review information
 scenario.state.create_scenario()  # create
@@ -105,7 +118,7 @@ scenario.state.print_scenario_status()  # print status of scenario
 ```
 Once the scenario is successfully created, the state of the `Scenario` object is
 switched to **execute**. Also a scenario id is automatically created and printed
-on screen
+on screen.
 
 
 ### C. Executing Scenario

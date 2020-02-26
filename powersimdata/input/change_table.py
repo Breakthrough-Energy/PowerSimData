@@ -296,7 +296,7 @@ class ChangeTable(object):
 
     def scale_renewable_stubs(self, **kwargs):
         """Scales undersized stub branches connected to renewable generators.
-        Optional kwargs as documented in powersimdata.input.design.
+        Optional kwargs as documented in powersimdata.input.design_transmission
         """
         scale_renewable_stubs(self, **kwargs)
     
@@ -304,7 +304,7 @@ class ChangeTable(object):
         """Scales congested branches based on previous scenario results.
         :param powersimdata.scenario.scenario.Scenario ref_scenario: the
             reference scenario to be used in determining branch scaling.
-        Optional kwargs as documented in powersimdata.input.design.
+        Optional kwargs as documented in powersimdata.input.design_transmission
         """
         scale_congested_mesh_branches(self, ref_scenario, **kwargs)
 
