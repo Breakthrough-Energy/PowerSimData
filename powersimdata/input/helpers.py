@@ -124,7 +124,8 @@ def add_interconnect_to_grid_data_frames(grid):
         'interconnect': get_interconnect(grid.plant.bus_id)}
     add_column_to_data_frame(grid.plant, extra_col_plant)
 
-    extra_col_dcline = {
-        'from_interconnect': get_interconnect(grid.dcline.from_bus_id),
-        'to_interconnect': get_interconnect(grid.dcline.to_bus_id)}
-    add_column_to_data_frame(grid.dcline, extra_col_dcline)
+    if not grid.dcline.empty:
+        extra_col_dcline = {
+            'from_interconnect': get_interconnect(grid.dcline.from_bus_id),
+            'to_interconnect': get_interconnect(grid.dcline.to_bus_id)}
+        add_column_to_data_frame(grid.dcline, extra_col_dcline)

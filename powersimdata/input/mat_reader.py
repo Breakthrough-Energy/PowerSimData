@@ -305,8 +305,11 @@ def add_information_to_model(grid):
     grid.plant['bus_id'] = grid.plant['bus_id'].apply(reset_id())
     grid.branch['from_bus_id'] = grid.branch['from_bus_id'].apply(reset_id())
     grid.branch['to_bus_id'] = grid.branch['to_bus_id'].apply(reset_id())
-    grid.dcline['from_bus_id'] = grid.dcline['from_bus_id'].apply(reset_id())
-    grid.dcline['to_bus_id'] = grid.dcline['to_bus_id'].apply(reset_id())
+    if not grid.dcline.empty:
+        grid.dcline[
+            'from_bus_id'] = grid.dcline['from_bus_id'].apply(reset_id())
+        grid.dcline[
+            'to_bus_id'] = grid.dcline['to_bus_id'].apply(reset_id())
 
     add_interconnect_to_grid_data_frames(grid)
     add_zone_to_grid_data_frames(grid)
