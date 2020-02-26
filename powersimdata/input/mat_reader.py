@@ -98,7 +98,7 @@ class MATReader(AbstractGrid):
             self.storage['gencost'] = gencost_storage
             col_name = self.storage['StorageData'].columns
             for c in col_name:
-                self.storage['StorageData'][c] = eval('data["mdi"].Storage.'+c)
+                self.storage['StorageData'][c] = getattr(data["mdi"].Storage, c)
 
         # interconnect
         self.interconnect = self.sub.interconnect.unique().tolist()
