@@ -115,7 +115,6 @@ def frame(name, table, index, n_storage=0):
     :param int n_storage: number of storage devices.
     :return: (tuple) -- first element is a data frame. Second element is None
         or a data frame when energy storage system are included.
-    :raises ValueError: if name does not exist and table has wrong shape.
     """
     storage = None
     print('Loading %s' % name)
@@ -255,7 +254,6 @@ def format_gencost(data):
     """Modify generation cost data frame.
 
     :param pandas.DataFrame data: generation cost data frame.
-    :return: (*pandas.DataFrame*) -- formatted data frame.
     :return: (pandas.DataFrame) -- formatted gencost data frame.
     """
 

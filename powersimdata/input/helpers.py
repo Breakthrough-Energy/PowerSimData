@@ -33,7 +33,7 @@ def block_print():
 
 
 def enable_print():
-    """Suppresses print
+    """Enables print
 
     """
     sys.stdout = sys.__stdout__

@@ -44,8 +44,7 @@ class Grid(object):
 
 
 def get_type2color():
-    """Defines generator type to generator color mapping for TAMU. Used for
-        plotting.
+    """Defines generator type to generator color mapping. Used for plotting.
 
     :return: (*dict*) -- generator type to color mapping.
     """
