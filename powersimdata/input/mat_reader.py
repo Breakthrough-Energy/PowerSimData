@@ -139,7 +139,7 @@ def frame(name, table, index, n_storage=0):
             data = pd.DataFrame(
                 table[:index.shape[0]], columns=col_name, index=index)
             storage = pd.DataFrame(
-                table[index.shape[0]:index.shape[0]+n_storage:],
+                table[index.shape[0]:index.shape[0]+n_storage],
                 columns=col_name)
         else:
             data = pd.DataFrame(
