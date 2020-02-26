@@ -7,12 +7,12 @@ import pytest
 def test_can_pass():
     assert 1 == 1
 
-
+#@pytest.mark.skip(reason="creates a file, only run when needed")
 def test_create_targets_from_dataframe():
     planning_data = {'strategy': ['Independent', 'Independent'], 'region_name': ['Pacific', 'Atlantic'],
                      'ce_category': ['Renewables', 'Clean'], 'ce_target_fraction': [.25, .4],
                      'total_demand': [200000, 300000], 'external_ce_historical_amount': [0, 0],
-                     'solar_percentage':[.3,.6]}
+                     'solar_percentage': [.3, .6]}
 
     # future_data = {'total_demand': [200000, 300000], 'external_ce_total_gen': [ 0, 0]}
 
@@ -29,12 +29,12 @@ def test_create_targets_from_dataframe():
 
     assert targets['Pacific'].ce_category == planning_data['ce_category'][0]
 
-
+#@pytest.mark.skip(reason="creates a file, only run when needed")
 def test_populate_strategy_from_dataframe():
     planning_data = {'strategy': ['Independent', 'Independent'], 'region_name': ['Pacific', 'Atlantic'],
                      'ce_category': ['Renewables', 'Clean'], 'ce_target_fraction': [.25, .4],
                      'total_demand': [200000, 300000], 'external_ce_historical_amount': [0, 0],
-                     'solar_percentage':[.3,.6]}
+                     'solar_percentage': [.3, .6]}
     planning_dataframe = pd.DataFrame.from_dict(planning_data)
 
     strategy = AbstractStrategyManager()
@@ -46,15 +46,14 @@ def test_populate_strategy_from_dataframe():
 @pytest.mark.skip(reason="doesn't work yet")
 def test_create_resources_from_dataframe():
     pacific_resource_data = {'resource_name': ['geo', 'hydro', 'nuclear', 'solar', 'wind'],
-                     'generation': [8000.0, 7000.0, 6000.0, 8125.0, 12648.96],
-                     'capacity': [4000.0, 3900.0, 3800.0, 3700.0, 3600.0]}
+                             'generation': [8000.0, 7000.0, 6000.0, 8125.0, 12648.96],
+                             'capacity': [4000.0, 3900.0, 3800.0, 3700.0, 3600.0]}
     pacific_resource_dataframe = pd.DataFrame.from_dict(pacific_resource_data)
 
     atlantic_resource_data = {'resource_name': ['geo', 'hydro', 'nuclear', 'solar', 'wind'],
-                     'generation': [8500.0, 7500.0, 6500.0, 11067.84, 12605.04],
-                     'capacity': [4500.0, 4400.0, 4300.0, 4200.0, 4100.0]}
+                              'generation': [8500.0, 7500.0, 6500.0, 11067.84, 12605.04],
+                              'capacity': [4500.0, 4400.0, 4300.0, 4200.0, 4100.0]}
     atlantic_resource_dataframe = pd.DataFrame.from_dict(atlantic_resource_data)
-
 
     planning_data = {'strategy': ['Independent', 'Independent'], 'region_name': ['Pacific', 'Atlantic'],
                      'ce_category': ['Renewables', 'Clean'], 'ce_target_fraction': [.25, .4],
@@ -147,7 +146,8 @@ def test_load_independent_western_case():
     results = strategy_manager.data_frame_of_next_capacities()
     print(results)
     print(western[['State', 'solar_added_capacity_independent', 'wind_added_capacity_independent']])
-    assert results.values.tolist() == western[['State', 'solar_added_capacity_independent', 'wind_added_capacity_independent']].values.tolist()
+    assert results.values.tolist() == western[['State', 'solar_added_capacity_independent',
+                                               'wind_added_capacity_independent']].values.tolist()
 
 
 @pytest.mark.skip(reason="precision causes tests to fail")
@@ -212,4 +212,5 @@ def test_load_collaborative_western_case():
     results = strategy_manager.data_frame_of_next_capacities()
     print(results)
     print(western[['State', 'solar_added_capacity_collaborative', 'wind_added_capacity_collaborative']])
-    assert results.values.tolist() == western[['State', 'solar_added_capacity_collaborative', 'wind_added_capacity_collaborative']].values.tolist()
+    assert results.values.tolist() == western[['State', 'solar_added_capacity_collaborative',
+                                               'wind_added_capacity_collaborative']].values.tolist()
