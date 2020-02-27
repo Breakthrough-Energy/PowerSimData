@@ -1,7 +1,7 @@
 from powersimdata.input.grid import Grid
 from powersimdata.input.profiles import InputData
 
-from powersimdata.input.helpers import block_print, enable_print
+from powersimdata.input.helpers import PrintManager
 import copy
 
 
@@ -21,7 +21,8 @@ class Scaler(object):
         """Constructor.
 
         """
-        block_print()
+        pm = PrintManager()
+        pm.block_print()
         self.scenario_id = scenario_info['id']
         self.interconnect = scenario_info['interconnect'].split('_')
         self._input = InputData(ssh_client)
@@ -30,7 +31,7 @@ class Scaler(object):
         else:
             self.ct = {}
         self._load_grid()
-        enable_print()
+        pm.enable_print()
 
     def _load_ct(self):
         """Loads change table.
@@ -45,13 +46,14 @@ class Scaler(object):
         """Loads original grid.
 
         """
-        self._grid = copy.deepcopy(Grid(self.interconnect))
+        self._original_grid = Grid(self.interconnect)
 
     def get_grid(self):
         """Returns modified grid.
 
         :return: (*powersimdata.input.grid.Grid*) -- instance of grid object.
         """
+        self._grid = copy.deepcopy(self._original_grid)
         if bool(self.ct):
             for r in self._gen_types:
                 if r in list(self.ct.keys()):
@@ -208,7 +210,7 @@ class Scaler(object):
         if bool(self.ct) and resource in list(self.ct.keys()):
             try:
                 for key, value in self.ct[resource]['zone_id'].items():
-                    plant_id = self._grid.plant.groupby(
+                    plant_id = self._original_grid.plant.groupby(
                         ['zone_id', 'type']).get_group(
                         (key, resource)).index.values.tolist()
                     for i in plant_id:
@@ -253,6 +255,6 @@ class Scaler(object):
         if bool(self.ct) and 'demand' in list(self.ct.keys()):
             for key, value in self.ct['demand']['zone_id'].items():
                 print('Multiply demand in %s (#%d) by %.2f' %
-                      (self._grid.id2zone[key], key, value))
+                      (self._original_grid.id2zone[key], key, value))
                 demand.loc[:, key] *= value
         return demand
