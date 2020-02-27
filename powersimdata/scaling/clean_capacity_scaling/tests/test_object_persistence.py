@@ -1,4 +1,5 @@
-from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import TargetManager, AbstractStrategyManager, Resource
+from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling \
+    import TargetManager, AbstractStrategyManager, Resource
 import jsonpickle
 import json
 
@@ -47,9 +48,11 @@ def test_create_JSON_of_target_object():
     pacific_target.add_resource(pacific_hydro)
     pacific_target.add_resource(pacific_nuclear)
 
-  #  print(json.dumps(json.loads(jsonpickle.encode(pacific_target)), indent=4, sort_keys=True))
+  #  print(json.dumps(json.loads(jsonpickle.encode(pacific_target)),
+    #  indent=4, sort_keys=True))
 
-    obj_json = json.dumps(json.loads(jsonpickle.encode(pacific_target)), indent=4, sort_keys=True)
+    obj_json = json.dumps(json.loads(jsonpickle.encode(pacific_target)),
+                          indent=4, sort_keys=True)
     target = jsonpickle.decode(obj_json)
     assert target.ce_target == 50000.0
 

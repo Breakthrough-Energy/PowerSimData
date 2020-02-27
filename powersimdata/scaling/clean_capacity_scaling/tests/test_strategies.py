@@ -36,8 +36,6 @@ def test_independent_capacity_strategy():
     target.add_resource(hydro)
 
     AbstractStrategyManager.set_next_sim_hours(8784)
-    prev_CE_generation = target.calculate_prev_ce_generation()
-    CE_shortfall = target.calculate_ce_shortfall()
     solar_added, wind_added = target.calculate_added_capacity()
     assert wind_added == approx(4360.459)
     assert solar_added == approx(4481.582)
@@ -83,11 +81,10 @@ def test_independent_capacity_strategy_Atlantic_2():
     target.add_resource(nuclear)
 
     AbstractStrategyManager.set_next_sim_hours(8784)
-    prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_ce_generation == approx(39672.88)
-    CE_shortfall = target.calculate_ce_shortfall()
-#     CE_shortfall = target_manager_obj.CalculateCEShortfall(39672.88, 0)
-#     assert CE_shortfall == approx(50327.12)
+    prev_ce_generation = target.calculate_prev_ce_generation()
+    assert prev_ce_generation == approx(39672.88*1000)
+    ce_shortfall = target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(50327.12*1000)
 
     solar_added, wind_added = target.calculate_added_capacity()
     assert solar_added == approx(8928.948)
@@ -134,11 +131,10 @@ def test_independent_capacity_strategy_pacific_3():
     target.add_resource(nuclear)
 
     AbstractStrategyManager.set_next_sim_hours(8784)
-    prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_ce_generation == approx(26000)
-    CE_shortfall = target.calculate_ce_shortfall()
-#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
-#     assert CE_shortfall == approx(24000)
+    prev_ce_generation = target.calculate_prev_ce_generation()
+    assert prev_ce_generation == approx(26000*1000)
+    ce_shortfall = target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(24000*1000)
 
     solar_added, wind_added = target.calculate_added_capacity()
     assert solar_added == approx(4933.333)
@@ -185,11 +181,10 @@ def test_independent_capacity_strategy_atlantic_4():
     target.add_resource(nuclear)
 
     AbstractStrategyManager.set_next_sim_hours(8784)
-    prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_ce_generation == approx(44500)
-    CE_shortfall = target.calculate_ce_shortfall()
-#     CE_shortfall = target_manager_obj.CalculateCEShortfall(44500, 0)
-#     assert CE_shortfall == approx(75500)
+    prev_ce_generation = target.calculate_prev_ce_generation()
+    assert prev_ce_generation == approx(44500*1000)
+    ce_shortfall = target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(75500*1000)
 
     solar_added, wind_added = target.calculate_added_capacity()
     assert solar_added == approx(14413.636)
@@ -227,7 +222,8 @@ def test_independent_capacity_strategy_pacific_external_6():
     nuclear.set_curtailment(0)
     nuclear.set_addl_curtailment(0)
 
-    target = TargetManager('Pacific', 0.25, 'renewables', 200000*1000, 40000*1000)
+    target = TargetManager('Pacific', 0.25, 'renewables', 200000*1000,
+                           40000*1000)
     target.set_allowed_resources(['solar', 'wind', 'geo'])
     target.add_resource(solar)
     target.add_resource(wind)
@@ -236,11 +232,10 @@ def test_independent_capacity_strategy_pacific_external_6():
     target.add_resource(nuclear)
 
     AbstractStrategyManager.set_next_sim_hours(8784)
-    prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall()
-#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 40000)
-    assert CE_shortfall == approx(10000*1000)
+    prev_ce_generation = target.calculate_prev_ce_generation()
+    assert prev_ce_generation == 26000*1000
+    ce_shortfall = target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(10000*1000)
     solar_added, wind_added = target.calculate_added_capacity()
     assert solar_added == approx(2055.556)
     assert wind_added == approx(2000)
@@ -286,11 +281,10 @@ def test_independent_capacity_strategy_pacific_solar0_7():
     target.add_resource(nuclear)
 
     AbstractStrategyManager.set_next_sim_hours(8784)
-    prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall()
-#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
-#     assert CE_shortfall == approx(24000)
+    prev_ce_generation = target.calculate_prev_ce_generation()
+    assert prev_ce_generation == 26000*1000
+    ce_shortfall = target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(24000*1000)
     solar_added, wind_added = target.calculate_added_capacity()
     assert solar_added == approx(0)
     assert wind_added == approx(7854.545)
@@ -327,7 +321,8 @@ def test_independent_capacity_strategy_pacific_solar75_8():
     nuclear.set_curtailment(0)
     nuclear.set_addl_curtailment(0)
 
-    target = TargetManager('Pacific', 0.25, 'renewables', 200000*1000, 0, 0.75)
+    target = TargetManager('Pacific', 0.25, 'renewables', 200000*1000,
+                           0, 0.75)
     target.set_allowed_resources(['solar', 'wind', 'geo'])
     target.add_resource(solar)
     target.add_resource(wind)
@@ -336,11 +331,10 @@ def test_independent_capacity_strategy_pacific_solar75_8():
     target.add_resource(nuclear)
 
     AbstractStrategyManager.set_next_sim_hours(8784)
-    prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall()
-#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
-#     assert CE_shortfall == approx(24000)
+    prev_ce_generation = target.calculate_prev_ce_generation()
+    assert prev_ce_generation == 26000*1000
+    ce_shortfall = target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(24000*1000)
     solar_added, wind_added = target.calculate_added_capacity()
     assert solar_added == approx(8246.26)
     assert wind_added == approx(2748.753)
@@ -386,11 +380,10 @@ def test_independent_capacity_strategy_pacific_solar100_9():
     target.add_resource(nuclear)
 
     AbstractStrategyManager.set_next_sim_hours(8784)
-    prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall()
-#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
-#     assert CE_shortfall == approx(24000)
+    prev_ce_generation = target.calculate_prev_ce_generation()
+    assert prev_ce_generation == 26000*1000
+    ce_shortfall = target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(24000*1000)
     solar_added, wind_added = target.calculate_added_capacity()
     assert solar_added == approx(12685.714)
     assert wind_added == 0
@@ -436,11 +429,6 @@ def test_independent_capacity_strategy_windcurtail_10():
     target.add_resource(nuclear)
 
     AbstractStrategyManager.set_next_sim_hours(8784)
-    prev_CE_generation = target.calculate_prev_ce_generation()
-#     assert prev_ce_generation == 26000
-    CE_shortfall = target.calculate_ce_shortfall()
-#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
-#     assert CE_shortfall == approx(24000)
     solar_added, wind_added = target.calculate_added_capacity()
     assert solar_added == approx(8703.117)
     assert wind_added == approx(2901.039)
@@ -487,12 +475,10 @@ def test_collaborative_capacity_strategy():
     pacific_target.add_resource(pacific_nuclear)
 
     AbstractStrategyManager.set_next_sim_hours(8784)
-    prev_CE_generation = pacific_target.calculate_prev_ce_generation()
-#     assert prev_ce_generation == approx(26000)
-    CE_shortfall = pacific_target.calculate_ce_shortfall()
-    print(CE_shortfall)
-#     CE_shortfall = target_manager_obj.CalculateCEShortfall(26000, 0)
-#     assert CE_shortfall == approx(24000)
+    prev_ce_generation = pacific_target.calculate_prev_ce_generation()
+    assert prev_ce_generation == approx(26000*1000)
+    ce_shortfall = pacific_target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(24000*1000)
 
     # create Atlantic
     atlantic_solar = Resource('solar', 3)
@@ -526,19 +512,18 @@ def test_collaborative_capacity_strategy():
     atlantic_nuclear.set_addl_curtailment(0)
 
     atlantic_target = TargetManager('Atlantic', 0.4, 'clean', 300000*1000)
-    atlantic_target.set_allowed_resources(['solar', 'wind', 'geo', 'hydro', 'nuclear'])
+    atlantic_target.set_allowed_resources(['solar', 'wind', 'geo', 'hydro',
+                                           'nuclear'])
     atlantic_target.add_resource(atlantic_solar)
     atlantic_target.add_resource(atlantic_wind)
     atlantic_target.add_resource(atlantic_geo)
     atlantic_target.add_resource(atlantic_hydro)
     atlantic_target.add_resource(atlantic_nuclear)
 
-    prev_CE_generation = atlantic_target.calculate_prev_ce_generation()
-    assert prev_CE_generation == approx(44500*1000)
-    CE_shortfall = atlantic_target.calculate_ce_shortfall()
-    print(CE_shortfall)
-#     CE_shortfall = target_manager_obj.CalculateCEShortfall(44500, 0)
-    assert CE_shortfall == approx(75500*1000)
+    prev_ce_generation = atlantic_target.calculate_prev_ce_generation()
+    assert prev_ce_generation == approx(44500*1000)
+    ce_shortfall = atlantic_target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(75500*1000)
 
     collab = CollaborativeStrategyManager()
     collab.add_target(pacific_target)
@@ -554,7 +539,11 @@ def test_collaborative_capacity_strategy():
     assert wind_added == approx(19153.75)
 
     solar_scaling, wind_scaling = collab.calculate_capacity_scaling()
-    assert collab.targets['Pacific'].resources['solar'].prev_capacity*solar_scaling == approx(3700 + 9203.75)
-    assert collab.targets['Pacific'].resources['wind'].prev_capacity*wind_scaling == approx(3600 + 8955)
-    assert collab.targets['Atlantic'].resources['solar'].prev_capacity*solar_scaling == approx(4200 + 10447.5)
-    assert collab.targets['Atlantic'].resources['wind'].prev_capacity*wind_scaling == approx(4100 + 10198.75)
+    assert collab.targets['Pacific'].resources['solar'].prev_capacity*\
+           solar_scaling == approx(3700 + 9203.75)
+    assert collab.targets['Pacific'].resources['wind'].prev_capacity*\
+           wind_scaling == approx(3600 + 8955)
+    assert collab.targets['Atlantic'].resources['solar'].prev_capacity*\
+           solar_scaling == approx(4200 + 10447.5)
+    assert collab.targets['Atlantic'].resources['wind'].prev_capacity*\
+           wind_scaling == approx(4100 + 10198.75)

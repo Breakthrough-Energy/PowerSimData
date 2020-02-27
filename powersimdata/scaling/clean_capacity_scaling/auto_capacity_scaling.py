@@ -83,7 +83,9 @@ class IndependentStrategyManager(AbstractStrategyManager):
             target_capacities.append(target_capacity)
         target_capacities_df = pd.DataFrame(
             target_capacities,
-            columns=['region_name', 'next_solar_capacity', 'next_wind_capacity'])
+            columns=['region_name',
+                     'next_solar_capacity',
+                     'next_wind_capacity'])
         return target_capacities_df
 
 
@@ -151,7 +153,8 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
     def calculate_total_added_capacity_gen_constant(self, solar_fraction=None):
         """
         Calculate the capacity to add from total clean energy shortfall
-        :param solar_fraction: solar fraction to be used in calculation, default is to maintain from previous result
+        :param solar_fraction: solar fraction to be used in calculation,
+        default is to maintain from previous result
         :return: solar and wind added capacities
         """
         solar_prev_capacity = self.calculate_total_capacity('solar')
@@ -169,7 +172,8 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
 
         if solar_fraction != 0:
             solar_added_capacity = ce_shortfall*solar_fraction/(
-                    AbstractStrategyManager.next_sim_hours*solar_exp_cap_factor)
+                    AbstractStrategyManager.next_sim_hours *
+                    solar_exp_cap_factor)
             wind_added_capacity = ce_shortfall*(1-solar_fraction)/(
                     AbstractStrategyManager.next_sim_hours*wind_exp_cap_factor)
         else:
@@ -211,10 +215,12 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         """
         # revisit where hourly factor comes from
         total_cap_factor = self.calculate_total_generation(category) / \
-                           (self.calculate_total_capacity(category)*8784)
+            (self.calculate_total_capacity(category)*8784)
         return total_cap_factor
 
-    def calculate_total_expected_capacity_factor(self, category, addl_curtailment=0):
+    def calculate_total_expected_capacity_factor(self,
+                                                 category,
+                                                 addl_curtailment=0):
         """
         Calculate the total expected capacity for a target_manager_obj resource
         :param category: resource category
@@ -266,8 +272,9 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
 
 class TargetManager:
 
-    def __init__(self, region_name, ce_target_fraction, ce_category, total_demand,
-                 external_ce_historical_amount=0, solar_percentage=None):
+    def __init__(self, region_name, ce_target_fraction, ce_category,
+                 total_demand, external_ce_historical_amount=0,
+                 solar_percentage=None):
         """
         Class manages the regional target_manager_obj data and calculations
         :param region_name: region region_name
@@ -294,7 +301,6 @@ class TargetManager:
     def calculate_added_capacity(self):
         """
         Calculate added capacity, maintains solar wind ratio by default
-        :param solar_percentage:
         :return: tuple of solar and wind added capacity values
         """
         solar = self.resources['solar']
@@ -324,7 +330,6 @@ class TargetManager:
     def calculate_added_capacity_gen_constant(self):
         """
         Calculate added capacity, maintains solar wind ratio by default
-        :param solar_percentage:
         :return: tuple of solar and wind added capacity values
         """
         solar = self.resources['solar']
@@ -378,10 +383,8 @@ class TargetManager:
     def calculate_ce_shortfall(self):
         """
         Calculates the clean energy shortfall for target_manager_obj area,
-        subtracts the external value if greater than total allowed clean energy generation
-        :param prev_ce_generation: clean energy generation for allowed resources
-        :param external_ce_historical_amount: outside clean energy generation
-        value
+        subtracts the external value if greater than total allowed clean energy
+        generation
         :return: clean energy shortfall
         """
         prev_ce_generation = self.calculate_prev_ce_generation()
@@ -403,8 +406,6 @@ class TargetManager:
         Calculates the clean energy overgeneration for target_manager_obj area,
          subtracts from external value if greater
         than total allowed clean energy generation
-        :param prev_ce_generation:
-        :param external_ce_historical_amount:
         :return: clean energy overgeneration
         """
         prev_ce_generation = self.calculate_prev_ce_generation()
