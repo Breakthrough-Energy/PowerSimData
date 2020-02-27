@@ -257,18 +257,18 @@ def format_gencost(data):
     :return: (pandas.DataFrame) -- formatted gencost data frame.
     """
 
-    def parse_gencost_row(row, data, name2iloc):
+    def parse_gencost_row(row):
         n = int(row['n'])
-        data_index = name2iloc[row.name]
+        index = id2row[row.name]
         if row['type'] == 2:
             for c in range(n):
-                row['c'+str(n-c-1)] = data.iloc[data_index, 4+c]
+                row['c' + str(n - c - 1)] = data.iloc[index, 4 + c]
         if row['type'] == 1:
             for c in range(n):
-                p_val = data.iloc[data_index, 4+2*c]
-                f_val = data.iloc[data_index, 4+2*c+1]
-                row['p'+str(c+1)] = p_val
-                row['f'+str(c+1)] = f_val
+                p_val = data.iloc[index, 4 + 2 * c]
+                f_val = data.iloc[index, 4 + 2 * c + 1]
+                row['p' + str(c + 1)] = p_val
+                row['f' + str(c + 1)] = f_val
         return row
 
     gencost = data.iloc[:, [0, 1, 2, 3]].copy()
@@ -286,9 +286,8 @@ def format_gencost(data):
             gencost['p'+str(i+1)] = [0.0] * gencost.shape[0]
             gencost['f'+str(i+1)] = [0.0] * gencost.shape[0]
 
-    name2iloc = {plant_id: row for row, plant_id in enumerate(gencost.index)}
-    gencost = gencost.apply(parse_gencost_row, axis=1, args=(data, name2iloc))
-
+    id2row = {plant_id: row for row, plant_id in enumerate(gencost.index)}
+    gencost = gencost.apply(parse_gencost_row, axis=1)
     return gencost
 
 
