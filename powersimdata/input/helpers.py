@@ -25,20 +25,6 @@ def add_column_to_data_frame(data_frame, column_dict):
         data_frame[key] = value
 
 
-def block_print():
-    """Suppresses print
-
-    """
-    sys.stdout = open(os.devnull, 'w')
-
-
-def enable_print():
-    """Enables print
-
-    """
-    sys.stdout = sys.__stdout__
-
-
 def add_coord_to_grid_data_frames(grid):
     """Adds longitude and latitude information to bus, plant and branch data
         frames of grid instance.
@@ -129,3 +115,27 @@ def add_interconnect_to_grid_data_frames(grid):
             'from_interconnect': get_interconnect(grid.dcline.from_bus_id),
             'to_interconnect': get_interconnect(grid.dcline.to_bus_id)}
         add_column_to_data_frame(grid.dcline, extra_col_dcline)
+
+
+class PrintManager(object):
+    """Manages print messages
+
+    """
+    def __init__(self):
+        """Constructor
+
+        """
+        self.stdout = sys.stdout
+
+    @staticmethod
+    def block_print():
+        """Suppresses print
+
+        """
+        sys.stdout = open(os.devnull, 'w')
+
+    def enable_print(self):
+        """Enables print
+
+        """
+        sys.stdout = self.stdout
