@@ -169,7 +169,9 @@ class Analyze(State):
         try:
             id = InputData(self._ssh)
             grid = id.get_data(self._scenario_info['id'], 'grid')
-        except FileNotFoundError:
+        except FileNotFoundError as e:
+            print(e)
+            print('Using local grid')
             grid = self.scaler.get_grid()
         return grid
 
