@@ -8,7 +8,7 @@ def test_can_pass():
     assert 1 == 1
 
 
-def test_create_JSON_of_target_object():
+def test_create_json_of_target_object():
     # create Pacific
     pacific_solar = Resource('solar', 3)
     pacific_solar.set_capacity(0.25, 3700, 0.215379)
@@ -48,8 +48,8 @@ def test_create_JSON_of_target_object():
     pacific_target.add_resource(pacific_hydro)
     pacific_target.add_resource(pacific_nuclear)
 
-  #  print(json.dumps(json.loads(jsonpickle.encode(pacific_target)),
-    #  indent=4, sort_keys=True))
+#  print(json.dumps(json.loads(jsonpickle.encode(pacific_target)),
+#  indent=4, sort_keys=True))
 
     obj_json = json.dumps(json.loads(jsonpickle.encode(pacific_target)),
                           indent=4, sort_keys=True)

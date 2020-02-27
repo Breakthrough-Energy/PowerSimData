@@ -3,6 +3,7 @@ from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling \
 import pandas as pd
 import pytest
 
+
 def test_create_targets_from_dataframe():
     planning_data = {'strategy': ['Independent', 'Independent'],
                      'region_name': ['Pacific', 'Atlantic'],

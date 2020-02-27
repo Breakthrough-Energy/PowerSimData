@@ -141,7 +141,8 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
             ac_scaling_factor = (1 - solar_fraction) / solar_fraction
             solar_added_capacity = \
                 ce_shortfall/(AbstractStrategyManager.next_sim_hours*(
-                    solar_exp_cap_factor+wind_exp_cap_factor*ac_scaling_factor))
+                    solar_exp_cap_factor+wind_exp_cap_factor*
+                    ac_scaling_factor))
             wind_added_capacity = ac_scaling_factor*solar_added_capacity
         else:
             solar_added_capacity = 0
@@ -314,7 +315,7 @@ class TargetManager:
         if solar_percentage != 0:
             ac_scaling_factor = (1-solar_percentage)/solar_percentage
             solar_added_capacity = ce_shortfall/(
-                    AbstractStrategyManager.next_sim_hours*(
+                AbstractStrategyManager.next_sim_hours*(
                     solar.calculate_expected_cap_factor() +
                     wind.calculate_expected_cap_factor()*ac_scaling_factor))
             wind_added_capacity = ac_scaling_factor*solar_added_capacity
@@ -342,17 +343,17 @@ class TargetManager:
 
         if solar_percentage != 0:
             solar_added_capacity = (ce_shortfall*solar_percentage)/(
-                    AbstractStrategyManager.next_sim_hours*
+                    AbstractStrategyManager.next_sim_hours *
                     solar.calculate_expected_cap_factor())
             wind_added_capacity = (ce_shortfall*(1-solar_percentage))/(
-                    AbstractStrategyManager.next_sim_hours*
+                    AbstractStrategyManager.next_sim_hours *
                     wind.calculate_expected_cap_factor())
 
         else:
             solar_added_capacity = 0
-            wind_added_capacity = ce_shortfall/\
-                                  AbstractStrategyManager.next_sim_hours/\
-                                  wind.calculate_expected_cap_factor()
+            wind_added_capacity = ce_shortfall /\
+                AbstractStrategyManager.next_sim_hours /\
+                wind.calculate_expected_cap_factor()
 
         return solar_added_capacity, wind_added_capacity
 

@@ -529,21 +529,21 @@ def test_collaborative_capacity_strategy():
     collab.add_target(pacific_target)
     collab.add_target(atlantic_target)
 
-    collab_CE_shortfall = collab.calculate_total_shortfall()
-    assert collab_CE_shortfall == approx(99500*1000)
-    collab_prev_CE_generation = collab.calculate_total_prev_ce_generation()
-    assert collab_prev_CE_generation == approx(70500*1000)
+    collab_ce_shortfall = collab.calculate_total_shortfall()
+    assert collab_ce_shortfall == approx(99500*1000)
+    collab_prev_ce_generation = collab.calculate_total_prev_ce_generation()
+    assert collab_prev_ce_generation == approx(70500*1000)
 
     solar_added, wind_added = collab.calculate_total_added_capacity()
     assert solar_added == approx(19651.25)
     assert wind_added == approx(19153.75)
 
     solar_scaling, wind_scaling = collab.calculate_capacity_scaling()
-    assert collab.targets['Pacific'].resources['solar'].prev_capacity*\
-           solar_scaling == approx(3700 + 9203.75)
-    assert collab.targets['Pacific'].resources['wind'].prev_capacity*\
-           wind_scaling == approx(3600 + 8955)
-    assert collab.targets['Atlantic'].resources['solar'].prev_capacity*\
-           solar_scaling == approx(4200 + 10447.5)
-    assert collab.targets['Atlantic'].resources['wind'].prev_capacity*\
-           wind_scaling == approx(4100 + 10198.75)
+    assert collab.targets['Pacific'].resources['solar'].prev_capacity *\
+        solar_scaling == approx(3700 + 9203.75)
+    assert collab.targets['Pacific'].resources['wind'].prev_capacity *\
+        wind_scaling == approx(3600 + 8955)
+    assert collab.targets['Atlantic'].resources['solar'].prev_capacity *\
+        solar_scaling == approx(4200 + 10447.5)
+    assert collab.targets['Atlantic'].resources['wind'].prev_capacity *\
+        wind_scaling == approx(4100 + 10198.75)

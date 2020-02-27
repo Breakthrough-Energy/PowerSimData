@@ -1,6 +1,6 @@
 from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager
 from pytest import approx
-from mock import patch
+from unittest.mock import patch
 
 
 def test_can_pass():
@@ -34,56 +34,64 @@ def test_calculate_ce_target():
     assert target.ce_target == 50000
 
 
-@patch.object(TargetManager, 'calculate_prev_ce_generation', return_value=28774.16)
+@patch.object(TargetManager, 'calculate_prev_ce_generation',
+              return_value=28774.16)
 def test_calculate_ce_shortfall_prev_gt_external(test_method):
     target = TargetManager('Pacific', 0.25, 'renewables', 200000)
     result = target.calculate_ce_shortfall()
     assert result == approx(21225.84)
 
 
-@patch.object(TargetManager, 'calculate_prev_ce_generation', return_value=28774.16)
+@patch.object(TargetManager, 'calculate_prev_ce_generation',
+              return_value=28774.16)
 def test_calculate_ce_shortfall_external_gt_prev(test_method):
     target = TargetManager('Pacific', 0.25, 'renewables', 200000, 40000)
     result = target.calculate_ce_shortfall()
     assert result == 10000
 
 
-@patch.object(TargetManager, 'calculate_prev_ce_generation', return_value=68774.16)
+@patch.object(TargetManager, 'calculate_prev_ce_generation',
+              return_value=68774.16)
 def test_calculate_ce_no_shortfall_prev_gt_external(test_method):
     target = TargetManager('Pacific', 0.25, 'renewables', 200000, 56000)
     result = target.calculate_ce_shortfall()
     assert result == 0
 
 
-@patch.object(TargetManager, 'calculate_prev_ce_generation', return_value=68774.16)
+@patch.object(TargetManager, 'calculate_prev_ce_generation',
+              return_value=68774.16)
 def test_calculate_ce_no_shortfall_external_gt_prev(test_method):
     target = TargetManager('Pacific', 0.25, 'renewables', 200000, 70000)
     result = target.calculate_ce_shortfall()
     assert result == 0
 
 
-@patch.object(TargetManager, 'calculate_prev_ce_generation', return_value=28774.16)
+@patch.object(TargetManager, 'calculate_prev_ce_generation',
+              return_value=28774.16)
 def test_calculate_ce_overgeneration_prev_gt_external(test_method):
     target = TargetManager('Pacific', 0.25, 'renewables', 200000)
     result = target.calculate_ce_overgeneration()
     assert result == 0
 
 
-@patch.object(TargetManager, 'calculate_prev_ce_generation', return_value=28774.16)
+@patch.object(TargetManager, 'calculate_prev_ce_generation',
+              return_value=28774.16)
 def test_calculate_ce_overgeneration_external_gt_prev(test_method):
     target = TargetManager('Pacific', 0.25, 'renewables', 200000, 40000)
     result = target.calculate_ce_overgeneration()
     assert result == 0
 
 
-@patch.object(TargetManager, 'calculate_prev_ce_generation', return_value=68774.16)
+@patch.object(TargetManager, 'calculate_prev_ce_generation',
+              return_value=68774.16)
 def test_calculate_ce_no_overgeneration_prev_gt_external(test_method):
     target = TargetManager('Pacific', 0.25, 'renewables', 200000, 56000)
     result = target.calculate_ce_overgeneration()
     assert result == approx(18774.16)
 
 
-@patch.object(TargetManager, 'calculate_prev_ce_generation', return_value=68774.16)
+@patch.object(TargetManager, 'calculate_prev_ce_generation',
+              return_value=68774.16)
 def test_calculate_ce_no_overgeneration_external_gt_prev(test_method):
     target = TargetManager('Pacific', 0.25, 'renewables', 200000, 70000)
     result = target.calculate_ce_overgeneration()
