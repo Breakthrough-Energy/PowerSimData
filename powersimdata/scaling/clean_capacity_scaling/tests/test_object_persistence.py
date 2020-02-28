@@ -150,5 +150,4 @@ def test_write_read_pickle_of_target_object():
 
     assert target.ce_target == 50000.0
 
-
 # use json_normalize on json of resources dictionary

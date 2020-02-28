@@ -1,4 +1,5 @@
-from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling import Resource, TargetManager
+from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling\
+    import Resource, TargetManager
 from pytest import approx
 from unittest.mock import patch
 
@@ -164,6 +165,6 @@ def test_cal_prev_pacific():
 
 def test_set_allowed_resources():
     target = TargetManager('Pacific', 0.25, 'renewables', 200000)
-    allowed_resources = ['solar','wind', 'geo']
+    allowed_resources = ['solar', 'wind', 'geo']
     target.set_allowed_resources(allowed_resources)
     assert target.allowed_resources == allowed_resources

@@ -1,5 +1,5 @@
 from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling \
-    import CollaborativeStrategyManager, IndependentStrategyManager, AbstractStrategyManager, TargetManager, Resource
+    import AbstractStrategyManager, TargetManager
 import pandas as pd
 import pytest
 
