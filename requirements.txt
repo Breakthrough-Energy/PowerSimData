@@ -1,3 +1,5 @@
+pytest
+jsonpickle
 numpy==1.16.0
 pandas==0.25.3
 scipy==1.2.0
