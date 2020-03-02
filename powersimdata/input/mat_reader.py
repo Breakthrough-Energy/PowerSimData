@@ -272,22 +272,23 @@ def format_gencost(data):
         return row
 
     gencost = data.iloc[:, [0, 1, 2, 3]].copy()
-    gencost = gencost.astype({0: 'int', 1: 'float', 2: 'float', 3: 'int'})
     gencost.rename(columns={0: 'type', 1: 'startup', 2: 'shutdown', 3: 'n'},
                    inplace=True)
 
     if 2 in gencost.type.unique():
-        n_max = gencost.groupby('type').get_group(2).n.max()
+        n_max = int(gencost.groupby('type').get_group(2).n.max())
         for i in range(n_max):
             gencost['c'+str(n_max-i-1)] = [0.0] * gencost.shape[0]
     if 1 in gencost.type.unique():
-        n_max = gencost.groupby('type').get_group(1).n.max()
+        n_max = int(gencost.groupby('type').get_group(1).n.max())
         for i in range(n_max):
             gencost['p'+str(i+1)] = [0.0] * gencost.shape[0]
             gencost['f'+str(i+1)] = [0.0] * gencost.shape[0]
 
     id2row = {plant_id: row for row, plant_id in enumerate(gencost.index)}
     gencost = gencost.apply(parse_gencost_row, axis=1)
+    gencost = gencost.astype({'type': 'int', 'n': 'int'})
+
     return gencost
 
 
