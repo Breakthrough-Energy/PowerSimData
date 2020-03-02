@@ -1,4 +1,5 @@
 from powersimdata.input.scaler import Scaler
+from powersimdata.input.profiles import InputData
 from powersimdata.output.profiles import OutputData
 from powersimdata.scenario.state import State
 
@@ -165,7 +166,14 @@ class Analyze(State):
 
         :return: (*powersimdata.input.grid.Grid*) -- instance of grid object.
         """
-        return self.scaler.get_grid()
+        try:
+            id = InputData(self._ssh)
+            grid = id.get_data(self._scenario_info['id'], 'grid')
+        except FileNotFoundError as e:
+            print(e)
+            print('Using local grid')
+            grid = self.scaler.get_grid()
+        return grid
 
     def get_demand(self, original=True):
         """Returns demand profiles.
@@ -190,9 +198,8 @@ class Analyze(State):
             else:
                 for key, value in infeasibilities.items():
                     start = dates[key]
-                    end = dates[key] + \
-                          pd.Timedelta(self._scenario_info['interval']) - \
-                          pd.Timedelta('1H')
+                    end = dates[key] + pd.Timedelta(
+                        self._scenario_info['interval']) - pd.Timedelta('1H')
                     demand[start:end] *= 1. - value / 100.
                 return demand
 

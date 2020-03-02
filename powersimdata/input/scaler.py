@@ -1,6 +1,7 @@
 from powersimdata.input.grid import Grid
 from powersimdata.input.profiles import InputData
 
+from powersimdata.input.helpers import PrintManager
 import copy
 
 
@@ -20,6 +21,8 @@ class Scaler(object):
         """Constructor.
 
         """
+        pm = PrintManager()
+        pm.block_print()
         self.scenario_id = scenario_info['id']
         self.interconnect = scenario_info['interconnect'].split('_')
         self._input = InputData(ssh_client)
@@ -28,6 +31,7 @@ class Scaler(object):
         else:
             self.ct = {}
         self._load_grid()
+        pm.enable_print()
 
     def _load_ct(self):
         """Loads change table.
@@ -64,12 +68,16 @@ class Scaler(object):
                                 self._grid.plant.loc[i, 'Pmin'] = \
                                     self._grid.plant.loc[i, 'Pmin'] * value
                                 if r in self._thermal_gen_types:
-                                    self._grid.gencost.loc[i, 'c0'] = \
-                                        self._grid.gencost.loc[i, 'c0'] * value
+                                    self._grid.gencost[
+                                        'before'].loc[i, 'c0'] = \
+                                        self._grid.gencost[
+                                            'before'].loc[i, 'c0'] * value
                                     if value == 0:
                                         continue
-                                    self._grid.gencost.loc[i, 'c2'] = \
-                                        self._grid.gencost.loc[i, 'c2'] / value
+                                    self._grid.gencost[
+                                        'before'].loc[i, 'c2'] = \
+                                        self._grid.gencost[
+                                            'before'].loc[i, 'c2'] / value
                     except KeyError:
                         pass
                     try:
@@ -79,12 +87,16 @@ class Scaler(object):
                             self._grid.plant.loc[key, 'Pmin'] = \
                                 self._grid.plant.loc[key, 'Pmin'] * value
                             if r in self._thermal_gen_types:
-                                self._grid.gencost.loc[key, 'c0'] = \
-                                    self._grid.gencost.loc[key, 'c0'] * value
+                                self._grid.gencost[
+                                    'before'].loc[key, 'c0'] = \
+                                    self._grid.gencost[
+                                        'before'].loc[key, 'c0'] * value
                                 if value == 0:
                                     continue
-                                self._grid.gencost.loc[key, 'c2'] = \
-                                    self._grid.gencost.loc[key, 'c2'] / value
+                                self._grid.gencost[
+                                    'before'].loc[key, 'c2'] = \
+                                    self._grid.gencost[
+                                        'before'].loc[key, 'c2'] / value
                     except KeyError:
                         pass
             if 'branch' in list(self.ct.keys()):

@@ -9,9 +9,11 @@ indices = {
     'branch': 'branch_id',
     'bus': 'bus_id',
     'dcline': 'dcline_id',
-    'gencost': 'plant_id',
     'plant': 'plant_id',
 }
+
+gencost_names = {'gencost_before': 'before', 'gencost_after': 'after'}
+acceptable_keys = set(indices.keys()) | set(gencost_names.keys())
 
 # The column names of each data frame attribute
 sub_columns = ['name', 'interconnect_sub_id', 'lat', 'lon', 'interconnect']
@@ -23,8 +25,7 @@ branch_columns = [
     'ratio', 'angle', 'status', 'angmin', 'angmax', 'Pf', 'Qf', 'Pt', 'Qt',
     'mu_Sf', 'mu_St', 'mu_angmin', 'mu_angmax', 'branch_device_type',
     'interconnect', 'from_zone_id', 'to_zone_id', 'from_zone_name',
-    'to_zone_name', 'from_lat', 'from_lon', 'to_lat', 'to_lon',
-    ]
+    'to_zone_name', 'from_lat', 'from_lon', 'to_lat', 'to_lon']
 
 bus_columns = [
     'type', 'Pd', 'Qd', 'Gs', 'Bs', 'zone_id', 'Vm', 'Va', 'loss_zone',
@@ -65,7 +66,7 @@ class MockGrid(object):
             if not isinstance(key, str):
                 raise TypeError('grid_attrs keys must all be str')
 
-        extra_keys = set(grid_attrs.keys()) - set(indices.keys())
+        extra_keys = set(grid_attrs.keys()) - acceptable_keys
         if len(extra_keys) > 0:
             raise ValueError('Got unknown key(s):' + str(extra_keys))
 
@@ -75,7 +76,6 @@ class MockGrid(object):
             'branch': branch_columns,
             'bus': bus_columns,
             'dcline': dcline_columns,
-            'gencost': gencost_columns,
             'plant': plant_columns,
         }
 
@@ -96,6 +96,17 @@ class MockGrid(object):
                 df = pd.DataFrame(columns=([indices[df_name]] + cols[df_name]))
             df.set_index(indices[df_name], inplace=True)
             setattr(self, df_name, df)
+
+        # Gencost is special because there are two dataframes in a dict
+        gencost = {}
+        for gridattr_name, gc_name in gencost_names.items():
+            if gridattr_name in grid_attrs:
+                df = pd.DataFrame(grid_attrs[gridattr_name])
+            else:
+                df = pd.DataFrame(columns=(['plant_id'] + gencost_columns))
+            df.set_index('plant_id', inplace=True)
+            gencost[gc_name] = df
+        self.gencost = gencost
 
     @property
     def __class__(self):
