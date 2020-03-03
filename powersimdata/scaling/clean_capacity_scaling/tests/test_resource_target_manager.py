@@ -4,10 +4,6 @@ from pytest import approx
 from unittest.mock import patch
 
 
-def test_can_pass():
-    assert 1 == 1
-
-
 def test_expected_cap_factor():
     solar = Resource('solar', 3)
     solar.set_capacity(0.25, 3700, 0.25)
