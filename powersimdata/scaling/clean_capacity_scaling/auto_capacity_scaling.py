@@ -534,7 +534,7 @@ class Resource:
         # todo: input validation
         assert (type(name) == str), "name must be a string"
         assert (type(prev_scenario_num) == int), "prev_scenario_num must be " \
-                                                 "and integer"
+                                                 "an integer"
         self.name = name
         self.prev_scenario_num = prev_scenario_num
         self.no_congestion_cap_factor = None
