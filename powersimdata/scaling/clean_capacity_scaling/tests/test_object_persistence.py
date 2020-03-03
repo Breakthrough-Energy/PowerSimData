@@ -3,6 +3,7 @@ from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling \
 import jsonpickle
 import json
 
+
 def test_create_json_of_target_object():
     # create Pacific
     pacific_solar = Resource('solar', 3)

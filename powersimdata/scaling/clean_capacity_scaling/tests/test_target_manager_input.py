@@ -14,7 +14,7 @@ def test_create_targets_from_dataframe():
                      'ce_target_fraction': [.25, .4],
                      'total_demand': [200000, 300000],
                      'external_ce_historical_amount': [0, 0],
-                     'solar_percentage':[.3, .6],
+                     'solar_percentage' :[.3, .6],
                      'allowed_resources': ['solar', 'wind']}
 
     # future_data = {'total_demand': [200000, 300000],
@@ -42,7 +42,7 @@ def test_populate_strategy_from_dataframe():
                      'ce_target_fraction': [.25, .4],
                      'total_demand': [200000, 300000],
                      'external_ce_historical_amount': [0, 0],
-                     'solar_percentage':[.3, .6],
+                     'solar_percentage': [.3, .6],
                      'allowed_resources': ['solar', 'wind']}
     planning_dataframe = pd.DataFrame.from_dict(planning_data)
 
