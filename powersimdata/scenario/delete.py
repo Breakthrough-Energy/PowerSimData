@@ -42,8 +42,8 @@ class Delete(State):
 
         # Delete entry in execute list
         print("--> Deleting entry in execute table on server")
-        command = "sed -i.bak '/^%s,*/d' %s" % (self._scenario_info['id'],
-                                                const.EXECUTE_LIST)
+        entry = "^%s,extracted" % self._scenario_info['id']
+        command = "sed -i.bak '/%s/d' %s" % (entry, const.EXECUTE_LIST)
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to delete entry in %s on server" %
