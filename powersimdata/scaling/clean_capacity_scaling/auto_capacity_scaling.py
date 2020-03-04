@@ -21,18 +21,32 @@ class AbstractStrategyManager:
 
     def targets_from_data_frame(self, data_frame):
         for row in data_frame.itertuples():
-            self.add_target(TargetManager(row.region_name,
-                                          row.ce_target_fraction,
-                                          row.ce_category,
-                                          row.total_demand,
-                                          row.external_ce_historical_amount,
-                                          row.solar_percentage))
+
+            if row.solar_percentage == 'None':
+                solar_percentage = None
+            else:
+                solar_percentage = row.solar_percentage
+            target = TargetManager(row.region_name,
+                                   row.ce_target_fraction,
+                                   row.ce_category,
+                                   row.total_demand,
+                                   row.external_ce_historical_amount,
+                                   solar_percentage)
+            if row.allowed_resources == '':
+                allowed_resources = ['solar', 'wind']
+            else:
+                split_resources = row.allowed_resources.split(',')
+                allowed_resources = [x.strip() for x in split_resources]
+            target.set_allowed_resources(allowed_resources)
+            self.add_target(target)
 
     def add_target(self, target_manager_obj):
         """
         Add target to strategy object
         :param target_manager_obj: target object to be added
         """
+        assert (isinstance(target_manager_obj, TargetManager)), \
+            "Input must be of TargetManager type"
         self.targets[target_manager_obj.region_name] = target_manager_obj
 
     @staticmethod
@@ -70,22 +84,47 @@ class IndependentStrategyManager(AbstractStrategyManager):
         """
         target_capacities = []
         for tar in self.targets:
-            solar_added_capacity, wind_added_capacity = \
-                self.targets[tar].calculate_added_capacity()
-            # solar_added_capacity, wind_added_capacity =
-            # self.targets[tar].calculate_added_capacity_gen_constant()
+            if self.targets[tar].ce_target_fraction == 0:
+                solar_added_capacity, wind_added_capacity = (0, 0)
+            else:
+                solar_added_capacity, wind_added_capacity =\
+                    self.targets[tar].calculate_added_capacity()
             target_capacity = [
                 self.targets[tar].region_name,
-                self.targets[tar].resources['solar'].calculate_next_capacity(
-                    solar_added_capacity),
-                self.targets[tar].resources['wind'].calculate_next_capacity(
-                    wind_added_capacity)]
+                self.targets[tar].ce_target_fraction,
+                self.targets[tar].ce_target,
+                self.targets[tar].calculate_prev_ce_generation(),
+                self.targets[tar].calculate_ce_shortfall(),
+                solar_added_capacity,
+                wind_added_capacity,
+                self.targets[tar].resources['solar'].prev_capacity,
+                self.targets[tar].resources['wind'].prev_capacity,
+                self.targets[tar].resources[
+                    'solar'].calculate_expected_cap_factor(),
+                self.targets[tar].resources[
+                    'wind'].calculate_expected_cap_factor(),
+                self.targets[tar].resources[
+                    'solar'].calculate_next_capacity(solar_added_capacity),
+                self.targets[tar].resources[
+                    'wind'].calculate_next_capacity(wind_added_capacity)]
             target_capacities.append(target_capacity)
-        target_capacities_df = pd.DataFrame(
-            target_capacities,
-            columns=['region_name',
-                     'next_solar_capacity',
-                     'next_wind_capacity'])
+
+        target_capacities_df = pd.DataFrame(target_capacities,
+                                            columns=[
+                                                'region_name',
+                                                'ce_target_fraction',
+                                                'ce_target',
+                                                'previous_ce_generation',
+                                                'clean_energy_shortfall',
+                                                'solar_added_capacity',
+                                                'wind_added_capacity',
+                                                'solar_prev_capacity',
+                                                'wind_prev_capacity',
+                                                'solar_expected_cap_factor',
+                                                'wind_expected_cap_factor',
+                                                'next_solar_capacity',
+                                                'next_wind_capacity'])
+        target_capacities_df = target_capacities_df.set_index('region_name')
         return target_capacities_df
 
 
@@ -241,8 +280,6 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         solar_prev_capacity = self.calculate_total_capacity('solar')
         wind_prev_capacity = self.calculate_total_capacity('wind')
         solar_added, wind_added = self.calculate_total_added_capacity()
-        # solar_added, wind_added =
-        #       self.calculate_total_added_capacity_gen_constant()
 
         solar_scaling = (solar_added / solar_prev_capacity) + 1
         wind_scaling = (wind_added / wind_prev_capacity) + 1
@@ -259,15 +296,32 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         for tar in self.targets:
             target_capacity = [
                 self.targets[tar].region_name,
-                self.targets[tar].resources['solar'].prev_capacity *
+                self.targets[tar].ce_target_fraction,
+                self.targets[tar].ce_target,
+                self.targets[tar].calculate_prev_ce_generation(),
+                self.targets[tar].calculate_ce_shortfall(),
                 solar_scaling,
-                self.targets[tar].resources['wind'].prev_capacity *
-                wind_scaling]
+                wind_scaling,
+                self.targets[tar].resources['solar'].prev_capacity,
+                self.targets[tar].resources['wind'].prev_capacity,
+                self.targets[tar].resources[
+                    'solar'].prev_capacity * solar_scaling,
+                self.targets[tar].resources[
+                    'wind'].prev_capacity * wind_scaling]
             target_capacities.append(target_capacity)
         target_capacities_df = pd.DataFrame(target_capacities,
                                             columns=['region_name',
+                                                     'ce_target_fraction',
+                                                     'ce_target',
+                                                     'previous_ce_generation',
+                                                     'clean_energy_shortfall',
+                                                     'solar_scaling',
+                                                     'wind_scaling',
+                                                     'solar_prev_capacity',
+                                                     'wind_prev_capacity',
                                                      'next_solar_capacity',
                                                      'next_wind_capacity'])
+        target_capacities_df = target_capacities_df.set_index('region_name')
         return target_capacities_df
 
 
@@ -284,6 +338,21 @@ class TargetManager:
         clean energy, etc.
         :param total_demand: total demand for region
         """
+        assert (type(region_name) == str), "region_name must be a string"
+        assert (type(ce_category) == str), "ce_category must be a string"
+        assert (total_demand >= 0), "total_demand must be greater than zero"
+        assert (0 <= ce_target_fraction <= 1), "ce_target_fraction must be " \
+                                               "between 0 and 1"
+        assert (external_ce_historical_amount >= 0), "external_ce_historical" \
+                                                     "_amount must be greater"\
+                                                     " than zero"
+        assert (type(solar_percentage) == float or
+                type(solar_percentage) == int or
+                solar_percentage is None), "solar_percentage must be" \
+                                           " a number or None"
+        if type(solar_percentage) == float:
+            assert (0 <= solar_percentage <= 1), "solar_percentage must be " \
+                                               "between 0 and 1"
         self.region_name = region_name
         self.ce_category = ce_category
 
@@ -375,6 +444,8 @@ class TargetManager:
         Adds resource to TargetManager
         :param resource: resource to be added
         """
+        assert (isinstance(resource, Resource)), "Input must be of Resource " \
+                                                 "type"
         self.resources[resource.name] = resource
 
     def get_resource(self, resource_name):
@@ -452,13 +523,18 @@ class TargetManager:
         json_file.close()
 
     def __str__(self):
-        return json.dumps(json.loads(jsonpickle.encode(self)), indent=4,
-                          sort_keys=True)
+        return json.dumps(json.loads(
+            jsonpickle.encode(self, unpicklable=False)),
+            indent=4,
+            sort_keys=True)
 
 
 class Resource:
     def __init__(self, name, prev_scenario_num):
         # todo: input validation
+        assert (type(name) == str), "name must be a string"
+        assert (type(prev_scenario_num) == int), "prev_scenario_num must be " \
+                                                 "an integer"
         self.name = name
         self.prev_scenario_num = prev_scenario_num
         self.no_congestion_cap_factor = None
@@ -477,6 +553,12 @@ class Resource:
         :param prev_capacity: capacity from scenario run
         :param prev_cap_factor: capacity factor from scenario run
         """
+        assert (0 <= no_congestion_cap_factor <= 1), \
+            "no_congestion_cap_factor must be between 0 and 1"
+        assert (0 <= prev_cap_factor <= 1),\
+            "prev_cap_factor must be between 0 and 1"
+        assert (prev_capacity >= 0), "prev_capacity must be greater than zero"
+
         self.no_congestion_cap_factor = no_congestion_cap_factor
         self.prev_capacity = prev_capacity
         self.prev_cap_factor = prev_cap_factor
@@ -487,6 +569,8 @@ class Resource:
         Set generation from scenario run
         :param prev_generation: generation from scenario run
         """
+        assert (prev_generation >= 0), "prev_generation must be greater than "\
+                                       "zero"
         self.prev_generation = prev_generation
 
     # todo: calculate directly from scenario results
@@ -496,6 +580,8 @@ class Resource:
         :param prev_curtailment: calculated curtailment from scenario run
         :return:
         """
+        assert (prev_curtailment >= 0), "prev_curtailment must be greater " \
+                                        "than zero"
         self.prev_curtailment = prev_curtailment
 
     def set_addl_curtailment(self, addl_curtailment):
@@ -503,6 +589,8 @@ class Resource:
         Set additional curtailment to included in capacity calculations
         :param addl_curtailment: additional curtailment
         """
+        assert (addl_curtailment >= 0), "addl_curtailment must be greater " \
+                                        "than zero"
         self.addl_curtailment = addl_curtailment
 
     def calculate_expected_cap_factor(self):
@@ -523,5 +611,7 @@ class Resource:
         return next_capacity
 
     def __str__(self):
-        return json.dumps(json.loads(jsonpickle.encode(self)), indent=4,
-                          sort_keys=True)
+        return json.dumps(json.loads(jsonpickle.encode(self,
+                                                       unpicklable=False
+                                                       )),
+                          indent=4, sort_keys=True)
