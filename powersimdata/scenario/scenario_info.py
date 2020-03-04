@@ -50,7 +50,7 @@ class ScenarioInfo:
             area in the order of 'state', 'loadzone', 'state abbreviation',
             'interconnect' and 'all'.
         """
-        if area_type is not None or not isinstance(area_type, str):
+        if area_type is not None and not isinstance(area_type, str):
             raise TypeError("'area_type' should be either None or str.")
         if area_type:
             if area_type == 'loadzone':
