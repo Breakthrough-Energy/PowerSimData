@@ -1,3 +1,4 @@
+from powersimdata.scenario.scenario_info import ScenarioInfo
 import pandas as pd
 import jsonpickle
 import json
@@ -448,6 +449,11 @@ class TargetManager:
                                                  "type"
         self.resources[resource.name] = resource
 
+    def add_resource_manager(self, resource_manager):
+        assert (isinstance(resource_manager, ResourceManager)),\
+            "input parameter must be an instance of type ResourceManager"
+        self.resources = resource_manager
+
     def get_resource(self, resource_name):
         # todo: add error handling
         return self.resources[resource_name]
@@ -523,18 +529,90 @@ class TargetManager:
         json_file.close()
 
     def __str__(self):
-        return json.dumps(json.loads(
-            jsonpickle.encode(self, unpicklable=False)),
+        return json.dumps(
+            json.loads(jsonpickle.encode(self, unpicklable=False)),
             indent=4,
             sort_keys=True)
 
 
+class ResourceManager:
+
+    def __init__(self):
+        self.resources = {}
+
+    def __getitem__(self, key):
+        try:
+            return self.resources[key]
+        except KeyError as e:
+            print(e)
+
+    def pull_region_resource_info(self, region_name, scenario_info,
+                                  scenario_num, available_resources,
+                                  start_time, end_time):
+        assert (isinstance(scenario_info, ScenarioInfo)),\
+            "input parameter must be an instance of type ScenarioInfo"
+
+        for resource_name in available_resources:
+            resource_obj = Resource(resource_name, int(scenario_num))
+
+            prev_capacity = scenario_info.get_capacity(resource_name,
+                                                       region_name)
+
+            if prev_capacity == 0:
+                prev_cap_factor = 0
+                print('No existing resource ' + resource_name + '!')
+            else:
+                prev_cap_factor = scenario_info.get_capacity_factor(
+                    resource_name,
+                    region_name,
+                    start_time,
+                    end_time)
+
+            prev_generation = scenario_info.get_generation(
+                resource_name,
+                region_name,
+                start_time,
+                end_time)
+
+            try:
+                prev_curtailment = scenario_info.get_curtailment(
+                    resource_name,
+                    region_name,
+                    start_time,
+                    end_time)
+            except Exception as e:
+                print(e)
+                prev_curtailment = 0
+
+            try:
+                no_congestion_cap_factor =\
+                    scenario_info.get_no_congest_capacity_factor(
+                        resource_name,
+                        region_name,
+                        start_time,
+                        end_time)
+            except Exception as e:
+                print(e)
+                no_congestion_cap_factor = 0
+
+            resource_obj.set_capacity(
+                no_congestion_cap_factor,
+                prev_capacity,
+                prev_cap_factor
+            )
+            resource_obj.set_generation(prev_generation)
+            resource_obj.set_curtailment(prev_curtailment)
+
+            self.resources[resource_name] = resource_obj
+            print('Added resource ' + resource_name + '!')
+            print()
+
+
 class Resource:
     def __init__(self, name, prev_scenario_num):
-        # todo: input validation
         assert (type(name) == str), "name must be a string"
-        assert (type(prev_scenario_num) == int), "prev_scenario_num must be " \
-                                                 "an integer"
+        assert (type(prev_scenario_num) == int), \
+            "prev_scenario_num must be and integer"
         self.name = name
         self.prev_scenario_num = prev_scenario_num
         self.no_congestion_cap_factor = None
@@ -555,7 +633,7 @@ class Resource:
         """
         assert (0 <= no_congestion_cap_factor <= 1), \
             "no_congestion_cap_factor must be between 0 and 1"
-        assert (0 <= prev_cap_factor <= 1),\
+        assert (0 <= prev_cap_factor <= 1), \
             "prev_cap_factor must be between 0 and 1"
         assert (prev_capacity >= 0), "prev_capacity must be greater than zero"
 
@@ -569,8 +647,8 @@ class Resource:
         Set generation from scenario run
         :param prev_generation: generation from scenario run
         """
-        assert (prev_generation >= 0), "prev_generation must be greater than "\
-                                       "zero"
+        assert (prev_generation >= 0), \
+            "prev_generation must be greater than zero"
         self.prev_generation = prev_generation
 
     # todo: calculate directly from scenario results
@@ -580,8 +658,8 @@ class Resource:
         :param prev_curtailment: calculated curtailment from scenario run
         :return:
         """
-        assert (prev_curtailment >= 0), "prev_curtailment must be greater " \
-                                        "than zero"
+        assert (prev_curtailment >= 0), \
+            "prev_curtailment must be greater than zero"
         self.prev_curtailment = prev_curtailment
 
     def set_addl_curtailment(self, addl_curtailment):
@@ -589,8 +667,8 @@ class Resource:
         Set additional curtailment to included in capacity calculations
         :param addl_curtailment: additional curtailment
         """
-        assert (addl_curtailment >= 0), "addl_curtailment must be greater " \
-                                        "than zero"
+        assert (addl_curtailment >= 0), \
+            "addl_curtailment must be greater than zero"
         self.addl_curtailment = addl_curtailment
 
     def calculate_expected_cap_factor(self):
