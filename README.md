@@ -251,3 +251,51 @@ discrepancies between the branch attribute of the `Grid` object and the
 | Texas         | 3007161       | 3007292       | Multiple in ***.aux*** as Line and Transformer. Ratio 0 and 1. Distance >0 --> classified as Line |
 
 ---
+
+## 3. Capacity Planning Framework
+
+First import the framework:
+
+``` python
+from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling \
+    import CollaborativeStrategyManager, IndependentStrategyManager, \
+           AbstractStrategyManager, TargetManager, ResourceManager, Resource
+```
+
+### A. Create Strategy Object that will generate next capacities
+
+``` python
+independent_strategy_manager = IndependentStrategyManager()
+# set the number of simulation hours
+independent_strategy_manager.set_next_sim_hours(8784)
+```
+
+### B. Use spreadsheet of external information for bulk creation of region target objects
+
+``` python
+independent_strategy_manager.targets_from_data_frame(eastern)
+```
+
+### C. Populate region target objects with resource info
+
+``` python
+# load in relevant scenario
+scenario_string = '394'
+scenario = Scenario(scenario_string)
+
+# create ScenarioInfo object
+scenario_info = ScenarioInfo(scenario)
+
+# define start and end times of the simulation
+start_time = '2016-01-01 00:00:00'
+end_time = '2016-12-31 23:00:00'
+
+# add resource objects to targets
+independent_strategy_manager.populate_target_with_resources(scenario_info, int(scenario.info['id']), start_time, end_time):
+```
+
+### D. Calculate Next Capacities
+
+``` python
+independent_next_capacities = independent_strategy_manager.data_frame_of_next_capacities()
+```

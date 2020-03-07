@@ -1,3 +1,4 @@
+from powersimdata.scenario.scenario_info import ScenarioInfo
 import pandas as pd
 import jsonpickle
 import json
@@ -9,7 +10,6 @@ class AbstractStrategyManager:
     """
     Base class for strategy objects, contains common functions
     """
-
     next_sim_hours = None
 
     def __init__(self):
@@ -17,9 +17,17 @@ class AbstractStrategyManager:
 
     @staticmethod
     def set_next_sim_hours(next_sim_hours):
+        """
+        Sets the number of hours in the simulation for next capacity
+        calculations
+        :param int next_sim_hours: number of hours in the simulation
+        """
         AbstractStrategyManager.next_sim_hours = next_sim_hours
 
     def targets_from_data_frame(self, data_frame):
+        """
+        Bulk creates target objects from dataframe
+        """
         for row in data_frame.itertuples():
 
             if row.solar_percentage == 'None':
@@ -40,6 +48,27 @@ class AbstractStrategyManager:
             target.set_allowed_resources(allowed_resources)
             self.add_target(target)
 
+    def populate_target_with_resources(self, scenario_info, scenario_id,
+                                       start_time, end_time):
+        """
+        Add resource objects to all targets with a strategy from a
+        specified scenario
+        :param ScenarioInfo scenario_info: ScenarioInfo object that calculate
+        scenario resource properties
+        :param int scenario_id: id of scenario used
+        :param str start_time: starting datetime for interval of interest
+        :param str end_time: ending datetime for interval of interest
+        """
+        for region_name in self.targets:
+            print()
+            print(region_name)
+            print()
+            self.targets[region_name].populate_resource_info(self,
+                                                             scenario_info,
+                                                             scenario_id,
+                                                             start_time,
+                                                             end_time)
+
     def add_target(self, target_manager_obj):
         """
         Add target to strategy object
@@ -51,6 +80,10 @@ class AbstractStrategyManager:
 
     @staticmethod
     def load_target_from_json(target_name):
+        """
+        Loads JSON file of given target
+        param: str target_name: name of target to be loaded
+        """
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "save_files",
@@ -61,6 +94,10 @@ class AbstractStrategyManager:
 
     @staticmethod
     def load_target_from_pickle(target_name):
+        """
+        Loads pickle file of given target
+        param: str target_name: name of target to be loaded
+        """
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "save_files", target_name+".pkl"),
@@ -72,7 +109,7 @@ class AbstractStrategyManager:
 
 class IndependentStrategyManager(AbstractStrategyManager):
     """
-    Independent strategy manager
+    Calculates the next capacities using individual target shortfalls
     """
     def __init__(self):
         AbstractStrategyManager.__init__(self)
@@ -130,7 +167,7 @@ class IndependentStrategyManager(AbstractStrategyManager):
 
 class CollaborativeStrategyManager(AbstractStrategyManager):
     """
-    Collaborative strategy manager
+    Calculates the next capacities using total target shortfalls
     """
     def __init__(self):
         AbstractStrategyManager.__init__(self)
@@ -368,6 +405,30 @@ class TargetManager:
     def set_previous_scenario_for_calculation(self, scenario_num):
         pass
 
+    def populate_resource_info(self, scenario_info, scenario_id,
+                               start_time, end_time):
+        """
+        Add resource objects to target using a specified scenario
+        :param ScenarioInfo scenario_info: ScenarioInfo object that calculate
+        scenario resource properties
+        :param int scenario_id: id of scenario used
+        :param str start_time: starting datetime for interval of interest
+        :param str end_time: ending datetime for interval of interest
+        """
+        allowed_resources = set(self.allowed_resources)
+        available_resources = set(
+            scenario_info.get_available_resource(self.region_name))
+        all_resources = available_resources.union(allowed_resources)
+
+        resources = ResourceManager()
+        resources.pull_region_resource_info(self.region_name,
+                                            scenario_info,
+                                            scenario_id,
+                                            all_resources,
+                                            start_time,
+                                            end_time)
+        self.add_resource_manager(resources)
+
     def calculate_added_capacity(self):
         """
         Calculate added capacity, maintains solar wind ratio by default
@@ -444,13 +505,14 @@ class TargetManager:
         Adds resource to TargetManager
         :param resource: resource to be added
         """
-        assert (isinstance(resource, Resource)), "Input must be of Resource " \
-                                                 "type"
+        assert (isinstance(resource, Resource)),\
+            "Input must be of Resource type"
         self.resources[resource.name] = resource
 
-    def get_resource(self, resource_name):
-        # todo: add error handling
-        return self.resources[resource_name]
+    def add_resource_manager(self, resource_manager):
+        assert (isinstance(resource_manager, ResourceManager)),\
+            "Input parameter must be an instance of type ResourceManager"
+        self.resources = resource_manager
 
     def calculate_ce_shortfall(self):
         """
@@ -475,9 +537,9 @@ class TargetManager:
 
     def calculate_ce_overgeneration(self):
         """
-        Calculates the clean energy overgeneration for target_manager_obj area,
-         subtracts from external value if greater
-        than total allowed clean energy generation
+        Calculates the clean energy overgeneration for target_manager_obj
+        area, subtracts from external value if greater than total allowed
+        clean energy generation
         :return: clean energy overgeneration
         """
         prev_ce_generation = self.calculate_prev_ce_generation()
@@ -503,6 +565,9 @@ class TargetManager:
         self.allowed_resources = allowed_resources
 
     def save_target_as_json(self):
+        """
+        Saves target object as indented JSON file named by region name
+        """
         print(os.getcwd())
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -514,6 +579,9 @@ class TargetManager:
         json_file.close()
 
     def save_target_as_pickle(self):
+        """
+        Saves target object as pickle file named by region name
+        """
         print(os.getcwd())
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -523,18 +591,112 @@ class TargetManager:
         json_file.close()
 
     def __str__(self):
-        return json.dumps(json.loads(
-            jsonpickle.encode(self, unpicklable=False)),
+        """
+        Outputs indented JSON string af object properties
+        """
+        return json.dumps(
+            json.loads(jsonpickle.encode(self, unpicklable=False)),
             indent=4,
             sort_keys=True)
 
 
+class ResourceManager:
+    """
+    Class manages the creation of resource objects from scenario information
+    """
+    def __init__(self):
+        self.resources = {}
+
+    def __getitem__(self, key):
+        """
+        Allows indexing into the resources dictionary directly from the
+        object variable, i.e. res = ResourceManager; res["solar"] is the
+        same as res.resources["solar"]
+        """
+        try:
+            return self.resources[key]
+        except KeyError as e:
+            print(e)
+
+    def pull_region_resource_info(self, region_name, scenario_info,
+                                  scenario_num, region_resources,
+                                  start_time, end_time):
+        """
+        Pulls resource information from scenario info object over the
+        specified time range
+        :param str region_name: name of region to extract from scenario
+        :param str scenario_info: ScenarioInfo object to calculate
+        scenario resource properties
+        properties
+        :param int scenario_num: number for the scenario
+        :param list available_resources: resources to extract from scenario
+        :param str start_time: starting time for simulation
+        :param str end_time: ending time for simulation
+        """
+        assert (isinstance(scenario_info, ScenarioInfo)),\
+            "input parameter must be an instance of type ScenarioInfo"
+
+        for resource_name in region_resources:
+            resource_obj = Resource(resource_name, int(scenario_num))
+
+            prev_capacity = scenario_info.get_capacity(resource_name,
+                                                       region_name)
+
+            if prev_capacity == 0:
+                prev_cap_factor = 0
+                print('No existing resource ' + resource_name + '!')
+            else:
+                prev_cap_factor = scenario_info.get_capacity_factor(
+                    resource_name,
+                    region_name,
+                    start_time,
+                    end_time)
+
+            prev_generation = scenario_info.get_generation(
+                resource_name,
+                region_name,
+                start_time,
+                end_time)
+
+            try:
+                prev_curtailment = scenario_info.get_curtailment(
+                    resource_name,
+                    region_name,
+                    start_time,
+                    end_time)
+            except Exception as e:
+                print(e)
+                prev_curtailment = 0
+
+            try:
+                no_congestion_cap_factor =\
+                    scenario_info.get_no_congest_capacity_factor(
+                        resource_name,
+                        region_name,
+                        start_time,
+                        end_time)
+            except Exception as e:
+                print(e)
+                no_congestion_cap_factor = 0
+
+            resource_obj.set_capacity(
+                no_congestion_cap_factor,
+                prev_capacity,
+                prev_cap_factor
+            )
+            resource_obj.set_generation(prev_generation)
+            resource_obj.set_curtailment(prev_curtailment)
+
+            self.resources[resource_name] = resource_obj
+            print('Added resource ' + resource_name + '!')
+            print()
+
+
 class Resource:
     def __init__(self, name, prev_scenario_num):
-        # todo: input validation
         assert (type(name) == str), "name must be a string"
-        assert (type(prev_scenario_num) == int), "prev_scenario_num must be " \
-                                                 "an integer"
+        assert (type(prev_scenario_num) == int), \
+            "prev_scenario_num must be and integer"
         self.name = name
         self.prev_scenario_num = prev_scenario_num
         self.no_congestion_cap_factor = None
@@ -555,7 +717,7 @@ class Resource:
         """
         assert (0 <= no_congestion_cap_factor <= 1), \
             "no_congestion_cap_factor must be between 0 and 1"
-        assert (0 <= prev_cap_factor <= 1),\
+        assert (0 <= prev_cap_factor <= 1), \
             "prev_cap_factor must be between 0 and 1"
         assert (prev_capacity >= 0), "prev_capacity must be greater than zero"
 
@@ -569,8 +731,8 @@ class Resource:
         Set generation from scenario run
         :param prev_generation: generation from scenario run
         """
-        assert (prev_generation >= 0), "prev_generation must be greater than "\
-                                       "zero"
+        assert (prev_generation >= 0), \
+            "prev_generation must be greater than zero"
         self.prev_generation = prev_generation
 
     # todo: calculate directly from scenario results
@@ -580,8 +742,8 @@ class Resource:
         :param prev_curtailment: calculated curtailment from scenario run
         :return:
         """
-        assert (prev_curtailment >= 0), "prev_curtailment must be greater " \
-                                        "than zero"
+        assert (prev_curtailment >= 0), \
+            "prev_curtailment must be greater than zero"
         self.prev_curtailment = prev_curtailment
 
     def set_addl_curtailment(self, addl_curtailment):
@@ -589,8 +751,8 @@ class Resource:
         Set additional curtailment to included in capacity calculations
         :param addl_curtailment: additional curtailment
         """
-        assert (addl_curtailment >= 0), "addl_curtailment must be greater " \
-                                        "than zero"
+        assert (addl_curtailment >= 0), \
+            "addl_curtailment must be greater than zero"
         self.addl_curtailment = addl_curtailment
 
     def calculate_expected_cap_factor(self):
@@ -611,6 +773,9 @@ class Resource:
         return next_capacity
 
     def __str__(self):
+        """
+        Outputs indented JSON string af object properties
+        """
         return json.dumps(json.loads(jsonpickle.encode(self,
                                                        unpicklable=False
                                                        )),
