@@ -10,7 +10,6 @@ class AbstractStrategyManager:
     """
     Base class for strategy objects, contains common functions
     """
-
     next_sim_hours = None
 
     def __init__(self):
@@ -18,9 +17,17 @@ class AbstractStrategyManager:
 
     @staticmethod
     def set_next_sim_hours(next_sim_hours):
+        """
+        Sets the number of hours in the simulation for next capacity
+        calculations
+        :param int next_sim_hours: number of hours in the simulation
+        """
         AbstractStrategyManager.next_sim_hours = next_sim_hours
 
     def targets_from_data_frame(self, data_frame):
+        """
+        Bulk creates target objects from dataframe
+        """
         for row in data_frame.itertuples():
 
             if row.solar_percentage == 'None':
@@ -52,6 +59,10 @@ class AbstractStrategyManager:
 
     @staticmethod
     def load_target_from_json(target_name):
+        """
+        Loads JSON file of given target
+        param: str target_name: name of target to be loaded
+        """
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "save_files",
@@ -62,6 +73,10 @@ class AbstractStrategyManager:
 
     @staticmethod
     def load_target_from_pickle(target_name):
+        """
+        Loads pickle file of given target
+        param: str target_name: name of target to be loaded
+        """
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "save_files", target_name+".pkl"),
@@ -73,7 +88,7 @@ class AbstractStrategyManager:
 
 class IndependentStrategyManager(AbstractStrategyManager):
     """
-    Independent strategy manager
+    Calculates the next capacities using individual target shortfalls
     """
     def __init__(self):
         AbstractStrategyManager.__init__(self)
@@ -131,7 +146,7 @@ class IndependentStrategyManager(AbstractStrategyManager):
 
 class CollaborativeStrategyManager(AbstractStrategyManager):
     """
-    Collaborative strategy manager
+    Calculates the next capacities using total target shortfalls
     """
     def __init__(self):
         AbstractStrategyManager.__init__(self)
@@ -445,18 +460,14 @@ class TargetManager:
         Adds resource to TargetManager
         :param resource: resource to be added
         """
-        assert (isinstance(resource, Resource)), "Input must be of Resource " \
-                                                 "type"
+        assert (isinstance(resource, Resource)),\
+            "Input must be of Resource type"
         self.resources[resource.name] = resource
 
     def add_resource_manager(self, resource_manager):
         assert (isinstance(resource_manager, ResourceManager)),\
-            "input parameter must be an instance of type ResourceManager"
+            "Input parameter must be an instance of type ResourceManager"
         self.resources = resource_manager
-
-    def get_resource(self, resource_name):
-        # todo: add error handling
-        return self.resources[resource_name]
 
     def calculate_ce_shortfall(self):
         """
@@ -481,9 +492,9 @@ class TargetManager:
 
     def calculate_ce_overgeneration(self):
         """
-        Calculates the clean energy overgeneration for target_manager_obj area,
-         subtracts from external value if greater
-        than total allowed clean energy generation
+        Calculates the clean energy overgeneration for target_manager_obj
+        area, subtracts from external value if greater than total allowed
+        clean energy generation
         :return: clean energy overgeneration
         """
         prev_ce_generation = self.calculate_prev_ce_generation()
@@ -509,6 +520,9 @@ class TargetManager:
         self.allowed_resources = allowed_resources
 
     def save_target_as_json(self):
+        """
+        Saves target object as indented JSON file named by region name
+        """
         print(os.getcwd())
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -520,6 +534,9 @@ class TargetManager:
         json_file.close()
 
     def save_target_as_pickle(self):
+        """
+        Saves target object as pickle file named by region name
+        """
         print(os.getcwd())
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -529,6 +546,9 @@ class TargetManager:
         json_file.close()
 
     def __str__(self):
+        """
+        Outputs indented JSON string af object properties
+        """
         return json.dumps(
             json.loads(jsonpickle.encode(self, unpicklable=False)),
             indent=4,
@@ -536,11 +556,18 @@ class TargetManager:
 
 
 class ResourceManager:
-
+    """
+    Class manages the creation of resource objects from scenario information
+    """
     def __init__(self):
         self.resources = {}
 
     def __getitem__(self, key):
+        """
+        Allows indexing into the resources dictionary directly from the
+        object variable, i.e. res = ResourceManager; res["solar"] is the
+        same as res.resources["solar"]
+        """
         try:
             return self.resources[key]
         except KeyError as e:
@@ -549,6 +576,18 @@ class ResourceManager:
     def pull_region_resource_info(self, region_name, scenario_info,
                                   scenario_num, available_resources,
                                   start_time, end_time):
+        """
+        Pulls resource information from scenario info object over the
+        specified time range
+        :param str region_name: name of region to extract from scenario
+        :param str scenario_info: ScenarioInfo object to calculate
+        scenario resource properties
+        properties
+        :param int scenario_num: number for the scenario
+        :param list available_resources: resources to extract from scenario
+        :param str start_time: starting time for simulation
+        :param str end_time: ending time for simulation
+        """
         assert (isinstance(scenario_info, ScenarioInfo)),\
             "input parameter must be an instance of type ScenarioInfo"
 
@@ -689,6 +728,9 @@ class Resource:
         return next_capacity
 
     def __str__(self):
+        """
+        Outputs indented JSON string af object properties
+        """
         return json.dumps(json.loads(jsonpickle.encode(self,
                                                        unpicklable=False
                                                        )),
