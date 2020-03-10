@@ -139,42 +139,42 @@
                     },
                     {
                         "name": "Pf",
-                        "description": "real power injected at 'from' bus end (MW) [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "real power injected at 'from' bus end (MW) [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "Qf",
-                        "description": "reactive power injected at 'from' bus end (MW) [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "reactive power injected at 'from' bus end (MW) [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "Pt",
-                        "description": "real power injected at 'to' bus end (MW) [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "real power injected at 'to' bus end (MW) [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "Qt",
-                        "description": "reactive power injected at 'to' bus end (MW) [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "reactive power injected at 'to' bus end (MW) [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "mu_Sf",
-                        "description": "Kuhn-Tucker multiplier on MVA limit at 'from' bus [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on MVA limit at 'from' bus [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "mu_St",
-                        "description": "Kuhn-Tucker multiplier on MVA limit at 'to' bus [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on MVA limit at 'to' bus [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "mu_angmin",
-                        "description": "Kuhn-Tucker multiplier lower angle difference limit [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier lower angle difference limit [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "mu_angmax",
-                        "description": "Kuhn-Tucker multiplier upper angle difference limit [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier upper angle difference limit [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
@@ -263,22 +263,22 @@
                     },
                     {
                         "name": "lam_P",
-                        "description": "Lagrange multiplier on real power mismatch (u/MW) [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Lagrange multiplier on real power mismatch (u/MW) [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "lam_Q",
-                        "description": "Lagrange multiplier on reactive power mismatch (u/MVAr) [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Lagrange multiplier on reactive power mismatch (u/MVAr) [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "mu_Vmax",
-                        "description": "Kuhn-Tucker multiplier on upper voltage limit (u/p.u.) [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on upper voltage limit (u/p.u.) [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "mu_Vmin",
-                        "description": "Kuhn-Tucker multiplier on lower voltage limit (u/p.u.) [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on lower voltage limit (u/p.u.) [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
@@ -341,22 +341,22 @@
                     },
                     {
                         "name": "Pf",
-                        "description": "real power flow at 'from' bus end (MW), power flowing 'from' to 'to' [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "real power flow at 'from' bus end (MW), power flowing 'from' to 'to' [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "Pt",
-                        "description": "real power flow at 'to' bus end (MW), power flowing 'from' to 'to' [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "real power flow at 'to' bus end (MW), power flowing 'from' to 'to' [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "Qf",
-                        "description": "reactive power injected into 'from' bus [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "reactive power injected into 'from' bus [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "Qt",
-                        "description": "reactive power injected into 'to' bus [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "reactive power injected into 'to' bus [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
@@ -411,32 +411,32 @@
                     },
                     {
                         "name": "muPmin",
-                        "description": "Kuhn-Tucker multiplier on lower flow limit at 'from' bus [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on lower flow limit at 'from' bus [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "muPmax",
-                        "description": "Kuhn-Tucker multiplier on upper flow limit at 'from' bus [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on upper flow limit at 'from' bus [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "muQminF",
-                        "description": "Kuhn-Tucker multiplier on lower reactive power limit at 'from' bus [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on lower reactive power limit at 'from' bus [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "muQmaxF",
-                        "description": "Kuhn-Tucker multiplier on upper reactive power limit at 'from' bus [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on upper reactive power limit at 'from' bus [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "muQminT",
-                        "description": "Kuhn-Tucker multiplier on lower reactive power limit at 'to' bus [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on lower reactive power limit at 'to' bus [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "muQmaxT",
-                        "description": "Kuhn-Tucker multiplier on upper reactive power limit at 'to' bus [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on upper reactive power limit at 'to' bus [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
@@ -536,12 +536,12 @@
                     },
                     {
                         "name": "Pg",
-                        "description": "real power output (MW) [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "real power output (MW) [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "Qg",
-                        "description": "reactive power output (MVAr) [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "reactive power output (MVAr) [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
@@ -636,22 +636,22 @@
                     },
                     {
                         "name": "mu_Pmax",
-                        "description": "Kuhn-Tucker multiplier on upper Pg limit [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on upper Pg limit [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "mu_Pmin",
-                        "description": "Kuhn-Tucker multiplier on lower Pg limit [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on lower Pg limit [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "mu_Qmax",
-                        "description": "Kuhn-Tucker multiplier on upper Qg limit [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on upper Qg limit [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
                         "name": "mu_Qmin",
-                        "description": "Kuhn-Tucker multiplier on lower Qg limit [Ignored on input, maintained for MATPOWER compatibility]",
+                        "description": "Kuhn-Tucker multiplier on lower Qg limit [retained solely for MATPOWER compatibility]",
                         "type": "float"
                     },
                     {
