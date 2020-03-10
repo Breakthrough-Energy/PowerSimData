@@ -208,7 +208,7 @@
                     },
                     {
                         "name": "Pd",
-                        "description": "real power demand (MW)",
+                        "description": "real power demand (MW). Zone power demand is disaggregated to buses proportional to Pd.",
                         "type": "float"
                     },
                     {
