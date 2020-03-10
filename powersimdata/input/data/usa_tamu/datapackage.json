@@ -2,6 +2,7 @@
     "name": "SyntheticUSA",
     "title": "U.S. Test System with High Spatial and Temporal Resolution for Renewable Integration Studies",
     "format": "csv",
+    "url": "https://zenodo.org/record/3530898",
     "licenses": [
         {
             "name": "CC BY 4.0",
@@ -9,7 +10,50 @@
             "title": "Creative Commons — Attribution 4.0 International"
         }
     ],
+    "contributors": [
+        {
+            "title": "Yixing Xu",
+            "email": "yxu@intven.com"
+        },
+        {
+            "title": "Nathan Myhrvold"
+        },
+        {
+            "title": "Dhileep Sivan"
+        },
+        {
+            "title": "Kaspar Mueller"
+        },
+        {
+            "title": "Daniel J. Olsen"
+        },
+        {
+            "title": "Bainan Xia"
+        },
+        {
+            "title": "Daniel Livengood"
+        },
+        {
+            "title": "Victoria Hunt"
+        },
+        {
+            "title": "Benjamin Rouillé d'Orfeuil"
+        },
+        {
+            "title": "Daniel Muldrew"
+        },
+        {
+            "title": "Merrielle Ondreicka"
+        },
+        {
+            "title": "Megan Bettilyon"
+        },
+    ],
     "sources": [
+        {
+            "title": "Electric Grid Test Case Repository",
+            "path": "https://electricgrids.engr.tamu.edu/"
+        },
         {
             "name": "MATPOWER",
             "title": "MATPOWER – Free, open-source tools for electric power system simulation and optimization",
