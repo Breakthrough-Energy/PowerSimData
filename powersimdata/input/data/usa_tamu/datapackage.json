@@ -184,7 +184,7 @@
                     },
                     {
                         "name": "zone_id",
-                        "description": "area number (positive integer)",
+                        "description": "area number",
                         "type": "integer"
                     },
                     {
@@ -204,7 +204,7 @@
                     },
                     {
                         "name": "loss_zone",
-                        "description": "loss zone (positive integer)",
+                        "description": "loss zone",
                         "type": "integer"
                     },
                     {
