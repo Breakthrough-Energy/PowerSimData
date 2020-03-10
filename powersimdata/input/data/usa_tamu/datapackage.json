@@ -412,7 +412,7 @@
             "name": "demand",
             "format": "csv",
             "path": "demand.csv",
-            "description": "first column is timestamps (UTC), first row is zone IDs, values are power demand (MWh)"
+            "description": "This table provides time-series values of demand in each zone over the course of the year. The first column is timestamps (UTC), the first row (header row) is zone IDs, values are power demand (MWh)."
         },
         {
             "name": "gencost",
@@ -472,7 +472,7 @@
             "name": "hydro",
             "format": "csv",
             "path": "hydro.csv",
-            "description": "first column is timestamps (UTC), first row is plant IDs, values are generation (MWh)"
+            "description": "This table provides time-series values of hydro generation for each plant over the course of the year. The first column is timestamps (UTC), the first row (header row) is plant IDs, values are generation (MWh)"
         },
         {
             "name": "plant",
@@ -647,7 +647,7 @@
             "name": "solar",
             "format": "csv",
             "path": "solar.csv",
-            "description": "first column is timestamps (UTC), first row is plant IDs, values are generation (MWh)"
+            "description": "This table provides time-series values of available solar generation for each plant over the course of the year. The first column is timestamps (UTC), the first row (header row) is plant IDs, values are generation (MWh)"
         },
         {
             "name": "sub",
@@ -692,7 +692,7 @@
             "name": "wind",
             "format": "csv",
             "path": "wind.csv",
-            "description": "first column is timestamps (UTC), first row is plant IDs, values are generation (MWh)"
+            "description": "This table provides time-series values of available wind generation from each plant over the course of the year. The first column is timestamps (UTC), the first row (header row) is plant IDs, values are generation (MWh)"
         },
         {
             "name": "zone",
