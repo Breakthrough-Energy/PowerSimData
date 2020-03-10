@@ -682,7 +682,7 @@
                     },
                     {
                         "name": "interconnect",
-                        "description": "",
+                        "description": "name of interconnection within which the substation exists: 'Eastern', 'Western', 'Texas'",
                         "type": "string"
                     }
                 ]
