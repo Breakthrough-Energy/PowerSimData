@@ -273,6 +273,9 @@ independent_strategy_manager.set_next_sim_hours(8784)
 ### B. Use spreadsheet of external information for bulk creation of region target objects
 
 ``` python
+targets_info_location ='Eastern Scenario Target Info.csv'
+eastern = pd.read_csv(targets_info_location)
+
 independent_strategy_manager.targets_from_data_frame(eastern)
 ```
 
@@ -291,7 +294,7 @@ start_time = '2016-01-01 00:00:00'
 end_time = '2016-12-31 23:00:00'
 
 # add resource objects to targets
-independent_strategy_manager.populate_target_with_resources(scenario_info, int(scenario.info['id']), start_time, end_time):
+independent_strategy_manager.populate_targets_with_resources(scenario_info, int(scenario.info['id']), start_time, end_time):
 ```
 
 ### D. Calculate Next Capacities
