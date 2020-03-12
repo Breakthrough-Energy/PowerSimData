@@ -23,6 +23,7 @@ class ScenarioInfo:
     """
     def __init__(self, scenario):
         _check_state(scenario)
+        self.info = scenario.info
         self.pg = scenario.state.get_pg()
         self.grid = scenario.state.get_grid()
         self.demand = scenario.state.get_demand()
