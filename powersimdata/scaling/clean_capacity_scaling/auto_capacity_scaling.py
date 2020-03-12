@@ -574,7 +574,7 @@ class ResourceManager:
             print(e)
 
     def pull_region_resource_info(self, region_name, scenario_info,
-                                  scenario_num, available_resources,
+                                  scenario_num, region_resources,
                                   start_time, end_time):
         """
         Pulls resource information from scenario info object over the
@@ -591,7 +591,7 @@ class ResourceManager:
         assert (isinstance(scenario_info, ScenarioInfo)),\
             "input parameter must be an instance of type ScenarioInfo"
 
-        for resource_name in available_resources:
+        for resource_name in region_resources:
             resource_obj = Resource(resource_name, int(scenario_num))
 
             prev_capacity = scenario_info.get_capacity(resource_name,
