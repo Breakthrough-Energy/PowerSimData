@@ -48,7 +48,7 @@ class AbstractStrategyManager:
             target.set_allowed_resources(allowed_resources)
             self.add_target(target)
 
-    def populate_target_with_resources(self, scenario_info, scenario_id,
+    def populate_targets_with_resources(self, scenario_info, scenario_id,
                                        start_time, end_time):
         """
         Add resource objects to all targets with a strategy from a
@@ -63,8 +63,7 @@ class AbstractStrategyManager:
             print()
             print(region_name)
             print()
-            self.targets[region_name].populate_resource_info(self,
-                                                             scenario_info,
+            self.targets[region_name].populate_resource_info(scenario_info,
                                                              scenario_id,
                                                              start_time,
                                                              end_time)
