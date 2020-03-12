@@ -48,6 +48,27 @@ class AbstractStrategyManager:
             target.set_allowed_resources(allowed_resources)
             self.add_target(target)
 
+    def populate_target_with_resources(self, scenario_info, scenario_id,
+                                       start_time, end_time):
+        """
+        Add resource objects to all targets with a strategy from a
+        specified scenario
+        :param ScenarioInfo scenario_info: ScenarioInfo object that calculate
+        scenario resource properties
+        :param int scenario_id: id of scenario used
+        :param str start_time: starting datetime for interval of interest
+        :param str end_time: ending datetime for interval of interest
+        """
+        for region_name in self.targets:
+            print()
+            print(region_name)
+            print()
+            self.targets[region_name].populate_resource_info(self,
+                                                             scenario_info,
+                                                             scenario_id,
+                                                             start_time,
+                                                             end_time)
+
     def add_target(self, target_manager_obj):
         """
         Add target to strategy object
@@ -383,6 +404,30 @@ class TargetManager:
 
     def set_previous_scenario_for_calculation(self, scenario_num):
         pass
+
+    def populate_resource_info(self, scenario_info, scenario_id,
+                               start_time, end_time):
+        """
+        Add resource objects to target using a specified scenario
+        :param ScenarioInfo scenario_info: ScenarioInfo object that calculate
+        scenario resource properties
+        :param int scenario_id: id of scenario used
+        :param str start_time: starting datetime for interval of interest
+        :param str end_time: ending datetime for interval of interest
+        """
+        allowed_resources = set(self.allowed_resources)
+        available_resources = set(
+            scenario_info.get_available_resource(self.region_name))
+        all_resources = available_resources.union(allowed_resources)
+
+        resources = ResourceManager()
+        resources.pull_region_resource_info(self.region_name,
+                                            scenario_info,
+                                            scenario_id,
+                                            all_resources,
+                                            start_time,
+                                            end_time)
+        self.add_resource_manager(resources)
 
     def calculate_added_capacity(self):
         """
