@@ -48,23 +48,26 @@ class AbstractStrategyManager:
             target.set_allowed_resources(allowed_resources)
             self.add_target(target)
 
-    def populate_targets_with_resources(self, scenario_info, scenario_id,
-                                       start_time, end_time):
+    def populate_targets_with_resources(self, scenario_info, start_time,
+                                        end_time):
         """
         Add resource objects to all targets with a strategy from a
         specified scenario
         :param ScenarioInfo scenario_info: ScenarioInfo object that calculate
         scenario resource properties
-        :param int scenario_id: id of scenario used
         :param str start_time: starting datetime for interval of interest
         :param str end_time: ending datetime for interval of interest
         """
+        t1 = pd.to_datetime(start_time)
+        t2 = pd.to_datetime(end_time)
+        sim_hours = int((pd.Timedelta(t2 - t1).days + 1) * 24)
+        AbstractStrategyManager.set_next_sim_hours(sim_hours)
+
         for region_name in self.targets:
             print()
             print(region_name)
             print()
             self.targets[region_name].populate_resource_info(scenario_info,
-                                                             scenario_id,
                                                              start_time,
                                                              end_time)
 
@@ -401,16 +404,12 @@ class TargetManager:
         self.allowed_resources = []
         self.resources = {}
 
-    def set_previous_scenario_for_calculation(self, scenario_num):
-        pass
-
-    def populate_resource_info(self, scenario_info, scenario_id,
+    def populate_resource_info(self, scenario_info,
                                start_time, end_time):
         """
         Add resource objects to target using a specified scenario
         :param ScenarioInfo scenario_info: ScenarioInfo object that calculate
         scenario resource properties
-        :param int scenario_id: id of scenario used
         :param str start_time: starting datetime for interval of interest
         :param str end_time: ending datetime for interval of interest
         """
@@ -422,7 +421,6 @@ class TargetManager:
         resources = ResourceManager()
         resources.pull_region_resource_info(self.region_name,
                                             scenario_info,
-                                            scenario_id,
                                             all_resources,
                                             start_time,
                                             end_time)
@@ -618,8 +616,7 @@ class ResourceManager:
             print(e)
 
     def pull_region_resource_info(self, region_name, scenario_info,
-                                  scenario_num, region_resources,
-                                  start_time, end_time):
+                                  region_resources, start_time, end_time):
         """
         Pulls resource information from scenario info object over the
         specified time range
@@ -627,8 +624,7 @@ class ResourceManager:
         :param str scenario_info: ScenarioInfo object to calculate
         scenario resource properties
         properties
-        :param int scenario_num: number for the scenario
-        :param list available_resources: resources to extract from scenario
+        :param list region_resources: resources to extract from scenario
         :param str start_time: starting time for simulation
         :param str end_time: ending time for simulation
         """
@@ -636,7 +632,8 @@ class ResourceManager:
             "input parameter must be an instance of type ScenarioInfo"
 
         for resource_name in region_resources:
-            resource_obj = Resource(resource_name, int(scenario_num))
+            resource_obj = Resource(resource_name,
+                                    int(scenario_info.info['id']))
 
             prev_capacity = scenario_info.get_capacity(resource_name,
                                                        region_name)
