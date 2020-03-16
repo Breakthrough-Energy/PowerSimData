@@ -84,7 +84,7 @@ class AbstractStrategyManager:
     def load_target_from_json(target_name):
         """
         Loads JSON file of given target
-        param: str target_name: name of target to be loaded
+        :param str target_name: name of target to be loaded
         """
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -98,7 +98,7 @@ class AbstractStrategyManager:
     def load_target_from_pickle(target_name):
         """
         Loads pickle file of given target
-        param: str target_name: name of target to be loaded
+        :param str target_name: name of target to be loaded
         """
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -621,9 +621,8 @@ class ResourceManager:
         Pulls resource information from scenario info object over the
         specified time range
         :param str region_name: name of region to extract from scenario
-        :param str scenario_info: ScenarioInfo object to calculate
+        :param ScenarioInfo scenario_info: ScenarioInfo object to calculate
         scenario resource properties
-        properties
         :param list region_resources: resources to extract from scenario
         :param str start_time: starting time for simulation
         :param str end_time: ending time for simulation
