@@ -1,5 +1,6 @@
 import os
 import seaborn as sns
+import warnings
 
 from powersimdata.input.usa_tamu_model import TAMU
 from powersimdata.input.mat_reader import MATReader
@@ -9,6 +10,9 @@ class Grid(object):
     """Grid
 
     """
+
+    fields = {}
+
     def __init__(self, interconnect, source='usa_tamu'):
         """Constructor
 
@@ -26,21 +30,39 @@ class Grid(object):
         else:
             raise ValueError('%s not implemented' % source)
 
-        self.data_loc = data.data_loc
-        self.interconnect = data.interconnect
-        self.zone2id = data.zone2id
-        self.id2zone = data.id2zone
-        self.sub = data.sub
-        self.plant = data.plant
-        self.gencost = data.gencost
-        self.dcline = data.dcline
-        self.bus2sub = data.bus2sub
-        self.bus = data.bus
-        self.branch = data.branch
-        self.storage = data.storage
-        self.type2color = get_type2color()
-        self.id2type = get_id2type()
-        self.type2id = {value: key for key, value in self.id2type.items()}
+        self.fields['data_loc'] = data.data_loc
+        self.fields['interconnect'] = data.interconnect
+        self.fields['zone2id'] = data.zone2id
+        self.fields['id2zone'] = data.id2zone
+        self.fields['sub'] = data.sub
+        self.fields['plant'] = data.plant
+        self.fields['gencost'] = data.gencost
+        self.fields['dcline'] = data.dcline
+        self.fields['bus2sub'] = data.bus2sub
+        self.fields['bus'] = data.bus
+        self.fields['branch'] = data.branch
+        self.fields['storage'] = data.storage
+        self.fields['type2color'] = get_type2color()
+        self.fields['id2type'] = get_id2type()
+        self.fields['type2id'] = {value: key for key, value in
+                                  self.id2type.items()}
+
+    def __getattr__(self, key):
+        try:
+            warnings.warn(
+                "Grid property access is moving to dictionary indexing, "
+                "i.e. grid['branch'] consistent with REISE.jl",
+                DeprecationWarning
+            )
+            return self.fields[key]
+        except AttributeError as e:
+            print(e)
+
+    def __getitem__(self, key):
+        try:
+            return self.fields[key]
+        except KeyError as e:
+            print(e)
 
 
 def get_type2color():
