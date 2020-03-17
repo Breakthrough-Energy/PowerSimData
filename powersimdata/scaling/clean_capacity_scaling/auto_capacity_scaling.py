@@ -60,8 +60,10 @@ class AbstractStrategyManager:
         """
         t1 = pd.to_datetime(start_time)
         t2 = pd.to_datetime(end_time)
+        assert (t1 < t2), "start_time must be before end_time"
         sim_hours = int((pd.Timedelta(t2 - t1).days + 1) * 24)
-        AbstractStrategyManager.set_next_sim_hours(sim_hours)
+        print(sim_hours)
+        AbstractStrategyManager.next_sim_hours = sim_hours
 
         for region_name in self.targets:
             print()
