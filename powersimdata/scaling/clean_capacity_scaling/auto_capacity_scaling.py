@@ -53,8 +53,8 @@ class AbstractStrategyManager:
         """
         Add resource objects to all targets with a strategy from a
         specified scenario
-        :param ScenarioInfo scenario_info: ScenarioInfo object that calculate
-        scenario resource properties
+        :param powersimdata.scenario.scenario_info.ScenarioInfo scenario_info:
+        ScenarioInfo object to calculate scenario resource properties
         :param str start_time: starting datetime for interval of interest
         :param str end_time: ending datetime for interval of interest
         """
@@ -62,7 +62,6 @@ class AbstractStrategyManager:
         t2 = pd.to_datetime(end_time)
         assert (t1 < t2), "start_time must be before end_time"
         sim_hours = int((pd.Timedelta(t2 - t1).days + 1) * 24)
-        print(sim_hours)
         AbstractStrategyManager.next_sim_hours = sim_hours
 
         for region_name in self.targets:
@@ -410,8 +409,8 @@ class TargetManager:
                                start_time, end_time):
         """
         Add resource objects to target using a specified scenario
-        :param ScenarioInfo scenario_info: ScenarioInfo object that calculate
-        scenario resource properties
+        :param powersimdata.scenario.scenario_info.ScenarioInfo scenario_info:
+        ScenarioInfo object to calculate scenario resource properties
         :param str start_time: starting datetime for interval of interest
         :param str end_time: ending datetime for interval of interest
         """
@@ -623,9 +622,9 @@ class ResourceManager:
         Pulls resource information from scenario info object over the
         specified time range
         :param str region_name: name of region to extract from scenario
-        :param ScenarioInfo scenario_info: ScenarioInfo object to calculate
-        scenario resource properties
-        :param list region_resources: resources to extract from scenario
+        :param powersimdata.scenario.scenario_info.ScenarioInfo scenario_info:
+        ScenarioInfo object to calculate scenario resource properties
+        :param set region_resources: resources to extract from scenario
         :param str start_time: starting time for simulation
         :param str end_time: ending time for simulation
         """
