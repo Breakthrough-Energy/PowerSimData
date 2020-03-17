@@ -27,6 +27,7 @@ class AbstractStrategyManager:
     def targets_from_data_frame(self, data_frame):
         """
         Bulk creates target objects from dataframe
+        :param (*pandas.DataFrame*) data_frame: external target information
         """
         for row in data_frame.itertuples():
 
@@ -53,15 +54,16 @@ class AbstractStrategyManager:
         """
         Add resource objects to all targets with a strategy from a
         specified scenario
-        :param ScenarioInfo scenario_info: ScenarioInfo object that calculate
-        scenario resource properties
+        :param powersimdata.scenario.scenario_info.ScenarioInfo scenario_info:
+        ScenarioInfo object to calculate scenario resource properties
         :param str start_time: starting datetime for interval of interest
         :param str end_time: ending datetime for interval of interest
         """
         t1 = pd.to_datetime(start_time)
         t2 = pd.to_datetime(end_time)
+        assert (t1 < t2), "start_time must be before end_time"
         sim_hours = int((pd.Timedelta(t2 - t1).days + 1) * 24)
-        AbstractStrategyManager.set_next_sim_hours(sim_hours)
+        AbstractStrategyManager.next_sim_hours = sim_hours
 
         for region_name in self.targets:
             print()
@@ -85,6 +87,7 @@ class AbstractStrategyManager:
         """
         Loads JSON file of given target
         :param str target_name: name of target to be loaded
+        :return: instance of TargetManager class
         """
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -99,6 +102,7 @@ class AbstractStrategyManager:
         """
         Loads pickle file of given target
         :param str target_name: name of target to be loaded
+        :return: instance of TargetManager class
         """
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -408,8 +412,8 @@ class TargetManager:
                                start_time, end_time):
         """
         Add resource objects to target using a specified scenario
-        :param ScenarioInfo scenario_info: ScenarioInfo object that calculate
-        scenario resource properties
+        :param powersimdata.scenario.scenario_info.ScenarioInfo scenario_info:
+        ScenarioInfo object to calculate scenario resource properties
         :param str start_time: starting datetime for interval of interest
         :param str end_time: ending datetime for interval of interest
         """
@@ -507,6 +511,13 @@ class TargetManager:
         self.resources[resource.name] = resource
 
     def add_resource_manager(self, resource_manager):
+        """
+        Sets the resources property equal to a resource manager object which
+        contains scenario resource information
+        :param (powersimdata.scaling.clean_capacity_scaling
+        .auto_capacity_scaling.ResourceManager) resource_manager: resource
+        manager object with scenario resource information
+        """
         assert (isinstance(resource_manager, ResourceManager)),\
             "Input parameter must be an instance of type ResourceManager"
         self.resources = resource_manager
@@ -590,6 +601,7 @@ class TargetManager:
     def __str__(self):
         """
         Outputs indented JSON string af object properties
+        :return: JSON formatted string
         """
         return json.dumps(
             json.loads(jsonpickle.encode(self, unpicklable=False)),
@@ -602,6 +614,9 @@ class ResourceManager:
     Class manages the creation of resource objects from scenario information
     """
     def __init__(self):
+        """
+        Creates an empty dictionary to hold resource objects
+        """
         self.resources = {}
 
     def __getitem__(self, key):
@@ -609,6 +624,9 @@ class ResourceManager:
         Allows indexing into the resources dictionary directly from the
         object variable, i.e. res = ResourceManager; res["solar"] is the
         same as res.resources["solar"]
+        :param str key: resource type as string
+        :raises KeyError For attempts to use key not in the dictionary
+        :return: instance of Resource class
         """
         try:
             return self.resources[key]
@@ -621,9 +639,9 @@ class ResourceManager:
         Pulls resource information from scenario info object over the
         specified time range
         :param str region_name: name of region to extract from scenario
-        :param ScenarioInfo scenario_info: ScenarioInfo object to calculate
-        scenario resource properties
-        :param list region_resources: resources to extract from scenario
+        :param powersimdata.scenario.scenario_info.ScenarioInfo scenario_info:
+        ScenarioInfo object to calculate scenario resource properties
+        :param set region_resources: resources to extract from scenario
         :param str start_time: starting time for simulation
         :param str end_time: ending time for simulation
         """
@@ -730,12 +748,10 @@ class Resource:
             "prev_generation must be greater than zero"
         self.prev_generation = prev_generation
 
-    # todo: calculate directly from scenario results
     def set_curtailment(self, prev_curtailment):
         """
         Set curtailment from scenario run
         :param prev_curtailment: calculated curtailment from scenario run
-        :return:
         """
         assert (prev_curtailment >= 0), \
             "prev_curtailment must be greater than zero"
@@ -770,6 +786,7 @@ class Resource:
     def __str__(self):
         """
         Outputs indented JSON string af object properties
+        :return: JSON formatted string
         """
         return json.dumps(json.loads(jsonpickle.encode(self,
                                                        unpicklable=False
