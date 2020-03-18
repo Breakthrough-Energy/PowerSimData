@@ -73,6 +73,29 @@ class AbstractStrategyManager:
                                                              start_time,
                                                              end_time)
 
+    def set_addl_curtailment(self, additional_curtailment_table):
+        """
+        Sets additional curtailment for a region and particular resource type
+        :param additional_curtailment_table: nested dictionary structure of
+        the form: {‘Alabama’:{‘solar’: .2}, ‘Maryland’: {‘wind’: .1}}
+        The numbers are capacity factors between 0 and 1.
+        """
+        for region_name, target_obj in additional_curtailment_table.items():
+            for resource_name, curtailment_factor in target_obj.items():
+                assert (0 <= curtailment_factor <= 1), \
+                    f"***Curtailment factor for region {region_name} and " \
+                    f"resource {resource_name} must be between 0 and 1!***"
+                try:
+                    self.targets[region_name].resources[
+                        resource_name].addl_curtailment = curtailment_factor
+                    print(f'Additional curtailment added {region_name}:'
+                          f'{resource_name}!')
+                except KeyError as e:
+                    print()
+                    print(f"***Region {region_name} and "
+                          f"resource {resource_name} not found***")
+                    print(e)
+
     def add_target(self, target_manager_obj):
         """
         Add target to strategy object
