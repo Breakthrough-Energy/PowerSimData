@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from postreise.analyze.mwmiles import haversine
+
 
 def _find_branches_connected_to_bus(branch, bus_id):
     """Find all branches connected to a given bus.
@@ -59,7 +61,7 @@ def _find_stub_degree(branch, bus_id):
 def _find_capacity_at_bus(plant, bus_id, gentypes):
     """Find total capacity of plants with the given type(s) at the given bus.
 
-    :param pandas.DataFrame branch: branch DataFrame from Grid object.
+    :param pandas.DataFrame plant: plant DataFrame from Grid object.
     :param int bus_id: index of bus to find generators at.
     :param [list/tuple/set/str] gentypes: list/tuple/set of strs, or one str,
         containing the type of generators to sum capacity for.
@@ -131,7 +133,8 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=True):
 
 
 def scale_congested_mesh_branches(change_table, ref_scenario, upgrade_n=100,
-                                  quantile=0.95, increment=1):
+                                  quantile=0.95, increment=1,
+                                  method='branches'):
     """Use a reference scenario as a baseline for branch scaling, and further
     increment branch scaling based on observed congestion duals.
     
@@ -143,18 +146,20 @@ def scale_congested_mesh_branches(change_table, ref_scenario, upgrade_n=100,
     :param float quantile: the quantile to use to judge branch congestion.
     :param [float/int] increment: branch increment, relative to original
         capacity.
+    :param str method: prioritization method: 'branches', 'MW', or 'MWmiles'.
     :return: (*None*) -- the change_table is modified in-place.
     """
     # To do: better type checking of inputs.
     # We need a Scenario object that's in Analyze state to get congu/congl,
     # but we can't import Scenario to check against, because circular imports.
     branches_to_upgrade = _identify_mesh_branch_upgrades(
-        ref_scenario, upgrade_n=upgrade_n, quantile=quantile)
+        ref_scenario, upgrade_n=upgrade_n, quantile=quantile, method=method)
     _increment_branch_scaling(
         change_table, branches_to_upgrade, ref_scenario, value=increment)
 
 
-def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95):
+def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95,
+                                   method='branches'):
     """Identify the N most congested branches in a previous scenario, based on
     the quantile value of congestion duals. A quantile value of 0.95 obtains
     the branches with highest dual in top 5% of hours.
@@ -163,11 +168,20 @@ def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95):
         scenario to be used to determine the most congested branches.
     :param int upgrade_n: the number of branches to upgrade.
     :param float quantile: the quantile to use to judge branch congestion.
-    :return: (*Set*) -- A set of ints representing branch indices.
+    :param str method: prioritization method: 'branches', 'MW', or 'MWmiles'.
+    :return: (*set*) -- A set of ints representing branch indices.
     """
     
+    # Validate method input
+    allowed_methods = ('branches', 'MW', 'MWmiles')
+    if method not in allowed_methods:
+        allowed_list = ', '.join(allowed_methods)
+        raise ValueError(f'method must be one of: {allowed_list}')
+
     # How big does a dual value have to be to be 'real' and not barrier cruft?
-    cong_significance_cutoff = 1e-6
+    cong_significance_cutoff = 1e-6     # $/MWh
+    # If we rank by MW-miles, what 'length' do we give to zero-length branches?
+    zero_length_value = 1       # miles
     
     # Get raw congestion dual values
     ref_congu = ref_scenario.state.get_congu()
@@ -180,9 +194,10 @@ def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95):
     del ref_congu, ref_congl
     
     # Parse 2-D array to vector of quantile values, filter out non-significant
-    quantile_cong_abs = ref_cong_abs.quantile(quantile).sort_values()
+    quantile_cong_abs = ref_cong_abs.quantile(quantile)
     significance_bitmask = (quantile_cong_abs > cong_significance_cutoff)
     quantile_cong_abs = quantile_cong_abs.where(significance_bitmask).dropna()
+    congested_indices = list(quantile_cong_abs.index)
     
     # Ensure that we have enough congested branches to upgrade
     num_congested = len(quantile_cong_abs)
@@ -190,9 +205,37 @@ def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95):
         err_msg = 'not enough congested branches: '
         err_msg += f'{upgrade_n} desired, but only {num_congested} congested.'
         raise ValueError(err_msg)
+
+    # Calculate selected metric for congested branches
+    if method in ('MW', 'MWmiles'):
+        ref_grid = ref_scenario.state.get_grid()
+        branch_ratings = ref_grid.branch.loc[congested_indices, 'rateA']
+        # Calculate 'original' branch capacities, since that's our increment
+        ref_ct = ref_scenario.state.get_ct()
+        try:
+            branch_ct = ref_ct['branch']['branch_id']
+        except KeyError:
+            branch_ct = {}
+        branch_prev_scaling = pd.Series(
+            {i: ref_ct[i] if i in branch_ct else 1 for i in congested_indices})
+        branch_ratings = branch_ratings / branch_prev_scaling
+    if method == 'MW':
+        branch_metric = quantile_cong_abs / branch_ratings
+    elif method == 'MWmiles':
+        branch_lengths = ref_grid.branch.loc[congested_indices].apply(
+            lambda x: haversine(
+                (x.from_lat, x.from_lon), (x.to_lat, x.to_lon)),
+            axis=1)
+        # Replace zero-length branches by designated default, don't divide by 0
+        branch_lengths = branch_lengths.replace(0, value=zero_length_value)
+        branch_metric = quantile_cong_abs / (branch_ratings * branch_lengths)
+    else:
+        # By process of elimination, all that's left is method 'branches'
+        branch_metric = quantile_cong_abs
     
-    quantile_branches = set(quantile_cong_abs.tail(upgrade_n).index)
-    return quantile_branches
+    # Sort by our metric, grab indexes for N largest values (tail), return
+    ranked_branches = set(branch_metric.sort_values().tail(upgrade_n).index)
+    return ranked_branches
 
 
 def _increment_branch_scaling(change_table, branch_ids, ref_scenario, value=1):
