@@ -260,7 +260,10 @@ def _increment_branch_scaling(change_table, branch_ids, ref_scenario, value=1):
     
     # Get previous scenario's branch scaling
     ref_ct = ref_scenario.state.get_ct()
-    ref_branch_scaling = ref_ct['branch']['branch_id'].copy()
+    try:
+        ref_branch_scaling = ref_ct['branch']['branch_id'].copy()
+    except KeyError:
+        ref_branch_scaling = {}
     
     # Determine the final ref branch scaling after incrementing
     for branch in branch_ids:
