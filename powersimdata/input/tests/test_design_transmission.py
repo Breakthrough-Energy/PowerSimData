@@ -23,7 +23,11 @@ mock_branch = {
     'branch_id': [101, 102, 103, 104, 105, 106, 107, 108],
     'from_bus_id': [1, 2, 2, 3, 3, 4, 4, 6],
     'to_bus_id': [2, 3, 5, 8, 4, 1, 6, 7],
-    'rateA': [100, 100, 8, 25, 100, 100, 15, 25],
+    'rateA': [0.25, 1, 8, 25, 100, 100, 15, 25],
+    'from_lat': [47, 47, 47, 46, 46, 46, 46, 46],
+    'from_lon': [122, 122, 122, 122, 122, 123, 123, 124],
+    'to_lat': [47, 46, 47, 46, 46, 47, 46, 46],
+    'to_lon': [122, 122, 112, 121, 123, 122, 124, 125],
     }
 
 mock_bus = {
@@ -137,6 +141,7 @@ class TestIdentifyMesh(unittest.TestCase):
             congl=congl,
             )
 
+    # These tests use the default 'branch' ranking: [103, 102, 101]
     def test_identify_mesh_branch_upgrades_default(self):
         # Not enough branches
         with self.assertRaises(ValueError):
@@ -161,10 +166,57 @@ class TestIdentifyMesh(unittest.TestCase):
         self.assertEqual(branches, expected_return)
 
     def test_identify_mesh_branch_upgrades_quantile90(self):
+        # Fewer branches are congested for >= 10% of the time
         expected_return = {101}
         branches = _identify_mesh_branch_upgrades(
             self.mock_scenario, upgrade_n=1, quantile=0.9)
         self.assertEqual(branches, expected_return)
+
+    # These tests use the 'MW' ranking: [102, 101, 103]
+    # This happens because 101 is very small, 102 is small (compared to 103)
+    def test_identify_mesh_MW_n_3(self):
+        expected_return = {101, 102, 103}
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, upgrade_n=3, method='MW')
+        self.assertEqual(branches, expected_return)
+
+    def test_identify_mesh_MW_n_2(self):
+        expected_return = {101, 102}
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, upgrade_n=2, method='MW')
+        self.assertEqual(branches, expected_return)
+
+    def test_identify_mesh_MW_n_1(self):
+        expected_return = {102}
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, upgrade_n=1, method='MW')
+        self.assertEqual(branches, expected_return)
+
+    # These tests use the 'MWmiles' ranking: [101, 102, 103]
+    # This happens because 101 is zero-distance, 102 is short (compared to 103)
+    def test_identify_mesh_MWmiles_n_3(self):
+        expected_return = {101, 102, 103}
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, upgrade_n=3, method='MWmiles')
+        self.assertEqual(branches, expected_return)
+
+    def test_identify_mesh_MWmiles_n_2(self):
+        expected_return = {101, 102}
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, upgrade_n=2, method='MWmiles')
+        self.assertEqual(branches, expected_return)
+
+    def test_identify_mesh_MWmiles_n_1(self):
+        expected_return = {101}
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, upgrade_n=1, method='MWmiles')
+        self.assertEqual(branches, expected_return)
+
+    # What about a made-up method?
+    def test_identify_mesh_bad_method(self):
+        with self.assertRaises(ValueError):
+            branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, upgrade_n=2, method='does not exist')
 
 
 class TestIncrementBranch(unittest.TestCase):
