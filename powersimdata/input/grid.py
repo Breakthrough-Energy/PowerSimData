@@ -47,20 +47,36 @@ class Grid(object):
         self.fields['type2id'] = {value: key for key, value in
                                   self.id2type.items()}
 
-    def __getattr__(self, key):
+    def __getattr__(self, field_name):
+        """
+        Overrides the object "." property interface to maintain backwards
+        compatibility, i.e. grid.plant
+        is the same as grid.fields["plant"]
+        :param str field_name: grid field name as string
+        :raises KeyError For attempts to use key not in the dictionary
+        :return: property of the Grid class
+        """
         try:
             warnings.warn(
                 "Grid property access is moving to dictionary indexing, "
                 "i.e. grid['branch'] consistent with REISE.jl",
                 DeprecationWarning
             )
-            return self.fields[key]
+            return self.fields[field_name]
         except AttributeError as e:
             print(e)
 
-    def __getitem__(self, key):
+    def __getitem__(self, field_name):
+        """
+        Allows indexing into the resources dictionary directly from the
+        object variable, i.e. grid["plant"] is the
+        same as grid.fields["plant"]
+        :param str field_name: grid field name as string
+        :raises KeyError For attempts to use key not in the dictionary
+        :return: property of the Grid class
+        """
         try:
-            return self.fields[key]
+            return self.fields[field_name]
         except KeyError as e:
             print(e)
 
