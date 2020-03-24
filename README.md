@@ -251,3 +251,85 @@ discrepancies between the branch attribute of the `Grid` object and the
 | Texas         | 3007161       | 3007292       | Multiple in ***.aux*** as Line and Transformer. Ratio 0 and 1. Distance >0 --> classified as Line |
 
 ---
+
+## 3. Capacity Planning Framework
+
+First import the framework:
+
+``` python
+from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling \
+    import CollaborativeStrategyManager, IndependentStrategyManager, \
+        TargetManager, ResourceManager, Resource
+```
+
+### A. Create Strategy Object that will generate next capacities
+
+Currently independent and collaborative strategies are implemented. The
+ first step is create an empty strategy object:
+``` python
+independent_strategy_manager = IndependentStrategyManager()
+collaborative_strategy_manager = CollaborativeStrategyManager()
+```
+
+### B. Use spreadsheet of external information for bulk creation of region target objects
+
+Then we need to populate the strategy object with regional target information
+.  Currently target information is ingested using a specially formatted csv
+ file. 
+``` python
+targets_info_location ='Eastern Scenario Target Info.csv'
+eastern = pd.read_csv(targets_info_location)
+
+# populate strategy objects with target info
+independent_strategy_manager.targets_from_data_frame(eastern)
+collaborative_strategy_manager.targets_from_data_frame(eastern)
+```
+
+### C. Populate region target objects with resource info
+
+Now that we have regional target information, we need to gather regional
+ resource information from a particular scenario run. The `ScenarioInfo
+ ` object is used to calculate resource properties that are added to the
+  regional target objects.
+``` python
+# load in relevant scenario
+scenario_string = '394'
+scenario = Scenario(scenario_string)
+
+# create ScenarioInfo object
+scenario_info = ScenarioInfo(scenario)
+
+# define start and end times of the simulation
+start_time = '2016-01-01 00:00:00'
+end_time = '2016-12-31 23:00:00'
+
+# add resource objects to regional targets
+independent_strategy_manager.populate_targets_with_resources(
+    scenario_info, start_time, end_time):
+collaborative_strategy_manager.populate_targets_with_resources(
+    scenario_info, start_time, end_time):
+```
+
+### D. Calculate Next Capacities
+
+Once we the regional target information and scenario-specific resource
+ information, we can calculate the next capacities.
+``` python
+independent_next_capacities =
+ independent_strategy_manager.data_frame_of_next_capacities()
+collaborative_next_capacities =
+ collaborative_strategy_manager.data_frame_of_next_capacities()
+```
+
+### F. Future Feature: Set additional curtailment for regional resources
+
+Additional curtailment is a parameter to iterate from initial anchor
+ scenario results (defined as a scenario to manually make adjustments from to
+  account for nonlinearities in grid curtailment)
+  
+The interface will likely have the form:
+  ```
+  strategy.set_addl_curtailment({‘Alabama’:{‘solar’: .2}, 
+        ‘Maryland’: {‘wind’: .1}})
+```
+which sets additional curtailment for a region and particular resource type.
