@@ -1,7 +1,7 @@
 from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling\
     import Resource, TargetManager, AbstractStrategyManager, \
-    CollaborativeStrategyManager
-from pytest import approx
+    IndependentStrategyManager, CollaborativeStrategyManager
+from pytest import approx, raises
 
 
 def test_independent_capacity_strategy():
@@ -548,3 +548,72 @@ def test_collaborative_capacity_strategy():
         solar_scaling == approx(4200 + 10447.5)
     assert collab.targets['Atlantic'].resources['wind'].prev_capacity *\
         wind_scaling == approx(4100 + 10198.75)
+
+
+def test_adding_addl_curtailment():
+    # create Pacific
+    pacific_solar = Resource('solar', 3)
+    pacific_solar.set_capacity(0.25, 3700, 0.215379)
+    pacific_solar.set_generation(7000 * 1000)
+    pacific_solar.set_curtailment(0.138483)
+    pacific_solar.set_addl_curtailment(0)
+
+    pacific_wind = Resource('wind', 3)
+    pacific_wind.set_capacity(0.4, 3600, 0.347855)
+    pacific_wind.set_generation(11000 * 1000)
+    pacific_wind.set_curtailment(0.130363)
+    pacific_wind.set_addl_curtailment(0)
+
+    pacific_target = TargetManager('Pacific', 0.25, 'renewables',
+                                   200000 * 1000)
+    pacific_target.set_allowed_resources(['solar', 'wind', 'geo'])
+
+    pacific_target.add_resource(pacific_solar)
+    pacific_target.add_resource(pacific_wind)
+
+    # create Atlantic
+    atlantic_solar = Resource('solar', 3)
+    atlantic_solar.set_capacity(0.3, 4200, 0.284608)
+    atlantic_solar.set_generation(10500 * 1000)
+    atlantic_solar.set_curtailment(0.051305)
+    atlantic_solar.set_addl_curtailment(0)
+
+    atlantic_wind = Resource('wind', 3)
+    atlantic_wind.set_capacity(0.35, 4100, 0.319317)
+    atlantic_wind.set_generation(11500 * 1000)
+    atlantic_wind.set_curtailment(0.087667)
+    atlantic_wind.set_addl_curtailment(0)
+
+    atlantic_target = TargetManager('Atlantic', 0.4, 'clean', 300000 * 1000)
+    atlantic_target.set_allowed_resources(['solar', 'wind', 'geo', 'hydro',
+                                           'nuclear'])
+    atlantic_target.add_resource(atlantic_solar)
+    atlantic_target.add_resource(atlantic_wind)
+
+    independent_strategy_manager = IndependentStrategyManager()
+    independent_strategy_manager.add_target(pacific_target)
+    independent_strategy_manager.add_target(atlantic_target)
+
+    independent_strategy_manager.set_addl_curtailment({"Pacific": {
+        "solar": .2, "wind": .5}})
+
+    assert independent_strategy_manager.targets["Pacific"].resources[
+        'solar'].addl_curtailment == .2
+    assert independent_strategy_manager.targets["Pacific"].resources[
+        'wind'].addl_curtailment == .5
+    assert independent_strategy_manager.targets["Atlantic"].resources[
+        'solar'].addl_curtailment == 0
+    assert independent_strategy_manager.targets["Atlantic"].resources[
+        'wind'].addl_curtailment == 0
+
+
+def test_addl_curtailment_key_error():
+    with raises(KeyError):
+        atlantic_target = TargetManager('Atlantic', 0.4, 'clean',
+                                        300000 * 1000)
+
+        independent_strategy_manager = IndependentStrategyManager()
+        independent_strategy_manager.add_target(atlantic_target)
+
+        independent_strategy_manager.set_addl_curtailment({"Texas": {
+            "solar": .2, "wind": .5}})
