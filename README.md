@@ -254,7 +254,14 @@ discrepancies between the branch attribute of the `Grid` object and the
 
 ## 3. Capacity Planning Framework
 
-First import the framework:
+The capacity planning framework replaces an earlier spreadsheet method with
+ a more flexible design backed up by tests. Additionally, scenario
+  specific parameters are now automatically imported. More information can
+   be found at this Dropbox location:
+   
+   Dropbox(IVL)\Results\DataAnalysis\RenewablesScalingForScenarios\Clean Energy Capacity Planning Framework.pptx
+
+Importing the framework:
 
 ``` python
 from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling \
@@ -264,7 +271,7 @@ from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling \
 
 ### A. Create Strategy Object that will generate next capacities
 
-Currently independent and collaborative strategies are implemented. The
+Currently two strategies (independent and collaborative) are implemented. The
  first step is create an empty strategy object:
 ``` python
 independent_strategy_manager = IndependentStrategyManager()
@@ -309,8 +316,22 @@ independent_strategy_manager.populate_targets_with_resources(
 collaborative_strategy_manager.populate_targets_with_resources(
     scenario_info, start_time, end_time):
 ```
+### D. Optional step: Set additional curtailment for regional resources
 
-### D. Calculate Next Capacities
+Additional curtailment is a parameter to iterate from initial anchor
+ scenario results (defined as a scenario to manually make adjustments from to
+  account for nonlinearities in grid curtailment)
+  
+The interface to set these values has the form:
+  ```
+  strategy.set_addl_curtailment({‘Alabama’:{‘solar’: 0.2}, 
+        ‘Maryland’: {‘wind’: 0.1}})
+```
+which sets additional curtailment for a region and particular resource type
+. In this example, the value `0.2` denotes a 20% reduction of solar capacity
+ factor compared to the reference scenario.
+
+### E. Calculate Next Capacities
 
 Once we the regional target information and scenario-specific resource
  information, we can calculate the next capacities.
@@ -321,15 +342,6 @@ collaborative_next_capacities =
  collaborative_strategy_manager.data_frame_of_next_capacities()
 ```
 
-### F. Future Feature: Set additional curtailment for regional resources
+### F. Future Feature
 
-Additional curtailment is a parameter to iterate from initial anchor
- scenario results (defined as a scenario to manually make adjustments from to
-  account for nonlinearities in grid curtailment)
-  
-The interface will likely have the form:
-  ```
-  strategy.set_addl_curtailment({‘Alabama’:{‘solar’: .2}, 
-        ‘Maryland’: {‘wind’: .1}})
-```
-which sets additional curtailment for a region and particular resource type.
+Direct output of the new change table
