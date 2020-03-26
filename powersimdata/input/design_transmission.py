@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from postreise.analyze.mwmiles import haversine
+from postreise.analyze.transmission.distance import haversine
 
 
 def _find_branches_connected_to_bus(branch, bus_id):
