@@ -133,6 +133,17 @@ class Analyze(State):
 
         return congl
 
+    def get_averaged_cong(self):
+        """Returns averaged CONGL and CONGU.
+
+        :return: (*pandas.DataFrame*) -- data frame of averaged congestion with
+            the branch id as indices an the averaged CONGL and CONGU as columns.
+        """
+        od = OutputData(self._ssh)
+        mean_cong = od.get_data(self._scenario_info['id'], 'AVERAGED_CONG')
+
+        return mean_cong
+
     def get_storage_pg(self):
         """Returns STORAGE_PG data frame.
 

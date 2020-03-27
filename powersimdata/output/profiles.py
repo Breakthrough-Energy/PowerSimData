@@ -24,7 +24,7 @@ class OutputData(object):
 
         :param str scenario_id: scenario id.
         :param str field_name: *'PG'*, *'PF'*, *'LMP'*, *'CONGU'*, *'CONGL'*,
-            *STORAGE_PG* or *STORAGE_E*.
+            *'AVERAGED_CONG'*, *'STORAGE_PG'* or *'STORAGE_E'*.
         :return: (*pandas.DataFrame*) -- specified field as a data frame.
         :raises FileNotFoundError: if file not found on local machine.
         :raises ValueError: if second argument is not an allowable field.
@@ -64,11 +64,12 @@ def _check_field(field_name):
     """Checks field name.
 
     :param str field_name: *'PG'*, *'PF'*, *'PF_DCLINE'*, *'LMP'*, *'CONGU'*,
-        or *'CONGL'*, *'STORAGE_PG'* or *'STORAGE_E'*.
+        or *'CONGL'*, '*'AVERAGED_CONG'*', *'STORAGE_PG'* or *'STORAGE_E'*.
     :raises ValueError: if not *'PG'*, *'PF'*, *'PF_DCLINE'*, *'LMP'*,
-        *'CONGU'*, or *'CONGL'*, *'STORAGE_PG'* or *'STORAGE_E'*.
+        *'CONGU'*, or *'CONGL'*, *'AVERAGED_CONG'*, *'STORAGE_PG'* or
+        *'STORAGE_E'*.
     """
-    possible = ['PG', 'PF', 'PF_DCLINE', 'LMP', 'CONGU', 'CONGL', 'STORAGE_PG',
-                'STORAGE_E']
+    possible = ['PG', 'PF', 'PF_DCLINE', 'LMP', 'CONGU', 'CONGL',
+                'AVERAGED_CONG', 'STORAGE_PG', 'STORAGE_E']
     if field_name not in possible:
         raise ValueError('Only %s data can be loaded' % " | ".join(possible))
