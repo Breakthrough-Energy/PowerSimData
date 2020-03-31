@@ -73,28 +73,6 @@ class AbstractStrategyManager:
                                                              start_time,
                                                              end_time)
 
-    def set_addl_curtailment(self, additional_curtailment_table):
-        """
-        Sets additional curtailment for a region and particular resource type
-        :param additional_curtailment_table: nested dictionary structure of
-        the form: {‘Alabama’:{‘solar’: .2}, ‘Maryland’: {‘wind’: .1}}
-        The numbers are curtailment factors between 0 and 1.
-        """
-        for region_name, target_obj in additional_curtailment_table.items():
-            for resource_name, curtailment_factor in target_obj.items():
-                assert (0 <= curtailment_factor <= 1), \
-                    f"***Curtailment factor for region {region_name} and " \
-                    f"resource {resource_name} must be between 0 and 1!***"
-                try:
-                    self.targets[region_name].resources[
-                        resource_name].set_addl_curtailment(curtailment_factor)
-                    print(f'Additional curtailment added {region_name}:'
-                          f'{resource_name}!')
-                except KeyError as e:
-                    raise KeyError(
-                        f"***Region {region_name} and resource "
-                        f"{resource_name} not found***") from e
-
     def add_target(self, target_manager_obj):
         """
         Add target to strategy object
@@ -141,6 +119,28 @@ class IndependentStrategyManager(AbstractStrategyManager):
     """
     def __init__(self):
         AbstractStrategyManager.__init__(self)
+
+    def set_addl_curtailment(self, additional_curtailment_table):
+        """
+        Sets additional curtailment for a region and particular resource type
+        :param additional_curtailment_table: nested dictionary structure of
+        the form: {‘Alabama’:{‘solar’: .2}, ‘Maryland’: {‘wind’: .1}}
+        The numbers are curtailment factors between 0 and 1.
+        """
+        for region_name, target_obj in additional_curtailment_table.items():
+            for resource_name, curtailment_factor in target_obj.items():
+                assert (0 <= curtailment_factor <= 1), \
+                    f"***Curtailment factor for region {region_name} and " \
+                    f"resource {resource_name} must be between 0 and 1!***"
+                try:
+                    self.targets[region_name].resources[
+                        resource_name].set_addl_curtailment(curtailment_factor)
+                    print(f'Additional curtailment added {region_name}:'
+                          f'{resource_name}!')
+                except KeyError as e:
+                    raise KeyError(
+                        f"***Region {region_name} and resource "
+                        f"{resource_name} not found***") from e
 
     def data_frame_of_next_capacities(self):
         """
@@ -197,8 +197,17 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
     """
     Calculates the next capacities using total target shortfalls
     """
-    def __init__(self):
+    def __init__(self, addl_curtailment={"solar": 0, "wind": 0}):
+        self.addl_curtailment = addl_curtailment
         AbstractStrategyManager.__init__(self)
+
+    def set_collaborative_addl_curtailment(self, addl_curtailment):
+        """
+        Set additional curtailment for Collaborative Strategy
+        Must be a dictionary for the following keys defined
+        """
+        assert set(addl_curtailment.keys()) == set(["solar", "wind"])
+        self.addl_curtailment = addl_curtailment
 
     def calculate_total_shortfall(self):
         """
@@ -324,18 +333,19 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
             (self.calculate_total_capacity(category)*8784)
         return total_cap_factor
 
-    def calculate_total_expected_capacity_factor(self,
-                                                 category,
-                                                 addl_curtailment=0):
+    def calculate_total_expected_capacity_factor(self, category):
         """
         Calculate the total expected capacity for a target_manager_obj resource
         :param category: resource category
         :param addl_curtailment: option to add additional curtailment
         :return: total expected capacity factor
         """
+        assert (category in ["solar", "wind"]), " expected capacity factor " \
+                                                "only defined for solar and " \
+                                                "wind"
         total_exp_cap_factor = \
             self.calculate_total_capacity_factor(category) *\
-            (1 - addl_curtailment)
+            (1 - self.addl_curtailment[category])
         return total_exp_cap_factor
 
     def calculate_capacity_scaling(self):
