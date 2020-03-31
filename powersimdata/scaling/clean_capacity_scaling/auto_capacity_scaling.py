@@ -201,12 +201,20 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         self.addl_curtailment = addl_curtailment
         AbstractStrategyManager.__init__(self)
 
-    def set_collaborative_addl_curtailment(self, addl_curtailment):
+    def set_collab_addl_curtailment(self, addl_curtailment):
         """
         Set additional curtailment for Collaborative Strategy
-        Must be a dictionary for the following keys defined
+        Must be a dictionary with "solar" and "wind" keys defined:
+        {"solar": .2, "wind": .3}
+        with values between 0 and 1.
         """
         assert set(addl_curtailment.keys()) == set(["solar", "wind"])
+        assert 0 <= addl_curtailment["solar"] <= 1, "solar additional " \
+                                                    "curtailment must be " \
+                                                    "between  0 and 1"
+        assert 0 <= addl_curtailment["wind"] <= 1,  "wind additional " \
+                                                    "curtailment must be " \
+                                                    "between  0 and 1"
         self.addl_curtailment = addl_curtailment
 
     def calculate_total_shortfall(self):
