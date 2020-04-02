@@ -1,4 +1,4 @@
-from powersimdata.scenario.scenario_info import ScenarioInfo
+from powersimdata.design.scenario_info import ScenarioInfo
 import pandas as pd
 import jsonpickle
 import json
@@ -555,7 +555,7 @@ class TargetManager:
         """
         Sets the resources property equal to a resource manager object which
         contains scenario resource information
-        :param (powersimdata.scaling.clean_capacity_scaling
+        :param (powersimdata.scaling.generation
         .auto_capacity_scaling.ResourceManager) resource_manager: resource
         manager object with scenario resource information
         """

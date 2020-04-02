@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 
-from powersimdata.scenario.scenario_info import ScenarioInfo
+from powersimdata.design.scenario_info import ScenarioInfo
 from postreise.tests.mock_scenario import MockScenario
 
 mock_plant = {

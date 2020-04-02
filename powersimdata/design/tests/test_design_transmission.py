@@ -6,7 +6,7 @@ import pandas as pd
 from powersimdata.tests.mock_grid import MockGrid
 from postreise.tests.mock_scenario import MockScenario
 from powersimdata.tests.mock_change_table import MockChangeTable
-from powersimdata.input.design_transmission import (
+from powersimdata.design.design_transmission import (
     _find_branches_connected_to_bus, _find_first_degree_branches,
     _find_stub_degree, _find_capacity_at_bus, scale_renewable_stubs,
     _identify_mesh_branch_upgrades, _increment_branch_scaling)
