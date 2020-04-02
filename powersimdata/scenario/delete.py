@@ -1,4 +1,4 @@
-from postreise.process import const
+from powersimdata.utility import const
 from powersimdata.scenario.state import State
 
 import os
