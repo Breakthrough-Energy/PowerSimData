@@ -206,8 +206,9 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         :return: total clean energy shortfall
         """
         total_ce_shortfall = 0
-        for tar in self.targets:
-            total_ce_shortfall += self.targets[tar].calculate_ce_shortfall()
+        for name, target in self.targets.items():
+            total_ce_shortfall += target.calculate_ce_shortfall()
+            total_ce_shortfall -= target.calculate_ce_overgeneration()
         return total_ce_shortfall
 
     def calculate_total_prev_ce_generation(self):
