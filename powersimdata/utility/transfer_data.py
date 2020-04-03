@@ -41,8 +41,9 @@ def upload(ssh_client, file_name, from_dir, to_dir, change_name_to=None):
     :param str file_name: file name on local machine.
     :param str from_dir: local directory.
     :param str to_dir: remote directory.
-    :raises IOError: if file already exists on server.
     :param str change_name_to: file name on remote machine.
+    :raises FileNotFoundError: if file not found on local machine.
+    :raises IOError: if file already exists on server.
     """
     from_path = os.path.join(from_dir, file_name)
 
