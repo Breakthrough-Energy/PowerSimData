@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 from scipy.io import loadmat
 
@@ -42,7 +43,11 @@ class MATReader(AbstractGrid):
             n_storage = 0
 
         try:
-            n_dcline = mpc.dclineid.shape[0]
+            dclineid = mpc.dclineid
+            if isinstance(dclineid, int):
+                n_dcline = 1
+            else:
+                n_dcline = mpc.dclineid.shape[0]
         except AttributeError:
             n_dcline = 0
 
@@ -78,8 +83,14 @@ class MATReader(AbstractGrid):
         self.branch['branch_device_type'] = mpc.branchdevicetype
 
         # DC line
-        if n_dcline > 0:
+        if n_dcline > 1:
             self.dcline, _ = frame('dcline', mpc.dcline, mpc.dclineid)
+        elif n_dcline == 1:
+            # When n_dcline == 1, mpc.dclineid is an int instead of an array,
+            #   and mpc.dcline has been squeezed to 1D. Here we fix these.
+            dcline_index = np.array([mpc.dclineid])
+            dcline_table = np.expand_dims(mpc.dcline, 0)
+            self.dcline, _ = frame('dcline', dcline_table, dcline_index)
 
         # substation
         self.sub, _ = frame('sub', mpc.sub, mpc.subid)
