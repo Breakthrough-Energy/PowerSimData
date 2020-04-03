@@ -761,13 +761,16 @@ class Resource:
         self.prev_cap_factor = prev_cap_factor
 
     # todo: calculate directly from scenario results
-    def set_generation(self, prev_generation):
+    def set_generation(self, prev_generation, tolerance=1e-3):
         """
         Set generation from scenario run
         :param prev_generation: generation from scenario run
+        :param {float, int} tolerance: tolerance for ignored negative values
         """
+        if ((-1 * tolerance) <= prev_generation < 0):
+            prev_generation = 0
         assert (prev_generation >= 0), \
-            "prev_generation must be greater than zero"
+            f"prev_generation must be greater than zero. Got {prev_generation}"
         self.prev_generation = prev_generation
 
     def set_curtailment(self, prev_curtailment):
