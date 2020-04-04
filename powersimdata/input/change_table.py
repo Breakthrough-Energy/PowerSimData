@@ -4,7 +4,7 @@ import pickle
 from powersimdata.input.design_transmission import (
     scale_congested_mesh_branches, scale_renewable_stubs)
 from powersimdata.input.grid import Grid
-from postreise.process import const
+from powersimdata.utility import const
 
 
 _resources = ('coal', 'dfo', 'geothermal', 'ng', 'nuclear',

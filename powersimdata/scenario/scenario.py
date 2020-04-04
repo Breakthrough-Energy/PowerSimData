@@ -1,7 +1,7 @@
-from postreise.process import const
-from postreise.process.transferdata import setup_server_connection
-from postreise.process.transferdata import get_scenario_table
-from postreise.process.transferdata import get_execute_table
+from powersimdata.utility import const
+from powersimdata.utility.transfer_data import (setup_server_connection,
+                                                get_scenario_table,
+                                                get_execute_table)
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create
 from powersimdata.scenario.execute import Execute

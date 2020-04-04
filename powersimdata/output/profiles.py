@@ -1,5 +1,5 @@
-from postreise.process.transferdata import download
-from postreise.process import const
+from powersimdata.utility.transfer_data import download
+from powersimdata.utility import const
 
 import os
 import pandas as pd
