@@ -285,11 +285,11 @@ Then we need to populate the strategy object with regional target information
  file. 
 ``` python
 targets_info_location ='Eastern Scenario Target Info.csv'
-eastern = pd.read_csv(targets_info_location)
+eastern_targets = pd.read_csv(targets_info_location)
 
 # populate strategy objects with target info
-independent_strategy_manager.targets_from_data_frame(eastern)
-collaborative_strategy_manager.targets_from_data_frame(eastern)
+independent_strategy_manager.targets_from_data_frame(eastern_targets)
+collaborative_strategy_manager.targets_from_data_frame(eastern_targets)
 ```
 
 ### C. Populate region target objects with resource info
@@ -322,13 +322,22 @@ Additional curtailment is a parameter to iterate from initial anchor
  scenario results (defined as a scenario to manually make adjustments from to
   account for nonlinearities in grid curtailment)
   
-The interface to set these values has the form:
-  ```
-  strategy.set_addl_curtailment({‘Alabama’:{‘solar’: 0.2}, 
-        ‘Maryland’: {‘wind’: 0.1}})
+For Independent strategies, the interface to set these values has the form:
+```
+independent_strategy_manager.set_addl_curtailment(
+    {'Alabama':{'solar': 0.2}, 'Maryland': {'wind': 0.1}})
 ```
 which sets additional curtailment for a region and particular resource type
 . In this example, the value `0.2` denotes a 20% reduction of solar capacity
+ factor compared to the reference scenario.
+
+For Collaborative strategies, the interface to set these values has the form:
+```
+collaborative_strategy_manager.set_collab_addl_curtailment(
+    {'solar': 0.2, 'wind': 0.1})
+```
+which sets additional curtailment for particular resource types in all regions.
+ In this example, the value `0.2` denotes a 20% reduction of solar capacity
  factor compared to the reference scenario.
 
 ### E. Calculate Next Capacities
