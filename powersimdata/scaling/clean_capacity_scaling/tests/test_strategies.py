@@ -597,6 +597,58 @@ def test_collaborative_capacity_strategy_overgeneration():
         wind_scaling == approx(4100 + 5073.75)
 
 
+def test_collaborative_capacity_strategy_collab_curtailment():
+    # create Pacific
+    pacific_target = TargetManager('Pacific', 0.25, 'renewables', 200000*1000)
+    pacific_target.set_allowed_resources(['solar', 'wind', 'geo'])
+    pacific_resources = _build_collaborative_test_pacific_resources()
+    for r in pacific_resources:
+        pacific_target.add_resource(r)
+
+    AbstractStrategyManager.set_next_sim_hours(8784)
+    prev_ce_generation = pacific_target.calculate_prev_ce_generation()
+    assert prev_ce_generation == approx(26000*1000)
+    ce_shortfall = pacific_target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(24000*1000)
+
+    # create Atlantic
+    atlantic_target = TargetManager('Atlantic', 0.4, 'clean', 300000*1000)
+    atlantic_target.set_allowed_resources(['solar', 'wind', 'geo', 'hydro',
+                                           'nuclear'])
+    atlantic_resources = _build_collaborative_test_atlantic_resources()
+    for r in atlantic_resources:
+        atlantic_target.add_resource(r)
+
+    prev_ce_generation = atlantic_target.calculate_prev_ce_generation()
+    assert prev_ce_generation == approx(44500*1000)
+    ce_shortfall = atlantic_target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(75500*1000)
+
+    collab = CollaborativeStrategyManager()
+    collab.add_target(pacific_target)
+    collab.add_target(atlantic_target)
+    collab.set_collab_addl_curtailment({'solar':0.07, 'wind': 0.13})
+
+    collab_ce_shortfall = collab.calculate_total_shortfall()
+    assert collab_ce_shortfall == approx(99500*1000)
+    collab_prev_ce_generation = collab.calculate_total_prev_ce_generation()
+    assert collab_prev_ce_generation == approx(70500*1000)
+
+    solar_added, wind_added = collab.calculate_total_added_capacity()
+    assert solar_added == approx(21926.08)
+    assert wind_added == approx(21370.99)
+
+    solar_scaling, wind_scaling = collab.calculate_capacity_scaling()
+    assert collab.targets['Pacific'].resources['solar'].prev_capacity *\
+        solar_scaling == approx(3700 + 10269.18)
+    assert collab.targets['Pacific'].resources['wind'].prev_capacity *\
+        wind_scaling == approx(3600 + 9991.63)
+    assert collab.targets['Atlantic'].resources['solar'].prev_capacity *\
+        solar_scaling == approx(4200 + 11656.9)
+    assert collab.targets['Atlantic'].resources['wind'].prev_capacity *\
+        wind_scaling == approx(4100 + 11379.36)
+
+
 def test_adding_addl_curtailment():
     # create Pacific
     pacific_solar = Resource('solar', 3)
