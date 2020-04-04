@@ -121,9 +121,9 @@ class Execute(State):
         print("--> Launching simulation on server")
         username = os.getlogin()
         cmd = ['ssh', username+'@'+const.SERVER_ADDRESS,
-               'export PYTHONPATH="/home/EGM/v2/PreREISE/:$PYTHONPATH";',
+               'export PYTHONPATH="/home/EGM/v2/REISE/utility/:$PYTHONPATH";',
                'python3',
-               '/home/EGM/v2/PreREISE/prereise/call/call.py',
+               '/home/EGM/v2/REISE/utility/call.py',
                self._scenario_info['id']]
         process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         print("PID: %s" % process.pid)
