@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+import copy
 
 from powersimdata.input.usa_tamu_model import check_interconnect
 from powersimdata.input.helpers import add_column_to_data_frame
@@ -210,3 +211,9 @@ def test_link():
     assert np.array_equal(list(output.values()), values)
     assert np.array_equal(output['a'], values[0])
     assert np.array_equal(output['c'], values[2])
+
+
+def test_deepcopy_works():
+    g = Grid(['Texas'])
+    copied_grid = copy.deepcopy(g)
+    assert isinstance(copied_grid, Grid)
