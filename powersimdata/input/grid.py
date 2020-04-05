@@ -45,7 +45,7 @@ class Grid(object):
         self.fields['type2color'] = get_type2color()
         self.fields['id2type'] = get_id2type()
         self.fields['type2id'] = {value: key for key, value in
-                                  self.id2type.items()}
+                                  self.fields['id2type'].items()}
 
     def __getattr__(self, field_name):
         """
@@ -56,15 +56,22 @@ class Grid(object):
         :raises KeyError For attempts to use key not in the dictionary
         :return: property of the Grid class
         """
-        try:
-            warnings.warn(
-                "Grid property access is moving to dictionary indexing, "
-                "i.e. grid['branch'] consistent with REISE.jl",
-                DeprecationWarning
-            )
-            return self.fields[field_name]
-        except AttributeError as e:
-            print(e)
+        if field_name == "__deepcopy__":
+            return super().__deepcopy__
+        if field_name == "__len__":
+            return super().__len__
+        if field_name == "__getstate__":
+            return super().__getstate__
+        else:
+            try:
+                warnings.warn(
+                    "Grid property access is moving to dictionary indexing, "
+                    "i.e. grid['branch'] consistent with REISE.jl",
+                    DeprecationWarning
+                )
+                return self.fields[field_name]
+            except AttributeError as e:
+                print(e)
 
     def __getitem__(self, field_name):
         """
