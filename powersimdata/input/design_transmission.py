@@ -211,7 +211,8 @@ def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95,
         except KeyError:
             branch_ct = {}
         branch_prev_scaling = pd.Series(
-            {i: ref_ct[i] if i in branch_ct else 1 for i in congested_indices})
+            {i: (branch_ct[i] if i in branch_ct else 1)
+            for i in congested_indices})
         branch_ratings = branch_ratings / branch_prev_scaling
     if method == 'MW':
         branch_metric = quantile_cong_abs / branch_ratings
