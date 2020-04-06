@@ -183,15 +183,9 @@ def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95,
     # If we rank by MW-miles, what 'length' do we give to zero-length branches?
     zero_length_value = 1       # miles
     
-    # Get raw congestion dual values
-    ref_congu = ref_scenario.state.get_congu()
-    ref_congl = ref_scenario.state.get_congl()
-    ref_cong_abs = pd.DataFrame(
-        np.maximum(ref_congu.to_numpy(), ref_congl.to_numpy()),
-        index=ref_congu.index,
-        columns=ref_congu.columns)
-    # Free up some memory, since we don't need two directional arrays anymore
-    del ref_congu, ref_congl
+    # Get raw congestion dual values, add them
+    rss = ref_scenario.state
+    ref_cong_abs = rss.get_congu() + rss.get_congl()
     
     # Parse 2-D array to vector of quantile values, filter out non-significant
     quantile_cong_abs = ref_cong_abs.quantile(quantile)
