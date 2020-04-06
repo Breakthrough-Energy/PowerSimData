@@ -197,8 +197,8 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
     """
     Calculates the next capacities using total target shortfalls
     """
-    def __init__(self, addl_curtailment={"solar": 0, "wind": 0}):
-        self.addl_curtailment = addl_curtailment
+    def __init__(self):
+        self.addl_curtailment = {"solar": 0, "wind": 0}
         AbstractStrategyManager.__init__(self)
 
     def set_collab_addl_curtailment(self, addl_curtailment):
