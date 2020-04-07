@@ -264,7 +264,7 @@ The capacity planning framework replaces an earlier spreadsheet method with
 Importing the framework:
 
 ``` python
-from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling \
+from powersimdata.design.clean_capacity_scaling \
     import CollaborativeStrategyManager, IndependentStrategyManager, \
         TargetManager, ResourceManager, Resource
 ```
