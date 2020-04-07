@@ -91,7 +91,7 @@ class AbstractStrategyManager:
         """
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "save_files",
+            "demo", "data", "save_files",
             target_name+".json"), "r")
         target_obj = jsonpickle.decode(json_file.read())
         json_file.close()
@@ -106,7 +106,7 @@ class AbstractStrategyManager:
         """
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "save_files", target_name+".pkl"),
+            "demo", "data", "save_files", target_name+".pkl"),
             "rb")
         target_obj = pickle.load(json_file)
         json_file.close()
@@ -620,7 +620,7 @@ class TargetManager:
         print(os.getcwd())
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "save_files",
+            "demo", "data", "save_files",
             self.region_name+".json"), "w")
         obj_json = json.dumps(json.loads(jsonpickle.encode(self)), indent=4,
                               sort_keys=True)
@@ -634,7 +634,7 @@ class TargetManager:
         print(os.getcwd())
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "save_files",
+            "demo", "data", "save_files",
             self.region_name+".pkl"), "wb")
         pickle.dump(self, json_file)
         json_file.close()
