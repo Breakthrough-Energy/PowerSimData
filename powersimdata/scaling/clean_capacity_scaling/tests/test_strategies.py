@@ -435,45 +435,73 @@ def test_independent_capacity_strategy_windcurtail_10():
     assert wind_added == approx(2901.039)
 
 
+def _build_collaborative_test_pacific_resources():
+    # Common resources to be used for Pacific target in test_collaborative_*()
+    solar = Resource('solar', 3)
+    solar.set_capacity(0.25, 3700, 0.215379)
+    solar.set_generation(7000*1000)
+    solar.set_curtailment(0.138483)
+
+    wind = Resource('wind', 3)
+    wind.set_capacity(0.4, 3600, 0.347855)
+    wind.set_generation(11000*1000)
+    wind.set_curtailment(0.130363)
+
+    geo = Resource('geo', 3)
+    geo.set_capacity(1, 4000, 1)
+    geo.set_generation(8000*1000)
+    geo.set_curtailment(0)
+
+    hydro = Resource('hydro', 3)
+    hydro.set_capacity(1, 3900, 1)
+    hydro.set_generation(7000*1000)
+    hydro.set_curtailment(0)
+
+    nuclear = Resource('nuclear', 3)
+    nuclear.set_capacity(1, 4300, 1)
+    nuclear.set_generation(6500*1000)
+    nuclear.set_curtailment(0)
+
+    return [solar, wind, geo, hydro, nuclear]
+
+
+def _build_collaborative_test_atlantic_resources():
+    # Common resources to be used for Atlantic target in test_collaborative_*()
+    solar = Resource('solar', 3)
+    solar.set_capacity(0.3, 4200, 0.284608)
+    solar.set_generation(10500*1000)
+    solar.set_curtailment(0.051305)
+
+    wind = Resource('wind', 3)
+    wind.set_capacity(0.35, 4100, 0.319317)
+    wind.set_generation(11500*1000)
+    wind.set_curtailment(0.087667)
+
+    geo = Resource('geo', 3)
+    geo.set_capacity(1, 4500, 1)
+    geo.set_generation(8500*1000)
+    geo.set_curtailment(0)
+
+    hydro = Resource('hydro', 3)
+    hydro.set_capacity(1, 4400, 1)
+    hydro.set_generation(7500*1000)
+    hydro.set_curtailment(0)
+
+    nuclear = Resource('nuclear', 3)
+    nuclear.set_capacity(1, 4300, 1)
+    nuclear.set_generation(6500*1000)
+    nuclear.set_curtailment(0)
+
+    return [solar, wind, geo, hydro, nuclear]
+
+
 def test_collaborative_capacity_strategy():
     # create Pacific
-    pacific_solar = Resource('solar', 3)
-    pacific_solar.set_capacity(0.25, 3700, 0.215379)
-    pacific_solar.set_generation(7000*1000)
-    pacific_solar.set_curtailment(0.138483)
-    pacific_solar.set_addl_curtailment(0)
-
-    pacific_wind = Resource('wind', 3)
-    pacific_wind.set_capacity(0.4, 3600, 0.347855)
-    pacific_wind.set_generation(11000*1000)
-    pacific_wind.set_curtailment(0.130363)
-    pacific_wind.set_addl_curtailment(0)
-
-    pacific_geo = Resource('geo', 3)
-    pacific_geo.set_capacity(1, 4000, 1)
-    pacific_geo.set_generation(8000*1000)
-    pacific_geo.set_curtailment(0)
-    pacific_geo.set_addl_curtailment(0)
-
-    pacific_hydro = Resource('hydro', 3)
-    pacific_hydro.set_capacity(1, 3900, 1)
-    pacific_hydro.set_generation(7000*1000)
-    pacific_hydro.set_curtailment(0)
-    pacific_hydro.set_addl_curtailment(0)
-
-    pacific_nuclear = Resource('nuclear', 3)
-    pacific_nuclear.set_capacity(1, 4300, 1)
-    pacific_nuclear.set_generation(6500*1000)
-    pacific_nuclear.set_curtailment(0)
-    pacific_nuclear.set_addl_curtailment(0)
-
     pacific_target = TargetManager('Pacific', 0.25, 'renewables', 200000*1000)
     pacific_target.set_allowed_resources(['solar', 'wind', 'geo'])
-    pacific_target.add_resource(pacific_solar)
-    pacific_target.add_resource(pacific_wind)
-    pacific_target.add_resource(pacific_geo)
-    pacific_target.add_resource(pacific_hydro)
-    pacific_target.add_resource(pacific_nuclear)
+    pacific_resources = _build_collaborative_test_pacific_resources()
+    for r in pacific_resources:
+        pacific_target.add_resource(r)
 
     AbstractStrategyManager.set_next_sim_hours(8784)
     prev_ce_generation = pacific_target.calculate_prev_ce_generation()
@@ -482,44 +510,12 @@ def test_collaborative_capacity_strategy():
     assert ce_shortfall == approx(24000*1000)
 
     # create Atlantic
-    atlantic_solar = Resource('solar', 3)
-    atlantic_solar.set_capacity(0.3, 4200, 0.284608)
-    atlantic_solar.set_generation(10500*1000)
-    atlantic_solar.set_curtailment(0.051305)
-    atlantic_solar.set_addl_curtailment(0)
-
-    atlantic_wind = Resource('wind', 3)
-    atlantic_wind.set_capacity(0.35, 4100, 0.319317)
-    atlantic_wind.set_generation(11500*1000)
-    atlantic_wind.set_curtailment(0.087667)
-    atlantic_wind.set_addl_curtailment(0)
-
-    atlantic_geo = Resource('geo', 3)
-    atlantic_geo.set_capacity(1, 4500, 1)
-    atlantic_geo.set_generation(8500*1000)
-    atlantic_geo.set_curtailment(0)
-    atlantic_geo.set_addl_curtailment(0)
-
-    atlantic_hydro = Resource('hydro', 3)
-    atlantic_hydro.set_capacity(1, 4400, 1)
-    atlantic_hydro.set_generation(7500*1000)
-    atlantic_hydro.set_curtailment(0)
-    atlantic_hydro.set_addl_curtailment(0)
-
-    atlantic_nuclear = Resource('nuclear', 3)
-    atlantic_nuclear.set_capacity(1, 4300, 1)
-    atlantic_nuclear.set_generation(6500*1000)
-    atlantic_nuclear.set_curtailment(0)
-    atlantic_nuclear.set_addl_curtailment(0)
-
     atlantic_target = TargetManager('Atlantic', 0.4, 'clean', 300000*1000)
     atlantic_target.set_allowed_resources(['solar', 'wind', 'geo', 'hydro',
                                            'nuclear'])
-    atlantic_target.add_resource(atlantic_solar)
-    atlantic_target.add_resource(atlantic_wind)
-    atlantic_target.add_resource(atlantic_geo)
-    atlantic_target.add_resource(atlantic_hydro)
-    atlantic_target.add_resource(atlantic_nuclear)
+    atlantic_resources = _build_collaborative_test_atlantic_resources()
+    for r in atlantic_resources:
+        atlantic_target.add_resource(r)
 
     prev_ce_generation = atlantic_target.calculate_prev_ce_generation()
     assert prev_ce_generation == approx(44500*1000)
@@ -552,43 +548,11 @@ def test_collaborative_capacity_strategy():
 
 def test_collaborative_capacity_strategy_overgeneration():
     # create Pacific
-    pacific_solar = Resource('solar', 3)
-    pacific_solar.set_capacity(0.25, 3700, 0.215379)
-    pacific_solar.set_generation(7000*1000)
-    pacific_solar.set_curtailment(0.138483)
-    pacific_solar.set_addl_curtailment(0)
-
-    pacific_wind = Resource('wind', 3)
-    pacific_wind.set_capacity(0.4, 3600, 0.347855)
-    pacific_wind.set_generation(11000*1000)
-    pacific_wind.set_curtailment(0.130363)
-    pacific_wind.set_addl_curtailment(0)
-
-    pacific_geo = Resource('geo', 3)
-    pacific_geo.set_capacity(1, 4000, 1)
-    pacific_geo.set_generation(8000*1000)
-    pacific_geo.set_curtailment(0)
-    pacific_geo.set_addl_curtailment(0)
-
-    pacific_hydro = Resource('hydro', 3)
-    pacific_hydro.set_capacity(1, 3900, 1)
-    pacific_hydro.set_generation(7000*1000)
-    pacific_hydro.set_curtailment(0)
-    pacific_hydro.set_addl_curtailment(0)
-
-    pacific_nuclear = Resource('nuclear', 3)
-    pacific_nuclear.set_capacity(1, 4300, 1)
-    pacific_nuclear.set_generation(6500*1000)
-    pacific_nuclear.set_curtailment(0)
-    pacific_nuclear.set_addl_curtailment(0)
-
     pacific_target = TargetManager('Pacific', 0, 'renewables', 200000*1000)
     pacific_target.set_allowed_resources(['solar', 'wind', 'geo'])
-    pacific_target.add_resource(pacific_solar)
-    pacific_target.add_resource(pacific_wind)
-    pacific_target.add_resource(pacific_geo)
-    pacific_target.add_resource(pacific_hydro)
-    pacific_target.add_resource(pacific_nuclear)
+    pacific_resources = _build_collaborative_test_pacific_resources()
+    for r in pacific_resources:
+        pacific_target.add_resource(r)
 
     AbstractStrategyManager.set_next_sim_hours(8784)
     prev_ce_generation = pacific_target.calculate_prev_ce_generation()
@@ -597,44 +561,12 @@ def test_collaborative_capacity_strategy_overgeneration():
     assert ce_shortfall == 0
 
     # create Atlantic
-    atlantic_solar = Resource('solar', 3)
-    atlantic_solar.set_capacity(0.3, 4200, 0.284608)
-    atlantic_solar.set_generation(10500*1000)
-    atlantic_solar.set_curtailment(0.051305)
-    atlantic_solar.set_addl_curtailment(0)
-
-    atlantic_wind = Resource('wind', 3)
-    atlantic_wind.set_capacity(0.35, 4100, 0.319317)
-    atlantic_wind.set_generation(11500*1000)
-    atlantic_wind.set_curtailment(0.087667)
-    atlantic_wind.set_addl_curtailment(0)
-
-    atlantic_geo = Resource('geo', 3)
-    atlantic_geo.set_capacity(1, 4500, 1)
-    atlantic_geo.set_generation(8500*1000)
-    atlantic_geo.set_curtailment(0)
-    atlantic_geo.set_addl_curtailment(0)
-
-    atlantic_hydro = Resource('hydro', 3)
-    atlantic_hydro.set_capacity(1, 4400, 1)
-    atlantic_hydro.set_generation(7500*1000)
-    atlantic_hydro.set_curtailment(0)
-    atlantic_hydro.set_addl_curtailment(0)
-
-    atlantic_nuclear = Resource('nuclear', 3)
-    atlantic_nuclear.set_capacity(1, 4300, 1)
-    atlantic_nuclear.set_generation(6500*1000)
-    atlantic_nuclear.set_curtailment(0)
-    atlantic_nuclear.set_addl_curtailment(0)
-
     atlantic_target = TargetManager('Atlantic', 0.4, 'clean', 300000*1000)
     atlantic_target.set_allowed_resources(['solar', 'wind', 'geo', 'hydro',
                                            'nuclear'])
-    atlantic_target.add_resource(atlantic_solar)
-    atlantic_target.add_resource(atlantic_wind)
-    atlantic_target.add_resource(atlantic_geo)
-    atlantic_target.add_resource(atlantic_hydro)
-    atlantic_target.add_resource(atlantic_nuclear)
+    atlantic_resources = _build_collaborative_test_atlantic_resources()
+    for r in atlantic_resources:
+        atlantic_target.add_resource(r)
 
     prev_ce_generation = atlantic_target.calculate_prev_ce_generation()
     assert prev_ce_generation == approx(44500*1000)
@@ -663,6 +595,58 @@ def test_collaborative_capacity_strategy_overgeneration():
         solar_scaling == approx(4200 + 5197.5)
     assert collab.targets['Atlantic'].resources['wind'].prev_capacity *\
         wind_scaling == approx(4100 + 5073.75)
+
+
+def test_collaborative_capacity_strategy_collab_curtailment():
+    # create Pacific
+    pacific_target = TargetManager('Pacific', 0.25, 'renewables', 200000*1000)
+    pacific_target.set_allowed_resources(['solar', 'wind', 'geo'])
+    pacific_resources = _build_collaborative_test_pacific_resources()
+    for r in pacific_resources:
+        pacific_target.add_resource(r)
+
+    AbstractStrategyManager.set_next_sim_hours(8784)
+    prev_ce_generation = pacific_target.calculate_prev_ce_generation()
+    assert prev_ce_generation == approx(26000*1000)
+    ce_shortfall = pacific_target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(24000*1000)
+
+    # create Atlantic
+    atlantic_target = TargetManager('Atlantic', 0.4, 'clean', 300000*1000)
+    atlantic_target.set_allowed_resources(['solar', 'wind', 'geo', 'hydro',
+                                           'nuclear'])
+    atlantic_resources = _build_collaborative_test_atlantic_resources()
+    for r in atlantic_resources:
+        atlantic_target.add_resource(r)
+
+    prev_ce_generation = atlantic_target.calculate_prev_ce_generation()
+    assert prev_ce_generation == approx(44500*1000)
+    ce_shortfall = atlantic_target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(75500*1000)
+
+    collab = CollaborativeStrategyManager()
+    collab.add_target(pacific_target)
+    collab.add_target(atlantic_target)
+    collab.set_collab_addl_curtailment({'solar':0.07, 'wind': 0.13})
+
+    collab_ce_shortfall = collab.calculate_total_shortfall()
+    assert collab_ce_shortfall == approx(99500*1000)
+    collab_prev_ce_generation = collab.calculate_total_prev_ce_generation()
+    assert collab_prev_ce_generation == approx(70500*1000)
+
+    solar_added, wind_added = collab.calculate_total_added_capacity()
+    assert solar_added == approx(21926.08)
+    assert wind_added == approx(21370.99)
+
+    solar_scaling, wind_scaling = collab.calculate_capacity_scaling()
+    assert collab.targets['Pacific'].resources['solar'].prev_capacity *\
+        solar_scaling == approx(3700 + 10269.18)
+    assert collab.targets['Pacific'].resources['wind'].prev_capacity *\
+        wind_scaling == approx(3600 + 9991.63)
+    assert collab.targets['Atlantic'].resources['solar'].prev_capacity *\
+        solar_scaling == approx(4200 + 11656.9)
+    assert collab.targets['Atlantic'].resources['wind'].prev_capacity *\
+        wind_scaling == approx(4100 + 11379.36)
 
 
 def test_adding_addl_curtailment():
