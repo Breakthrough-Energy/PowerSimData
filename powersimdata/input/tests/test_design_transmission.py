@@ -113,7 +113,8 @@ class TestIdentifyMesh(unittest.TestCase):
     def setUp(self):
         # Build dummy congu and congl dataframes, containing barrier cruft
         num_hours = 100
-        num_branches = len(mock_branch['branch_id'])
+        branch_indices = mock_branch['branch_id']
+        num_branches = len(branch_indices)
         congu_data = np.ones((num_hours, num_branches)) * 1e-9
         congl_data = np.ones((num_hours, num_branches)) * 1e-10
         columns = mock_branch['branch_id']
@@ -129,6 +130,8 @@ class TestIdentifyMesh(unittest.TestCase):
         # Branch 103 will have only occassional congestion, but very high
         congu[103].iloc[10:13] = 20
         congl[103].iloc[20:23] = 30
+        # Build dummy change table
+        ct = {'branch': {'branch_id': {b: 1 for b in branch_indices}}}
 
         # Finally, combine all of this into a MockScenario
         self.mock_scenario = MockScenario(
@@ -139,6 +142,7 @@ class TestIdentifyMesh(unittest.TestCase):
                 },
             congu=congu,
             congl=congl,
+            ct=ct,
             )
 
     # These tests use the default 'branch' ranking: [103, 102, 101]
