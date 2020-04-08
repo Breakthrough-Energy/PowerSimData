@@ -1,7 +1,7 @@
 import os
 import pickle
 
-from powersimdata.design.design_transmission import (
+from powersimdata.design.transmission import (
     scale_congested_mesh_branches, scale_renewable_stubs)
 from powersimdata.input.grid import Grid
 from powersimdata.utility import const
@@ -296,7 +296,9 @@ class ChangeTable(object):
 
     def scale_renewable_stubs(self, **kwargs):
         """Scales undersized stub branches connected to renewable generators.
-        Optional kwargs as documented in powersimdata.design.design_transmission
+        
+        Optional kwargs as documented in the
+            :mod:`powersimdata.design.transmission` module.
         """
         scale_renewable_stubs(self, **kwargs)
     
@@ -304,7 +306,9 @@ class ChangeTable(object):
         """Scales congested branches based on previous scenario results.
         :param powersimdata.scenario.scenario.Scenario ref_scenario: the
             reference scenario to be used in determining branch scaling.
-        Optional kwargs as documented in powersimdata.design.design_transmission
+        
+        Optional kwargs as documented in the 
+            :mod:`powersimdata.design.transmission` module.
         """
         scale_congested_mesh_branches(self, ref_scenario, **kwargs)
 

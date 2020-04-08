@@ -17,16 +17,16 @@ class AbstractStrategyManager:
 
     @staticmethod
     def set_next_sim_hours(next_sim_hours):
-        """
-        Sets the number of hours in the simulation for next capacity
-        calculations
+        """Sets the number of hours in the simulation for next capacity
+        calculations.
+
         :param int next_sim_hours: number of hours in the simulation
         """
         AbstractStrategyManager.next_sim_hours = next_sim_hours
 
     def targets_from_data_frame(self, data_frame):
-        """
-        Bulk creates target objects from dataframe
+        """Creates target objects from data frame.
+
         :param (*pandas.DataFrame*) data_frame: external target information
         """
         for row in data_frame.itertuples():
@@ -51,10 +51,10 @@ class AbstractStrategyManager:
 
     def populate_targets_with_resources(self, scenario_info, start_time,
                                         end_time):
-        """
-        Add resource objects to all targets with a strategy from a
-        specified scenario
-        :param powersimdata.scenario.scenario_info.ScenarioInfo scenario_info:
+        """Adds resource objects to all targets with a strategy from a
+        specified scenario.
+
+        :param powersimdata.design.scenario_info.ScenarioInfo scenario_info:
         ScenarioInfo object to calculate scenario resource properties
         :param str start_time: starting datetime for interval of interest
         :param str end_time: ending datetime for interval of interest
@@ -74,9 +74,9 @@ class AbstractStrategyManager:
                                                              end_time)
 
     def add_target(self, target_manager_obj):
-        """
-        Add target to strategy object
-        :param target_manager_obj: target object to be added
+        """Adds target to strategy object.
+
+        :param TargetManager target_manager_obj: target object to be added.
         """
         assert (isinstance(target_manager_obj, TargetManager)), \
             "Input must be of TargetManager type"
@@ -84,10 +84,10 @@ class AbstractStrategyManager:
 
     @staticmethod
     def load_target_from_json(target_name):
-        """
-        Loads JSON file of given target
-        :param str target_name: name of target to be loaded
-        :return: instance of TargetManager class
+        """Loads JSON file of given target.
+
+        :param str target_name: name of target to be loaded.
+        :return: (*TargetManager*) -- instance of TargetManager class
         """
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -99,10 +99,10 @@ class AbstractStrategyManager:
 
     @staticmethod
     def load_target_from_pickle(target_name):
-        """
-        Loads pickle file of given target
+        """Loads pickle file of given target.
+
         :param str target_name: name of target to be loaded
-        :return: instance of TargetManager class
+        :return: (*TargetManager*) -- instance of TargetManager class
         """
         json_file = open(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -114,18 +114,18 @@ class AbstractStrategyManager:
 
 
 class IndependentStrategyManager(AbstractStrategyManager):
-    """
-    Calculates the next capacities using individual target shortfalls
+    """Calculates the next capacities using individual target shortfalls.
+
     """
     def __init__(self):
         AbstractStrategyManager.__init__(self)
 
     def set_addl_curtailment(self, additional_curtailment_table):
-        """
-        Sets additional curtailment for a region and particular resource type
-        :param additional_curtailment_table: nested dictionary structure of
-        the form: {‘Alabama’:{‘solar’: .2}, ‘Maryland’: {‘wind’: .1}}
-        The numbers are curtailment factors between 0 and 1.
+        """Sets additional curtailment for a region and particular resource type
+
+        :param dict additional_curtailment_table: nested dictionary structure of
+            the form: {‘Alabama’:{‘solar’: .2}, ‘Maryland’: {‘wind’: .1}}. The
+            numbers are curtailment factors between 0 and 1.
         """
         for region_name, target_obj in additional_curtailment_table.items():
             for resource_name, curtailment_factor in target_obj.items():
@@ -143,9 +143,9 @@ class IndependentStrategyManager(AbstractStrategyManager):
                         f"{resource_name} not found***") from e
 
     def data_frame_of_next_capacities(self):
-        """
-        Gathers next target capacity information into a dataframe
-        :return: data frame of next target capacities
+        """Gathers next target capacity information into a data frame.
+
+        :return: (*pandas.DataFrame*) -- data frame of next target capacities.
         """
         target_capacities = []
         for tar in self.targets:
@@ -194,19 +194,18 @@ class IndependentStrategyManager(AbstractStrategyManager):
 
 
 class CollaborativeStrategyManager(AbstractStrategyManager):
-    """
-    Calculates the next capacities using total target shortfalls
+    """Calculates the next capacities using total target shortfalls.
+
     """
     def __init__(self):
         self.addl_curtailment = {"solar": 0, "wind": 0}
         AbstractStrategyManager.__init__(self)
 
     def set_collab_addl_curtailment(self, addl_curtailment):
-        """
-        Set additional curtailment for Collaborative Strategy
-        Must be a dictionary with "solar" and "wind" keys defined:
-        {"solar": .2, "wind": .3}
-        with values between 0 and 1.
+        """Sets additional curtailment for Collaborative Strategy
+
+        :param dict addl_curtailment: dictionary with '*solar*' and '*wind*'
+            keys defined: {"solar": .2, "wind": .3} with values between 0 and 1.
         """
         assert set(addl_curtailment.keys()) == set(["solar", "wind"])
         assert 0 <= addl_curtailment["solar"] <= 1, "solar additional " \
@@ -218,9 +217,9 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         self.addl_curtailment = addl_curtailment
 
     def calculate_total_shortfall(self):
-        """
-        Calculate total clean energy shortfall
-        :return: total clean energy shortfall
+        """Calculates total clean energy shortfall.
+
+        :return: (*float*) -- total clean energy shortfall
         """
         total_ce_shortfall = 0
         for name, target in self.targets.items():
@@ -229,9 +228,9 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         return total_ce_shortfall
 
     def calculate_total_prev_ce_generation(self):
-        """
-        Calculate total allowed clean energy generation
-        :return: total allowed clean energy generation
+        """Calculates total allowed clean energy generation
+
+        :return: (*float*) -- total allowed clean energy generation
         """
         total_prev_ce_generation = 0
         for tar in self.targets:
@@ -240,11 +239,11 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         return total_prev_ce_generation
 
     def calculate_total_added_capacity(self, solar_fraction=None):
-        """
-        Calculate the capacity to add from total clean energy shortfall
-        :param solar_fraction: solar fraction to be used in calculation,
-        default is to maintain from previous result
-        :return: solar and wind added capacities
+        """Calculates the capacity to add from total clean energy shortfall.
+
+        :param float solar_fraction: solar fraction to be used in calculation,
+            default is to maintain from previous result
+        :return: (*tuple*) -- solar and wind added capacities
         """
         solar_prev_capacity = self.calculate_total_capacity('solar')
         wind_prev_capacity = self.calculate_total_capacity('wind')
@@ -274,11 +273,11 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         return solar_added_capacity, wind_added_capacity
 
     def calculate_total_added_capacity_gen_constant(self, solar_fraction=None):
-        """
-        Calculate the capacity to add from total clean energy shortfall
-        :param solar_fraction: solar fraction to be used in calculation,
-        default is to maintain from previous result
-        :return: solar and wind added capacities
+        """Calculates the capacity to add from total clean energy shortfall.
+
+        :param (*float*) solar_fraction: solar fraction to be used in
+            calculation, default is to maintain from previous result
+        :return: (*tuple*) -- solar and wind added capacities
         """
         solar_prev_capacity = self.calculate_total_capacity('solar')
         wind_prev_capacity = self.calculate_total_capacity('wind')
@@ -307,10 +306,10 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         return solar_added_capacity, wind_added_capacity
 
     def calculate_total_capacity(self, category):
-        """
-        Calculate total capacity for a resource
-        :param category: resource category
-        :return: total capacity for a resource
+        """Calculates total capacity for a resource.
+
+        :param str category: resource category.
+        :return: (*float*) -- total capacity for a resource.
         """
         total_prev_capacity = 0
         for tar in self.targets:
@@ -319,10 +318,10 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         return total_prev_capacity
 
     def calculate_total_generation(self, category):
-        """
-        Calculate total generation for a resource
-        :param category: resource category
-        :return: total generation for a resource
+        """Calculates total generation for a resource.
+
+        :param str category: resource category.
+        :return: (*float*) -- total generation for a resource.
         """
         total_prev_generation = 0
         for tar in self.targets:
@@ -331,10 +330,10 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         return total_prev_generation
 
     def calculate_total_capacity_factor(self, category):
-        """
-        Calculate total capacity factor for a target_manager_obj resource
-        :param category: resource category
-        :return: total capacity factor
+        """Calculates total capacity factor for a resource.
+
+        :param str category: resource category.
+        :return: (*float*) -- total capacity factor.
         """
         # revisit where hourly factor comes from
         total_cap_factor = self.calculate_total_generation(category) / \
@@ -342,11 +341,10 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         return total_cap_factor
 
     def calculate_total_expected_capacity_factor(self, category):
-        """
-        Calculate the total expected capacity for a target_manager_obj resource
-        :param category: resource category
-        :param addl_curtailment: option to add additional curtailment
-        :return: total expected capacity factor
+        """Calculates the total expected capacity for a resource.
+
+        :param str category: resource category.
+        :return: (*float*) -- total expected capacity factor
         """
         assert (category in ["solar", "wind"]), " expected capacity factor " \
                                                 "only defined for solar and " \
@@ -357,9 +355,9 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         return total_exp_cap_factor
 
     def calculate_capacity_scaling(self):
-        """
-        Calculate the aggregate capacity scaling factor for solar and wind
-        :return: solar and wind capacity scaling factors
+        """Calculates the aggregate capacity scaling factor for solar and wind.
+
+        :return: (*tuple*) -- solar and wind capacity scaling factors
         """
         solar_prev_capacity = self.calculate_total_capacity('solar')
         wind_prev_capacity = self.calculate_total_capacity('wind')
@@ -370,9 +368,9 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         return solar_scaling, wind_scaling
 
     def data_frame_of_next_capacities(self):
-        """
-        Gathers next target capacity information into a dataframe
-        :return: data frame of next target capacities
+        """Gathers next target capacity information into a data frame.
+
+        :return: (*pandas.DataFrame*) -- data frame of next target capacities
         """
         solar_scaling, wind_scaling = self.calculate_capacity_scaling()
 
@@ -414,13 +412,14 @@ class TargetManager:
     def __init__(self, region_name, ce_target_fraction, ce_category,
                  total_demand, external_ce_historical_amount=0,
                  solar_percentage=None):
-        """
-        Class manages the regional target_manager_obj data and calculations
-        :param region_name: region region_name
-        :param ce_target_fraction: target_manager_obj fraction for clean energy
-        :param ce_category: type of energy target_manager_obj, i.e. renewable,
-        clean energy, etc.
-        :param total_demand: total demand for region
+        """Manages the regional data and calculations.
+
+        :param str region_name: region region_name
+        :param float ce_target_fraction: target_manager_obj fraction for clean
+            energy
+        :param str ce_category: type of energy target_manager_obj, i.e.
+            renewable, clean energy, etc.
+        :param float total_demand: total demand for region
         """
         assert (type(region_name) == str), "region_name must be a string"
         assert (type(ce_category) == str), "ce_category must be a string"
@@ -451,12 +450,12 @@ class TargetManager:
 
     def populate_resource_info(self, scenario_info,
                                start_time, end_time):
-        """
-        Add resource objects to target using a specified scenario
-        :param powersimdata.scenario.scenario_info.ScenarioInfo scenario_info:
-        ScenarioInfo object to calculate scenario resource properties
-        :param str start_time: starting datetime for interval of interest
-        :param str end_time: ending datetime for interval of interest
+        """Adds resource objects to target using a specified scenario.
+
+        :param powersimdata.design.scenario_info.ScenarioInfo scenario_info:
+            ScenarioInfo object to calculate scenario resource properties.
+        :param str start_time: starting datetime for interval of interest.
+        :param str end_time: ending datetime for interval of interest.
         """
         allowed_resources = set(self.allowed_resources)
         available_resources = set(
@@ -472,9 +471,9 @@ class TargetManager:
         self.add_resource_manager(resources)
 
     def calculate_added_capacity(self):
-        """
-        Calculate added capacity, maintains solar wind ratio by default
-        :return: tuple of solar and wind added capacity values
+        """Calculates added capacity, maintains solar wind ratio by default.
+
+        :return: (*tuple*) -- solar and wind added capacity values
         """
         solar = self.resources['solar']
         wind = self.resources['wind']
@@ -501,9 +500,9 @@ class TargetManager:
         return solar_added_capacity, wind_added_capacity
 
     def calculate_added_capacity_gen_constant(self):
-        """
-        Calculate added capacity, maintains solar wind ratio by default
-        :return: tuple of solar and wind added capacity values
+        """Calculates added capacity, maintains solar wind ratio by default.
+
+        :return: (*tuple*) -- solar and wind added capacity values.
         """
         solar = self.resources['solar']
         wind = self.resources['wind']
@@ -530,9 +529,9 @@ class TargetManager:
         return solar_added_capacity, wind_added_capacity
 
     def calculate_prev_ce_generation(self):
-        """
-        Calculates total generation from allowed resources
-        :return: total generation from allowed resources
+        """Calculates total generation from allowed resources.
+
+        :return: (*float*) -- total generation from allowed resources
         """
         # prev_ce_generation = the sum of all prev_generation in the list
         # of allowed resources
@@ -543,32 +542,31 @@ class TargetManager:
         return prev_ce_generation
 
     def add_resource(self, resource):
-        """
-        Adds resource to TargetManager
-        :param resource: resource to be added
+        """Adds resource to TargetManager.
+
+        :param Resource resource: resource to be added
         """
         assert (isinstance(resource, Resource)),\
             "Input must be of Resource type"
         self.resources[resource.name] = resource
 
     def add_resource_manager(self, resource_manager):
-        """
-        Sets the resources property equal to a resource manager object which
-        contains scenario resource information
-        :param (powersimdata.scaling.generation
-        .auto_capacity_scaling.ResourceManager) resource_manager: resource
-        manager object with scenario resource information
+        """Sets the resources property equal to a resource manager object which
+        contains scenario resource information.
+
+        :param ResourceManager resource_manager: resource manager object with
+            scenario resource information
         """
         assert (isinstance(resource_manager, ResourceManager)),\
             "Input parameter must be an instance of type ResourceManager"
         self.resources = resource_manager
 
     def calculate_ce_shortfall(self):
-        """
-        Calculates the clean energy shortfall for target_manager_obj area,
+        """Calculates the clean energy shortfall for target_manager_obj area,
         subtracts the external value if greater than total allowed clean energy
-        generation
-        :return: clean energy shortfall
+        generation.
+
+        :return: (*float*) -- clean energy shortfall
         """
         prev_ce_generation = self.calculate_prev_ce_generation()
 
@@ -585,11 +583,10 @@ class TargetManager:
         return ce_shortfall
 
     def calculate_ce_overgeneration(self):
-        """
-        Calculates the clean energy overgeneration for target_manager_obj
-        area, subtracts from external value if greater than total allowed
-        clean energy generation
-        :return: clean energy overgeneration
+        """Calculates the clean energy over generation, subtracts from external
+            value if greater than total allowed clean energy generation
+
+        :return: (*float*) -- clean energy over generation
         """
         prev_ce_generation = self.calculate_prev_ce_generation()
 
@@ -606,16 +603,17 @@ class TargetManager:
         return ce_overgeneration
 
     def set_allowed_resources(self, allowed_resources):
+        """Sets a list of allowed resources.
+
+        :param list allowed_resources: allowed resources
+
+        .. todo:: input validation
         """
-        Sets a list of allow resources
-        :param allowed_resources: list of allow resources
-        """
-        # todo: input validation
         self.allowed_resources = allowed_resources
 
     def save_target_as_json(self):
-        """
-        Saves target object as indented JSON file named by region name
+        """Saves target object as indented JSON file named by region name.
+
         """
         print(os.getcwd())
         json_file = open(os.path.join(
@@ -628,8 +626,8 @@ class TargetManager:
         json_file.close()
 
     def save_target_as_pickle(self):
-        """
-        Saves target object as pickle file named by region name
+        """Saves target object as pickle file named by region name.
+
         """
         print(os.getcwd())
         json_file = open(os.path.join(
@@ -640,9 +638,9 @@ class TargetManager:
         json_file.close()
 
     def __str__(self):
-        """
-        Outputs indented JSON string af object properties
-        :return: JSON formatted string
+        """Outputs indented JSON string af object properties.
+
+        :return: (*str*) -- JSON formatted string
         """
         return json.dumps(
             json.loads(jsonpickle.encode(self, unpicklable=False)),
@@ -651,20 +649,20 @@ class TargetManager:
 
 
 class ResourceManager:
-    """
-    Class manages the creation of resource objects from scenario information
+    """Manages the creation of resource objects from scenario information.
+
     """
     def __init__(self):
-        """
-        Creates an empty dictionary to hold resource objects
+        """Creates an empty dictionary to hold resource objects.
+        
         """
         self.resources = {}
 
     def __getitem__(self, key):
-        """
-        Allows indexing into the resources dictionary directly from the
+        """Allows indexing into the resources dictionary directly from the
         object variable, i.e. res = ResourceManager; res["solar"] is the
-        same as res.resources["solar"]
+        same as res.resources["solar"].
+
         :param str key: resource type as string
         :raises KeyError For attempts to use key not in the dictionary
         :return: instance of Resource class
@@ -676,15 +674,15 @@ class ResourceManager:
 
     def pull_region_resource_info(self, region_name, scenario_info,
                                   region_resources, start_time, end_time):
-        """
-        Pulls resource information from scenario info object over the
-        specified time range
+        """Pulls resource information from scenario info object over the
+        specified time range.
+
         :param str region_name: name of region to extract from scenario
-        :param powersimdata.scenario.scenario_info.ScenarioInfo scenario_info:
-        ScenarioInfo object to calculate scenario resource properties
-        :param set region_resources: resources to extract from scenario
-        :param str start_time: starting time for simulation
-        :param str end_time: ending time for simulation
+        :param powersimdata.design.scenario_info.ScenarioInfo scenario_info:
+        ScenarioInfo instance to calculate scenario resource properties
+        :param set region_resources: resources to extract from scenario.
+        :param str start_time: starting time for simulation.
+        :param str end_time: ending time for simulation.
         """
         assert (isinstance(scenario_info, ScenarioInfo)),\
             "input parameter must be an instance of type ScenarioInfo"
@@ -760,14 +758,16 @@ class Resource:
         self.prev_curtailment = None
         self.addl_curtailment = 0
 
-    # todo: calculate directly from scenario results
     def set_capacity(self, no_congestion_cap_factor, prev_capacity,
                      prev_cap_factor):
-        """
-        Sets capacity information for resource
-        :param no_congestion_cap_factor: capacity factor with no congestion
-        :param prev_capacity: capacity from scenario run
-        :param prev_cap_factor: capacity factor from scenario run
+        """Sets capacity information for resource.
+
+        :param float no_congestion_cap_factor: capacity factor with no
+            congestion.
+        :param float prev_capacity: capacity from scenario run.
+        :param float prev_cap_factor: capacity factor from scenario run.
+
+        .. todo:: calculate directly from scenario results
         """
         assert (0 <= no_congestion_cap_factor <= 1), \
             "no_congestion_cap_factor must be between 0 and 1"
@@ -779,60 +779,60 @@ class Resource:
         self.prev_capacity = prev_capacity
         self.prev_cap_factor = prev_cap_factor
 
-    # todo: calculate directly from scenario results
     def set_generation(self, prev_generation, tolerance=1e-3):
+        """Sets generation from scenario run.
+
+        :param float prev_generation: generation from scenario run.
+        :param float tolerance: tolerance for ignored negative values.
+
+        .. todo:: calculate directly from scenario results
         """
-        Set generation from scenario run
-        :param prev_generation: generation from scenario run
-        :param {float, int} tolerance: tolerance for ignored negative values
-        """
-        if ((-1 * tolerance) <= prev_generation < 0):
+        if (-1 * tolerance) <= prev_generation < 0:
             prev_generation = 0
         assert (prev_generation >= 0), \
             f"prev_generation must be greater than zero. Got {prev_generation}"
         self.prev_generation = prev_generation
 
     def set_curtailment(self, prev_curtailment):
-        """
-        Set curtailment from scenario run
-        :param prev_curtailment: calculated curtailment from scenario run
+        """Sets curtailment from scenario run.
+
+        :param float prev_curtailment: calculated curtailment from scenario run.
         """
         assert (prev_curtailment >= 0), \
             "prev_curtailment must be greater than zero"
         self.prev_curtailment = prev_curtailment
 
     def set_addl_curtailment(self, addl_curtailment):
-        """
-        Set additional curtailment to included in capacity calculations
-        :param addl_curtailment: additional curtailment
+        """Sets additional curtailment to include in capacity calculations.
+
+        :param float addl_curtailment: additional curtailment
         """
         assert (0 <= addl_curtailment <= 1), \
             "additional_curtailment must be between 0 and 1"
         self.addl_curtailment = addl_curtailment
 
     def calculate_expected_cap_factor(self):
-        """
-        Calculates the capacity factor including additional curtailment
-        :return: capacity factor for resource
+        """Calculates the capacity factor including additional curtailment.
+
+        :return: (*float*) --capacity factor for resource
         """
         exp_cap_factor = self.prev_cap_factor * (1-self.addl_curtailment)
         return exp_cap_factor
 
     def calculate_next_capacity(self, added_capacity):
-        """
-        Calculates next capacity to be used for scenario
-        :param added_capacity: calculated added capacity
-        :return: next capacity to be used for scenario
+        """Calculates next capacity to be used for scenario.
+
+        :param float added_capacity: calculated added capacity
+        :return: (*float*) -- next capacity to be used for scenario
         """
         next_capacity = self.prev_capacity + added_capacity
         return next_capacity
 
     def __str__(self):
+        """Outputs indented JSON string af object properties
+
+        :return: (*str*) --JSON formatted string
         """
-        Outputs indented JSON string af object properties
-        :return: JSON formatted string
-        """
-        return json.dumps(json.loads(jsonpickle.encode(self,
-                                                       unpicklable=False
-                                                       )),
-                          indent=4, sort_keys=True)
+        return json.dumps(
+            json.loads(jsonpickle.encode(self, unpicklable=False)),
+            indent=4, sort_keys=True)
