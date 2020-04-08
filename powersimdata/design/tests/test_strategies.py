@@ -1,4 +1,4 @@
-from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling\
+from powersimdata.design.clean_capacity_scaling\
     import Resource, TargetManager, AbstractStrategyManager, \
     IndependentStrategyManager, CollaborativeStrategyManager
 from pytest import approx, raises

@@ -1,4 +1,4 @@
-from powersimdata.scaling.clean_capacity_scaling.auto_capacity_scaling \
+from powersimdata.design.clean_capacity_scaling \
     import AbstractStrategyManager, TargetManager
 import pandas as pd
 
