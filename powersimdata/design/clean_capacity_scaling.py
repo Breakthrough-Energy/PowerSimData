@@ -272,39 +272,6 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
                               wind_exp_cap_factor)
         return solar_added_capacity, wind_added_capacity
 
-    def calculate_total_added_capacity_gen_constant(self, solar_fraction=None):
-        """Calculates the capacity to add from total clean energy shortfall.
-
-        :param (*float*) solar_fraction: solar fraction to be used in
-            calculation, default is to maintain from previous result
-        :return: (*tuple*) -- solar and wind added capacities
-        """
-        solar_prev_capacity = self.calculate_total_capacity('solar')
-        wind_prev_capacity = self.calculate_total_capacity('wind')
-
-        if solar_fraction is None:
-            solar_fraction = solar_prev_capacity / \
-                             (solar_prev_capacity + wind_prev_capacity)
-
-        ce_shortfall = self.calculate_total_shortfall()
-        solar_exp_cap_factor = \
-            self.calculate_total_expected_capacity_factor('solar')
-        wind_exp_cap_factor = \
-            self.calculate_total_expected_capacity_factor('wind')
-
-        if solar_fraction != 0:
-            solar_added_capacity = ce_shortfall*solar_fraction/(
-                    AbstractStrategyManager.next_sim_hours *
-                    solar_exp_cap_factor)
-            wind_added_capacity = ce_shortfall*(1-solar_fraction)/(
-                    AbstractStrategyManager.next_sim_hours*wind_exp_cap_factor)
-        else:
-            solar_added_capacity = 0
-            wind_added_capacity = \
-                ce_shortfall/(AbstractStrategyManager.next_sim_hours *
-                              wind_exp_cap_factor)
-        return solar_added_capacity, wind_added_capacity
-
     def calculate_total_capacity(self, category):
         """Calculates total capacity for a resource.
 
