@@ -121,9 +121,9 @@ class Execute(State):
         print("--> Launching simulation on server")
         username = os.getlogin()
         cmd = ['ssh', username+'@'+const.SERVER_ADDRESS,
-               'export PYTHONPATH="/home/EGM/v2/PreREISE/:$PYTHONPATH";',
+               'export PYTHONPATH="/home/EGM/v2/REISE/:$PYTHONPATH";',
                'python3',
-               '/home/EGM/v2/PreREISE/prereise/call/call.py',
+               '/home/EGM/v2/REISE/pyreise/utility/call.py',
                self._scenario_info['id']]
         process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         print("PID: %s" % process.pid)
@@ -140,9 +140,9 @@ class Execute(State):
             print("--> Extracting output data on server")
             username = os.getlogin()
             cmd = ['ssh', username+'@'+const.SERVER_ADDRESS,
-                   'export PYTHONPATH="/home/EGM/v2/PostREISE/:$PYTHONPATH";',
+                   'export PYTHONPATH="/home/EGM/v2/REISE/:$PYTHONPATH";',
                    'python3',
-                   '/home/EGM/v2/PostREISE/postreise/extract/extract_data.py',
+                   '/home/EGM/v2/REISE/pyreise/utility/extract_data.py',
                    self._scenario_info['id']]
             process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             print("PID: %s" % process.pid)
