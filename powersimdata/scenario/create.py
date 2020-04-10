@@ -57,6 +57,7 @@ class Create(State):
             self._scenario_info['base_hydro'] = self.builder.hydro
             self._scenario_info['base_solar'] = self.builder.solar
             self._scenario_info['base_wind'] = self.builder.wind
+            self._scenario_info['engine'] = self.builder.engine
             if bool(self.builder.change_table.ct):
                 self._scenario_info['change_table'] = 'Yes'
             else:
@@ -248,6 +249,7 @@ class _Builder(object):
     hydro = ''
     solar = ''
     wind = ''
+    engine = 'REISE'
     name = 'builder'
 
     def set_name(self, plan_name, scenario_name):
