@@ -9,6 +9,7 @@ from collections import OrderedDict
 from scipy.io import savemat
 import numpy as np
 import os
+import posixpath
 from subprocess import Popen, PIPE
 
 
@@ -66,6 +67,31 @@ class Execute(State):
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to update %s on server" % const.EXECUTE_LIST)
 
+    def _run_script(self, script):
+        """Returns running process
+
+        :param str script: script to be used.
+        :return: (*subprocess.Popen*) -- process used to run script
+        """
+        path_to_package = posixpath.join(const.HOME_DIR,
+                                         self._scenario_info['engine'])
+        if self._scenario_info['engine'] == 'REISE':
+            folder = 'pyreise'
+        else:
+            folder = 'pyreisejl'
+        path_to_script = posixpath.join(path_to_package, folder,
+                                        'utility', script)
+        username = os.getlogin()
+        cmd = [
+            'ssh', username+'@'+const.SERVER_ADDRESS,
+            'export PYTHONPATH="%s:$PYTHONPATH";' % path_to_package,
+            'python3',
+            '%s' % path_to_script,
+            self._scenario_info['id']]
+        process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        print("PID: %s" % process.pid)
+        return process
+
     def print_scenario_info(self):
         """Prints scenario information.
 
@@ -119,15 +145,7 @@ class Execute(State):
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
         print("--> Launching simulation on server")
-        username = os.getlogin()
-        cmd = ['ssh', username+'@'+const.SERVER_ADDRESS,
-               'export PYTHONPATH="/home/EGM/v2/REISE/:$PYTHONPATH";',
-               'python3',
-               '/home/EGM/v2/REISE/pyreise/utility/call.py',
-               self._scenario_info['id']]
-        process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        print("PID: %s" % process.pid)
-        return process
+        return self._run_script('call.py')
 
     def extract_simulation_output(self):
         """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL} on server.
@@ -138,15 +156,7 @@ class Execute(State):
         self._update_scenario_status()
         if self._scenario_status == 'finished':
             print("--> Extracting output data on server")
-            username = os.getlogin()
-            cmd = ['ssh', username+'@'+const.SERVER_ADDRESS,
-                   'export PYTHONPATH="/home/EGM/v2/REISE/:$PYTHONPATH";',
-                   'python3',
-                   '/home/EGM/v2/REISE/pyreise/utility/extract_data.py',
-                   self._scenario_info['id']]
-            process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            print("PID: %s" % process.pid)
-            return process
+            return self._run_script('extract_data.py')
         else:
             print("---------------------------")
             print("OUTPUTS CANNOT BE EXTRACTED")
