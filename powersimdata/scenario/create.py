@@ -39,7 +39,8 @@ class Create(State):
             ('change_table', ''),
             ('start_date', ''),
             ('end_date', ''),
-            ('interval', '')])
+            ('interval', ''),
+            ('engine', '')])
         self._ssh = scenario.ssh
 
     def _update_scenario_info(self):
