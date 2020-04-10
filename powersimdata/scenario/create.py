@@ -331,6 +331,18 @@ class _Builder(object):
                              " + ".join(self.interconnect),
                              " | ".join(possible)))
 
+    def set_engine(self, engine):
+        """Sets simulation engine to be used for scenarion.
+
+        :param str engine: simulation engine
+        """
+        possible = ['REISE']
+        if engine not in possible:
+            print('Available engines: %s' % ' | '.join(possible))
+            return
+        else:
+            self.engine = engine
+
     def load_change_table(self, filename):
         """Uploads change table.
 
