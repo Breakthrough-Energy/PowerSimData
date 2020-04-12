@@ -2,6 +2,7 @@ import warnings
 
 from powersimdata.utility.constants import abv2state, state2loadzone, \
     interconnect2loadzone
+from powersimdata.input.grid import Grid
 
 
 def _check_state(scenario):
@@ -15,26 +16,10 @@ def _check_state(scenario):
         raise Exception('Scenario state must be \'analyze.\'')
 
 
-class ScenarioInfo:
-    """Gather information from previous scenarios for capacity scaling.
-
-    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :raise Exception: if the scenario is not in 'analyze' state.
-    """
-    def __init__(self, scenario):
-        _check_state(scenario)
-        self.info = scenario.info
-        self.pg = scenario.state.get_pg()
-        self.grid = scenario.state.get_grid()
-        self.demand = scenario.state.get_demand()
-        solar = scenario.state.get_solar()
-        wind = scenario.state.get_wind()
-        hydro = scenario.state.get_hydro()
-        self.profile = {
-            'solar': solar,
-            'wind': wind,
-            'hydro': hydro
-        }
+class GridInfo:
+    def __init__(self, interconnect_name=None):
+        if interconnect_name is not None:
+            self.grid = Grid([interconnect_name])
 
     def area_to_loadzone(self, area, area_type=None):
         """Map the query area to a list of loadzones
@@ -98,6 +83,60 @@ class ScenarioInfo:
                 raise ValueError('Invalid area')
         return loadzone_set
 
+    def get_available_resource(self, area):
+        """Find the available resources of a specific area in the grid of the
+            given scenario
+
+        :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+            *interconnect*, *'all'*
+        :return: (*list*) -- a list of available resources in the query area
+        """
+        loadzone_set = self.area_to_loadzone(area)
+        available_resources = self.grid.plant[
+            self.grid.plant['zone_name'].isin(loadzone_set)]['type'].unique()
+        return available_resources.tolist()
+
+    def get_capacity(self, gentype, area):
+        """Calculate the total capacity of the query gentype in the query area
+            of the given scenario
+
+        :param str gentype: type of generator
+        :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+            *interconnect*, *'all'*
+        :return: (*float*) -- total capacity (in MW) based on the
+            specified parameters
+        """
+        loadzone_set = self.area_to_loadzone(area)
+        total_capacity = self.grid.plant[
+            (self.grid.plant['type'] == gentype) &
+            (self.grid.plant['zone_name'].isin(loadzone_set))]['Pmax'].sum()
+        if total_capacity == 0:
+            warnings.warn('No such type of generator in the area specified!')
+        return float(total_capacity)
+
+
+class ScenarioInfo(GridInfo):
+    """Gather information from previous scenarios for capacity scaling.
+
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
+    :raise Exception: if the scenario is not in 'analyze' state.
+    """
+    def __init__(self, scenario):
+        super().__init__()
+        _check_state(scenario)
+        self.info = scenario.info
+        self.pg = scenario.state.get_pg()
+        self.grid = scenario.state.get_grid()
+        self.demand = scenario.state.get_demand()
+        solar = scenario.state.get_solar()
+        wind = scenario.state.get_wind()
+        hydro = scenario.state.get_hydro()
+        self.profile = {
+            'solar': solar,
+            'wind': wind,
+            'hydro': hydro
+        }
+
     def check_time_range(self, start_time, end_time):
         """Check if the start_time and end_time define a valid time range of
             the given scenario
@@ -122,19 +161,6 @@ class ScenarioInfo:
                              'start_time falls behind end_time!')
         return start_i, end_i
 
-    def get_available_resource(self, area):
-        """Find the available resources of a specific area in the grid of the
-            given scenario
-
-        :param str area: one of: *loadzone*, *state*, *state abbreviation*,
-            *interconnect*, *'all'*
-        :return: (*list*) -- a list of available resources in the query area
-        """
-        loadzone_set = self.area_to_loadzone(area)
-        available_resources = self.grid.plant[
-            self.grid.plant['zone_name'].isin(loadzone_set)]['type'].unique()
-        return available_resources.tolist()
-
     def get_demand(self, area, start_time, end_time):
         """Calculate the total demand of the query area during the query time
             range of the given scenario
@@ -156,24 +182,6 @@ class ScenarioInfo:
              for loadzone in loadzone_set]
         ].sum().sum()
         return float(total_demand)
-
-    def get_capacity(self, gentype, area):
-        """Calculate the total capacity of the query gentype in the query area
-            of the given scenario
-
-        :param str gentype: type of generator
-        :param str area: one of: *loadzone*, *state*, *state abbreviation*,
-            *interconnect*, *'all'*
-        :return: (*float*) -- total capacity (in MW) based on the
-            specified parameters
-        """
-        loadzone_set = self.area_to_loadzone(area)
-        total_capacity = self.grid.plant[
-            (self.grid.plant['type'] == gentype) &
-            (self.grid.plant['zone_name'].isin(loadzone_set))]['Pmax'].sum()
-        if total_capacity == 0:
-            warnings.warn('No such type of generator in the area specified!')
-        return float(total_capacity)
 
     def get_generation(self, gentype, area, start_time, end_time):
         """Calculate the total generation of the query gentype in the query
