@@ -4,9 +4,18 @@ import jsonpickle
 import json
 import os
 import pickle
+import warnings
+from collections import defaultdict
+
+from abc import ABC, abstractmethod
+from pandas.io.json import json_normalize
+
+from powersimdata.design.scenario_info import GridInfo
+from powersimdata.input.grid import Grid
+from powersimdata.input.change_table import ChangeTable
 
 
-class AbstractStrategyManager:
+class AbstractStrategyManager(ABC):
     """
     Base class for strategy objects, contains common functions
     """
@@ -14,6 +23,7 @@ class AbstractStrategyManager:
 
     def __init__(self):
         self.targets = {}
+        self.interconnect = str()
 
     @staticmethod
     def set_next_sim_hours(next_sim_hours):
@@ -27,7 +37,7 @@ class AbstractStrategyManager:
     def targets_from_data_frame(self, data_frame):
         """Creates target objects from data frame.
 
-        :param (*pandas.DataFrame*) data_frame: external target information
+        :param *pandas.DataFrame* data_frame: external target information
         """
         for row in data_frame.itertuples():
 
@@ -65,6 +75,8 @@ class AbstractStrategyManager:
         sim_hours = int((pd.Timedelta(t2 - t1).days + 1) * 24)
         AbstractStrategyManager.next_sim_hours = sim_hours
 
+        self.interconnect = scenario_info.grid.interconnect
+
         for region_name in self.targets:
             print()
             print(region_name)
@@ -81,6 +93,112 @@ class AbstractStrategyManager:
         assert (isinstance(target_manager_obj, TargetManager)), \
             "Input must be of TargetManager type"
         self.targets[target_manager_obj.region_name] = target_manager_obj
+
+    @abstractmethod
+    def data_frame_of_next_capacities(self):
+        """
+        This abstract method needs to be implemented in derived classes or
+        the class cannot be instantiated
+        """
+        pass
+
+    def output_capacities_table(self, base_grid=None):
+        """
+        Returns a dataframe of target region resource capacities
+        :param base_grid: base grid that will be scaled
+        :return: (*pandas.DataFrame*) -- dataframe of target region capacities
+        """
+        next_capacities = self.data_frame_of_next_capacities()[[
+            'next_solar_capacity', 'next_wind_capacity']]
+        if base_grid is None:
+            base_grid = Grid(self.interconnect)
+        grid_info = GridInfo(base_grid)
+        grid_resources = grid_info.get_available_resource('all')
+        gen_capacity = pd.DataFrame(
+            columns=grid_resources,
+            index=self.targets.keys())
+
+        for tar in self.targets:
+            row_dict = {}
+            for res in grid_resources:
+                next_capacity = 0
+                if res == 'solar':
+                    next_capacity = \
+                        next_capacities.loc[tar, 'next_solar_capacity']
+                elif res == 'wind':
+                    next_capacity = \
+                        next_capacities.loc[tar, 'next_wind_capacity']
+                else:
+                    try:
+                        next_capacity = self.targets[tar].resources[res]\
+                            .prev_capacity
+                    except AttributeError:
+                        print('Resource {0} not found in target region'
+                              ' {1}'.format(res, tar))
+                row_dict.update({res: next_capacity})
+            gen_capacity.loc[tar] = pd.Series(row_dict)
+        return gen_capacity
+
+    def create_scale_factor_table(self, base_grid=None, gen_capacity=None,
+                                  tolerance=0.001):
+        """
+        Outputs a scaling factor table for targets and resource with
+        respect to a base grid for creating a change table.
+        :param powersimdata.input.grid.Grid base_grid: reference grid to
+        calculate change table scaling
+        :param pandas.DataFrame gen_capacity: dataframe of next capacities
+        factors
+        :param float tolerance: deviation from 1.0 to be included in change
+        table
+        :return: (*dict*) -- nested dictionary of change table scaling values
+        """
+        if base_grid is None:
+            base_grid = Grid(self.interconnect)
+        grid_info = GridInfo(base_grid)
+        grid_loadzones = set(grid_info.area_to_loadzone('all'))
+        if gen_capacity is None:
+            gen_capacity = self.output_capacities_table(base_grid)
+        scale_factor_table = defaultdict(dict)
+        for tar, row in gen_capacity.iterrows():
+            for res in gen_capacity.columns:
+                base_target_resource_cap = grid_info.get_capacity(res, tar)
+                target_loadzones = grid_loadzones.intersection(
+                        set(grid_info.area_to_loadzone(tar)))
+                for load_zone in target_loadzones:
+                    load_zone_cap = grid_info.get_capacity(res, load_zone)
+                    if load_zone_cap == 0 and row[res] > 0:
+                        warnings.warn('Attempting to scale target area {0} '
+                                      'and resource {1} when base grid '
+                                      'capacity is zero!'.format(tar, res))
+                    elif load_zone_cap == 0:
+                        print('Base grid capacity is zero for loadzone {0} '
+                              'and resource {1}'.format(load_zone, res))
+                    else:
+                        scale_factor = row[res] / base_target_resource_cap
+                        if abs(scale_factor - 1.0) > tolerance:
+                            scale_factor_table[res][load_zone] = scale_factor
+        return scale_factor_table
+
+    def create_change_table(self, scale_factor_table=None, interconnect=None):
+        """
+        Outputs a change table for targets and resource with
+        respect to a base grid for creating a change table.
+        :param dict scale_factor_table: nested dictionary of scaling values
+        :param str interconnect: interconnect for change table
+        :return: (*ChangeTable*) -- change table object
+        """
+        if interconnect is None:
+            change_table = ChangeTable(self.interconnect)
+        else:
+            change_table = ChangeTable(interconnect)
+
+        if scale_factor_table is None:
+            scale_factor_table = self.create_scale_factor_table()
+        for gen_type, next_level in scale_factor_table.items():
+            for load_zone, scale_factor in next_level.items():
+                change_table.scale_plant_capacity(gen_type, zone_name={
+                        load_zone: scale_factor})
+        return change_table
 
     @staticmethod
     def load_target_from_json(target_name):
@@ -112,6 +230,19 @@ class AbstractStrategyManager:
         json_file.close()
         return target_obj
 
+    def output_targets_dataframe(self):
+        """
+        Transforms information all target object property information into a
+        Pandas dataframe
+        :return: (*pandas.DataFrame*) -- dataframe with all target information
+        """
+        cap_planning_df = pd.DataFrame()
+        for tar in self.targets:
+            target_df = self.targets[tar].output_target_dataframe_row()
+            cap_planning_df = cap_planning_df.append(target_df, sort=False)
+        cap_planning_df = cap_planning_df.set_index('region_name')
+        return cap_planning_df
+
 
 class IndependentStrategyManager(AbstractStrategyManager):
     """Calculates the next capacities using individual target shortfalls.
@@ -121,11 +252,12 @@ class IndependentStrategyManager(AbstractStrategyManager):
         AbstractStrategyManager.__init__(self)
 
     def set_addl_curtailment(self, additional_curtailment_table):
-        """Sets additional curtailment for a region and particular resource type
+        """Sets additional curtailment for a region and particular resource
+        type
 
-        :param dict additional_curtailment_table: nested dictionary structure of
-            the form: {‘Alabama’:{‘solar’: .2}, ‘Maryland’: {‘wind’: .1}}. The
-            numbers are curtailment factors between 0 and 1.
+        :param dict additional_curtailment_table: nested dictionary structure
+        of the form: {‘Alabama’:{‘solar’: .2}, ‘Maryland’: {‘wind’: .1}}. The
+        numbers are curtailment factors between 0 and 1.
         """
         for region_name, target_obj in additional_curtailment_table.items():
             for resource_name, curtailment_factor in target_obj.items():
@@ -205,9 +337,10 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         """Sets additional curtailment for Collaborative Strategy
 
         :param dict addl_curtailment: dictionary with '*solar*' and '*wind*'
-            keys defined: {"solar": .2, "wind": .3} with values between 0 and 1.
+            keys defined: {"solar": .2, "wind": .3} with values between 0 and
+            1.
         """
-        assert set(addl_curtailment.keys()) == set(["solar", "wind"])
+        assert set(addl_curtailment.keys()) == {"solar", "wind"}
         assert 0 <= addl_curtailment["solar"] <= 1, "solar additional " \
                                                     "curtailment must be " \
                                                     "between  0 and 1"
@@ -313,7 +446,7 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         :param str category: resource category.
         :return: (*float*) -- total expected capacity factor
         """
-        assert (category in ["solar", "wind"]), " expected capacity factor " \
+        assert (category in ["solar", "wind"]), "expected capacity factor " \
                                                 "only defined for solar and " \
                                                 "wind"
         total_exp_cap_factor = \
@@ -604,6 +737,18 @@ class TargetManager:
         pickle.dump(self, json_file)
         json_file.close()
 
+    def output_target_dataframe_row(self):
+        """
+        Transforms information within the target object into a Pandas
+        dataframe row that can be concatenated. First, use jsonpickle to
+        convert targets to json, and second, use json_normalize to flatten
+        this json hierarchy into a dataframe
+        :return: (*pandas.DataFrame*) -- row with all target object properties
+        """
+        target_df = json_normalize(json.loads(
+                jsonpickle.encode(self, unpicklable=False)))
+        return target_df
+
     def __str__(self):
         """Outputs indented JSON string af object properties.
 
@@ -634,6 +779,8 @@ class ResourceManager:
         :raises KeyError For attempts to use key not in the dictionary
         :return: instance of Resource class
         """
+        if key == 'all':
+            return self.resources
         try:
             return self.resources[key]
         except KeyError as e:
@@ -702,7 +849,7 @@ class ResourceManager:
                 no_congestion_cap_factor,
                 prev_capacity,
                 prev_cap_factor
-            )
+                )
             resource_obj.set_generation(prev_generation)
             resource_obj.set_curtailment(prev_curtailment)
 
@@ -763,7 +910,8 @@ class Resource:
     def set_curtailment(self, prev_curtailment):
         """Sets curtailment from scenario run.
 
-        :param float prev_curtailment: calculated curtailment from scenario run.
+        :param float prev_curtailment: calculated curtailment from scenario
+        run.
         """
         assert (prev_curtailment >= 0), \
             "prev_curtailment must be greater than zero"

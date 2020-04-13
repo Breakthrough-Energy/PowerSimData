@@ -1,5 +1,5 @@
 from powersimdata.design.clean_capacity_scaling \
-    import AbstractStrategyManager, TargetManager
+    import IndependentStrategyManager, TargetManager
 import pandas as pd
 
 
@@ -46,7 +46,7 @@ def test_populate_strategy_from_dataframe():
                      'allowed_resources': ['solar', 'wind']}
     planning_dataframe = pd.DataFrame.from_dict(planning_data)
 
-    strategy = AbstractStrategyManager()
+    strategy = IndependentStrategyManager()
     strategy.targets_from_data_frame(planning_dataframe)
 
     assert strategy.targets['Pacific'].ce_category == \

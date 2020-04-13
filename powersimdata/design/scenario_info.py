@@ -17,9 +17,13 @@ def _check_state(scenario):
 
 
 class GridInfo:
-    def __init__(self, interconnect_name=None):
-        if interconnect_name is not None:
-            self.grid = Grid([interconnect_name])
+    """
+    Lightweight class to obtain base grid information; use ScenarioInfo for
+    methods requiring more than base grid information
+    """
+    def __init__(self, grid=None):
+        if grid:
+            self.grid = grid
 
     def area_to_loadzone(self, area, area_type=None):
         """Map the query area to a list of loadzones
