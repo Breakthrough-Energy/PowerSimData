@@ -4,6 +4,8 @@ import warnings
 
 from powersimdata.input.usa_tamu_model import TAMU
 from powersimdata.input.mat_reader import MATReader
+from powersimdata.input.grid_fields \
+    import Branch, Bus, DCLine, GenCost, Plant, Storage, Sub
 
 
 class Grid(object):
@@ -12,6 +14,7 @@ class Grid(object):
     """
 
     fields = {}
+    transform = {}
 
     def __init__(self, interconnect, source='usa_tamu'):
         """Constructor
@@ -30,38 +33,55 @@ class Grid(object):
         else:
             raise ValueError('%s not implemented' % source)
 
-        self.fields['data_loc'] = data.data_loc
-        self.fields['interconnect'] = data.interconnect
-        self.fields['zone2id'] = data.zone2id
-        self.fields['id2zone'] = data.id2zone
-        self.fields['sub'] = data.sub
-        self.fields['plant'] = data.plant
-        self.fields['gencost'] = data.gencost
-        self.fields['dcline'] = data.dcline
-        self.fields['bus2sub'] = data.bus2sub
-        self.fields['bus'] = data.bus
-        self.fields['branch'] = data.branch
-        self.fields['storage'] = data.storage
-        self.fields['type2color'] = get_type2color()
-        self.fields['id2type'] = get_id2type()
-        self.fields['type2id'] = {value: key for key, value in
-                                  self.fields['id2type'].items()}
+        # Specific grid info
+        self.data_loc = data.data_loc
+        self.interconnect = data.interconnect
 
-    def __getattr__(self, field_name):
+        # Input data as grid fields
+        self.fields['bus'] = Bus(data.bus)
+        self.fields['branch'] = Branch(data.branch)
+        self.fields['dcline'] = DCLine(data.dcline)
+        self.fields['gencost'] = GenCost(data.gencost)
+        self.fields['plant'] = Plant(data.plant)
+        self.fields['sub'] = Sub(data.sub)
+        self.fields['storage'] = Storage(data.storage)
+
+        # Conversion helpers
+        self.transform['bus2sub'] = data.bus2sub
+        self.transform['zone2id'] = data.zone2id
+        self.transform['id2zone'] = data.id2zone
+        self.transform['id2type'] = get_id2type()
+        self.transform['type2id'] = {value: key for key, value in
+                                     self.transform['id2type'].items()}
+
+        # Plotting helper
+        self.transform['type2color'] = get_type2color()
+
+    def __getattr__(self, prop_name):
         """
         Overrides the object "." property interface to maintain backwards
         compatibility, i.e. grid.plant
-        is the same as grid.fields["plant"]
-        :param str field_name: grid field name as string
-        :raises KeyError For attempts to use key not in the dictionary
+        is the same as grid.fields["plant"], or grid.transform["bus2sub"]
+
+        :param str prop_name: property name as string
+        :raises KeyError: For attempts to use key not in the dictionary
         :return: property of the Grid class
         """
-        if field_name == "__deepcopy__":
+
+        # needed for deepcopy to work
+        if prop_name == "__deepcopy__":
             return super().__deepcopy__
-        if field_name == "__len__":
+        if prop_name == "__len__":
             return super().__len__
-        if field_name == "__getstate__":
+        if prop_name == "__getstate__":
             return super().__getstate__
+        if prop_name == "__setstate__":
+            return super().__setstate__
+
+        # switch between transform and grid_field attributes
+        if prop_name in ['bus2sub', 'zone2id', 'id2zone', 'id2type', 
+                         'type2id', 'type2color']:
+            return self.transform[prop_name]
         else:
             try:
                 warnings.warn(
@@ -69,7 +89,7 @@ class Grid(object):
                     "i.e. grid['branch'] consistent with REISE.jl",
                     DeprecationWarning
                 )
-                return self.fields[field_name]
+                return self.fields[prop_name].data
             except AttributeError as e:
                 print(e)
 
@@ -79,11 +99,11 @@ class Grid(object):
         object variable, i.e. grid["plant"] is the
         same as grid.fields["plant"]
         :param str field_name: grid field name as string
-        :raises KeyError For attempts to use key not in the dictionary
+        :raises KeyError: For attempts to use key not in the dictionary
         :return: property of the Grid class
         """
         try:
-            return self.fields[field_name]
+            return self.fields[field_name].data
         except KeyError as e:
             print(e)
 
