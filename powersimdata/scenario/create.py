@@ -39,7 +39,8 @@ class Create(State):
             ('change_table', ''),
             ('start_date', ''),
             ('end_date', ''),
-            ('interval', '')])
+            ('interval', ''),
+            ('engine', '')])
         self._ssh = scenario.ssh
 
     def _update_scenario_info(self):
@@ -56,6 +57,7 @@ class Create(State):
             self._scenario_info['base_hydro'] = self.builder.hydro
             self._scenario_info['base_solar'] = self.builder.solar
             self._scenario_info['base_wind'] = self.builder.wind
+            self._scenario_info['engine'] = self.builder.engine
             if bool(self.builder.change_table.ct):
                 self._scenario_info['change_table'] = 'Yes'
             else:
@@ -247,6 +249,7 @@ class _Builder(object):
     hydro = ''
     solar = ''
     wind = ''
+    engine = 'REISE'
     name = 'builder'
 
     def set_name(self, plan_name, scenario_name):
@@ -327,6 +330,18 @@ class _Builder(object):
                             (kind,
                              " + ".join(self.interconnect),
                              " | ".join(possible)))
+
+    def set_engine(self, engine):
+        """Sets simulation engine to be used for scenarion.
+
+        :param str engine: simulation engine
+        """
+        possible = ['REISE']
+        if engine not in possible:
+            print('Available engines: %s' % ' | '.join(possible))
+            return
+        else:
+            self.engine = engine
 
     def load_change_table(self, filename):
         """Uploads change table.
