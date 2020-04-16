@@ -1,5 +1,4 @@
 import os
-import seaborn as sns
 import warnings
 
 from powersimdata.input.usa_tamu_model import TAMU
@@ -114,17 +113,17 @@ def get_type2color():
     :return: (*dict*) -- generator type to color mapping.
     """
     type2color = {
-        'wind': sns.xkcd_rgb["green"],
-        'solar': sns.xkcd_rgb["amber"],
-        'hydro': sns.xkcd_rgb["light blue"],
-        'ng': sns.xkcd_rgb["orchid"],
-        'nuclear': sns.xkcd_rgb["silver"],
-        'coal': sns.xkcd_rgb["light brown"],
-        'geothermal': sns.xkcd_rgb["hot pink"],
-        'dfo': sns.xkcd_rgb["royal blue"],
-        'biomass': sns.xkcd_rgb["dark green"],
-        'other': sns.xkcd_rgb["melon"],
-        'storage': sns.xkcd_rgb["orange"]}
+        'wind': "xkcd:green",
+        'solar': "xkcd:amber",
+        'hydro': "xkcd:light blue",
+        'ng': "xkcd:orchid",
+        'nuclear': "xkcd:silver",
+        'coal': "xkcd:light brown",
+        'geothermal': "xkcd:hot pink",
+        'dfo': "xkcd:royal blue",
+        'biomass': "xkcd:dark green",
+        'other': "xkcd:melon",
+        'storage': "xkcd:orange"}
     return type2color
 
 
