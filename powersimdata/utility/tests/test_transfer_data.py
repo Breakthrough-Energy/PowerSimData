@@ -35,6 +35,7 @@ def test_get_scenario_file_from_server_header():
               'start_date',
               'end_date',
               'interval',
+              'engine',
               'runtime',
               'infeasibilities']
     ssh_client = setup_server_connection()
