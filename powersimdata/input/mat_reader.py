@@ -16,7 +16,7 @@ class MATReader(AbstractGrid):
     def __init__(self, filename):
         """Constructor.
 
-        :param filename: path to file
+        :param str filename: path to file.
         """
         super().__init__()
         self._set_data_loc(filename)
@@ -34,6 +34,17 @@ class MATReader(AbstractGrid):
         else:
             self.data_loc = filename
 
+    def _build_network(self):
+        """Defines how to interpret the MAT file data to build a network.
+        Not implemented for MATReader, but must be defined for subclasses.
+        """
+        pass
+
+
+class REISEMATReader(MATReader):
+    """MATLAB file reader, for MAT files created by REISE/MATPOWER
+
+    """
     def _build_network(self):
         data = loadmat(self.data_loc, squeeze_me=True, struct_as_record=False)
         mpc = data['mdi'].mpc

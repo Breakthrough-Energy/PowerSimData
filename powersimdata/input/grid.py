@@ -2,7 +2,7 @@ import os
 import warnings
 
 from powersimdata.input.usa_tamu_model import TAMU
-from powersimdata.input.mat_reader import MATReader
+from powersimdata.input.mat_reader import REISEMATReader
 from powersimdata.input.grid_fields \
     import Branch, Bus, DCLine, GenCost, Plant, Storage, Sub
 
@@ -15,20 +15,32 @@ class Grid(object):
     fields = {}
     transform = {}
 
-    def __init__(self, interconnect, source='usa_tamu'):
+    def __init__(self, interconnect, source='usa_tamu', engine='REISE'):
         """Constructor
 
         :param list interconnect: interconnect name(s).
-        :param str source: model used to build the network
-        :raises TypeError: if source is not a string.
-        :raises ValueError: if model does not exist.
+        :param str source: model used to build the network.
+        :param str engine: engine used to run scenario, if using MATReader.
+        :raises TypeError: if source and engine are not both strings.
+        :raises ValueError: if model or engine does not exist.
+        :raises NotImplementedError: if engine is not yet built (see REISE.jl).
         """
         if not isinstance(source, str):
             raise TypeError('source must be a string')
+        if not isinstance(engine, str):
+            got_type = type(engine).__name__
+            raise TypeError('engine must be a str, instead got %s' % got_type)
+
         if source == 'usa_tamu':
             data = TAMU(interconnect)
         elif os.path.splitext(source)[1] == '.mat':
-            data = MATReader(source)
+            if engine == 'REISE':
+                data = REISEMATReader(source)
+            elif engine == 'REISE.jl':
+                raise NotImplementedError
+            else:
+                raise ValueError('Unknown engine %s!' % engine)
+
         else:
             raise ValueError('%s not implemented' % source)
 
