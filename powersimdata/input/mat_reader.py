@@ -245,21 +245,23 @@ def column_type_provider():
     col_type_sub = [
         'str', 'int', 'float', 'float', 'str']
     col_type_bus = [
-        'int', 'int', 'float', 'float', 'int', 'float', 'int', 'float', 'float',
-        'float', 'int', 'float', 'float', 'float', 'int', 'int', 'int']
+        'int', 'int', 'float', 'float', 'float', 'float', 'int', 'float',
+        'float', 'float', 'int', 'float', 'float', 'float', 'float', 'float',
+        'float']
     col_type_bus2sub = ['int', 'str']
     col_type_branch = [
-        'int', 'int', 'float', 'float', 'float', 'float', 'int', 'int', 'float',
-        'float', 'int', 'int', 'int', 'float', 'float', 'float', 'float',
-        'int', 'int', 'int', 'int']
+        'int', 'int', 'float', 'float', 'float', 'float', 'float', 'float',
+        'float', 'float', 'int', 'float', 'float', 'float', 'float', 'float',
+        'float', 'float', 'float', 'float', 'float']
     col_type_dcline = [
-        'int', 'int', 'int', 'int', 'float', 'float', 'float', 'float', 'float',
-        'int', 'int', 'float', 'float', 'float', 'float', 'int', 'int', 'int',
-        'int', 'int', 'int', 'int', 'int']
+        'int', 'int', 'int', 'float', 'float', 'float', 'float', 'float',
+        'float', 'float', 'float', 'float', 'float', 'float', 'float', 'float',
+        'float', 'float', 'float', 'float', 'float', 'float', 'float']
     col_type_plant = [
         'int', 'float', 'float', 'float', 'float', 'float', 'float', 'int',
-        'float', 'float', 'int', 'int', 'int', 'int', 'int', 'int', 'int',
-        'int', 'int', 'int', 'float', 'int', 'int', 'int', 'int']
+        'float', 'float', 'float', 'float', 'float', 'float', 'float', 'float',
+        'float', 'float', 'float', 'float', 'float', 'float', 'float', 'float',
+        'float']
     col_type_heat_rate_curve = ['float', 'float', 'float']
     col_type = {
         'sub': col_type_sub,
