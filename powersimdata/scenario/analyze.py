@@ -1,3 +1,4 @@
+from powersimdata.input.grid import Grid
 from powersimdata.input.scaler import Scaler
 from powersimdata.input.profiles import InputData
 from powersimdata.output.profiles import OutputData
@@ -179,7 +180,11 @@ class Analyze(State):
         """
         try:
             id = InputData(self._ssh)
-            grid = id.get_data(self._scenario_info['id'], 'grid')
+            grid_mat_path = id.get_data(self._scenario_info['id'], 'grid')
+            grid = Grid(
+                interconnect=[None],
+                source=grid_mat_path,
+                engine=self._scenario_info['engine'])
         except FileNotFoundError as e:
             print(e)
             print('Using local grid')
