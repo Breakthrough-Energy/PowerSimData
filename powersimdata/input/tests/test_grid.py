@@ -217,3 +217,10 @@ def test_deepcopy_works():
     g = Grid(['Texas'])
     copied_grid = copy.deepcopy(g)
     assert isinstance(copied_grid, Grid)
+
+
+def test_that_fields_are_not_modified():
+    western_grid = Grid(['Western'])
+    western_plant_original_shape = western_grid.plant.shape
+    eastern_grid = Grid(['Eastern'])
+    assert western_plant_original_shape == western_grid.plant.shape
