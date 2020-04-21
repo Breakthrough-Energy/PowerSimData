@@ -11,10 +11,6 @@ class Grid(object):
     """Grid
 
     """
-
-    fields = {}
-    transform = {}
-
     def __init__(self, interconnect, source='usa_tamu', engine='REISE'):
         """Constructor
 
@@ -47,6 +43,9 @@ class Grid(object):
         # Specific grid info
         self.data_loc = data.data_loc
         self.interconnect = data.interconnect
+
+        self.fields = {}
+        self.transform = {}
 
         # Input data as grid fields
         self.fields['bus'] = Bus(data.bus)
