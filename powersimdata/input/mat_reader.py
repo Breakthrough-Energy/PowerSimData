@@ -34,18 +34,7 @@ class MATReader(AbstractGrid):
         else:
             self.data_loc = filename
 
-    def _build_network(self):
-        """Defines how to interpret the MAT file data to build a network.
-        Not implemented for MATReader, but must be defined for subclasses.
-        """
-        pass
-
-
-class REISEMATReader(MATReader):
-    """MATLAB file reader, for MAT files created by REISE/MATPOWER
-
-    """
-    def _build_network(self):
+    def _read_network(self):
         data = loadmat(self.data_loc, squeeze_me=True, struct_as_record=False)
         mpc = data['mdi'].mpc
         try:
@@ -64,6 +53,7 @@ class REISEMATReader(MATReader):
 
         # bus
         self.bus, _ = frame('bus', mpc.bus, mpc.busid)
+        self.bus.drop(columns=['bus_id'], inplace=True)
 
         # plant
         self.plant, plant_storage = frame('plant',
@@ -125,6 +115,29 @@ class REISEMATReader(MATReader):
         # interconnect
         self.interconnect = self.sub.interconnect.unique().tolist()
 
+    def _build_network(self):
+        """Defines how to interpret the MAT file data to build a network.
+        Not implemented for MATReader, but must be defined for subclasses.
+        """
+        pass
+
+
+class REISEMATReader(MATReader):
+    """MATLAB file reader, for MAT files created by REISE/MATPOWER
+
+    """
+    def _build_network(self):
+        self._read_network()
+        reindex_model(self)
+        add_information_to_model(self)
+
+
+class REISEjlMATReader(MATReader):
+    """MATLAB file reader, for MAT files created (& converted) by REISE.jl
+
+    """
+    def _build_network(self):
+        self._read_network()
         add_information_to_model(self)
 
 
@@ -321,8 +334,15 @@ def add_information_to_model(grid):
 
     :param powersimdata.input.MATReader grid: grid with missing information.
     """
-    grid.bus.drop(columns=['bus_id'], inplace=True)
 
+    add_interconnect_to_grid_data_frames(grid)
+    add_zone_to_grid_data_frames(grid)
+    add_coord_to_grid_data_frames(grid)
+
+    grid.plant = grid.plant.join(grid.heat_rate_curve)
+
+
+def reindex_model(grid):
     def reset_id():
         return lambda x: grid.bus.index[x - 1]
 
@@ -334,9 +354,3 @@ def add_information_to_model(grid):
             'from_bus_id'] = grid.dcline['from_bus_id'].apply(reset_id())
         grid.dcline[
             'to_bus_id'] = grid.dcline['to_bus_id'].apply(reset_id())
-
-    add_interconnect_to_grid_data_frames(grid)
-    add_zone_to_grid_data_frames(grid)
-    add_coord_to_grid_data_frames(grid)
-
-    grid.plant = grid.plant.join(grid.heat_rate_curve)
