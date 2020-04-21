@@ -2,7 +2,7 @@ import os
 import warnings
 
 from powersimdata.input.usa_tamu_model import TAMU
-from powersimdata.input.mat_reader import REISEMATReader
+from powersimdata.input.mat_reader import REISEMATReader, REISEjlMATReader
 from powersimdata.input.grid_fields \
     import AbstractGridField, Branch, Bus, DCLine, GenCost, Plant, Storage, Sub
 
@@ -19,7 +19,6 @@ class Grid(object):
         :param str engine: engine used to run scenario, if using MATReader.
         :raises TypeError: if source and engine are not both strings.
         :raises ValueError: if model or engine does not exist.
-        :raises NotImplementedError: if engine is not yet built (see REISE.jl).
         """
         if not isinstance(source, str):
             raise TypeError('source must be a string')
@@ -33,7 +32,7 @@ class Grid(object):
             if engine == 'REISE':
                 data = REISEMATReader(source)
             elif engine == 'REISE.jl':
-                raise NotImplementedError
+                data = REISEjlMATReader(source)
             else:
                 raise ValueError('Unknown engine %s!' % engine)
 
