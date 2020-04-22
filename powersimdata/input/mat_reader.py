@@ -208,7 +208,7 @@ def column_name_provider():
         'name', 'interconnect_sub_id', 'lat', 'lon', 'interconnect']
     col_name_bus = [
         'bus_id', 'type', 'Pd', 'Qd', 'Gs', 'Bs', 'zone_id', 'Vm', 'Va',
-        'loss_zone', 'baseKV', 'Vmax', 'Vmin', 'lam_P', 'lam_Q', 'mu_Vmax',
+        'baseKV', 'loss_zone', 'Vmax', 'Vmin', 'lam_P', 'lam_Q', 'mu_Vmax',
         'mu_Vmin']
     col_name_bus2sub = ['sub_id', 'interconnect']
     col_name_branch = [
