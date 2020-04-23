@@ -1,6 +1,6 @@
 import warnings
 
-from prereise.gather.constants import abv2state, state2loadzone, \
+from powersimdata.utility.constants import abv2state, state2loadzone, \
     interconnect2loadzone
 
 
