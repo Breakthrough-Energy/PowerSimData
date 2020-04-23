@@ -354,3 +354,6 @@ def reindex_model(grid):
             'from_bus_id'] = grid.dcline['from_bus_id'].apply(reset_id())
         grid.dcline[
             'to_bus_id'] = grid.dcline['to_bus_id'].apply(reset_id())
+    if not grid.storage['gen'].empty:
+        grid.storage[
+            'gen'].bus_id = grid.storage['gen'].bus_id.apply(reset_id())
