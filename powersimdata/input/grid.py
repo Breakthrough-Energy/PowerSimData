@@ -2,7 +2,7 @@ import os
 import warnings
 
 from powersimdata.input.usa_tamu_model import TAMU
-from powersimdata.input.mat_reader import REISEMATReader, REISEjlMATReader
+from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
 from powersimdata.input.grid_fields \
     import AbstractGridField, Branch, Bus, DCLine, GenCost, Plant, Storage, Sub
 
@@ -16,7 +16,7 @@ class Grid(object):
 
         :param list interconnect: interconnect name(s).
         :param str source: model used to build the network.
-        :param str engine: engine used to run scenario, if using MATReader.
+        :param str engine: engine used to run scenario, if using ScenarioGrid.
         :raises TypeError: if source and engine are not both strings.
         :raises ValueError: if model or engine does not exist.
         """
@@ -30,9 +30,9 @@ class Grid(object):
             data = TAMU(interconnect)
         elif os.path.splitext(source)[1] == '.mat':
             if engine == 'REISE':
-                data = REISEMATReader(source)
+                data = FromREISE(source)
             elif engine == 'REISE.jl':
-                data = REISEjlMATReader(source)
+                data = FromREISEjl(source)
             else:
                 raise ValueError('Unknown engine %s!' % engine)
 

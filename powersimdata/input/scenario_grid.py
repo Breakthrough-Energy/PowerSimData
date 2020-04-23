@@ -9,8 +9,8 @@ from powersimdata.input.helpers import (add_coord_to_grid_data_frames,
                                         add_interconnect_to_grid_data_frames)
 
 
-class MATReader(AbstractGrid):
-    """MATLAB file reader
+class ScenarioGrid(AbstractGrid):
+    """File reader for MAT files for scenarios which were run on the server.
 
     """
     def __init__(self, filename):
@@ -117,12 +117,12 @@ class MATReader(AbstractGrid):
 
     def _build_network(self):
         """Defines how to interpret the MAT file data to build a network.
-        Not implemented for MATReader, but must be defined for subclasses.
+        Not implemented for ScenarioGrid, but must be defined for subclasses.
         """
         pass
 
 
-class REISEMATReader(MATReader):
+class FromREISE(ScenarioGrid):
     """MATLAB file reader, for MAT files created by REISE/MATPOWER
 
     """
@@ -132,7 +132,7 @@ class REISEMATReader(MATReader):
         add_information_to_model(self)
 
 
-class REISEjlMATReader(MATReader):
+class FromREISEjl(ScenarioGrid):
     """MATLAB file reader, for MAT files created (& converted) by REISE.jl
 
     """
@@ -332,7 +332,7 @@ def format_gencost(data):
 def add_information_to_model(grid):
     """Makes a standard grid.
 
-    :param powersimdata.input.MATReader grid: grid with missing information.
+    :param powersimdata.input.ScenarioGrid grid: grid with missing information.
     """
 
     add_interconnect_to_grid_data_frames(grid)
