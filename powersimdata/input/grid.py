@@ -4,7 +4,7 @@ import warnings
 from powersimdata.input.usa_tamu_model import TAMU
 from powersimdata.input.mat_reader import REISEMATReader
 from powersimdata.input.grid_fields \
-    import Branch, Bus, DCLine, GenCost, Plant, Storage, Sub
+    import AbstractGridField, Branch, Bus, DCLine, GenCost, Plant, Storage, Sub
 
 
 class Grid(object):
@@ -116,6 +116,77 @@ class Grid(object):
             return self.fields[field_name].data
         except KeyError as e:
             print(e)
+
+    def __eq__(self, other):
+        """Used when 'self == other' is evaluated.
+        :param object other: other object to be compared against.
+        :return: (*bool*).
+        """
+        def _univ_eq(ref, test):
+            """Check for {boolean, dataframe, or column data} equality.
+            :param object ref: one object to be tested (order does not matter).
+            :param object test: another object to be tested.
+            :raises AssertionError: if no equality can be confirmed.
+            """
+            try:
+                test_eq = ref == test
+                if isinstance(test_eq, (bool, dict)):
+                    assert test_eq
+                else:
+                    assert test_eq.all().all()
+            except ValueError:
+                assert set(ref.columns) == set(test.columns)
+                for col in ref.columns:
+                    assert (ref[col] == test[col]).all()
+
+        if not isinstance(other, Grid):
+            err_msg = 'Unable to compare Grid & %s' % type(other).__name__
+            raise NotImplementedError(err_msg)
+        assert self.fields.keys() == other.fields.keys()
+        assert self.transform.keys() == other.transform.keys()
+        # Check all AbstractGridField attributes
+        try:
+            for k, v in self.fields.items():
+                if isinstance(v, GenCost):
+                    # Comparing 'after' will fail if one Grid was linearized
+                    self_data = self.fields[k].data['before']
+                    other_data = other.fields[k].data['before']
+                    _univ_eq(self_data, other_data)
+                elif isinstance(v, Storage):
+                    self_storage_num = len(self.fields[k].data['gencost'])
+                    other_storage_num = len(other.fields[k].data['gencost'])
+                    if self_storage_num == 0:
+                        assert other_storage_num == 0
+                        continue
+                    # These are dicts, so we need to go one level deeper
+                    self_keys = self.fields[k].data.keys()
+                    other_keys = other.fields[k].data.keys()
+                    assert self_keys == other_keys
+                    for subkey in self_keys:
+                        self_data = self.fields[k].data[subkey]
+                        other_data = other.fields[k].data[subkey]
+                        _univ_eq(self_data, other_data)
+                elif isinstance(v, Bus):
+                    # MOST changes BUS_TYPE for buses with DC Lines attached
+                    self_df = self.fields[k].data.drop('type', axis=1)
+                    other_df = other.fields[k].data.drop('type', axis=1)
+                    _univ_eq(self_df, other_df)
+                elif isinstance(v, Plant):
+                    # REISE does some modifications to Plant data
+                    excluded_cols = ['status', 'Pmin', 'ramp_10', 'ramp_30']
+                    self_df = self.fields[k].data.drop(excluded_cols, axis=1)
+                    other_df = other.fields[k].data.drop(excluded_cols, axis=1)
+                    _univ_eq(self_df, other_df)
+                elif isinstance(v, AbstractGridField):
+                    _univ_eq(self.fields[k].data, other.fields[k].data)
+                else:
+                    _univ_eq(self.fields[k], other.fields[k])
+            # Check the transform attributes
+            for k, v in self.transform.items():
+                _univ_eq(self.transform[k], other.transform[k])
+        except:
+            return False
+        return True
 
 
 def get_type2color():
