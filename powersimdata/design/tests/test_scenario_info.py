@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 
 from powersimdata.design.scenario_info import ScenarioInfo
-from postreise.tests.mock_scenario import MockScenario
+from powersimdata.tests.mock_scenario import MockScenario
 
 mock_plant = {
     'plant_id': [101, 102, 103, 104, 105, 106],
