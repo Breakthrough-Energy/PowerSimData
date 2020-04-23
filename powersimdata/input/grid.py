@@ -162,8 +162,15 @@ class Grid(object):
                     other_keys = other.fields[k].data.keys()
                     assert self_keys == other_keys
                     for subkey in self_keys:
+                        # REISE will modify gencost and some gen columns
+                        if subkey == 'gencost':
+                            continue
                         self_data = self.fields[k].data[subkey]
                         other_data = other.fields[k].data[subkey]
+                        if subkey == 'gen':
+                            excluded_cols = ['ramp_10', 'ramp_30']
+                            self_data = self_data.drop(excluded_cols, axis=1)
+                            other_data = other_data.drop(excluded_cols, axis=1)
                         _univ_eq(self_data, other_data)
                 elif isinstance(v, Bus):
                     # MOST changes BUS_TYPE for buses with DC Lines attached
