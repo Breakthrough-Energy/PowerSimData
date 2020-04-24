@@ -2,7 +2,7 @@ import os
 import warnings
 
 from powersimdata.input.usa_tamu_model import TAMU
-from powersimdata.input.mat_reader import REISEMATReader
+from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
 from powersimdata.input.grid_fields \
     import AbstractGridField, Branch, Bus, DCLine, GenCost, Plant, Storage, Sub
 
@@ -16,10 +16,9 @@ class Grid(object):
 
         :param list interconnect: interconnect name(s).
         :param str source: model used to build the network.
-        :param str engine: engine used to run scenario, if using MATReader.
+        :param str engine: engine used to run scenario, if using ScenarioGrid.
         :raises TypeError: if source and engine are not both strings.
         :raises ValueError: if model or engine does not exist.
-        :raises NotImplementedError: if engine is not yet built (see REISE.jl).
         """
         if not isinstance(source, str):
             raise TypeError('source must be a string')
@@ -31,9 +30,9 @@ class Grid(object):
             data = TAMU(interconnect)
         elif os.path.splitext(source)[1] == '.mat':
             if engine == 'REISE':
-                data = REISEMATReader(source)
+                data = FromREISE(source)
             elif engine == 'REISE.jl':
-                raise NotImplementedError
+                data = FromREISEjl(source)
             else:
                 raise ValueError('Unknown engine %s!' % engine)
 
@@ -163,8 +162,15 @@ class Grid(object):
                     other_keys = other.fields[k].data.keys()
                     assert self_keys == other_keys
                     for subkey in self_keys:
+                        # REISE will modify gencost and some gen columns
+                        if subkey == 'gencost':
+                            continue
                         self_data = self.fields[k].data[subkey]
                         other_data = other.fields[k].data[subkey]
+                        if subkey == 'gen':
+                            excluded_cols = ['ramp_10', 'ramp_30']
+                            self_data = self_data.drop(excluded_cols, axis=1)
+                            other_data = other_data.drop(excluded_cols, axis=1)
                         _univ_eq(self_data, other_data)
                 elif isinstance(v, Bus):
                     # MOST changes BUS_TYPE for buses with DC Lines attached
