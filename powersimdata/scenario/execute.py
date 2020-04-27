@@ -301,7 +301,7 @@ class SimulationInput(object):
 
         :param kind: one of *demand*, *'hydro'*, *'solar'* or *'wind'*.
         """
-        if kind in self.scaler.ct.keys():
+        if bool(self.scaler.scale_keys[kind] & set(self.scaler.ct.keys())):
             self._prepare_scaled_profile(kind)
         else:
             self._copy_base_profile(kind)
