@@ -211,7 +211,9 @@ def get_type2color():
         'dfo': "xkcd:royal blue",
         'biomass': "xkcd:dark green",
         'other': "xkcd:melon",
-        'storage': "xkcd:orange"}
+        'storage': "xkcd:orange",
+        'wind_offshore': "xkcd:teal",
+        }
     return type2color
 
 
@@ -231,5 +233,7 @@ def get_id2type():
         7: 'dfo',
         8: 'biomass',
         9: 'other',
-        10: 'storage'}
+        10: 'storage',
+        11: 'wind_offshore',
+        }
     return id2type
