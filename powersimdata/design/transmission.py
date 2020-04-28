@@ -104,7 +104,7 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=True):
         ct['branch']['branch_id'] = {}
     branch_id_ct = ct['branch']['branch_id']
     
-    ren_types = ('solar', 'wind')
+    ren_types = ('solar', 'wind', 'wind_offshore')
     for r in ren_types:
         ren_plants = ref_plant[ref_plant['type'] == r]
         for p in ren_plants.index:
