@@ -8,7 +8,7 @@ from powersimdata.utility import const
 
 
 _resources = ('coal', 'dfo', 'geothermal', 'ng', 'nuclear',
-              'hydro', 'solar', 'wind', 'biomass', 'other')
+              'hydro', 'solar', 'wind', 'wind_offshore', 'biomass', 'other')
 
 
 class ChangeTable(object):

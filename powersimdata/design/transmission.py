@@ -104,7 +104,7 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=True):
         ct['branch']['branch_id'] = {}
     branch_id_ct = ct['branch']['branch_id']
     
-    ren_types = ('solar', 'wind')
+    ren_types = ('solar', 'wind', 'wind_offshore')
     for r in ren_types:
         ren_plants = ref_plant[ref_plant['type'] == r]
         for p in ren_plants.index:
@@ -113,6 +113,7 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=True):
             if stub_degree > 0:
                 ren_capacity = _find_capacity_at_bus(ref_plant, bus_id, r)
                 assert ren_capacity > 0
+                # First scale by zone_id
                 zone_id = ref_bus.loc[bus_id, 'zone_id']
                 try:
                     gen_scale_factor = ct[r]['zone_id'][zone_id]
@@ -120,6 +121,11 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=True):
                     if verbose:
                         print(f'no entry for zone {zone_id} in ct: {r}')
                     gen_scale_factor = 1
+                # Then scale by plant_id
+                try:
+                    gen_scale_factor *= ct[r]['plant_id'][p]
+                except KeyError:
+                    pass
                 for b in stub_branches:
                     if ref_branch.loc[b, 'rateA'] == 0:
                         continue

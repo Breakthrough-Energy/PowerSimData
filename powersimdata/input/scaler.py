@@ -14,8 +14,13 @@ class Scaler(object):
     
     _gen_types = [
         'biomass', 'coal', 'dfo', 'geothermal', 'ng', 'nuclear', 'hydro',
-        'solar', 'wind', 'other']
+        'solar', 'wind', 'wind_offshore', 'other']
     _thermal_gen_types = ['coal', 'dfo', 'geothermal', 'ng', 'nuclear']
+    scale_keys = {
+        'wind': {'wind', 'wind_offshore'},
+        'solar': {'solar'},
+        'hydro': {'hydro'},
+        'demand': {'demand'}}
 
     def __init__(self, scenario_info, ssh_client):
         """Constructor.
@@ -207,21 +212,23 @@ class Scaler(object):
 
         profile = self._input.get_data(self.scenario_id, resource)
 
-        if bool(self.ct) and resource in list(self.ct.keys()):
-            try:
-                for key, value in self.ct[resource]['zone_id'].items():
-                    plant_id = self._original_grid.plant.groupby(
-                        ['zone_id', 'type']).get_group(
-                        (key, resource)).index.values.tolist()
-                    for i in plant_id:
-                        profile.loc[:, i] *= value
-            except KeyError:
-                pass
-            try:
-                for key, value in self.ct[resource]['plant_id'].items():
-                    profile.loc[:, key] *= value
-            except KeyError:
-                pass
+        if (bool(self.ct)
+            and bool(self.scale_keys[resource] & set(self.ct.keys()))):
+            for subresource in self.scale_keys[resource]:
+                try:
+                    for key, value in self.ct[subresource]['zone_id'].items():
+                        plant_id = self._original_grid.plant.groupby(
+                            ['zone_id', 'type']).get_group(
+                            (key, subresource)).index.values.tolist()
+                        for i in plant_id:
+                            profile.loc[:, i] *= value
+                except KeyError:
+                    pass
+                try:
+                    for key, value in self.ct[subresource]['plant_id'].items():
+                        profile.loc[:, key] *= value
+                except KeyError:
+                    pass
 
         return profile
 
