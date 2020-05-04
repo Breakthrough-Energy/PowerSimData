@@ -336,7 +336,7 @@ class _Builder(object):
 
         :param str engine: simulation engine
         """
-        possible = ['REISE']
+        possible = ['REISE', 'REISE.jl']
         if engine not in possible:
             print('Available engines: %s' % ' | '.join(possible))
             return
