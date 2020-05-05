@@ -87,7 +87,7 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=True):
     :param float/int fuzz: adds just a little extra capacity to avoid binding.
     :param bool inplace: if True, modify ct inplace and return None. If False,
         copy ct and return modified copy.
-    :param bool verbose: if True, print when zone/type not in change table.
+    :param bool verbose: if True, print info for each unscaled plant.
     :return: (*None*/*dict*) -- if inplace == True, return modified ct dict.
     """
 
@@ -112,24 +112,24 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=True):
             stub_degree, stub_branches = _find_stub_degree(ref_branch, bus_id)
             if stub_degree > 0:
                 ren_capacity = _find_capacity_at_bus(ref_plant, bus_id, r)
-                try:
-                    assert ren_capacity > 0
-                except AssertionError:
+                if ren_capacity <= 0:
                     print('%s plant %s at bus %s has 0 Pmax!' % (r, p, bus_id))
                     continue
+                # Calculate total scaling factor (zone * plant)
+                gen_scale_factor = 1
                 # First scale by zone_id
                 zone_id = ref_bus.loc[bus_id, 'zone_id']
                 try:
-                    gen_scale_factor = ct[r]['zone_id'][zone_id]
+                    gen_scale_factor *= ct[r]['zone_id'][zone_id]
                 except KeyError:
-                    if verbose:
-                        print(f'no entry for zone {zone_id} in ct: {r}')
-                    gen_scale_factor = 1
+                    pass
                 # Then scale by plant_id
                 try:
                     gen_scale_factor *= ct[r]['plant_id'][p]
                 except KeyError:
                     pass
+                if (gen_scale_factor == 1) and (verbose == True):
+                    print(f'no scaling factor for {r}, {zone_id}, plant {p}')
                 for b in stub_branches:
                     if ref_branch.loc[b, 'rateA'] == 0:
                         continue
