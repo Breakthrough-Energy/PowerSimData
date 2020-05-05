@@ -78,7 +78,7 @@ def _find_capacity_at_bus(plant, bus_id, gentypes):
     return gentype_capacity
 
 
-def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=True):
+def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=False):
     """Identify renewable gens behind 'stub' branches, scale up branch capacity
         (via change_table entries) to match generator capacity.
 
