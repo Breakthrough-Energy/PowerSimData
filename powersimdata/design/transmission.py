@@ -112,7 +112,11 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=True):
             stub_degree, stub_branches = _find_stub_degree(ref_branch, bus_id)
             if stub_degree > 0:
                 ren_capacity = _find_capacity_at_bus(ref_plant, bus_id, r)
-                assert ren_capacity > 0
+                try:
+                    assert ren_capacity > 0
+                except AssertionError:
+                    print('%s plant %s at bus %s has 0 Pmax!' % (r, p, bus_id))
+                    continue
                 # First scale by zone_id
                 zone_id = ref_bus.loc[bus_id, 'zone_id']
                 try:
