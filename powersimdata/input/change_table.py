@@ -43,9 +43,13 @@ class ChangeTable(object):
             increase/decrease of capacity of the plant or plants in the zone
             (1.2 would correspond to a 20% increase while 0.95 would be a 5%
             decrease).
+        * *'dcline'*: 
+            value is a dictionary. The latter has *'dcline_id'* as keys and 
+            the and the scaling factor for the increase/decrease in capacity 
+            of the line as value.
         * *'storage'*:
             value is a dictionary. The latter has *'bus_id'* as keys and the
-             capacity of storage (in MW) to add as value.
+            capacity of storage (in MW) to add as value.
 
         :param list interconnect: interconnect name(s).
     """
