@@ -199,6 +199,7 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
     """
     def __init__(self):
         self.addl_curtailment = {"solar": 0, "wind": 0}
+        self.solar_fraction = None
         AbstractStrategyManager.__init__(self)
 
     def set_collab_addl_curtailment(self, addl_curtailment):
@@ -215,6 +216,21 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
                                                     "curtailment must be " \
                                                     "between  0 and 1"
         self.addl_curtailment = addl_curtailment
+
+    def set_solar_fraction(self, solar_fraction):
+        """Sets desired solar fraction, to be used in subsequent calculations.
+
+        :param [float/NoneType] solar_fraction: solar fraction to be used in
+            calculating added capacity. *None* will maintain previous ratio.
+        """
+        if solar_fraction is None:
+            pass
+        elif isinstance(solar_fraction, float):
+            if not (0 <= solar_fraction <= 1):
+                raise ValueError("solar fraction must be between 0 and 1")
+        else:
+            raise TypeError("solar_fraction must be float or None")
+        self.solar_fraction = solar_fraction
 
     def calculate_total_shortfall(self):
         """Calculates total clean energy shortfall.
@@ -238,15 +254,14 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
                 self.targets[tar].calculate_prev_ce_generation()
         return total_prev_ce_generation
 
-    def calculate_total_added_capacity(self, solar_fraction=None):
+    def calculate_total_added_capacity(self):
         """Calculates the capacity to add from total clean energy shortfall.
 
-        :param float solar_fraction: solar fraction to be used in calculation,
-            default is to maintain from previous result
         :return: (*tuple*) -- solar and wind added capacities
         """
         solar_prev_capacity = self.calculate_total_capacity('solar')
         wind_prev_capacity = self.calculate_total_capacity('wind')
+        solar_fraction = self.solar_fraction
 
         if solar_fraction is None:
             solar_fraction = solar_prev_capacity / (solar_prev_capacity
