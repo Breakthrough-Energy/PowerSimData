@@ -17,7 +17,8 @@ class ChangeTable(object):
         A pickle file enclosing the change table in form of a dictionary can be
         created and transferred on the server. Keys are *'demand'*, *'branch'*,
         *'biomass'*, *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*,
-        *'hydro'*, *'solar'*, *'wind'*, *'other'*, and *'storage'*.
+        *'hydro'*, *'solar'*, *'wind'*, *'other'*, *'dcline'*, *'new_dcline'*,
+        and *'storage'*.
         If a key is missing in the dictionary, then no changes will be applied.
         The data structure is given below:
 
@@ -43,9 +44,19 @@ class ChangeTable(object):
             increase/decrease of capacity of the plant or plants in the zone
             (1.2 would correspond to a 20% increase while 0.95 would be a 5%
             decrease).
+        * *'dcline'*: 
+            value is a dictionary. The latter has *'dcline_id'* as keys and 
+            the and the scaling factor for the increase/decrease in capacity 
+            of the line as value.
         * *'storage'*:
             value is a dictionary. The latter has *'bus_id'* as keys and the
-             capacity of storage (in MW) to add as value.
+            capacity of storage (in MW) to add as value.
+        * *'new_dcline'*:
+            value is a list. Each entry in this list is a dictionary enclosing
+            all the information needed to add a new dcline to the grid. The
+            keys in the dictionary are: *'capacity'*, *'from_bus_id'* and
+            *'to_bus_id'* with values giving the capacity of the HVDC line and
+            the bus id at each end of the line.
 
         :param list interconnect: interconnect name(s).
     """
@@ -333,6 +344,53 @@ class ChangeTable(object):
                 self.ct['storage']['bus_id'] = {}
             for i in bus_id.keys():
                 self.ct['storage']['bus_id'][i] = bus_id[i]
+
+    def add_dcline(self, dcline):
+        """Sets dcline parameters in change table.
+
+        :param list dcline: each entry is a dictionary. The dictionary gathers
+            the information needed to create a new dcline.
+        """
+        if not isinstance(dcline, list):
+            print('Argument enclosing new HVDC line(s) must be a list')
+            return
+
+        if 'new_dcline' not in self.ct:
+            self.ct['new_dcline'] = []
+
+        keys = ['capacity', 'from_bus_id', 'to_bus_id']
+        for i, line in enumerate(dcline):
+            if not isinstance(line, dict):
+                print('Each entry must be a dictionary')
+                self.ct.pop('new_dcline')
+                return
+            elif set(line.keys()) != set(keys):
+                print('Dictionary must have %s as keys' % ' | '.join(keys))
+                self.ct.pop('new_dcline')
+                return
+            else:
+                start = line['from_bus_id']
+                end = line['to_bus_id']
+                if start not in self.grid['bus'].index:
+                    print("No bus with the following id for line #%d: %d" %
+                          (i+1, start))
+                    self.ct.pop('new_dcline')
+                    return
+                elif end not in self.grid['bus'].index:
+                    print("No bus with the following id for line #%d: %d" %
+                          (i+1, end))
+                    self.ct.pop('new_dcline')
+                    return
+                elif start == end:
+                    print("buses of line #%d must be different" % (i+1))
+                    self.ct.pop('new_dcline')
+                    return
+                elif line['capacity'] < 0:
+                    print("capacity of line #%d must be positive" % (i+1))
+                    self.ct.pop('new_dcline')
+                    return
+                else:
+                    self.ct['new_dcline'].append(line)
 
     def write(self, scenario_id):
         """Saves change table to disk.
