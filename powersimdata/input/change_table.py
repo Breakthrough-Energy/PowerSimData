@@ -5,6 +5,7 @@ from powersimdata.design.transmission import (
     scale_congested_mesh_branches, scale_renewable_stubs)
 from powersimdata.input.grid import Grid
 from powersimdata.utility import const
+from powersimdata.utility.distance import haversine
 
 
 _resources = ('coal', 'dfo', 'geothermal', 'ng', 'nuclear',
@@ -56,6 +57,12 @@ class ChangeTable(object):
             all the information needed to add a new dcline to the grid. The
             keys in the dictionary are: *'capacity'*, *'from_bus_id'* and
             *'to_bus_id'* with values giving the capacity of the HVDC line and
+            the bus id at each end of the line.
+        * *'new_branch'*:
+            value is a list. Each entry in this list is a dictionary enclosing
+            all the information needed to add a new branch to the grid. The
+            keys in the dictionary are: *'capacity'*, *'from_bus_id'* and
+            *'to_bus_id'* with values giving the capacity of the line and
             the bus id at each end of the line.
 
         :param list interconnect: interconnect name(s).
@@ -357,6 +364,18 @@ class ChangeTable(object):
 
         self._add_line('new_dcline', dcline)
 
+    def add_branch(self, branch):
+        """Sets parameters of new branch(es) in change table.
+
+        :param list branch: each entry is a dictionary. The dictionary gathers
+            the information needed to create a new branch.
+        """
+        if not isinstance(branch, list):
+            print('Argument enclosing new AC line(s) must be a list')
+            return
+
+        self._add_line('new_branch', branch)
+
     def _add_line(self, key, info):
         """Handles line(s) addition in change table.
 
@@ -399,8 +418,23 @@ class ChangeTable(object):
                     print("capacity of line #%d must be positive" % (i + 1))
                     self.ct.pop(key)
                     return
-                else:
-                    self.ct[key].append(line)
+                elif key == 'new_branch' and \
+                        self.grid['bus'].interconnect[start] != \
+                        self.grid['bus'].interconnect[end]:
+                    print("Buses of line #%d must be in same interconnect"
+                          % (i + 1))
+                    self.ct.pop(key)
+                    return
+
+                elif haversine((self.grid['bus'].lat[start],
+                                self.grid['bus'].lon[start]),
+                               (self.grid['bus'].lat[end],
+                                self.grid['bus'].lon[end])) == 0:
+                    print("Distance between buses of line #%d is 0" % (i + 1))
+                    self.ct.pop(key)
+                    return
+
+                self.ct[key].append(line)
 
     def write(self, scenario_id):
         """Saves change table to disk.
