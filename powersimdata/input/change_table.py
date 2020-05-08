@@ -346,7 +346,7 @@ class ChangeTable(object):
                 self.ct['storage']['bus_id'][i] = bus_id[i]
 
     def add_dcline(self, dcline):
-        """Sets dcline parameters in change table.
+        """Adds HVDC line(s).
 
         :param list dcline: each entry is a dictionary. The dictionary gathers
             the information needed to create a new dcline.
@@ -355,42 +355,52 @@ class ChangeTable(object):
             print('Argument enclosing new HVDC line(s) must be a list')
             return
 
-        if 'new_dcline' not in self.ct:
-            self.ct['new_dcline'] = []
+        self._add_line('new_dcline', dcline)
 
-        keys = ['capacity', 'from_bus_id', 'to_bus_id']
-        for i, line in enumerate(dcline):
+    def _add_line(self, key, info):
+        """Handles line(s) addition in change table.
+
+        :param str key: key in change table. Either *'new_branch'* or
+            *'new_dcline'*
+        :param list info: parameters of the line.
+        """
+        if key not in self.ct:
+            self.ct[key] = []
+
+        required_info = ['capacity', 'from_bus_id', 'to_bus_id']
+        for i, line in enumerate(info):
             if not isinstance(line, dict):
                 print('Each entry must be a dictionary')
-                self.ct.pop('new_dcline')
+                self.ct.pop(key)
                 return
-            elif set(line.keys()) != set(keys):
-                print('Dictionary must have %s as keys' % ' | '.join(keys))
-                self.ct.pop('new_dcline')
+            elif set(line.keys()) != set(required_info):
+                print('Dictionary must have %s as keys'
+                      % ' | '.join(required_info))
+                self.ct.pop(key)
                 return
             else:
                 start = line['from_bus_id']
                 end = line['to_bus_id']
                 if start not in self.grid['bus'].index:
                     print("No bus with the following id for line #%d: %d" %
-                          (i+1, start))
-                    self.ct.pop('new_dcline')
+                          (i + 1, start))
+                    self.ct.pop(key)
                     return
                 elif end not in self.grid['bus'].index:
                     print("No bus with the following id for line #%d: %d" %
-                          (i+1, end))
-                    self.ct.pop('new_dcline')
+                          (i + 1, end))
+                    self.ct.pop(key)
                     return
                 elif start == end:
-                    print("buses of line #%d must be different" % (i+1))
-                    self.ct.pop('new_dcline')
+                    print("buses of line #%d must be different" % (i + 1))
+                    self.ct.pop(key)
                     return
                 elif line['capacity'] < 0:
-                    print("capacity of line #%d must be positive" % (i+1))
-                    self.ct.pop('new_dcline')
+                    print("capacity of line #%d must be positive" % (i + 1))
+                    self.ct.pop(key)
                     return
                 else:
-                    self.ct['new_dcline'].append(line)
+                    self.ct[key].append(line)
 
     def write(self, scenario_id):
         """Saves change table to disk.
