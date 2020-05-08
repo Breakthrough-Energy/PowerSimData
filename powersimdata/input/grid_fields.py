@@ -7,7 +7,7 @@ class FieldHierarchicalIndex:
     def __init__(self, index, index_hierarchy, origin_dataframe):
         """
         :param pandas.Series index: Pandas series with multi-level index
-        :param list index_hierarchy: hierarchy of for the hierarchical index
+        :param list index_hierarchy: list hierarchy for the hierarchical index
         :param str origin_dataframe: dataframe this index originated from
         """
         self._index = index
@@ -52,32 +52,53 @@ class HierarchicalGridField(AbstractGridField):
     """
     This defines a grid field that can support hierarchical indexing
     """
+    def ct_hierarchy_iterator(self, change_table, ct_hierarchy):
+        """
+         This function wraps validation for the static recursive Python
+         generator function hierarchy_generator
+         :param dict change_table: the particular level in change table
+         :param list ct_hierarchy: data column hierarchy in the change table
+         :raise TypeError: for inputs not of the correct type
+         :raise AssertionError: for hierarchy names which are not in dataframe
+         :return: (*types.GeneratorType*) -- python generator that returns
+         individual changes to be performed
+         """
+        if type(change_table) is not dict:
+            raise TypeError("change_table must be a dictionary")
+        if type(ct_hierarchy) is not list:
+            raise TypeError("ct_hierarchy must be a list")
+        assert all(column in self.data.columns for column in ct_hierarchy), \
+            'ct_hierarchy must contain columns in dataframe'
+        self.ct_hierarchy_generator(change_table, ct_hierarchy)
 
     @staticmethod
-    def ct_hierarchy_iterator(change_level, ct_hierarchy, index=()):
+    def ct_hierarchy_generator(change_level, ct_hierarchy, index=()):
         """
          This function creates a recursive Python generator function which
          traverses the change table hierarchy and returns a unnested list of
          changes to be implemented
-         :param change_level: the particular level in change table
-         :param ct_hierarchy: data column hierarchy in the change table
-         :param index: initial starting tuple
+         :param {dict, int, float} change_level: the particular level in
+         change table
+         :param list ct_hierarchy: data column hierarchy in the change table
+         :param tuple index: initial starting tuple
+         :raises ValueError: tuple index not compatible with hierarchy depth
+         :raises TypeError: item not a valid change table type
          :return: (*types.GeneratorType*) -- python generator that returns
          individual changes to be performed
-         """
+        """
         if isinstance(change_level, dict):
             for current_level, next_level in change_level.items():
-                yield from HierarchicalGridField.ct_hierarchy_iterator(
+                yield from HierarchicalGridField.ct_hierarchy_generator(
                         next_level, ct_hierarchy, index + (current_level,))
         elif isinstance(change_level, (int, float)):
-            assert len(ct_hierarchy) == len(index), \
-                "Generated index must of same length as change table " \
-                "hierarachy input"
+            if len(ct_hierarchy) != len(index):
+                raise ValueError("Generated index must of same length as "
+                                 "ct_hierarchy input")
             change_info = {"ct_hierarchy": ct_hierarchy, "index": index,
                            "scaling_value": change_level}
             yield change_info
         else:
-            raise KeyError(f"{change_level} not in dictionary!")
+            raise TypeError(f"{change_level} not a valid change table type")
 
     def get_hierarchical_index(self, index_hierarchy, base_index_column=None):
         """
@@ -85,9 +106,10 @@ class HierarchicalGridField(AbstractGridField):
         matches the existing dataframe index. This allow sharing
         hierarchical indices between complementary dataframes, such 'plant'
         and 'gencost'.
-        :param index_hierarchy: list of the index hierarchy to be implemented
-        :param base_index_column: base level column for index which matches the
-        index column of the dataframe to be scaled
+        :param list index_hierarchy: list of the index hierarchy to be
+        implemented
+        :param str base_index_column: base level column for index which
+        matches the index column of the dataframe to be scaled
         :return: FieldHierarchicalIndex -- set_index method index type
         """
         assert all(column in self.data.columns for column in index_hierarchy),\
@@ -106,12 +128,6 @@ class HierarchicalGridField(AbstractGridField):
                                            index_hierarchy,
                                            self.name)
         return field_idx
-
-
-class ScalingGridField(HierarchicalGridField):
-    """
-    This defines a grid field with dataframe scaling capability
-    """
 
 
 class Branch(HierarchicalGridField):
