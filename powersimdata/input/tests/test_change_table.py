@@ -1,6 +1,6 @@
 from powersimdata.input.change_table import ChangeTable
 
-ct = ChangeTable('Eastern')
+ct = ChangeTable('USA')
 
 
 def test_add_dcline_argument_type(capsys):
@@ -38,10 +38,10 @@ def test_add_dcline_argument_wrong_keys(capsys):
 def test_add_dcline_argument_wrong_bus(capsys):
     capsys.readouterr()
     new_dcline = [{'capacity': 2000, 'from_bus_id': 300, 'to_bus_id': 1000},
-                  {'capacity': 1000, 'from_bus_id': 1, 'to_bus_id': 3001001}]
+                  {'capacity': 1000, 'from_bus_id': 1, 'to_bus_id': 30010010}]
     ct.add_dcline(new_dcline)
     cap = capsys.readouterr()
-    assert cap.out == 'No bus with the following id for line #2: 3001001\n'
+    assert cap.out == 'No bus with the following id for line #2: 30010010\n'
     assert ct.ct == {}
     ct.clear()
 
@@ -77,4 +77,26 @@ def test_add_dcline_output():
         {'capacity': 1000, 'from_bus_id': 9, 'to_bus_id': 70042},
         {'capacity': 8000, 'from_bus_id': 2008, 'to_bus_id': 5997}]}
     assert ct.ct == expected
+    ct.clear()
+
+
+def test_add_dcline_in_different_interconnect():
+    new_dcline = [{'capacity': 2000, 'from_bus_id': 200, 'to_bus_id': 2000},
+                  {'capacity': 8000, 'from_bus_id': 2008, 'to_bus_id': 3001001}]
+    ct.add_dcline(new_dcline)
+    expected = {'new_dcline': [
+        {'capacity': 2000, 'from_bus_id': 200, 'to_bus_id': 2000},
+        {'capacity': 8000, 'from_bus_id': 2008, 'to_bus_id': 3001001}]}
+    assert ct.ct == expected
+    ct.clear()
+
+
+def test_add_branch_argument_buses_in_different_interconnect(capsys):
+    capsys.readouterr()
+    new_branch = [{'capacity': 2000, 'from_bus_id': 300, 'to_bus_id': 1000},
+                  {'capacity': 1000, 'from_bus_id': 1, 'to_bus_id': 3001001}]
+    ct.add_branch(new_branch)
+    cap = capsys.readouterr()
+    assert cap.out == 'Buses of line #2 must be in same interconnect\n'
+    assert ct.ct == {}
     ct.clear()
