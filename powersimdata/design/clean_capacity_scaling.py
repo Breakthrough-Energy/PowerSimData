@@ -324,6 +324,154 @@ class AbstractCollaborativeStrategyManager(AbstractStrategyManager):
         return target_capacities_df
 
 
+class CollaborativeStrategyManager(AbstractCollaborativeStrategyManager):
+    """Calculates the next capacities using total target shortfalls.
+    """
+    def __init__(self):
+        self.addl_curtailment = {"solar": 0, "wind": 0}
+        self.solar_fraction = None
+        self.targets = {}
+
+    def calculate_total_shortfall(self):
+        """Calculates total clean energy shortfall.
+
+        :return: (*float*) -- total clean energy shortfall
+        """
+        total_ce_shortfall = 0
+        for name, target in self.targets.items():
+            total_ce_shortfall += target.calculate_ce_shortfall()
+            if target.ce_target > 0:
+                total_ce_shortfall -= target.calculate_ce_overgeneration()
+        return total_ce_shortfall
+
+    def calculate_participating_capacity(self, category):
+        """Calculates capacity for a resource, in participating states.
+        """
+        participating_capacity = sum([
+            self.targets[tar].resources[category].prev_capacity
+            for tar in self.targets if self.targets[tar].ce_target > 0])
+        return participating_capacity
+
+    def calculate_capacity_scaling(self):
+        """Calculates the aggregate capacity scaling factor for solar and wind.
+
+        :return: (*tuple*) -- solar and wind capacity scaling factors
+        """
+        solar_prev_capacity = self.calculate_participating_capacity('solar')
+        wind_prev_capacity = self.calculate_participating_capacity('wind')
+        solar_added, wind_added = self.calculate_total_added_capacity()
+
+        solar_scaling = (solar_added / solar_prev_capacity) + 1
+        wind_scaling = (wind_added / wind_prev_capacity) + 1
+        return solar_scaling, wind_scaling
+
+    def calculate_participating_capacity_factor(self, category):
+        """Calculates capacity factor for a resource, in participating states.
+
+        :param str category: resource category.
+        :return: (*float*) -- total capacity factor.
+        """
+        participating_gen = sum([
+            self.targets[tar].resources[category].prev_generation
+            for tar in self.targets if self.targets[tar].ce_target > 0])
+        participating_cap = self.calculate_participating_capacity(category)
+
+        total_cap_factor = (participating_gen / (participating_cap * 8784))
+        return total_cap_factor
+
+    def calculate_total_expected_capacity_factor(self, category):
+        """Calculates the total expected capacity for a resource.
+
+        :param str category: resource category.
+        :return: (*float*) -- total expected capacity factor
+        """
+        assert (category in ["solar", "wind"]), " expected capacity factor " \
+                                                "only defined for solar and " \
+                                                "wind"
+        total_exp_cap_factor = (
+            self.calculate_participating_capacity_factor(category)
+            * (1 - self.addl_curtailment[category]))
+        return total_exp_cap_factor
+
+    def calculate_total_added_capacity(self):
+        """Calculates the capacity to add from total clean energy shortfall.
+
+        :return: (*tuple*) -- solar and wind added capacities
+        """
+        solar_prev_capacity = self.calculate_participating_capacity('solar')
+        wind_prev_capacity = self.calculate_participating_capacity('wind')
+        solar_fraction = self.solar_fraction
+
+        if solar_fraction is None:
+            solar_fraction = solar_prev_capacity / (solar_prev_capacity
+                                                    + wind_prev_capacity)
+
+        ce_shortfall = self.calculate_total_shortfall()
+        solar_exp_cap_factor = \
+            self.calculate_total_expected_capacity_factor('solar')
+        wind_exp_cap_factor = \
+            self.calculate_total_expected_capacity_factor('wind')
+
+        if solar_fraction != 0:
+            ac_scaling_factor = (1 - solar_fraction) / solar_fraction
+            solar_added_capacity = \
+                ce_shortfall/(AbstractStrategyManager.next_sim_hours*(
+                    solar_exp_cap_factor+wind_exp_cap_factor *
+                    ac_scaling_factor))
+            wind_added_capacity = ac_scaling_factor*solar_added_capacity
+        else:
+            solar_added_capacity = 0
+            wind_added_capacity = \
+                ce_shortfall/(AbstractStrategyManager.next_sim_hours *
+                              wind_exp_cap_factor)
+        return solar_added_capacity, wind_added_capacity
+
+    def data_frame_of_next_capacities(self):
+        """Gathers next target capacity information into a data frame.
+
+        :return: (*pandas.DataFrame*) -- data frame of next target capacities
+        """
+        solar_scaling, wind_scaling = self.calculate_capacity_scaling()
+
+        target_capacities = []
+        for tar in self.targets:
+            # Start with previous capacities as the capacity targets
+            target_solar = self.targets[tar].resources['solar'].prev_capacity
+            target_wind = self.targets[tar].resources['wind'].prev_capacity
+            # Then scale up only participating states' capacities
+            has_real_target = (self.targets[tar].ce_target > 0)
+            if has_real_target:
+                target_solar *= solar_scaling
+                target_wind *= wind_scaling
+            target_capacity = [
+                self.targets[tar].region_name,
+                self.targets[tar].ce_target_fraction,
+                self.targets[tar].ce_target,
+                self.targets[tar].calculate_prev_ce_generation(),
+                self.targets[tar].calculate_ce_shortfall(),
+                solar_scaling if has_real_target else 1,
+                wind_scaling if has_real_target else 1,
+                self.targets[tar].resources['solar'].prev_capacity,
+                self.targets[tar].resources['wind'].prev_capacity,
+                target_solar,
+                target_wind]
+            target_capacities.append(target_capacity)
+        target_capacities_df = pd.DataFrame(target_capacities,
+                                            columns=['region_name',
+                                                     'ce_target_fraction',
+                                                     'ce_target',
+                                                     'previous_ce_generation',
+                                                     'clean_energy_shortfall',
+                                                     'solar_scaling',
+                                                     'wind_scaling',
+                                                     'solar_prev_capacity',
+                                                     'wind_prev_capacity',
+                                                     'next_solar_capacity',
+                                                     'next_wind_capacity'])
+        target_capacities_df = target_capacities_df.set_index('region_name')
+        return target_capacities_df
+
+
 class CollaborativeSWoGStrategyManager(AbstractCollaborativeStrategyManager):
     """Calculates the next capacities using total target shortfalls. Includes
     states without goals ('SWoG').
