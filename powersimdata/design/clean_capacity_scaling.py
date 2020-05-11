@@ -208,14 +208,11 @@ class IndependentStrategyManager(AbstractStrategyManager):
         return target_capacities_df
 
 
-class CollaborativeStrategyManager(AbstractStrategyManager):
-    """Calculates the next capacities using total target shortfalls.
-
+class AbstractCollaborativeStrategyManager(AbstractStrategyManager):
+    """Base class for Collaborative strategy objects, contains common functions.
     """
     def __init__(self):
-        self.addl_curtailment = {"solar": 0, "wind": 0}
-        self.solar_fraction = None
-        AbstractStrategyManager.__init__(self)
+        raise NotImplementedError('Only child classes should be instantiated')
 
     def set_collab_addl_curtailment(self, addl_curtailment):
         """Sets additional curtailment for Collaborative Strategy
@@ -241,17 +238,6 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         _check_solar_fraction(solar_fraction)
         self.solar_fraction = solar_fraction
 
-    def calculate_total_shortfall(self):
-        """Calculates total clean energy shortfall.
-
-        :return: (*float*) -- total clean energy shortfall
-        """
-        total_ce_shortfall = 0
-        for name, target in self.targets.items():
-            total_ce_shortfall += target.calculate_ce_shortfall()
-            total_ce_shortfall -= target.calculate_ce_overgeneration()
-        return total_ce_shortfall
-
     def calculate_total_prev_ce_generation(self):
         """Calculates total allowed clean energy generation
 
@@ -262,39 +248,6 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
             total_prev_ce_generation += \
                 self.targets[tar].calculate_prev_ce_generation()
         return total_prev_ce_generation
-
-    def calculate_total_added_capacity(self):
-        """Calculates the capacity to add from total clean energy shortfall.
-
-        :return: (*tuple*) -- solar and wind added capacities
-        """
-        solar_prev_capacity = self.calculate_total_capacity('solar')
-        wind_prev_capacity = self.calculate_total_capacity('wind')
-        solar_fraction = self.solar_fraction
-
-        if solar_fraction is None:
-            solar_fraction = solar_prev_capacity / (solar_prev_capacity
-                                                    + wind_prev_capacity)
-
-        ce_shortfall = self.calculate_total_shortfall()
-        solar_exp_cap_factor = \
-            self.calculate_total_expected_capacity_factor('solar')
-        wind_exp_cap_factor = \
-            self.calculate_total_expected_capacity_factor('wind')
-
-        if solar_fraction != 0:
-            ac_scaling_factor = (1 - solar_fraction) / solar_fraction
-            solar_added_capacity = \
-                ce_shortfall/(AbstractStrategyManager.next_sim_hours*(
-                    solar_exp_cap_factor+wind_exp_cap_factor *
-                    ac_scaling_factor))
-            wind_added_capacity = ac_scaling_factor*solar_added_capacity
-        else:
-            solar_added_capacity = 0
-            wind_added_capacity = \
-                ce_shortfall/(AbstractStrategyManager.next_sim_hours *
-                              wind_exp_cap_factor)
-        return solar_added_capacity, wind_added_capacity
 
     def calculate_total_capacity(self, category):
         """Calculates total capacity for a resource.
@@ -330,33 +283,6 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
         total_cap_factor = self.calculate_total_generation(category) / \
             (self.calculate_total_capacity(category)*8784)
         return total_cap_factor
-
-    def calculate_total_expected_capacity_factor(self, category):
-        """Calculates the total expected capacity for a resource.
-
-        :param str category: resource category.
-        :return: (*float*) -- total expected capacity factor
-        """
-        assert (category in ["solar", "wind"]), " expected capacity factor " \
-                                                "only defined for solar and " \
-                                                "wind"
-        total_exp_cap_factor = \
-            self.calculate_total_capacity_factor(category) *\
-            (1 - self.addl_curtailment[category])
-        return total_exp_cap_factor
-
-    def calculate_capacity_scaling(self):
-        """Calculates the aggregate capacity scaling factor for solar and wind.
-
-        :return: (*tuple*) -- solar and wind capacity scaling factors
-        """
-        solar_prev_capacity = self.calculate_total_capacity('solar')
-        wind_prev_capacity = self.calculate_total_capacity('wind')
-        solar_added, wind_added = self.calculate_total_added_capacity()
-
-        solar_scaling = (solar_added / solar_prev_capacity) + 1
-        wind_scaling = (wind_added / wind_prev_capacity) + 1
-        return solar_scaling, wind_scaling
 
     def data_frame_of_next_capacities(self):
         """Gathers next target capacity information into a data frame.
@@ -396,6 +322,88 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
                                                      'next_wind_capacity'])
         target_capacities_df = target_capacities_df.set_index('region_name')
         return target_capacities_df
+
+
+class CollaborativeSWoGStrategyManager(AbstractCollaborativeStrategyManager):
+    """Calculates the next capacities using total target shortfalls. Includes
+    states without goals ('SWoG').
+    """
+
+    def __init__(self):
+        self.addl_curtailment = {"solar": 0, "wind": 0}
+        self.solar_fraction = None
+        self.targets = {}
+
+    def calculate_total_shortfall(self):
+        """Calculates total clean energy shortfall.
+
+        :return: (*float*) -- total clean energy shortfall
+        """
+        total_ce_shortfall = 0
+        for name, target in self.targets.items():
+            total_ce_shortfall += target.calculate_ce_shortfall()
+            total_ce_shortfall -= target.calculate_ce_overgeneration()
+        return total_ce_shortfall
+
+    def calculate_capacity_scaling(self):
+        """Calculates the aggregate capacity scaling factor for solar and wind.
+
+        :return: (*tuple*) -- solar and wind capacity scaling factors
+        """
+        solar_prev_capacity = self.calculate_total_capacity('solar')
+        wind_prev_capacity = self.calculate_total_capacity('wind')
+        solar_added, wind_added = self.calculate_total_added_capacity()
+
+        solar_scaling = (solar_added / solar_prev_capacity) + 1
+        wind_scaling = (wind_added / wind_prev_capacity) + 1
+        return solar_scaling, wind_scaling
+
+    def calculate_total_added_capacity(self):
+        """Calculates the capacity to add from total clean energy shortfall.
+
+        :return: (*tuple*) -- solar and wind added capacities
+        """
+        solar_prev_capacity = self.calculate_total_capacity('solar')
+        wind_prev_capacity = self.calculate_total_capacity('wind')
+        solar_fraction = self.solar_fraction
+
+        if solar_fraction is None:
+            solar_fraction = solar_prev_capacity / (solar_prev_capacity
+                                                    + wind_prev_capacity)
+
+        ce_shortfall = self.calculate_total_shortfall()
+        solar_exp_cap_factor = \
+            self.calculate_total_expected_capacity_factor('solar')
+        wind_exp_cap_factor = \
+            self.calculate_total_expected_capacity_factor('wind')
+
+        if solar_fraction != 0:
+            ac_scaling_factor = (1 - solar_fraction) / solar_fraction
+            solar_added_capacity = \
+                ce_shortfall/(AbstractStrategyManager.next_sim_hours*(
+                    solar_exp_cap_factor+wind_exp_cap_factor *
+                    ac_scaling_factor))
+            wind_added_capacity = ac_scaling_factor*solar_added_capacity
+        else:
+            solar_added_capacity = 0
+            wind_added_capacity = \
+                ce_shortfall/(AbstractStrategyManager.next_sim_hours *
+                              wind_exp_cap_factor)
+        return solar_added_capacity, wind_added_capacity
+
+    def calculate_total_expected_capacity_factor(self, category):
+        """Calculates the total expected capacity for a resource.
+
+        :param str category: resource category.
+        :return: (*float*) -- total expected capacity factor
+        """
+        assert (category in ["solar", "wind"]), " expected capacity factor " \
+                                                "only defined for solar and " \
+                                                "wind"
+        total_exp_cap_factor = \
+            self.calculate_total_capacity_factor(category) *\
+            (1 - self.addl_curtailment[category])
+        return total_exp_cap_factor
 
 
 class TargetManager:
