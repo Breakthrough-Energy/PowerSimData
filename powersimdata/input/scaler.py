@@ -211,15 +211,15 @@ class Scaler(object):
                         'from_bus_id']].interconnect
                     to_interconnect = self._grid.bus.loc[entry[
                         'to_bus_id']].interconnect
-                    new_dcline.loc[i, ['from_bus_id']] = entry['from_bus_id']
-                    new_dcline.loc[i, ['to_bus_id']] = entry['to_bus_id']
-                    new_dcline.loc[i, ['status']] = 1
-                    new_dcline.loc[i, ['Pf']] = entry['capacity']
-                    new_dcline.loc[i, ['Pt']] = 0.98 * entry['capacity']
-                    new_dcline.loc[i, ['Pmin']] = -1 * entry['capacity']
-                    new_dcline.loc[i, ['Pmax']] = entry['capacity']
-                    new_dcline.loc[i, ['from_interconnect']] = from_interconnect
-                    new_dcline.loc[i, ['to_interconnect']] = to_interconnect
+                    new_dcline.loc[i, 'from_bus_id'] = entry['from_bus_id']
+                    new_dcline.loc[i, 'to_bus_id'] = entry['to_bus_id']
+                    new_dcline.loc[i, 'status'] = 1
+                    new_dcline.loc[i, 'Pf'] = entry['capacity']
+                    new_dcline.loc[i, 'Pt'] = 0.98 * entry['capacity']
+                    new_dcline.loc[i, 'Pmin'] = -1 * entry['capacity']
+                    new_dcline.loc[i, 'Pmax'] = entry['capacity']
+                    new_dcline.loc[i, 'from_interconnect'] = from_interconnect
+                    new_dcline.loc[i, 'to_interconnect'] = to_interconnect
                 self._grid.dcline = self._grid.dcline.append(new_dcline)
             if 'new_branch' in list(self.ct.keys()):
                 n_new_branch = len(self.ct['new_branch'])
@@ -245,26 +245,26 @@ class Scaler(object):
                     from_basekv = v2x[self._grid.bus.loc[entry[
                         'from_bus_id']].baseKV]
                     to_basekv = v2x[self._grid.bus.loc[entry[
-                        'from_bus_id']].baseKV]
+                        'to_bus_id']].baseKV]
                     distance = haversine((from_lat, from_lon), (to_lat, to_lon))
                     x = distance * np.mean([from_basekv, to_basekv])
 
-                    new_branch.loc[i, ['from_bus_id']] = entry['from_bus_id']
-                    new_branch.loc[i, ['to_bus_id']] = entry['to_bus_id']
-                    new_branch.loc[i, ['status']] = 1
-                    new_branch.loc[i, ['ratio']] = 0
-                    new_branch.loc[i, ['branch_device_type']] = 'Line'
-                    new_branch.loc[i, ['rateA']] = entry['capacity']
-                    new_branch.loc[i, ['interconnect']] = interconnect
-                    new_branch.loc[i, ['from_zone_id']] = from_zone_id
-                    new_branch.loc[i, ['to_zone_id']] = to_zone_id
-                    new_branch.loc[i, ['from_zone_name']] = from_zone_name
-                    new_branch.loc[i, ['to_zone_name']] = to_zone_name
-                    new_branch.loc[i, ['from_lon']] = from_lon
-                    new_branch.loc[i, ['from_lat']] = from_lat
-                    new_branch.loc[i, ['to_lon']] = to_lon
-                    new_branch.loc[i, ['to_lat']] = to_lat
-                    new_branch.loc[i, ['x']] = x
+                    new_branch.loc[i, 'from_bus_id'] = entry['from_bus_id']
+                    new_branch.loc[i, 'to_bus_id'] = entry['to_bus_id']
+                    new_branch.loc[i, 'status'] = 1
+                    new_branch.loc[i, 'ratio'] = 0
+                    new_branch.loc[i, 'branch_device_type'] = 'Line'
+                    new_branch.loc[i, 'rateA'] = entry['capacity']
+                    new_branch.loc[i, 'interconnect'] = interconnect
+                    new_branch.loc[i, 'from_zone_id'] = from_zone_id
+                    new_branch.loc[i, 'to_zone_id'] = to_zone_id
+                    new_branch.loc[i, 'from_zone_name'] = from_zone_name
+                    new_branch.loc[i, 'to_zone_name'] = to_zone_name
+                    new_branch.loc[i, 'from_lon'] = from_lon
+                    new_branch.loc[i, 'from_lat'] = from_lat
+                    new_branch.loc[i, 'to_lon'] = to_lon
+                    new_branch.loc[i, 'to_lat'] = to_lat
+                    new_branch.loc[i, 'x'] = x
         return self._grid
 
     def get_power_output(self, resource):
