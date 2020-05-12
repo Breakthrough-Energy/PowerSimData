@@ -6,6 +6,21 @@ import os
 import pickle
 
 
+def _check_solar_fraction(solar_fraction):
+    """Checks that the solar_fraction is between 0 and 1, or is None.
+
+    :raises TypeError: if type is not int, float, or None.
+    :raises ValueError: if value is not between 0 and 1.
+    """
+    if solar_fraction is None:
+        pass
+    elif isinstance(solar_fraction, (int, float)):
+        if not (0 <= solar_fraction <= 1):
+            raise ValueError("solar_fraction must be between 0 and 1")
+    else:
+        raise TypeError("solar_fraction must be int/float or None")
+
+
 class AbstractStrategyManager:
     """
     Base class for strategy objects, contains common functions
@@ -199,6 +214,7 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
     """
     def __init__(self):
         self.addl_curtailment = {"solar": 0, "wind": 0}
+        self.solar_fraction = None
         AbstractStrategyManager.__init__(self)
 
     def set_collab_addl_curtailment(self, addl_curtailment):
@@ -215,6 +231,15 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
                                                     "curtailment must be " \
                                                     "between  0 and 1"
         self.addl_curtailment = addl_curtailment
+
+    def set_solar_fraction(self, solar_fraction):
+        """Sets desired solar fraction, to be used in subsequent calculations.
+
+        :param [float/int/None] solar_fraction: solar fraction to be used in
+            calculating added capacity. *None* will maintain previous ratio.
+        """
+        _check_solar_fraction(solar_fraction)
+        self.solar_fraction = solar_fraction
 
     def calculate_total_shortfall(self):
         """Calculates total clean energy shortfall.
@@ -238,15 +263,14 @@ class CollaborativeStrategyManager(AbstractStrategyManager):
                 self.targets[tar].calculate_prev_ce_generation()
         return total_prev_ce_generation
 
-    def calculate_total_added_capacity(self, solar_fraction=None):
+    def calculate_total_added_capacity(self):
         """Calculates the capacity to add from total clean energy shortfall.
 
-        :param float solar_fraction: solar fraction to be used in calculation,
-            default is to maintain from previous result
         :return: (*tuple*) -- solar and wind added capacities
         """
         solar_prev_capacity = self.calculate_total_capacity('solar')
         wind_prev_capacity = self.calculate_total_capacity('wind')
+        solar_fraction = self.solar_fraction
 
         if solar_fraction is None:
             solar_fraction = solar_prev_capacity / (solar_prev_capacity
@@ -396,13 +420,6 @@ class TargetManager:
         assert (external_ce_historical_amount >= 0), "external_ce_historical" \
                                                      "_amount must be greater"\
                                                      " than zero"
-        assert (type(solar_percentage) == float or
-                type(solar_percentage) == int or
-                solar_percentage is None), "solar_percentage must be" \
-                                           " a number or None"
-        if type(solar_percentage) == float:
-            assert (0 <= solar_percentage <= 1), "solar_percentage must be " \
-                                               "between 0 and 1"
         self.region_name = region_name
         self.ce_category = ce_category
 
@@ -410,6 +427,7 @@ class TargetManager:
         self.ce_target_fraction = ce_target_fraction
         self.ce_target = self.total_demand * self.ce_target_fraction
         self.external_ce_historical_amount = external_ce_historical_amount
+        _check_solar_fraction(solar_percentage)
         self.solar_percentage = solar_percentage
 
         self.allowed_resources = []
