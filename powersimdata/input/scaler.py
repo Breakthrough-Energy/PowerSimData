@@ -206,28 +206,20 @@ class Scaler(object):
                 new_dcline = pd.DataFrame({c: [0] * n_new_dcline
                                            for c in self._grid.dcline.columns},
                                           index=new_dcline_id)
-                for i, entry in enumerate(self.ct['new_dcline']):
-                    new_dcline.loc[
-                        new_dcline_id[i], ['from_bus_id']] = \
-                        entry['from_bus_id']
-                    new_dcline.loc[
-                        new_dcline_id[i], ['to_bus_id']] = entry['to_bus_id']
-                    new_dcline.loc[
-                        new_dcline_id[i], ['status']] = 1
-                    new_dcline.loc[
-                        new_dcline_id[i], ['Pf']] = entry['capacity']
-                    new_dcline.loc[
-                        new_dcline_id[i], ['Pt']] = 0.98 * entry['capacity']
-                    new_dcline.loc[
-                        new_dcline_id[i], ['Pmin']] = -1 * entry['capacity']
-                    new_dcline.loc[
-                        new_dcline_id[i], ['Pmax']] = entry['capacity']
-                    new_dcline.loc[
-                        new_dcline_id[i], ['from_interconnect']] = \
-                        self._grid.bus.loc[entry['from_bus_id']].interconnect
-                    new_dcline.loc[
-                        new_dcline_id[i], ['to_interconnect']] = \
-                        self._grid.bus.loc[entry['to_bus_id']].interconnect
+                for i, entry in zip(new_dcline_id, self.ct['new_dcline']):
+                    from_interconnect = self._grid.bus.loc[entry[
+                        'from_bus_id']].interconnect
+                    to_interconnect = self._grid.bus.loc[entry[
+                        'to_bus_id']].interconnect
+                    new_dcline.loc[i, ['from_bus_id']] = entry['from_bus_id']
+                    new_dcline.loc[i, ['to_bus_id']] = entry['to_bus_id']
+                    new_dcline.loc[i, ['status']] = 1
+                    new_dcline.loc[i, ['Pf']] = entry['capacity']
+                    new_dcline.loc[i, ['Pt']] = 0.98 * entry['capacity']
+                    new_dcline.loc[i, ['Pmin']] = -1 * entry['capacity']
+                    new_dcline.loc[i, ['Pmax']] = entry['capacity']
+                    new_dcline.loc[i, ['from_interconnect']] = from_interconnect
+                    new_dcline.loc[i, ['to_interconnect']] = to_interconnect
                 self._grid.dcline = self._grid.dcline.append(new_dcline)
             if 'new_branch' in list(self.ct.keys()):
                 n_new_branch = len(self.ct['new_branch'])
