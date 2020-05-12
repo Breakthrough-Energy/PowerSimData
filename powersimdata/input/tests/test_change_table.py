@@ -100,3 +100,13 @@ def test_add_branch_argument_buses_in_different_interconnect(capsys):
     assert cap.out == 'Buses of line #2 must be in same interconnect\n'
     assert ct.ct == {}
     ct.clear()
+
+
+def test_add_branch_zero_distance_between_buses(capsys):
+    capsys.readouterr()
+    new_branch = [{'capacity': 75, 'from_bus_id': 1, 'to_bus_id': 3}]
+    ct.add_branch(new_branch)
+    cap = capsys.readouterr()
+    assert cap.out == 'Distance between buses of line #1 is 0\n'
+    assert ct.ct == {}
+    ct.clear()
