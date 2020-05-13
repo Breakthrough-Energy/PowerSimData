@@ -1,10 +1,11 @@
+import copy
+import numpy as np
 import pandas as pd
 
 from powersimdata.input.grid import Grid
 from powersimdata.input.profiles import InputData
-
 from powersimdata.input.helpers import PrintManager
-import copy
+from powersimdata.utility.distance import haversine
 
 
 class Scaler(object):
@@ -205,28 +206,65 @@ class Scaler(object):
                 new_dcline = pd.DataFrame({c: [0] * n_new_dcline
                                            for c in self._grid.dcline.columns},
                                           index=new_dcline_id)
-                for i, entry in enumerate(self.ct['new_dcline']):
-                    new_dcline.loc[new_dcline_id[i],
-                                   ['from_bus_id']] = entry['from_bus_id']
-                    new_dcline.loc[new_dcline_id[i],
-                                   ['to_bus_id']] = entry['to_bus_id']
-                    new_dcline.loc[new_dcline_id[i], ['status']] = 1
-                    new_dcline.loc[new_dcline_id[i],
-                                   ['Pf']] = entry['capacity']
-                    new_dcline.loc[new_dcline_id[i],
-                                   ['Pt']] = 0.98 * entry['capacity']
-                    new_dcline.loc[new_dcline_id[i],
-                                   ['Pmin']] = -1 * entry['capacity']
-                    new_dcline.loc[new_dcline_id[i],
-                                   ['Pmax']] = entry['capacity']
-                    new_dcline.loc[new_dcline_id[i],
-                                   ['from_interconnect']] = self._grid.bus.loc[
-                        entry['from_bus_id']].interconnect
-                    new_dcline.loc[new_dcline_id[i],
-                                   ['to_interconnect']] = self._grid.bus.loc[
-                        entry['to_bus_id']].interconnect
+                for i, entry in zip(new_dcline_id, self.ct['new_dcline']):
+                    from_interconnect = self._grid.bus.loc[entry[
+                        'from_bus_id']].interconnect
+                    to_interconnect = self._grid.bus.loc[entry[
+                        'to_bus_id']].interconnect
+                    new_dcline.loc[i, 'from_bus_id'] = entry['from_bus_id']
+                    new_dcline.loc[i, 'to_bus_id'] = entry['to_bus_id']
+                    new_dcline.loc[i, 'status'] = 1
+                    new_dcline.loc[i, 'Pf'] = entry['capacity']
+                    new_dcline.loc[i, 'Pt'] = 0.98 * entry['capacity']
+                    new_dcline.loc[i, 'Pmin'] = -1 * entry['capacity']
+                    new_dcline.loc[i, 'Pmax'] = entry['capacity']
+                    new_dcline.loc[i, 'from_interconnect'] = from_interconnect
+                    new_dcline.loc[i, 'to_interconnect'] = to_interconnect
                 self._grid.dcline = self._grid.dcline.append(new_dcline)
+            if 'new_branch' in list(self.ct.keys()):
+                n_new_branch = len(self.ct['new_branch'])
+                max_branch_id = self._grid.branch.index.max()
+                new_branch_id = range(max_branch_id + 1,
+                                      max_branch_id + 1 + n_new_branch)
+                new_branch = pd.DataFrame({c: [0] * n_new_branch
+                                           for c in self._grid.branch.columns},
+                                          index=new_branch_id)
+                v2x = voltage_to_x_per_distance(self._grid)
+                for i, entry in zip(new_branch_id, self.ct['new_branch']):
+                    interconnect = self._grid.bus.loc[entry[
+                        'from_bus_id']].interconnect
+                    from_zone_id = self._grid.bus.loc[entry[
+                        'from_bus_id']].zone_id
+                    to_zone_id = self._grid.bus.loc[entry['to_bus_id']].zone_id
+                    from_zone_name = self._grid.id2zone[from_zone_id]
+                    to_zone_name = self._grid.id2zone[to_zone_id]
+                    from_lon = self._grid.bus.loc[entry['from_bus_id']].lon
+                    from_lat = self._grid.bus.loc[entry['from_bus_id']].lat
+                    to_lon = self._grid.bus.loc[entry['to_bus_id']].lon
+                    to_lat = self._grid.bus.loc[entry['to_bus_id']].lat
+                    from_basekv = v2x[self._grid.bus.loc[entry[
+                        'from_bus_id']].baseKV]
+                    to_basekv = v2x[self._grid.bus.loc[entry[
+                        'to_bus_id']].baseKV]
+                    distance = haversine((from_lat, from_lon), (to_lat, to_lon))
+                    x = distance * np.mean([from_basekv, to_basekv])
 
+                    new_branch.loc[i, 'from_bus_id'] = entry['from_bus_id']
+                    new_branch.loc[i, 'to_bus_id'] = entry['to_bus_id']
+                    new_branch.loc[i, 'status'] = 1
+                    new_branch.loc[i, 'ratio'] = 0
+                    new_branch.loc[i, 'branch_device_type'] = 'Line'
+                    new_branch.loc[i, 'rateA'] = entry['capacity']
+                    new_branch.loc[i, 'interconnect'] = interconnect
+                    new_branch.loc[i, 'from_zone_id'] = from_zone_id
+                    new_branch.loc[i, 'to_zone_id'] = to_zone_id
+                    new_branch.loc[i, 'from_zone_name'] = from_zone_name
+                    new_branch.loc[i, 'to_zone_name'] = to_zone_name
+                    new_branch.loc[i, 'from_lon'] = from_lon
+                    new_branch.loc[i, 'from_lat'] = from_lat
+                    new_branch.loc[i, 'to_lon'] = to_lon
+                    new_branch.loc[i, 'to_lat'] = to_lat
+                    new_branch.loc[i, 'x'] = x
         return self._grid
 
     def get_power_output(self, resource):
@@ -299,3 +337,25 @@ class Scaler(object):
                       (self._original_grid.id2zone[key], key, value))
                 demand.loc[:, key] *= value
         return demand
+
+
+def voltage_to_x_per_distance(grid):
+    """Calculates reactance per distance for voltage level.
+
+    :param powersimdata.input.grid grid: a Grid object instance.
+    :return: (*dict*) -- bus voltage to average reactance per mile.
+    """
+    branch = grid.branch[grid.branch.branch_device_type == 'Line']
+    distance = branch[['from_lat', 'from_lon', 'to_lat', 'to_lon']].apply(
+        lambda x: haversine((x[0], x[1]), (x[2], x[3])), axis=1).values
+
+    no_zero = np.nonzero(distance)[0]
+    x_per_distance = (branch.iloc[no_zero].x / distance[no_zero]).values
+
+    basekv = np.array([grid.bus.baseKV[i]
+                       for i in branch.iloc[no_zero].from_bus_id])
+
+    v2x = {v: np.mean(x_per_distance[np.where(basekv == v)[0]])
+           for v in set(basekv)}
+
+    return v2x

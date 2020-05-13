@@ -5,6 +5,7 @@ from powersimdata.design.transmission import (
     scale_congested_mesh_branches, scale_renewable_stubs)
 from powersimdata.input.grid import Grid
 from powersimdata.utility import const
+from powersimdata.utility.distance import haversine
 
 
 _resources = ('coal', 'dfo', 'geothermal', 'ng', 'nuclear',
@@ -56,6 +57,12 @@ class ChangeTable(object):
             all the information needed to add a new dcline to the grid. The
             keys in the dictionary are: *'capacity'*, *'from_bus_id'* and
             *'to_bus_id'* with values giving the capacity of the HVDC line and
+            the bus id at each end of the line.
+        * *'new_branch'*:
+            value is a list. Each entry in this list is a dictionary enclosing
+            all the information needed to add a new branch to the grid. The
+            keys in the dictionary are: *'capacity'*, *'from_bus_id'* and
+            *'to_bus_id'* with values giving the capacity of the line and
             the bus id at each end of the line.
 
         :param list interconnect: interconnect name(s).
@@ -346,7 +353,7 @@ class ChangeTable(object):
                 self.ct['storage']['bus_id'][i] = bus_id[i]
 
     def add_dcline(self, dcline):
-        """Sets dcline parameters in change table.
+        """Adds HVDC line(s).
 
         :param list dcline: each entry is a dictionary. The dictionary gathers
             the information needed to create a new dcline.
@@ -355,42 +362,79 @@ class ChangeTable(object):
             print('Argument enclosing new HVDC line(s) must be a list')
             return
 
-        if 'new_dcline' not in self.ct:
-            self.ct['new_dcline'] = []
+        self._add_line('new_dcline', dcline)
 
-        keys = ['capacity', 'from_bus_id', 'to_bus_id']
-        for i, line in enumerate(dcline):
+    def add_branch(self, branch):
+        """Sets parameters of new branch(es) in change table.
+
+        :param list branch: each entry is a dictionary. The dictionary gathers
+            the information needed to create a new branch.
+        """
+        if not isinstance(branch, list):
+            print('Argument enclosing new AC line(s) must be a list')
+            return
+
+        self._add_line('new_branch', branch)
+
+    def _add_line(self, key, info):
+        """Handles line(s) addition in change table.
+
+        :param str key: key in change table. Either *'new_branch'* or
+            *'new_dcline'*
+        :param list info: parameters of the line.
+        """
+        if key not in self.ct:
+            self.ct[key] = []
+
+        required_info = ['capacity', 'from_bus_id', 'to_bus_id']
+        for i, line in enumerate(info):
             if not isinstance(line, dict):
                 print('Each entry must be a dictionary')
-                self.ct.pop('new_dcline')
+                self.ct.pop(key)
                 return
-            elif set(line.keys()) != set(keys):
-                print('Dictionary must have %s as keys' % ' | '.join(keys))
-                self.ct.pop('new_dcline')
+            elif set(line.keys()) != set(required_info):
+                print('Dictionary must have %s as keys'
+                      % ' | '.join(required_info))
+                self.ct.pop(key)
                 return
             else:
                 start = line['from_bus_id']
                 end = line['to_bus_id']
                 if start not in self.grid['bus'].index:
                     print("No bus with the following id for line #%d: %d" %
-                          (i+1, start))
-                    self.ct.pop('new_dcline')
+                          (i + 1, start))
+                    self.ct.pop(key)
                     return
                 elif end not in self.grid['bus'].index:
                     print("No bus with the following id for line #%d: %d" %
-                          (i+1, end))
-                    self.ct.pop('new_dcline')
+                          (i + 1, end))
+                    self.ct.pop(key)
                     return
                 elif start == end:
-                    print("buses of line #%d must be different" % (i+1))
-                    self.ct.pop('new_dcline')
+                    print("buses of line #%d must be different" % (i + 1))
+                    self.ct.pop(key)
                     return
                 elif line['capacity'] < 0:
-                    print("capacity of line #%d must be positive" % (i+1))
-                    self.ct.pop('new_dcline')
+                    print("capacity of line #%d must be positive" % (i + 1))
+                    self.ct.pop(key)
                     return
-                else:
-                    self.ct['new_dcline'].append(line)
+                elif key == 'new_branch' and \
+                        self.grid['bus'].interconnect[start] != \
+                        self.grid['bus'].interconnect[end]:
+                    print("Buses of line #%d must be in same interconnect"
+                          % (i + 1))
+                    self.ct.pop(key)
+                    return
+
+                elif haversine((self.grid['bus'].lat[start],
+                                self.grid['bus'].lon[start]),
+                               (self.grid['bus'].lat[end],
+                                self.grid['bus'].lon[end])) == 0:
+                    print("Distance between buses of line #%d is 0" % (i + 1))
+                    self.ct.pop(key)
+                    return
+
+                self.ct[key].append(line)
 
     def write(self, scenario_id):
         """Saves change table to disk.
