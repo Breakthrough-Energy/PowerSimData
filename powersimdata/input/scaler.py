@@ -265,6 +265,7 @@ class Scaler(object):
                     new_branch.loc[i, 'to_lon'] = to_lon
                     new_branch.loc[i, 'to_lat'] = to_lat
                     new_branch.loc[i, 'x'] = x
+                self._grid.branch = self._grid.branch.append(new_branch)
         return self._grid
 
     def get_power_output(self, resource):
