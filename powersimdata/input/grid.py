@@ -116,6 +116,14 @@ class Grid(object):
         except KeyError as e:
             print(e)
 
+    def __setattr__(self, name, value):
+        if name in ['data_loc', 'interconnect', 'fields', 'transform']:
+            super().__setattr__(name, value)
+        elif name in self.fields:
+            self.fields[name].data = value
+        else:
+            super().__setattr__(name, value)
+
     def __eq__(self, other):
         """Used when 'self == other' is evaluated.
         :param object other: other object to be compared against.
