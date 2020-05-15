@@ -751,6 +751,7 @@ class Resource:
             congestion.
         :param float prev_capacity: capacity from scenario run.
         :param float prev_cap_factor: capacity factor from scenario run.
+        :param float tolerance: tolerance for values outside expected range.
 
         .. todo:: calculate directly from scenario results
         """
