@@ -65,7 +65,7 @@ class TransformGrid(object):
         """
         if 'zone_id' in self.ct[gen_type].keys():
             for zone_id, factor in self.ct[gen_type]['zone_id'].items():
-                plant_id = self.grid['plant'].groupby(
+                plant_id = self.grid.plant.groupby(
                     ['zone_id', 'type']).get_group(
                     (zone_id, gen_type)).index.values.tolist()
                 self._scale_gen_capacity(plant_id, factor)
@@ -83,8 +83,8 @@ class TransformGrid(object):
         :param int/list plant_id: plant identification number(s).
         :param float factor: scaling factor.
         """
-        self.grid['plant'].loc[plant_id, 'Pmax'] *= factor
-        self.grid['plant'].loc[plant_id, 'Pmin'] *= factor
+        self.grid.plant.loc[plant_id, 'Pmax'] *= factor
+        self.grid.plant.loc[plant_id, 'Pmin'] *= factor
 
     def _scale_gencost(self, plant_id, factor):
         """Scales generation cost curves.
@@ -93,9 +93,9 @@ class TransformGrid(object):
         :param float factor: scaling factor.
         :return:
         """
-        self.grid['gencost']['before'].loc[plant_id, 'c0'] *= factor
+        self.grid.gencost['before'].loc[plant_id, 'c0'] *= factor
         if factor != 0:
-            self.grid['gencost']['before'].loc[plant_id, 'c2'] /= factor
+            self.grid.gencost['before'].loc[plant_id, 'c2'] /= factor
 
     def _scale_branch(self):
         """Scales capacity of AC lines.
@@ -103,7 +103,7 @@ class TransformGrid(object):
         """
         if 'zone_id' in self.ct['branch'].keys():
             for zone_id, factor in self.ct['branch']['zone_id'].items():
-                branch_id = self.grid['branch'].groupby(
+                branch_id = self.grid.branch.groupby(
                     ['from_zone_id', 'to_zone_id']).get_group(
                     (zone_id, zone_id)).index.values.tolist()
                 self._scale_branch_capacity(branch_id, factor)
@@ -117,8 +117,8 @@ class TransformGrid(object):
         :param int/list branch_id: branch identification number(s)
         :param float factor: scaling factor
         """
-        self.grid['branch'].loc[branch_id, 'rateA'] *= factor
-        self.grid['branch'].loc[branch_id, 'x'] /= factor
+        self.grid.branch.loc[branch_id, 'rateA'] *= factor
+        self.grid.branch.loc[branch_id, 'x'] /= factor
 
     def _scale_dcline(self):
         """Scales capacity of HVDC lines.
@@ -126,31 +126,31 @@ class TransformGrid(object):
         """
         for dcline_id, factor in self.ct['dcline']['dcline_id'].items():
             if factor == 0:
-                self.grid['dcline'].loc[dcline_id, 'status'] = 0
+                self.grid.dcline.loc[dcline_id, 'status'] = 0
             else:
-                self.grid['dcline'].loc[dcline_id, 'Pmin'] *= factor
-                self.grid['dcline'].loc[dcline_id, 'Pmax'] *= factor
+                self.grid.dcline.loc[dcline_id, 'Pmin'] *= factor
+                self.grid.dcline.loc[dcline_id, 'Pmax'] *= factor
 
     def _add_branch(self):
         """Adds branch(es) to the grid.
 
         """
-        new_branch = {c: 0 for c in self.grid['branch'].columns}
+        new_branch = {c: 0 for c in self.grid.branch.columns}
         v2x = voltage_to_x_per_distance(self.grid)
         for entry in self.ct['new_branch']:
             from_bus_id = entry['from_bus_id']
             to_bus_id = entry['to_bus_id']
-            interconnect = self.grid['bus'].loc[from_bus_id].interconnect
-            from_zone_id = self.grid['bus'].loc[from_bus_id].zone_id
-            to_zone_id = self.grid['bus'].loc[to_bus_id].zone_id
+            interconnect = self.grid.bus.loc[from_bus_id].interconnect
+            from_zone_id = self.grid.bus.loc[from_bus_id].zone_id
+            to_zone_id = self.grid.bus.loc[to_bus_id].zone_id
             from_zone_name = self.grid.id2zone[from_zone_id]
             to_zone_name = self.grid.id2zone[to_zone_id]
-            from_lon = self.grid['bus'].loc[from_bus_id].lon
-            from_lat = self.grid['bus'].loc[from_bus_id].lat
-            to_lon = self.grid['bus'].loc[to_bus_id].lon
-            to_lat = self.grid['bus'].loc[to_bus_id].lat
-            from_basekv = v2x[self.grid['bus'].loc[from_bus_id].baseKV]
-            to_basekv = v2x[self.grid['bus'].loc[to_bus_id].baseKV]
+            from_lon = self.grid.bus.loc[from_bus_id].lon
+            from_lat = self.grid.bus.loc[from_bus_id].lat
+            to_lon = self.grid.bus.loc[to_bus_id].lon
+            to_lat = self.grid.bus.loc[to_bus_id].lat
+            from_basekv = v2x[self.grid.bus.loc[from_bus_id].baseKV]
+            to_basekv = v2x[self.grid.bus.loc[to_bus_id].baseKV]
             distance = haversine((from_lat, from_lon), (to_lat, to_lon))
             x = distance * np.mean([from_basekv, to_basekv])
 
@@ -177,12 +177,12 @@ class TransformGrid(object):
         """Adds HVDC line(s) to the grid
 
         """
-        new_dcline = {c: 0 for c in self.grid['dcline'].columns}
+        new_dcline = {c: 0 for c in self.grid.dcline.columns}
         for entry in self.ct['new_dcline']:
             from_bus_id = entry['from_bus_id']
             to_bus_id = entry['to_bus_id']
-            from_interconnect = self.grid['bus'].loc[from_bus_id].interconnect
-            to_interconnect = self.grid['bus'].loc[to_bus_id].interconnect
+            from_interconnect = self.grid.bus.loc[from_bus_id].interconnect
+            to_interconnect = self.grid.bus.loc[to_bus_id].interconnect
             new_dcline['from_bus_id'] = entry['from_bus_id']
             new_dcline['to_bus_id'] = entry['to_bus_id']
             new_dcline['status'] = 1
@@ -199,7 +199,7 @@ class TransformGrid(object):
         """Adds storage to the grid.
 
         """
-        storage_id = self.grid['plant'].shape[0]
+        storage_id = self.grid.plant.shape[0]
         for bus_id, value in self.ct['storage']['bus_id'].items():
             storage_id += 1
             self._add_storage_unit(bus_id, value)
@@ -213,7 +213,7 @@ class TransformGrid(object):
         :param int bus_id: bus identification number.
         :param float value: storage capacity.
         """
-        gen = {g: 0 for g in self.grid['storage']['gen'].columns}
+        gen = {g: 0 for g in self.grid.storage['gen'].columns}
         gen['bus_id'] = bus_id
         gen['Vg'] = 1
         gen['mBase'] = 100
@@ -223,13 +223,13 @@ class TransformGrid(object):
         gen['ramp_10'] = value
         gen['ramp_30'] = value
         self.grid.storage['gen'] = \
-            self.grid.storage['gen'].append(gen,ignore_index=True)
+            self.grid.storage['gen'].append(gen, ignore_index=True)
 
     def _add_storage_gencost(self):
         """Sets generation cost of storage unit.
 
         """
-        gencost = {g: 0 for g in self.grid['storage']['gencost'].columns}
+        gencost = {g: 0 for g in self.grid.storage['gencost'].columns}
         gencost['type'] = 2
         gencost['n'] = 3
         self.grid.storage['gencost'] = \
@@ -239,7 +239,7 @@ class TransformGrid(object):
         """Sets fuel type of storage unit.
 
         """
-        self.grid['storage']['genfuel'].append('ess')
+        self.grid.storage['genfuel'].append('ess')
 
     def _add_storage_data(self, storage_id, value):
         """Sets storage data.
@@ -247,12 +247,12 @@ class TransformGrid(object):
         :param int storage_id: storage identification number.
         :param float value: storage capacity.
         """
-        data = {g: 0 for g in self.grid['storage']['StorageData'].columns}
+        data = {g: 0 for g in self.grid.storage['StorageData'].columns}
 
-        duration = self.grid['storage']['duration']
-        min_stor = self.grid['storage']['min_stor']
-        max_stor = self.grid['storage']['max_stor']
-        energy_price = self.grid['storage']['energy_price']
+        duration = self.grid.storage['duration']
+        min_stor = self.grid.storage['min_stor']
+        max_stor = self.grid.storage['max_stor']
+        energy_price = self.grid.storage['energy_price']
 
         data['UnitIdx'] = storage_id
         data['ExpectedTerminalStorageMax'] = value * duration * max_stor
@@ -264,8 +264,8 @@ class TransformGrid(object):
         data['TerminalStoragePrice'] = energy_price
         data['MinStorageLevel'] = value * duration * min_stor
         data['MaxStorageLevel'] = value * duration * max_stor
-        data['OutEff'] = self.grid['storage']['OutEff']
-        data['InEff'] = self.grid['storage']['InEff']
+        data['OutEff'] = self.grid.storage['OutEff']
+        data['InEff'] = self.grid.storage['InEff']
         data['LossFactor'] = 0
         data['rho'] = 1
         self.grid.storage['StorageData'] = \
