@@ -744,7 +744,7 @@ class Resource:
         self.addl_curtailment = 0
 
     def set_capacity(self, no_congestion_cap_factor, prev_capacity,
-                     prev_cap_factor):
+                     prev_cap_factor, tolerance=1e-3):
         """Sets capacity information for resource.
 
         :param float no_congestion_cap_factor: capacity factor with no
@@ -754,6 +754,15 @@ class Resource:
 
         .. todo:: calculate directly from scenario results
         """
+        if (-1 * tolerance) <= no_congestion_cap_factor <= 0:
+            no_congestion_cap_factor = 0
+        if 1 <= no_congestion_cap_factor <= (1 + tolerance):
+            no_congestion_cap_factor = 1
+        if (-1 * tolerance) <= prev_cap_factor <= 0:
+            prev_cap_factor = 0
+        if 1 <= prev_cap_factor <= (1 + tolerance):
+            prev_cap_factor = 1
+
         assert (0 <= no_congestion_cap_factor <= 1), \
             "no_congestion_cap_factor must be between 0 and 1"
         assert (0 <= prev_cap_factor <= 1), \
