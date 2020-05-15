@@ -59,13 +59,6 @@ class Grid(object):
 
         try:
 
-            assert_frame_equal(self.sub, other.sub)
-            assert_frame_equal(self.plant, other.plant)
-            assert_frame_equal(self.gencost, other.gencost)
-            assert_frame_equal(self.dcline, other.dcline)
-            assert_frame_equal(self.bus, other.bus)
-            assert_frame_equal(self.branch, other.branch)
-
             def _univ_eq(ref, test):
                 """Check for {boolean, dataframe, or column data} equality.
                 :param object ref: one object to be tested (order does not matter).
@@ -83,6 +76,16 @@ class Grid(object):
                     for col in ref.columns:
                         assert (ref[col] == test[col]).all()
 
+            # check grid data equality
+            _univ_eq(self.sub, other.sub)
+            _univ_eq(self.plant, other.plant)
+            _univ_eq(self.gencost, other.gencost)
+            _univ_eq(self.dcline, other.dcline)
+            _univ_eq(self.bus, other.bus)
+            _univ_eq(self.branch, other.branch)
+            _univ_eq(self.storage, other.storage)
+
+            # check grid helper function equality
             _univ_eq(self.type2color, other.type2color)
             _univ_eq(self.id2type, other.id2type)
             _univ_eq(self.type2id, other.type2id)
