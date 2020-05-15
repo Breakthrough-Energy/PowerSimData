@@ -2,6 +2,7 @@ from powersimdata.utility import const
 from powersimdata.utility.transfer_data import get_scenario_table, upload
 from powersimdata.scenario.state import State
 from powersimdata.scenario.execute import Execute
+from powersimdata.input.grid import Grid
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.scenario.helpers import interconnect2name, check_interconnect
 
@@ -367,8 +368,9 @@ class Eastern(_Builder):
 
     def __init__(self, ssh_client):
         self.interconnect = ['Eastern']
+        self.grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.interconnect)
+        self.change_table = ChangeTable(self.grid)
 
         table = get_scenario_table(ssh_client)
         self.existing = table[table.interconnect == self.name]
@@ -385,8 +387,9 @@ class Texas(_Builder):
 
         """
         self.interconnect = ['Texas']
+        self.grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.interconnect)
+        self.change_table = ChangeTable(self.grid)
 
         table = get_scenario_table(ssh_client)
         self.existing = table[table.interconnect == self.name]
@@ -404,8 +407,9 @@ class Western(_Builder):
 
         """
         self.interconnect = ['Western']
+        self.grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.interconnect)
+        self.change_table = ChangeTable(self.grid)
 
         table = get_scenario_table(ssh_client)
         self.existing = table[table.interconnect == self.name]
@@ -420,8 +424,9 @@ class TexasWestern(_Builder):
 
     def __init__(self, ssh_client):
         self.interconnect = ['Texas', 'Western']
+        self.grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.interconnect)
+        self.change_table = ChangeTable(self.grid)
 
         table = get_scenario_table(ssh_client)
         self.existing = table[table.interconnect == self.name]
@@ -455,8 +460,9 @@ class USA(_Builder):
 
     def __init__(self, ssh_client):
         self.interconnect = ['USA']
+        self.grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.interconnect)
+        self.change_table = ChangeTable(self.grid)
 
         table = get_scenario_table(ssh_client)
         self.existing = table[table.interconnect == self.name]
