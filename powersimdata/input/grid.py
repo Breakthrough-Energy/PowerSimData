@@ -1,19 +1,15 @@
 import os
-import warnings
 
 from powersimdata.input.usa_tamu_model import TAMU
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
-from powersimdata.input.grid_fields \
-    import AbstractGridField, Branch, Bus, DCLine, GenCost, Plant, Storage, Sub
+from pandas.testing import assert_frame_equal
 
 
 class Grid(object):
     """Grid
-
     """
     def __init__(self, interconnect, source='usa_tamu', engine='REISE'):
         """Constructor
-
         :param list interconnect: interconnect name(s).
         :param str source: model used to build the network.
         :param str engine: engine used to run scenario, if using ScenarioGrid.
@@ -39,165 +35,61 @@ class Grid(object):
         else:
             raise ValueError('%s not implemented' % source)
 
-        # Specific grid info
         self.data_loc = data.data_loc
         self.interconnect = data.interconnect
-
-        self.fields = {}
-        self.transform = {}
-
-        # Input data as grid fields
-        self.fields['bus'] = Bus(data.bus)
-        self.fields['branch'] = Branch(data.branch)
-        self.fields['dcline'] = DCLine(data.dcline)
-        self.fields['gencost'] = GenCost(data.gencost)
-        self.fields['plant'] = Plant(data.plant)
-        self.fields['sub'] = Sub(data.sub)
-        self.fields['storage'] = Storage(data.storage)
-
-        # Conversion helpers
-        self.transform['bus2sub'] = data.bus2sub
-        self.transform['zone2id'] = data.zone2id
-        self.transform['id2zone'] = data.id2zone
-        self.transform['id2type'] = get_id2type()
-        self.transform['type2id'] = {value: key for key, value in
-                                     self.transform['id2type'].items()}
-
-        # Plotting helper
-        self.transform['type2color'] = get_type2color()
-
-    def __getattr__(self, prop_name):
-        """
-        Overrides the object "." property interface to maintain backwards
-        compatibility, i.e. grid.plant
-        is the same as grid.fields["plant"], or grid.transform["bus2sub"]
-
-        :param str prop_name: property name as string
-        :raises KeyError: For attempts to use key not in the dictionary
-        :return: property of the Grid class
-        """
-
-        # needed for deepcopy to work
-        if prop_name == "__deepcopy__":
-            return super().__deepcopy__
-        if prop_name == "__len__":
-            return super().__len__
-        if prop_name == "__getstate__":
-            return super().__getstate__
-        if prop_name == "__setstate__":
-            return super().__setstate__
-
-        # switch between transform and grid_field attributes
-        if prop_name in ['bus2sub', 'zone2id', 'id2zone', 'id2type', 
-                         'type2id', 'type2color']:
-            return self.transform[prop_name]
-        else:
-            try:
-                warnings.warn(
-                    "Grid property access is moving to dictionary indexing, "
-                    "i.e. grid['branch'] consistent with REISE.jl",
-                    DeprecationWarning
-                )
-                return self.fields[prop_name].data
-            except AttributeError as e:
-                print(e)
-
-    def __getitem__(self, field_name):
-        """
-        Allows indexing into the resources dictionary directly from the
-        object variable, i.e. grid["plant"] is the
-        same as grid.fields["plant"]
-        :param str field_name: grid field name as string
-        :raises KeyError: For attempts to use key not in the dictionary
-        :return: property of the Grid class
-        """
-        try:
-            return self.fields[field_name].data
-        except KeyError as e:
-            print(e)
-
-    def __setattr__(self, name, value):
-        if name in ['data_loc', 'interconnect', 'fields', 'transform']:
-            super().__setattr__(name, value)
-        elif name in self.fields:
-            self.fields[name].data = value
-        else:
-            super().__setattr__(name, value)
+        self.zone2id = data.zone2id
+        self.id2zone = data.id2zone
+        self.sub = data.sub
+        self.plant = data.plant
+        self.gencost = data.gencost
+        self.dcline = data.dcline
+        self.bus2sub = data.bus2sub
+        self.bus = data.bus
+        self.branch = data.branch
+        self.storage = data.storage
+        self.type2color = get_type2color()
+        self.id2type = get_id2type()
+        self.type2id = {value: key for key, value in self.id2type.items()}
 
     def __eq__(self, other):
         """Used when 'self == other' is evaluated.
         :param object other: other object to be compared against.
         :return: (*bool*).
         """
-        def _univ_eq(ref, test):
-            """Check for {boolean, dataframe, or column data} equality.
-            :param object ref: one object to be tested (order does not matter).
-            :param object test: another object to be tested.
-            :raises AssertionError: if no equality can be confirmed.
-            """
-            try:
-                test_eq = ref == test
-                if isinstance(test_eq, (bool, dict)):
-                    assert test_eq
-                else:
-                    assert test_eq.all().all()
-            except ValueError:
-                assert set(ref.columns) == set(test.columns)
-                for col in ref.columns:
-                    assert (ref[col] == test[col]).all()
 
-        if not isinstance(other, Grid):
-            err_msg = 'Unable to compare Grid & %s' % type(other).__name__
-            raise NotImplementedError(err_msg)
-        assert self.fields.keys() == other.fields.keys()
-        assert self.transform.keys() == other.transform.keys()
-        # Check all AbstractGridField attributes
         try:
-            for k, v in self.fields.items():
-                if isinstance(v, GenCost):
-                    # Comparing 'after' will fail if one Grid was linearized
-                    self_data = self.fields[k].data['before']
-                    other_data = other.fields[k].data['before']
-                    _univ_eq(self_data, other_data)
-                elif isinstance(v, Storage):
-                    self_storage_num = len(self.fields[k].data['gencost'])
-                    other_storage_num = len(other.fields[k].data['gencost'])
-                    if self_storage_num == 0:
-                        assert other_storage_num == 0
-                        continue
-                    # These are dicts, so we need to go one level deeper
-                    self_keys = self.fields[k].data.keys()
-                    other_keys = other.fields[k].data.keys()
-                    assert self_keys == other_keys
-                    for subkey in self_keys:
-                        # REISE will modify gencost and some gen columns
-                        if subkey == 'gencost':
-                            continue
-                        self_data = self.fields[k].data[subkey]
-                        other_data = other.fields[k].data[subkey]
-                        if subkey == 'gen':
-                            excluded_cols = ['ramp_10', 'ramp_30']
-                            self_data = self_data.drop(excluded_cols, axis=1)
-                            other_data = other_data.drop(excluded_cols, axis=1)
-                        _univ_eq(self_data, other_data)
-                elif isinstance(v, Bus):
-                    # MOST changes BUS_TYPE for buses with DC Lines attached
-                    self_df = self.fields[k].data.drop('type', axis=1)
-                    other_df = other.fields[k].data.drop('type', axis=1)
-                    _univ_eq(self_df, other_df)
-                elif isinstance(v, Plant):
-                    # REISE does some modifications to Plant data
-                    excluded_cols = ['status', 'Pmin', 'ramp_10', 'ramp_30']
-                    self_df = self.fields[k].data.drop(excluded_cols, axis=1)
-                    other_df = other.fields[k].data.drop(excluded_cols, axis=1)
-                    _univ_eq(self_df, other_df)
-                elif isinstance(v, AbstractGridField):
-                    _univ_eq(self.fields[k].data, other.fields[k].data)
-                else:
-                    _univ_eq(self.fields[k], other.fields[k])
-            # Check the transform attributes
-            for k, v in self.transform.items():
-                _univ_eq(self.transform[k], other.transform[k])
+
+            assert_frame_equal(self.sub, other.sub)
+            assert_frame_equal(self.plant, other.plant)
+            assert_frame_equal(self.gencost, other.gencost)
+            assert_frame_equal(self.dcline, other.dcline)
+            assert_frame_equal(self.bus, other.bus)
+            assert_frame_equal(self.branch, other.branch)
+
+            def _univ_eq(ref, test):
+                """Check for {boolean, dataframe, or column data} equality.
+                :param object ref: one object to be tested (order does not matter).
+                :param object test: another object to be tested.
+                :raises AssertionError: if no equality can be confirmed.
+                """
+                try:
+                    test_eq = ref == test
+                    if isinstance(test_eq, (bool, dict)):
+                        assert test_eq
+                    else:
+                        assert test_eq.all().all()
+                except ValueError:
+                    assert set(ref.columns) == set(test.columns)
+                    for col in ref.columns:
+                        assert (ref[col] == test[col]).all()
+
+            _univ_eq(self.type2color, other.type2color)
+            _univ_eq(self.id2type, other.id2type)
+            _univ_eq(self.type2id, other.type2id)
+            _univ_eq(self.zone2id, other.zone2id)
+            _univ_eq(self.id2zone, other.id2zone)
+            _univ_eq(self.bus2sub, other.bus2sub)
+
         except:
             return False
         return True
@@ -205,7 +97,6 @@ class Grid(object):
 
 def get_type2color():
     """Defines generator type to generator color mapping. Used for plotting.
-
     :return: (*dict*) -- generator type to color mapping.
     """
     type2color = {
@@ -227,7 +118,6 @@ def get_type2color():
 
 def get_id2type():
     """Defines generator type to generator id mapping.
-
     :return: (*tuple*) -- generator type to generator id mapping.
     """
     id2type = {
