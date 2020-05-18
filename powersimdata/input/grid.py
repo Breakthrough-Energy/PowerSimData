@@ -78,7 +78,6 @@ class Grid(object):
             err_msg = 'Unable to compare Grid & %s' % type(other).__name__
             raise NotImplementedError(err_msg)
 
-        # Check all AbstractGridField attributes
         try:
             # compare gencost
             # Comparing 'after' will fail if one Grid was linearized
@@ -87,8 +86,8 @@ class Grid(object):
             _univ_eq(self_data, other_data)
 
             # compare storage
-            self_storage_num = self.gencost
-            other_storage_num = other.gencost
+            self_storage_num = len(self.storage['gencost'])
+            other_storage_num = len(other.storage['gencost'])
             if self_storage_num == 0:
                 assert other_storage_num == 0
             else:
