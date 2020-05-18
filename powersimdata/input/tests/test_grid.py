@@ -219,6 +219,86 @@ def test_deepcopy_works():
     assert isinstance(copied_grid, Grid)
 
 
+def test_grid_eq_success():
+    assert Grid(['Texas']) == Grid(['Texas'])
+
+
+def test_grid_eq_failure_bus():
+    ref_grid = Grid(['Texas'])
+    test_grid = Grid(['Texas'])
+    test_grid.bus.baseKV.iloc[0] *= 2
+    assert test_grid != ref_grid
+
+
+def test_grid_eq_success_bus_type():
+    ref_grid = Grid(['Texas'])
+    test_grid = Grid(['Texas'])
+    test_grid.bus.type = 1
+    assert test_grid == ref_grid
+
+
+def test_grid_eq_failure_branch():
+    ref_grid = Grid(['Texas'])
+    test_grid = Grid(['Texas'])
+    test_grid.branch.rateA.iloc[0] *= 2
+    assert test_grid != ref_grid
+
+
+def test_grid_eq_failure_dcline():
+    ref_grid = Grid(['Western'])
+    test_grid = Grid(['Western'])
+    test_grid.dcline.Pmax.iloc[0] *= 2
+    assert test_grid != ref_grid
+
+
+def test_grid_eq_failure_gencost_before():
+    ref_grid = Grid(['Texas'])
+    test_grid = Grid(['Texas'])
+    test_grid.gencost['before'].n.iloc[0] += 1
+    assert test_grid != ref_grid
+
+
+def test_grid_eq_success_gencost_after():
+    ref_grid = Grid(['Texas'])
+    test_grid = Grid(['Texas'])
+    test_grid.gencost['after'] = test_grid.gencost['after'].drop(
+        test_grid.gencost['after'].tail(1).index)
+    assert test_grid == ref_grid
+
+
+def test_grid_eq_failure_plant():
+    ref_grid = Grid(['Texas'])
+    test_grid = Grid(['Texas'])
+    test_grid.plant.Pmax.iloc[0] *= 2
+    assert test_grid != ref_grid
+
+
+def test_grid_eq_success_plant_ramp30():
+    ref_grid = Grid(['Texas'])
+    test_grid = Grid(['Texas'])
+    test_grid.plant.ramp_30.iloc[0] *= 2
+    assert test_grid == ref_grid
+
+
+def test_grid_eq_failure_sub():
+    ref_grid = Grid(['Texas'])
+    test_grid = Grid(['Texas'])
+    test_grid.sub.name.iloc[0] = test_grid.sub.name.iloc[0][::-1]
+    assert test_grid != ref_grid
+
+
+def test_grid_eq_failure_storage():
+    ref_grid = Grid(['Texas'])
+    test_grid = Grid(['Texas'])
+    gencost = {g: 0 for g in test_grid.storage['gencost'].columns}
+    gen = {g: 0 for g in test_grid.storage['gen'].columns}
+    test_grid.storage['gencost'] = test_grid.storage['gencost'].append(
+        gencost, ignore_index=True)
+    test_grid.storage['gen'] = test_grid.storage['gen'].append(
+        gen, ignore_index=True)
+    assert test_grid != ref_grid
+
+
 def test_that_fields_are_not_modified_when_loading_another_grid():
     western_grid = Grid(['Western'])
     western_plant_original_shape = western_grid.plant.shape
