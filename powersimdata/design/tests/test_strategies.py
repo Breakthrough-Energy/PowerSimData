@@ -1,6 +1,7 @@
-from powersimdata.design.clean_capacity_scaling\
+from powersimdata.design.clean_capacity_scaling \
     import Resource, TargetManager, AbstractStrategyManager, \
-    IndependentStrategyManager, CollaborativeStrategyManager
+    IndependentStrategyManager, CollaborativeStrategyManager, \
+    CollaborativeSWoGStrategyManager
 from pytest import approx, raises
 
 
@@ -546,7 +547,131 @@ def test_collaborative_capacity_strategy():
         wind_scaling == approx(4100 + 10198.75)
 
 
+def test_collaborative_capacity_strategy_arctic():
+    """Here we add a non-participating region, 'Arctic', and ensure that all
+    results stay the same.
+    """
+    # create Pacific
+    pacific_target = TargetManager('Pacific', 0.25, 'renewables', 2e8)
+    pacific_target.set_allowed_resources(['solar', 'wind', 'geo'])
+    pacific_resources = _build_collaborative_test_pacific_resources()
+    for r in pacific_resources:
+        pacific_target.add_resource(r)
+
+    AbstractStrategyManager.set_next_sim_hours(8784)
+    prev_ce_generation = pacific_target.calculate_prev_ce_generation()
+    assert prev_ce_generation == approx(26000*1000)
+    ce_shortfall = pacific_target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(24000*1000)
+
+    # create Atlantic
+    atlantic_target = TargetManager('Atlantic', 0.4, 'clean', 3e8)
+    atlantic_target.set_allowed_resources(['solar', 'wind', 'geo', 'hydro',
+                                           'nuclear'])
+    atlantic_resources = _build_collaborative_test_atlantic_resources()
+    for r in atlantic_resources:
+        atlantic_target.add_resource(r)
+
+    prev_ce_generation = atlantic_target.calculate_prev_ce_generation()
+    assert prev_ce_generation == approx(44500*1000)
+    ce_shortfall = atlantic_target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(75500*1000)
+
+    # create Arctic
+    arctic_target = TargetManager('Arctic', 0, 'polarbears', 1e8)
+    solar = Resource('solar', -1)
+    solar.set_capacity(0.5, 5000, 0.45)
+    solar.set_generation(5000*0.45*8784)
+    solar.set_curtailment(0.1)
+    arctic_target.add_resource(solar)
+    wind = Resource('wind', 8675309)
+    wind.set_capacity(0.6, 4000, 0.5)
+    wind.set_generation(4000*0.5*8784)
+    wind.set_curtailment(1/6)
+    arctic_target.add_resource(wind)
+
+    collab = CollaborativeStrategyManager()
+    collab.add_target(pacific_target)
+    collab.add_target(atlantic_target)
+    collab.add_target(arctic_target)
+
+    collab_ce_shortfall = collab.calculate_total_shortfall()
+    assert collab_ce_shortfall == approx(99500*1000)
+    collab_prev_ce_generation = collab.calculate_total_prev_ce_generation()
+    assert collab_prev_ce_generation == approx(70500*1000)
+
+    solar_added, wind_added = collab.calculate_total_added_capacity()
+    print(solar_added)
+    assert solar_added == approx(19651.25)
+    assert wind_added == approx(19153.75)
+
+    solar_scaling, wind_scaling = collab.calculate_capacity_scaling()
+    assert collab.targets['Pacific'].resources['solar'].prev_capacity *\
+        solar_scaling == approx(3700 + 9203.75)
+    assert collab.targets['Pacific'].resources['wind'].prev_capacity *\
+        wind_scaling == approx(3600 + 8955)
+    assert collab.targets['Atlantic'].resources['solar'].prev_capacity *\
+        solar_scaling == approx(4200 + 10447.5)
+    assert collab.targets['Atlantic'].resources['wind'].prev_capacity *\
+        wind_scaling == approx(4100 + 10198.75)
+
+
 def test_collaborative_capacity_strategy_overgeneration():
+    """This is a slightly-tuned copy of
+    test_collaborative_swog_capacity_strategy_overgeneration, with a Pacific
+    target that is very low but not exactly 0 (so that Pacific 'participates').
+    """
+    # create Pacific
+    pacific_target = TargetManager('Pacific', 1e-9, 'renewables', 200000*1000)
+    pacific_target.set_allowed_resources(['solar', 'wind', 'geo'])
+    pacific_resources = _build_collaborative_test_pacific_resources()
+    for r in pacific_resources:
+        pacific_target.add_resource(r)
+
+    AbstractStrategyManager.set_next_sim_hours(8784)
+    prev_ce_generation = pacific_target.calculate_prev_ce_generation()
+    assert prev_ce_generation == approx(26000*1000)
+    ce_shortfall = pacific_target.calculate_ce_shortfall()
+    assert ce_shortfall == 0
+
+    # create Atlantic
+    atlantic_target = TargetManager('Atlantic', 0.4, 'clean', 300000*1000)
+    atlantic_target.set_allowed_resources(['solar', 'wind', 'geo', 'hydro',
+                                           'nuclear'])
+    atlantic_resources = _build_collaborative_test_atlantic_resources()
+    for r in atlantic_resources:
+        atlantic_target.add_resource(r)
+
+    prev_ce_generation = atlantic_target.calculate_prev_ce_generation()
+    assert prev_ce_generation == approx(44500*1000)
+    ce_shortfall = atlantic_target.calculate_ce_shortfall()
+    assert ce_shortfall == approx(75500*1000)
+
+    collab = CollaborativeStrategyManager()
+    collab.add_target(pacific_target)
+    collab.add_target(atlantic_target)
+
+    collab_ce_shortfall = collab.calculate_total_shortfall()
+    assert collab_ce_shortfall == approx(49500*1000)
+    collab_prev_ce_generation = collab.calculate_total_prev_ce_generation()
+    assert collab_prev_ce_generation == approx(70500*1000)
+
+    solar_added, wind_added = collab.calculate_total_added_capacity()
+    assert solar_added == approx(9776.25)
+    assert wind_added == approx(9528.75)
+
+    solar_scaling, wind_scaling = collab.calculate_capacity_scaling()
+    assert collab.targets['Pacific'].resources['solar'].prev_capacity *\
+        solar_scaling == approx(3700 + 4578.75)
+    assert collab.targets['Pacific'].resources['wind'].prev_capacity *\
+        wind_scaling == approx(3600 + 4455)
+    assert collab.targets['Atlantic'].resources['solar'].prev_capacity *\
+        solar_scaling == approx(4200 + 5197.5)
+    assert collab.targets['Atlantic'].resources['wind'].prev_capacity *\
+        wind_scaling == approx(4100 + 5073.75)
+
+
+def test_collaborative_swog_capacity_strategy_overgeneration():
     # create Pacific
     pacific_target = TargetManager('Pacific', 0, 'renewables', 200000*1000)
     pacific_target.set_allowed_resources(['solar', 'wind', 'geo'])
@@ -573,7 +698,7 @@ def test_collaborative_capacity_strategy_overgeneration():
     ce_shortfall = atlantic_target.calculate_ce_shortfall()
     assert ce_shortfall == approx(75500*1000)
 
-    collab = CollaborativeStrategyManager()
+    collab = CollaborativeSWoGStrategyManager()
     collab.add_target(pacific_target)
     collab.add_target(atlantic_target)
 
