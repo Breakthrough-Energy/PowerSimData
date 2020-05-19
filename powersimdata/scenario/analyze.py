@@ -4,6 +4,7 @@ from powersimdata.input.profiles import InputData
 from powersimdata.output.profiles import OutputData
 from powersimdata.scenario.state import State
 
+import copy
 import pandas as pd
 
 
@@ -26,6 +27,23 @@ class Analyze(State):
         print("SCENARIO: %s | %s\n" % (self._scenario_info['plan'],
                                        self._scenario_info['name']))
         print("--> State\n%s" % self.name)
+
+        self._set_ct_and_grid()
+
+    def _set_ct_and_grid(self):
+        """Sets change table and grid.
+
+        """
+        input_data = InputData(self._ssh)
+        grid_mat_path = input_data.get_data(self._scenario_info['id'], 'grid')
+        self.grid = Grid(interconnect=[None],
+                         source=grid_mat_path,
+                         engine=self._scenario_info['engine'])
+
+        if self._scenario_info['change_table'] == 'Yes':
+            self.ct = input_data.get_data(self._scenario_info['id'], 'ct')
+        else:
+            self.ct = {}
 
     def print_scenario_info(self):
         """Prints scenario information.
@@ -179,24 +197,14 @@ class Analyze(State):
 
         :return: (*dict*) -- change table.
         """
-        input_data = InputData(self._ssh)
-        ct = input_data.get_data(self._scenario_info['id'], 'ct')
-
-        return ct
+        return copy.deepcopy(self.ct)
 
     def get_grid(self):
         """Returns Grid.
 
         :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
         """
-        input_data = InputData(self._ssh)
-        grid_mat_path = input_data.get_data(self._scenario_info['id'],
-                                            'grid')
-        grid = Grid(
-                interconnect=[None],
-                source=grid_mat_path,
-                engine=self._scenario_info['engine'])
-        return grid
+        return copy.deepcopy(self.grid)
 
     def get_demand(self, original=True):
         """Returns demand profiles.
