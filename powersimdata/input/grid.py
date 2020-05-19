@@ -119,6 +119,15 @@ class Grid(object):
             other_df = other.plant.drop(excluded_cols, axis=1)
             _univ_eq(self_df, other_df)
 
+            # compare branch
+            _univ_eq(self.branch, other.branch)
+
+            # compare dcline
+            _univ_eq(self.dcline, other.dcline)
+
+            # compare sub
+            _univ_eq(self.sub, other.sub)
+
             # check grid helper function equality
             _univ_eq(self.type2color, other.type2color)
             _univ_eq(self.id2type, other.id2type)
