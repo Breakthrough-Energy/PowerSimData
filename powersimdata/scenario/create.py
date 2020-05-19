@@ -4,6 +4,7 @@ from powersimdata.scenario.state import State
 from powersimdata.scenario.execute import Execute
 from powersimdata.input.grid import Grid
 from powersimdata.input.change_table import ChangeTable
+from powersimdata.input.scaler import TransformGrid
 from powersimdata.scenario.helpers import interconnect2name, check_interconnect
 
 import os
@@ -27,6 +28,8 @@ class Create(State):
 
         """
         self.builder = None
+        self.grid = None
+        self.ct = None
         self._scenario_status = None
         self._scenario_info = OrderedDict([
             ('plan', ''),
@@ -164,6 +167,8 @@ class Create(State):
             self._scenario_info['state'] = 'execute'
             self._scenario_info['runtime'] = ''
             self._scenario_info['infeasibilities'] = ''
+            self.grid = self.builder.get_grid()
+            self.ct = self.builder.change_table.ct
             # Add scenario to scenario list file on server
             self._add_entry_in_scenario_list()
             # Upload change table to server
@@ -238,6 +243,7 @@ class _Builder(object):
     """
 
     interconnect = None
+    base_grid = None
     change_table = None
     profile = None
     existing = None
@@ -356,6 +362,13 @@ class _Builder(object):
         except FileNotFoundError:
             raise ("%s not found. " % filename)
 
+    def get_grid(self):
+        """Returns a transformed grid.
+
+        :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
+        """
+        return TransformGrid(self.base_grid, self.change_table.ct).get_grid()
+
     def __str__(self):
         return self.name
 
@@ -368,9 +381,9 @@ class Eastern(_Builder):
 
     def __init__(self, ssh_client):
         self.interconnect = ['Eastern']
-        self.grid = Grid(self.interconnect)
+        self.base_grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.grid)
+        self.change_table = ChangeTable(self.base_grid)
 
         table = get_scenario_table(ssh_client)
         self.existing = table[table.interconnect == self.name]
@@ -387,9 +400,9 @@ class Texas(_Builder):
 
         """
         self.interconnect = ['Texas']
-        self.grid = Grid(self.interconnect)
+        self.base_grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.grid)
+        self.change_table = ChangeTable(self.base_grid)
 
         table = get_scenario_table(ssh_client)
         self.existing = table[table.interconnect == self.name]
@@ -407,9 +420,9 @@ class Western(_Builder):
 
         """
         self.interconnect = ['Western']
-        self.grid = Grid(self.interconnect)
+        self.base_grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.grid)
+        self.change_table = ChangeTable(self.base_grid)
 
         table = get_scenario_table(ssh_client)
         self.existing = table[table.interconnect == self.name]
@@ -424,9 +437,9 @@ class TexasWestern(_Builder):
 
     def __init__(self, ssh_client):
         self.interconnect = ['Texas', 'Western']
-        self.grid = Grid(self.interconnect)
+        self.base_grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.grid)
+        self.change_table = ChangeTable(self.base_grid)
 
         table = get_scenario_table(ssh_client)
         self.existing = table[table.interconnect == self.name]
@@ -460,9 +473,9 @@ class USA(_Builder):
 
     def __init__(self, ssh_client):
         self.interconnect = ['USA']
-        self.grid = Grid(self.interconnect)
+        self.base_grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.grid)
+        self.change_table = ChangeTable(self.base_grid)
 
         table = get_scenario_table(ssh_client)
         self.existing = table[table.interconnect == self.name]
