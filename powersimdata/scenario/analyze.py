@@ -1,5 +1,5 @@
 from powersimdata.input.grid import Grid
-from powersimdata.input.scaler import Scaler
+from powersimdata.input.scaler import ScaleProfile
 from powersimdata.input.profiles import InputData
 from powersimdata.output.profiles import OutputData
 from powersimdata.scenario.state import State
@@ -26,7 +26,6 @@ class Analyze(State):
         print("SCENARIO: %s | %s\n" % (self._scenario_info['plan'],
                                        self._scenario_info['name']))
         print("--> State\n%s" % self.name)
-        self.scaler = Scaler(self._scenario_info, self._ssh)
 
     def print_scenario_info(self):
         """Prints scenario information.
@@ -188,7 +187,7 @@ class Analyze(State):
     def get_grid(self):
         """Returns Grid.
 
-        :return: (*powersimdata.input.grid.Grid*) -- instance of grid object.
+        :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
         """
         input_data = InputData(self._ssh)
         grid_mat_path = input_data.get_data(self._scenario_info['id'],
@@ -206,8 +205,9 @@ class Analyze(State):
             potentially modified one be returned.
         :return: (*pandas.DataFrame*) -- data frame of demand.
         """
-
-        demand = self.scaler.get_demand()
+        profile = ScaleProfile(self._ssh, self._scenario_info['id'],
+                               self.get_grid(), self.get_ct())
+        demand = profile.get_demand()
 
         if original:
             return demand
@@ -232,18 +232,24 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of hydro power output.
         """
-        return self.scaler.get_hydro()
+        profile = ScaleProfile(self._ssh, self._scenario_info['id'],
+                               self.get_grid(), self.get_ct())
+        return profile.get_hydro()
 
     def get_solar(self):
         """Returns solar profile
 
         :return: (*pandas.DataFrame*) -- data frame of solar power output.
         """
-        return self.scaler.get_solar()
+        profile = ScaleProfile(self._ssh, self._scenario_info['id'],
+                               self.get_grid(), self.get_ct())
+        return profile.get_solar()
 
     def get_wind(self):
         """Returns wind profile
 
         :return: (*pandas.DataFrame*) -- data frame of wind power output.
         """
-        return self.scaler.get_wind()
+        profile = ScaleProfile(self._ssh, self._scenario_info['id'],
+                               self.get_grid(), self.get_ct())
+        return profile.get_wind()
