@@ -2,7 +2,6 @@ import os
 
 from powersimdata.input.usa_tamu_model import TAMU
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
-from pandas.testing import assert_frame_equal
 
 
 class Grid(object):

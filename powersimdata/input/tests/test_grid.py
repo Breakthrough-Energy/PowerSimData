@@ -310,8 +310,3 @@ def test_that_fields_are_not_modified_when_loading_another_grid():
     eastern_grid = Grid(['Eastern'])
     assert western_plant_original_shape == western_grid.plant.shape
 
-
-def test_that_fields_can_be_modified_with_conventional_syntax():
-    grid = Grid(['Texas'])
-    grid.plant = grid.plant.append(grid.plant.iloc[0:4])
-    assert grid.plant.shape == grid.plant.shape
