@@ -54,7 +54,7 @@ class AbstractStrategyManager:
                                    row.ce_target_fraction,
                                    row.ce_category,
                                    row.total_demand,
-                                   row.external_ce_historical_amount,
+                                   row.external_ce_addl_historical_amount,
                                    solar_percentage)
             if row.allowed_resources == '':
                 allowed_resources = ['solar', 'wind']
@@ -557,7 +557,7 @@ class CollaborativeSWoGStrategyManager(AbstractCollaborativeStrategyManager):
 class TargetManager:
 
     def __init__(self, region_name, ce_target_fraction, ce_category,
-                 total_demand, external_ce_historical_amount=0,
+                 total_demand, external_ce_addl_historical_amount=0,
                  solar_percentage=None):
         """Manages the regional data and calculations.
 
@@ -573,16 +573,16 @@ class TargetManager:
         assert (total_demand >= 0), "total_demand must be greater than zero"
         assert (0 <= ce_target_fraction <= 1), "ce_target_fraction must be " \
                                                "between 0 and 1"
-        assert (external_ce_historical_amount >= 0), "external_ce_historical" \
-                                                     "_amount must be greater"\
-                                                     " than zero"
+        err_msg = "external_ce_addl_historical_amount must be non-negative"
+        assert (external_ce_addl_historical_amount >= 0), err_msg
         self.region_name = region_name
         self.ce_category = ce_category
 
         self.total_demand = total_demand
         self.ce_target_fraction = ce_target_fraction
         self.ce_target = self.total_demand * self.ce_target_fraction
-        self.external_ce_historical_amount = external_ce_historical_amount
+        self.external_ce_addl_historical_amount = \
+            external_ce_addl_historical_amount
         _check_solar_fraction(solar_percentage)
         self.solar_percentage = solar_percentage
 
@@ -676,10 +676,8 @@ class TargetManager:
         """
         # prev_ce_generation = the sum of all prev_generation in the list
         # of allowed resources
-        prev_ce_generation = 0
-        for res in self.allowed_resources:
-            prev_ce_generation = prev_ce_generation + \
-                                 self.resources[res].prev_generation
+        prev_ce_generation = sum([self.resources[res].prev_generation
+                                  for res in self.allowed_resources])
         return prev_ce_generation
 
     def add_resource(self, resource):
@@ -709,17 +707,9 @@ class TargetManager:
 
         :return: (*float*) -- clean energy shortfall
         """
-        prev_ce_generation = self.calculate_prev_ce_generation()
-
-        if self.external_ce_historical_amount > prev_ce_generation:
-            offset = self.external_ce_historical_amount
-        else:
-            offset = prev_ce_generation
-
-        if offset > self.ce_target:
-            ce_shortfall = 0
-        else:
-            ce_shortfall = self.ce_target - offset
+        prev_ce_generation = (self.calculate_prev_ce_generation()
+                              + self.external_ce_addl_historical_amount)
+        ce_shortfall = max(0, self.ce_target - prev_ce_generation)
 
         return ce_shortfall
 
@@ -729,18 +719,9 @@ class TargetManager:
 
         :return: (*float*) -- clean energy over generation
         """
-        prev_ce_generation = self.calculate_prev_ce_generation()
-
-        if self.external_ce_historical_amount > prev_ce_generation:
-            offset = self.external_ce_historical_amount
-        else:
-            offset = prev_ce_generation
-
-        if offset < self.ce_target:
-            ce_overgeneration = 0
-        else:
-            ce_overgeneration = offset - self.ce_target
-
+        prev_ce_generation = (self.calculate_prev_ce_generation()
+                              + self.external_ce_addl_historical_amount)
+        ce_overgeneration = max(0, prev_ce_generation - self.ce_target)
         return ce_overgeneration
 
     def set_allowed_resources(self, allowed_resources):
