@@ -400,12 +400,12 @@ class ChangeTable(object):
             else:
                 start = line['from_bus_id']
                 end = line['to_bus_id']
-                if start not in self.grid['bus'].index:
+                if start not in self.grid.bus.index:
                     print("No bus with the following id for line #%d: %d" %
                           (i + 1, start))
                     self.ct.pop(key)
                     return
-                elif end not in self.grid['bus'].index:
+                elif end not in self.grid.bus.index:
                     print("No bus with the following id for line #%d: %d" %
                           (i + 1, end))
                     self.ct.pop(key)
@@ -419,17 +419,17 @@ class ChangeTable(object):
                     self.ct.pop(key)
                     return
                 elif key == 'new_branch' and \
-                        self.grid['bus'].interconnect[start] != \
-                        self.grid['bus'].interconnect[end]:
+                        self.grid.bus.interconnect[start] != \
+                        self.grid.bus.interconnect[end]:
                     print("Buses of line #%d must be in same interconnect"
                           % (i + 1))
                     self.ct.pop(key)
                     return
 
-                elif haversine((self.grid['bus'].lat[start],
-                                self.grid['bus'].lon[start]),
-                               (self.grid['bus'].lat[end],
-                                self.grid['bus'].lon[end])) == 0:
+                elif haversine((self.grid.bus.lat[start],
+                                self.grid.bus.lon[start]),
+                               (self.grid.bus.lat[end],
+                                self.grid.bus.lon[end])) == 0:
                     print("Distance between buses of line #%d is 0" % (i + 1))
                     self.ct.pop(key)
                     return

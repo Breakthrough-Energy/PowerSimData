@@ -238,7 +238,7 @@ def test_grid_eq_failure_simple(base_texas, base_western):
 
 def test_grid_eq_failure_bus(base_texas):
     test_grid = copy.deepcopy(base_texas)
-    test_grid.bus.baseKV.iloc[0] *= 2
+    test_grid.bus.loc[test_grid.bus.head(1).index, 'baseKV'] *= 2
     assert base_texas != test_grid
 
 
@@ -250,19 +250,20 @@ def test_grid_eq_success_bus_type(base_texas):
 
 def test_grid_eq_failure_branch(base_texas):
     test_grid = copy.deepcopy(base_texas)
-    test_grid.branch.rateA.iloc[0] *= 2
+    test_grid.branch.loc[test_grid.branch.head(1).index, 'rateA'] *= 2
     assert base_texas != test_grid
 
 
 def test_grid_eq_failure_dcline(base_western):
     test_grid = copy.deepcopy(base_western)
-    test_grid.dcline.Pmax.iloc[0] *= 2
+    test_grid.dcline.loc[test_grid.dcline.head(1).index, 'Pmax'] *= 2
     assert base_western != test_grid
 
 
 def test_grid_eq_failure_gencost_before(base_texas):
     test_grid = copy.deepcopy(base_texas)
-    test_grid.gencost['before'].n.iloc[0] += 1
+    before = test_grid.gencost['before']
+    before.loc[before.head(1).index, 'n'] += 1
     assert base_texas != test_grid
 
 
@@ -275,19 +276,20 @@ def test_grid_eq_success_gencost_after(base_texas):
 
 def test_grid_eq_failure_plant(base_texas):
     test_grid = copy.deepcopy(base_texas)
-    test_grid.plant.Pmax.iloc[0] *= 2
+    test_grid.plant.loc[test_grid.plant.head(1).index, 'Pmax'] *= 2
     assert base_texas != test_grid
 
 
 def test_grid_eq_success_plant_ramp30(base_texas):
     test_grid = copy.deepcopy(base_texas)
-    test_grid.plant.ramp_30.iloc[0] *= 2
+    test_grid.plant.loc[test_grid.plant.head(1).index, 'ramp_30'] *= 2
     assert base_texas == test_grid
 
 
 def test_grid_eq_failure_sub(base_texas):
     test_grid = copy.deepcopy(base_texas)
-    test_grid.sub.name.iloc[0] = test_grid.sub.name.iloc[0][::-1]
+    first_name = str(test_grid.sub.loc[test_grid.sub.head(1).index, 'name'])
+    test_grid.sub.loc[test_grid.sub.head(1).index, 'name'] = first_name[::-1]
     assert base_texas != test_grid
 
 
@@ -308,8 +310,3 @@ def test_that_fields_are_not_modified_when_loading_another_grid():
     eastern_grid = Grid(['Eastern'])
     assert western_plant_original_shape == western_grid.plant.shape
 
-
-def test_that_fields_can_be_modified_with_conventional_syntax():
-    grid = Grid(['Texas'])
-    grid.plant = grid.plant.append(grid.plant.iloc[0:4])
-    assert grid.plant.shape == grid['plant'].shape
