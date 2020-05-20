@@ -13,7 +13,7 @@ def test_create_targets_from_dataframe():
                      'ce_category': ['Renewables', 'Clean'],
                      'ce_target_fraction': [.25, .4],
                      'total_demand': [200000, 300000],
-                     'external_ce_historical_amount': [0, 0],
+                     'external_ce_addl_historical_amount': [0, 0],
                      'solar_percentage': [.3, .6],
                      'allowed_resources': ['solar', 'wind']}
 
@@ -29,7 +29,7 @@ def test_create_targets_from_dataframe():
             row.ce_target_fraction,
             row.ce_category,
             row.total_demand,
-            row.external_ce_historical_amount,
+            row.external_ce_addl_historical_amount,
             row.solar_percentage)
 
     assert targets['Pacific'].ce_category == planning_data['ce_category'][0]
@@ -41,7 +41,7 @@ def test_populate_strategy_from_dataframe():
                      'ce_category': ['Renewables', 'Clean'],
                      'ce_target_fraction': [.25, .4],
                      'total_demand': [200000, 300000],
-                     'external_ce_historical_amount': [0, 0],
+                     'external_ce_addl_historical_amount': [0, 0],
                      'solar_percentage': [.3, .6],
                      'allowed_resources': ['solar', 'wind']}
     planning_dataframe = pd.DataFrame.from_dict(planning_data)

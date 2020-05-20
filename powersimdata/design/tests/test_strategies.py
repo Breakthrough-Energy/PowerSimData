@@ -225,7 +225,7 @@ def test_independent_capacity_strategy_pacific_external_6():
     nuclear.set_addl_curtailment(0)
 
     target = TargetManager('Pacific', 0.25, 'renewables', 200000*1000,
-                           40000*1000)
+                           14000*1000)
     target.set_allowed_resources(['solar', 'wind', 'geo'])
     target.add_resource(solar)
     target.add_resource(wind)
