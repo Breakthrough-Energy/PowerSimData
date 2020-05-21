@@ -1,9 +1,13 @@
-from powersimdata.design.scenario_info import ScenarioInfo
-import pandas as pd
 import jsonpickle
 import json
 import os
 import pickle
+
+import pandas as pd
+
+from powersimdata.design.scenario_info import ScenarioInfo, area_to_loadzone
+from powersimdata.design.mimic_grid import mimic_generation_capacity
+from powersimdata.input.grid import Grid
 
 
 def _check_solar_fraction(solar_fraction):
@@ -19,6 +23,27 @@ def _check_solar_fraction(solar_fraction):
             raise ValueError("solar_fraction must be between 0 and 1")
     else:
         raise TypeError("solar_fraction must be int/float or None")
+
+
+def _apply_zone_scale_factor_to_ct(ct, fuel, zone_id, scale_factor):
+    """Applies a zone scaling factor to a change table, creating internal
+    change table structure as necessary. New keys are added, existing keys are
+    multiplied.
+
+    :param dict ct: a dictionary of scale factors, with structure matching
+        ct from powersimdata.input.change_table.ChangeTable.
+    :param str fuel: the fuel to be scaled.
+    :param int zone_id: the zone_id to be scaled.
+    :param int/float scale_factor: how much the zone should be scaled up by.
+    """
+    if fuel not in ct:
+        ct[fuel] = {}
+    if 'zone_id' not in ct[fuel]:
+        ct[fuel]['zone_id'] = {}
+    if zone_id not in ct[fuel]['zone_id']:
+        ct[fuel]['zone_id'][zone_id] = scale_factor
+    else:
+        ct[fuel]['zone_id'][zone_id] *= scale_factor
 
 
 class AbstractStrategyManager:
@@ -126,6 +151,38 @@ class AbstractStrategyManager:
         target_obj = pickle.load(json_file)
         json_file.close()
         return target_obj
+
+    def create_change_table(self, ref_scenario):
+        """Using a reference scenario, create a change table which scales all
+        plants in a base grid to capacities matching the reference grid, with
+        the exception of wind and solar plants which are scaled up according to
+        the clean capacity scaling logic."""
+        epsilon = 1e-3
+        interconnect = ref_scenario.info['interconnect']
+        base_grid = Grid([interconnect])
+        grid_zones = base_grid.plant.zone_name.unique()
+        ref_grid = ref_scenario.state.get_grid()
+        ct = mimic_generation_capacity(base_grid, ref_grid)
+        next_capacity_df = self.data_frame_of_next_capacities()
+        for region in next_capacity_df.index:
+            prev_solar = next_capacity_df.loc[region, 'solar_prev_capacity']
+            prev_wind = next_capacity_df.loc[region, 'wind_prev_capacity']
+            next_solar = next_capacity_df.loc[region, 'next_solar_capacity']
+            next_wind = next_capacity_df.loc[region, 'next_wind_capacity']
+            zone_names = area_to_loadzone(base_grid, region)
+            zone_ids = [base_grid.zone2id[n] for n in zone_names
+                        if n in grid_zones]
+            if prev_solar > 0:
+                scale = next_solar / prev_solar
+                if abs(scale - 1) > epsilon:
+                    for id in zone_ids:
+                        _apply_zone_scale_factor_to_ct(ct, 'solar', id, scale)
+            if prev_wind > 0:
+                scale = next_wind / prev_wind
+                if abs(scale - 1) > epsilon:
+                    for id in zone_ids:
+                        _apply_zone_scale_factor_to_ct(ct, 'wind', id, scale)
+        return ct
 
 
 class IndependentStrategyManager(AbstractStrategyManager):

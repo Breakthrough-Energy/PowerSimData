@@ -15,6 +15,70 @@ def _check_state(scenario):
         raise Exception('Scenario state must be \'analyze.\'')
 
 
+def area_to_loadzone(grid, area, area_type=None):
+    """Map the query area to a list of loadzones
+
+    :param powersimdata.input.grid.Grid grid: grid to use for mapping.
+    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+        *interconnect*, *'all'*
+    :param str area_type: one of: *'loadzone'*, *'state'*,
+        *'state_abbr'*, *'interconnect'*
+    :return: (*set*) -- set of loadzone names associated with the query area.
+    :raise Exception: if area is invalid or the combination of
+        area and area_type is invalid or the type of area_type is invalid.
+
+    .. note:: if area_type is not specified, the function will check the
+        area in the order of 'state', 'loadzone', 'state abbreviation',
+        'interconnect' and 'all'.
+    """
+    if area_type is not None and not isinstance(area_type, str):
+        raise TypeError("'area_type' should be either None or str.")
+    if area_type:
+        if area_type == 'loadzone':
+            if area in grid.zone2id:
+                loadzone_set = {area}
+            else:
+                raise ValueError('Invalid area for area_type=%s'
+                                 % area_type)
+        elif area_type == 'state':
+            if area in list(abv2state.values()):
+                loadzone_set = state2loadzone[area]
+            else:
+                raise ValueError('Invalid area for area_type=%s'
+                                 % area_type)
+        elif area_type == 'state_abbr':
+            if area in abv2state:
+                loadzone_set = state2loadzone[abv2state[area]]
+            else:
+                raise ValueError('Invalid area for area_type=%s'
+                                 % area_type)
+        elif area_type == 'interconnect':
+            if area in {'Texas', 'Western', 'Eastern'}:
+                loadzone_set = interconnect2loadzone[area]
+            else:
+                raise ValueError('Invalid area for area_type=%s'
+                                 % area_type)
+        else:
+            print("%s is incorrect. Available area_types are 'loadzone',"
+                  "'state', 'state_abbr', 'interconnect'." % area_type)
+            raise ValueError('Invalid area_type')
+    else:
+        if area in list(abv2state.values()):
+            loadzone_set = state2loadzone[area]
+        elif area in grid.zone2id:
+            loadzone_set = {area}
+        elif area in abv2state:
+            loadzone_set = state2loadzone[abv2state[area]]
+        elif area in {'Texas', 'Western', 'Eastern'}:
+            loadzone_set = interconnect2loadzone[area]
+        elif area == 'all':
+            loadzone_set = set(grid.zone2id.keys())
+        else:
+            print("%s is incorrect." % area)
+            raise ValueError('Invalid area')
+    return loadzone_set
+
+
 class ScenarioInfo:
     """Gather information from previous scenarios for capacity scaling.
 
@@ -37,66 +101,16 @@ class ScenarioInfo:
         }
 
     def area_to_loadzone(self, area, area_type=None):
-        """Map the query area to a list of loadzones
+        """Map the query area to a list of loadzones. For more info, see
+            powersimdata.design.scenario_info.area_to_loadzone().
 
         :param str area: one of: *loadzone*, *state*, *state abbreviation*,
             *interconnect*, *'all'*
         :param str area_type: one of: *'loadzone'*, *'state'*,
             *'state_abbr'*, *'interconnect'*
         :return: (*set*) -- set of loadzones associated to the query area
-        :raise Exception: if area is invalid or the combination of
-            area and area_type is invalid or the type of area_type is invalid.
-
-        .. note:: if area_type is not specified, the function will check the
-            area in the order of 'state', 'loadzone', 'state abbreviation',
-            'interconnect' and 'all'.
         """
-        if area_type is not None and not isinstance(area_type, str):
-            raise TypeError("'area_type' should be either None or str.")
-        if area_type:
-            if area_type == 'loadzone':
-                if area in self.grid.zone2id:
-                    loadzone_set = {area}
-                else:
-                    raise ValueError('Invalid area for area_type=%s'
-                                     % area_type)
-            elif area_type == 'state':
-                if area in list(abv2state.values()):
-                    loadzone_set = state2loadzone[area]
-                else:
-                    raise ValueError('Invalid area for area_type=%s'
-                                     % area_type)
-            elif area_type == 'state_abbr':
-                if area in abv2state:
-                    loadzone_set = state2loadzone[abv2state[area]]
-                else:
-                    raise ValueError('Invalid area for area_type=%s'
-                                     % area_type)
-            elif area_type == 'interconnect':
-                if area in {'Texas', 'Western', 'Eastern'}:
-                    loadzone_set = interconnect2loadzone[area]
-                else:
-                    raise ValueError('Invalid area for area_type=%s'
-                                     % area_type)
-            else:
-                print("%s is incorrect. Available area_types are 'loadzone',"
-                      "'state', 'state_abbr', 'interconnect'." % area_type)
-                raise ValueError('Invalid area_type')
-        else:
-            if area in list(abv2state.values()):
-                loadzone_set = state2loadzone[area]
-            elif area in self.grid.zone2id:
-                loadzone_set = {area}
-            elif area in abv2state:
-                loadzone_set = state2loadzone[abv2state[area]]
-            elif area in {'Texas', 'Western', 'Eastern'}:
-                loadzone_set = interconnect2loadzone[area]
-            elif area == 'all':
-                loadzone_set = set(self.grid.zone2id.keys())
-            else:
-                print("%s is incorrect." % area)
-                raise ValueError('Invalid area')
-        return loadzone_set
+        return area_to_loadzone(self.grid, area, area_type)
 
     def check_time_range(self, start_time, end_time):
         """Check if the start_time and end_time define a valid time range of
