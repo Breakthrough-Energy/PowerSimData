@@ -7,6 +7,7 @@ from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.scaler import TransformGrid
 from powersimdata.scenario.helpers import interconnect2name, check_interconnect
 
+import copy
 import os
 import posixpath
 import numpy as np
@@ -140,6 +141,28 @@ class Create(State):
             version = self._scenario_info['base_' + p]
             self.builder.profile.create_link(self._scenario_info['id'],
                                              p, version)
+
+    def get_ct(self):
+        """Returns change table.
+
+        :return: (*dict*) -- change table.
+        :raises Exception: if no change table has been assigned yet.
+        """
+        if self.builder is not None:
+            return copy.deepcopy(self.builder.change_table.ct)
+        else:
+            raise Exception('Call set_builder method first')
+
+    def get_grid(self):
+        """Returns Grid.
+
+        :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
+        :raises Exception: if no Grid object has been assigned yet.
+        """
+        if self.builder is not None:
+            return self.builder.get_grid()
+        else:
+            raise Exception('Call set_builder method first')
 
     def create_scenario(self):
         """Creates scenario.
