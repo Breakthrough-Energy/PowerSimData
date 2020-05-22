@@ -53,6 +53,20 @@ class Execute(State):
             self.ct = {}
             self.grid = base_grid
 
+    def get_ct(self):
+        """Returns change table.
+
+        :return: (*dict*) -- change table.
+        """
+        return copy.deepcopy(self.ct)
+
+    def get_grid(self):
+        """Returns Grid.
+
+        :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
+        """
+        return copy.deepcopy(self.grid)
+
     def _update_scenario_status(self):
         """Updates scenario status.
 
