@@ -1,6 +1,8 @@
+from powersimdata.input.grid import Grid
 from powersimdata.input.change_table import ChangeTable
 
-ct = ChangeTable('USA')
+grid = Grid(['USA'])
+ct = ChangeTable(grid)
 
 
 def test_add_dcline_argument_type(capsys):

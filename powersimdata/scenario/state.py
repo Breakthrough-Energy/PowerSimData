@@ -34,7 +34,8 @@ class State(object):
         if self.name == 'create':
             del self.builder
         elif self.name == 'analyze':
-            del self.scaler
+            del self.grid
+            del self.ct
 
     def _enter(self):
         """Initializes when entering state.

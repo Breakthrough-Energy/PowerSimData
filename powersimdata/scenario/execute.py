@@ -2,14 +2,18 @@ from powersimdata.utility import const
 from powersimdata.utility.transfer_data import (get_execute_table,
                                                 get_scenario_table,
                                                 upload)
-from powersimdata.input.scaler import Scaler
+from powersimdata.input.profiles import InputData
+from powersimdata.input.grid import Grid
+from powersimdata.input.scaler import TransformGrid
+from powersimdata.input.scaler import ScaleProfile
 from powersimdata.scenario.state import State
 
 from collections import OrderedDict
-from scipy.io import savemat
+import copy
 import numpy as np
 import os
 import posixpath
+from scipy.io import savemat
 from subprocess import Popen, PIPE
 
 
@@ -33,6 +37,35 @@ class Execute(State):
                                        self._scenario_info['name']))
         print("--> State\n%s" % self.name)
         print("--> Status\n%s" % self._scenario_status)
+
+        self._set_ct_and_grid()
+
+    def _set_ct_and_grid(self):
+        """Sets change table and grid.
+
+        """
+        base_grid = Grid(self._scenario_info['interconnect'].split('_'))
+        if self._scenario_info['change_table'] == 'Yes':
+            input_data = InputData(self._ssh)
+            self.ct = input_data.get_data(self._scenario_info['id'], 'ct')
+            self.grid = TransformGrid(base_grid, self.ct).get_grid()
+        else:
+            self.ct = {}
+            self.grid = base_grid
+
+    def get_ct(self):
+        """Returns change table.
+
+        :return: (*dict*) -- change table.
+        """
+        return copy.deepcopy(self.ct)
+
+    def get_grid(self):
+        """Returns Grid.
+
+        :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
+        """
+        return copy.deepcopy(self.grid)
 
     def _update_scenario_status(self):
         """Updates scenario status.
@@ -123,8 +156,8 @@ class Execute(State):
             print("PREPARING SIMULATION INPUTS")
             print("---------------------------")
 
-            self.scaler = Scaler(self._scenario_info, self._ssh)
-            si = SimulationInput(self.scaler, self._ssh)
+            si = SimulationInput(self._ssh, self._scenario_info['id'],
+                                 self.grid, self.ct)
             si.create_folder()
             for r in ['demand', 'hydro', 'solar', 'wind']:
                 si.prepare_profile(r)
@@ -168,18 +201,23 @@ class Execute(State):
 class SimulationInput(object):
     """Prepares scenario for execution.
 
-    :param Scaler scaler: Scaler instance.
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
 
-    def __init__(self, scaler, ssh_client):
+    def __init__(self, ssh_client, scenario_id, grid, ct):
         """Constructor.
 
+        :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+        :param str scenario_id: scenario identification number.
+        :param powersimdata.input.grid.Grid grid: a Grid object.
+        :param dict ct: change table.
         """
-        self.scaler = scaler
-        self._tmp_dir = '%s/scenario_%s' % (const.EXECUTE_DIR,
-                                            scaler.scenario_id)
         self._ssh = ssh_client
+        self.scenario_id = scenario_id
+        self.grid = grid
+        self.ct = ct
+
+        self._tmp_dir = '%s/scenario_%s' % (const.EXECUTE_DIR,
+                                            scenario_id)
 
     def create_folder(self):
         """Creates folder on server that will enclose simulation inputs.
@@ -198,7 +236,7 @@ class SimulationInput(object):
         """
         print("--> Preparing MPC file")
         print("Scaling grid")
-        grid = self.scaler.get_grid()
+        grid = copy.deepcopy(self.grid)
 
         print("Building MPC file")
         mpc = {'mpc': {'version': '2', 'baseMVA': 100.0}}
@@ -280,14 +318,14 @@ class SimulationInput(object):
                             np.newaxis],
                              'data': storage['StorageData'].values}}}
 
-            file_name = '%s_case_storage.mat' % self.scaler.scenario_id
+            file_name = '%s_case_storage.mat' % self.scenario_id
             savemat(os.path.join(const.LOCAL_DIR, file_name), mpc_storage,
                     appendmat=False)
             upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir,
                    change_name_to='case_storage.mat')
 
         # MPC file
-        file_name = '%s_case.mat' % self.scaler.scenario_id
+        file_name = '%s_case.mat' % self.scenario_id
         savemat(os.path.join(const.LOCAL_DIR, file_name), mpc, appendmat=False)
 
         upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir,
@@ -301,8 +339,10 @@ class SimulationInput(object):
 
         :param kind: one of *demand*, *'hydro'*, *'solar'* or *'wind'*.
         """
-        if bool(self.scaler.scale_keys[kind] & set(self.scaler.ct.keys())):
-            self._prepare_scaled_profile(kind)
+        profile = ScaleProfile(self._ssh, self.scenario_id,
+                               self.grid, self.ct)
+        if bool(profile.scale_keys[kind] & set(self.ct.keys())):
+            self._prepare_scaled_profile(kind, profile)
         else:
             self._copy_base_profile(kind)
 
@@ -314,7 +354,7 @@ class SimulationInput(object):
         """
         print("--> Copying %s base profile into temporary folder" % kind)
         command = "cp -a %s/%s_%s.csv %s/%s.csv" % (const.INPUT_DIR,
-                                                    self.scaler.scenario_id,
+                                                    self.scenario_id,
                                                     kind,
                                                     self._tmp_dir,
                                                     kind)
@@ -323,19 +363,21 @@ class SimulationInput(object):
             raise IOError("Failed to copy inputs in %s on server" %
                           self._tmp_dir)
 
-    def _prepare_scaled_profile(self, kind):
+    def _prepare_scaled_profile(self, kind, profile):
         """Loads, scales and writes on local machine a base profile.
 
-        :param str kind: one of *'hydro'*, *'solar'* or *'wind'*.
+        :param powersimdata.input.scaler.ScaleProfile profile: a ScaleProfile
+            object
+        :param str kind: one of *'hydro'*, *'solar'*, *'wind'* or *'demand'*.
         """
         if kind == 'demand':
-            profile = self.scaler.get_demand()
+            profile = profile.get_demand()
         else:
-            profile = self.scaler.get_power_output(kind)
+            profile = profile.get_power_output(kind)
 
         print("Writing scaled %s profile in %s on local machine" %
               (kind, const.LOCAL_DIR))
-        file_name = '%s_%s.csv' % (self.scaler.scenario_id, kind)
+        file_name = '%s_%s.csv' % (self.scenario_id, kind)
         profile.to_csv(os.path.join(const.LOCAL_DIR, file_name))
 
         upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir,

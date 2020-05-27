@@ -3,7 +3,6 @@ import pickle
 
 from powersimdata.design.transmission import (
     scale_congested_mesh_branches, scale_renewable_stubs)
-from powersimdata.input.grid import Grid
 from powersimdata.utility import const
 from powersimdata.utility.distance import haversine
 
@@ -64,20 +63,14 @@ class ChangeTable(object):
             keys in the dictionary are: *'capacity'*, *'from_bus_id'* and
             *'to_bus_id'* with values giving the capacity of the line and
             the bus id at each end of the line.
-
-        :param list interconnect: interconnect name(s).
     """
 
-    def __init__(self, interconnect):
+    def __init__(self, grid):
         """Constructor.
 
+        :param powersimdata.input.grid.Grid grid: a Grid object
         """
-        if isinstance(interconnect, str):
-            self.grid = Grid([interconnect])
-        else:
-            self.grid = Grid(interconnect)
-
-        # Set attribute
+        self.grid = grid
         self.ct = {}
 
     @staticmethod
