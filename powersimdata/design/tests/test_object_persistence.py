@@ -63,6 +63,8 @@ def test_create_json_of_target_object():
 
 
 def test_write_read_json_of_target_object():
+    if not os.path.exists(save_file_path):
+        os.mkdir(save_file_path)
     try:
         # create Pacific
         pacific_solar = Resource('solar', 3)
@@ -115,6 +117,8 @@ def test_write_read_json_of_target_object():
 
 
 def test_write_read_pickle_of_target_object():
+    if not os.path.exists(save_file_path):
+        os.mkdir(save_file_path)
     try:
         # create Pacific
         pacific_solar = Resource('solar', 3)
