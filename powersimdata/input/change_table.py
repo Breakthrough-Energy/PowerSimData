@@ -4,11 +4,13 @@ import pickle
 from powersimdata.design.transmission import (
     scale_congested_mesh_branches, scale_renewable_stubs)
 from powersimdata.utility import const
-from powersimdata.utility.distance import haversine
+from powersimdata.utility.distance import haversine, find_closest_neighbor
 
 
 _resources = ('coal', 'dfo', 'geothermal', 'ng', 'nuclear',
               'hydro', 'solar', 'wind', 'wind_offshore', 'biomass', 'other')
+
+_renewable_resource = {'hydro', 'solar', 'wind', 'wind_offshore'}
 
 
 class ChangeTable(object):
@@ -36,7 +38,7 @@ class ChangeTable(object):
             the zone (1.2 would correspond to a 20% increase while 0.95 would
             be a 5% decrease).
         * *'biomass'*, *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*,
-            *'hydro'*, *'solar'*, *'wind'*, and *'other'*:
+            *'hydro'*, *'solar'*, *'wind'*, *wind_offshore*, and *'other'*:
             value is a dictionary. The latter has *'plant_id'* and/or
             *'zone_id'* as keys. The *'plant_id'* dictionary has the plant ids
             as keys while the *'zone_id'* dictionary has the zone ids as keys.
@@ -63,6 +65,16 @@ class ChangeTable(object):
             keys in the dictionary are: *'capacity'*, *'from_bus_id'* and
             *'to_bus_id'* with values giving the capacity of the line and
             the bus id at each end of the line.
+        * *'new_plant':
+            value is a list. Each entry in this list is a dictionary enclosing
+            all the information needed to add a new generator to the grid. The
+            keys in the dictionary are *'type'*, *'bus_id'*, *'Pmax'* for
+            renewable generators and *'type'*, *'bus_id'*, *'Pmax'*, *'c0'*,
+            *'c1'*, *'c2'* for thermal generators. An optional *'Pmin'* can be
+            passed for both renewable and thermal generators. The values give
+            the fuel type, the identification number of the bus, the maximum
+            capacity of the generator, the coefficients of the cost curve
+            (polynomials) and optionally the minimum capacity of the generator.
     """
 
     def __init__(self, grid):
@@ -345,29 +357,29 @@ class ChangeTable(object):
             for i in bus_id.keys():
                 self.ct['storage']['bus_id'][i] = bus_id[i]
 
-    def add_dcline(self, dcline):
+    def add_dcline(self, info):
         """Adds HVDC line(s).
 
-        :param list dcline: each entry is a dictionary. The dictionary gathers
+        :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new dcline.
         """
-        if not isinstance(dcline, list):
+        if not isinstance(info, list):
             print('Argument enclosing new HVDC line(s) must be a list')
             return
 
-        self._add_line('new_dcline', dcline)
+        self._add_line('new_dcline', info)
 
-    def add_branch(self, branch):
+    def add_branch(self, info):
         """Sets parameters of new branch(es) in change table.
 
-        :param list branch: each entry is a dictionary. The dictionary gathers
+        :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new branch.
         """
-        if not isinstance(branch, list):
+        if not isinstance(info, list):
             print('Argument enclosing new AC line(s) must be a list')
             return
 
-        self._add_line('new_branch', branch)
+        self._add_line('new_branch', info)
 
     def _add_line(self, key, info):
         """Handles line(s) addition in change table.
@@ -428,6 +440,82 @@ class ChangeTable(object):
                     return
 
                 self.ct[key].append(line)
+
+    def add_plant(self, info):
+        """Sets parameters of new generator(s) in change table.
+
+        :param list info: each entry is a dictionary. The dictionary gathers
+            the information needed to create a new generator.
+        """
+        if not isinstance(info, list):
+            print('Argument enclosing new plant(s) must be a list')
+            return
+
+        if 'new_plant' not in self.ct:
+            self.ct['new_plant'] = []
+
+        for i, plant in enumerate(info):
+            if not isinstance(plant, dict):
+                print('Each entry must be a dictionary')
+                self.ct.pop('new_plant')
+                return
+            if 'type' not in plant.keys():
+                print('Missing key type for plant #%d' %
+                      (i + 1))
+                self.ct.pop('new_plant')
+                return
+            else:
+                try:
+                    self._check_resource(plant['type'])
+                except ValueError:
+                    self.ct.pop('new_plant')
+                    return
+            if 'bus_id' not in plant.keys():
+                print('Missing key bus_id for plant #%d' % (i + 1))
+                self.ct.pop('new_plant')
+                return
+            elif plant['bus_id'] not in self.grid.bus.index:
+                print("No bus id %d available for plant #%d" %
+                      (plant['bus_id'], i + 1))
+                self.ct.pop('new_plant')
+                return
+            if 'Pmax' not in plant.keys():
+                print('Missing key Pmax for plant #%d' % (i + 1))
+                self.ct.pop('new_plant')
+                return
+            elif plant['Pmax'] < 0:
+                print('Pmax >= 0 must be satisfied for plant #%d' % (i + 1))
+                self.ct.pop('new_plant')
+                return
+            if 'Pmin' not in plant.keys():
+                plant['Pmin'] = 0
+            elif plant['Pmin'] < 0 or plant['Pmin'] > plant['Pmax']:
+                print("0 <= Pmin <= Pmax must be satisfied for plant #%d" %
+                      (i + 1))
+                self.ct.pop('new_plant')
+                return
+            if plant['type'] in _renewable_resource:
+                lon = self.grid.bus.loc[plant['bus_id']].lon
+                lat = self.grid.bus.loc[plant['bus_id']].lat
+                plant_same_type = self.grid.plant.groupby(
+                    'type').get_group(plant['type'])
+                neighbor_id = find_closest_neighbor(
+                    (lon, lat), plant_same_type[['lon', 'lat']].values)
+                plant['plant_id_neighbor'] = plant_same_type.iloc[
+                    neighbor_id].name
+            else:
+                for c in ['0', '1', '2']:
+                    if 'c' + c not in plant.keys():
+                        print('Missing key c%s for plant #%d' % (c, i + 1))
+                        self.ct.pop('new_plant')
+                        return
+                    elif plant['c' + c] < 0:
+                        print("c%s >= 0 must be satisfied for plant #%d" %
+                              (c, i + 1))
+                        self.ct.pop('new_plant')
+                        return
+
+            self.ct['new_plant'].append(plant)
 
     def write(self, scenario_id):
         """Saves change table to disk.
