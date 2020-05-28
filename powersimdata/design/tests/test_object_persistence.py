@@ -163,3 +163,7 @@ def test_write_read_pickle_of_target_object():
         # Clean up
         for f in glob.glob(os.path.join(save_file_path, '*.*')):
             os.remove(f)
+
+def teardown_module():
+    if os.path.exists(save_file_path):
+        os.rmdir(save_file_path)
