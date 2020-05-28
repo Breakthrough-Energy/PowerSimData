@@ -1,5 +1,6 @@
 import copy
 import numpy as np
+import pandas as pd
 
 from powersimdata.input.profiles import InputData
 from powersimdata.utility.distance import haversine
@@ -51,6 +52,9 @@ class TransformGrid(object):
 
         if 'new_dcline' in self.ct.keys():
             self._add_dcline()
+
+        if 'new_plant' in self.ct.keys():
+            self._add_gen()
 
         if 'storage' in self.ct.keys():
             self._add_storage()
@@ -166,8 +170,9 @@ class TransformGrid(object):
             new_branch['to_lon'] = to_lon
             new_branch['to_lat'] = to_lat
             new_branch['x'] = x
-            self.grid.branch = self.grid.branch.append(new_branch,
-                                                       ignore_index=True)
+            new_index = [self.grid.plant.index[-1] + 1]
+            self.grid.branch = self.grid.branch.append(
+                pd.DataFrame(new_branch, index=new_index), sort=False)
 
     def _add_dcline(self):
         """Adds HVDC line(s) to the grid
@@ -188,8 +193,62 @@ class TransformGrid(object):
             new_dcline['Pmax'] = entry['capacity']
             new_dcline['from_interconnect'] = from_interconnect
             new_dcline['to_interconnect'] = to_interconnect
-            self.grid.dcline = self.grid.dcline.append(new_dcline,
-                                                       ignore_index=True)
+            new_index = [self.grid.plant.index[-1] + 1]
+            self.grid.dcline = self.grid.dcline.append(
+                pd.DataFrame(new_dcline, index=new_index), sort=False)
+
+    def _add_gen(self):
+        """Adds generator(s) to the grid.
+
+        """
+        self._add_plant()
+        self._add_gencost()
+
+    def _add_plant(self):
+        """Adds plant to the grid
+
+        """
+        new_plant = {c: 0 for c in self.grid.plant.columns}
+        for entry in self.ct['new_plant']:
+            bus_id = entry['bus_id']
+            interconnect = self.grid.bus.loc[bus_id].interconnect
+            zone_id = self.grid.bus.loc[bus_id].zone_id
+            zone_name = self.grid.id2zone[zone_id]
+            lon = self.grid.bus.loc[bus_id].lon
+            lat = self.grid.bus.loc[bus_id].lat
+
+            new_plant['bus_id'] = bus_id
+            new_plant['type'] = entry['type']
+            new_plant['Pmin'] = entry['Pmin']
+            new_plant['Pmax'] = entry['Pmax']
+            new_plant['status'] = 1
+            new_plant['interconnect'] = interconnect
+            new_plant['zone_id'] = zone_id
+            new_plant['zone_name'] = zone_name
+            new_plant['lon'] = lon
+            new_plant['lat'] = lat
+            new_index = [self.grid.plant.index[-1] + 1]
+            self.grid.plant = self.grid.plant.append(
+                pd.DataFrame(new_plant, index=new_index), sort=False)
+
+    def _add_gencost(self):
+        """Adds generation cost curves.
+
+        """
+        new_gencost = {c: 0 for c in self.grid.gencost['before'].columns}
+        for entry in self.ct['new_plant']:
+            bus_id = entry['bus_id']
+            new_gencost['type'] = 2
+            new_gencost['n'] = 3
+            new_gencost['interconnect'] = self.grid.bus.loc[bus_id].interconnect
+            if entry['type'] in self.thermal_gen_types:
+                new_gencost['c0'] = entry['c0']
+                new_gencost['c1'] = entry['c1']
+                new_gencost['c2'] = entry['c2']
+            new_index = [self.grid.gencost['before'].index[-1] + 1]
+            self.grid.gencost['before'] = self.grid.gencost['before'].append(
+                pd.DataFrame(new_gencost, index=new_index), sort=False)
+            self.grid.gencost['after'] = self.grid.gencost['before']
 
     def _add_storage(self):
         """Adds storage to the grid.
@@ -218,8 +277,8 @@ class TransformGrid(object):
         gen['Pmin'] = -1 * value
         gen['ramp_10'] = value
         gen['ramp_30'] = value
-        self.grid.storage['gen'] = \
-            self.grid.storage['gen'].append(gen, ignore_index=True)
+        self.grid.storage['gen'] = self.grid.storage['gen'].append(
+            gen, ignore_index=True, sort=False)
 
     def _add_storage_gencost(self):
         """Sets generation cost of storage unit.
@@ -228,8 +287,8 @@ class TransformGrid(object):
         gencost = {g: 0 for g in self.grid.storage['gencost'].columns}
         gencost['type'] = 2
         gencost['n'] = 3
-        self.grid.storage['gencost'] = \
-            self.grid.storage['gencost'].append(gencost, ignore_index=True)
+        self.grid.storage['gencost'] = self.grid.storage['gencost'].append(
+            gencost, ignore_index=True, sort=False)
 
     def _add_storage_genfuel(self):
         """Sets fuel type of storage unit.
@@ -264,12 +323,13 @@ class TransformGrid(object):
         data['InEff'] = self.grid.storage['InEff']
         data['LossFactor'] = 0
         data['rho'] = 1
-        self.grid.storage['StorageData'] = \
-            self.grid.storage['StorageData'].append(data, ignore_index=True)
+        prev_storage_data = self.grid.storage['StorageData']
+        self.grid.storage['StorageData'] = prev_storage_data.append(
+            data, ignore_index=True, sort=False)
 
 
-class ScaleProfile(object):
-    """Scales profiles according to scale factors listed in change table.
+class TransformProfile(object):
+    """Transforms profile according to operations listed in change table.
 
     """
     def __init__(self, ssh_client, scenario_id, grid, ct):
@@ -290,11 +350,12 @@ class ScaleProfile(object):
                            'demand': {'demand'}}
 
     def get_power_output(self, resource):
-        """Returns scaled profile.
+        """Returns the transformed grid.
 
         :param str resource: *'hydro'*, *'solar'* or *'wind'*.
-        :return: (*pandas.DataFrame*) -- data frame of resource output with
-            plant id as columns and UTC timestamp as rows.
+        :return: (*pandas.DataFrame*) -- power output for generators of
+            specified type with plant identification number  as columns and
+            UTC timestamp as index.
         :raises ValueError: if invalid resource.
         """
         possible = ['hydro', 'solar', 'wind']
@@ -304,17 +365,59 @@ class ScaleProfile(object):
                 print(p)
             raise ValueError('Invalid resource: %s' % resource)
 
-        profile = self._input_data.get_data(self.scenario_id, resource)
+        power_output = self._input_data.get_data(self.scenario_id, resource)
+        if not bool(self.ct):
+            return power_output
+        else:
+            if 'new_plant' in self.ct.keys():
+                power_output = self._add_plant_profile(power_output, resource)
+            if resource in self.ct.keys():
+                power_output = self._scale_plant_profile(power_output, resource)
+            return power_output
 
-        if bool(self.ct) and \
-                bool(self.scale_keys[resource] & set(self.ct.keys())):
-            for r in self.scale_keys[resource]:
-                if r in self.ct.keys() and 'zone_id' in self.ct[r].keys():
-                    for z, f in self.ct[r]['zone_id'].items():
-                        plant_id = self.grid.plant.groupby(
-                            ['zone_id', 'type']).get_group(
-                            (z, r)).index.values.tolist()
-                        profile.loc[:, plant_id] *= f
+    def _add_plant_profile(self, profile, resource):
+        """Add power output profile for plants added via the change table.
+
+        :param pandas.DataFrame profile: power output profile with plant
+            identification number as columns and UTC timestamp as index.
+        :param resource: fuel type.
+        :return: (*pandas.DataFrame*) -- power output profile with additional
+            columns corresponding to new generators inserted to the grid via
+            the change table.
+        """
+        neighbor_id_to_new_plant_id = {}
+        scaling = []
+        plant = self.grid.plant
+        for i, entry in enumerate(self.ct['new_plant']):
+            if entry['type'] in self.scale_keys[resource]:
+                neighbor_id = entry['plant_id_neighbor']
+                new_plant_id = plant.index[-len(self.ct['new_plant']) + i]
+                neighbor_id_to_new_plant_id[neighbor_id] = new_plant_id
+                scaling.append(entry['Pmax'] / plant.loc[neighbor_id, 'Pmax'])
+
+        if len(neighbor_id_to_new_plant_id) > 0:
+            neighbor_profiles = profile[neighbor_id_to_new_plant_id.keys()]
+            new_profiles = neighbor_profiles.multiply(scaling, axis=1).rename(
+                columns=neighbor_id_to_new_plant_id)
+            joined_profiles = profile.join(new_profiles)
+            return joined_profiles
+        else:
+            return profile
+
+    def _scale_plant_profile(self, profile, resource):
+        """Scales power output according to change table.
+
+        :param pandas.DataFrame profile: power output profile with plant
+            identification number as columns and UTC timestamp as index.
+        :param resource: fuel type.
+        :return: (*pandas.DataFrame*) -- scaled power output profile.
+        """
+        for r in self.scale_keys[resource]:
+            if r in self.ct.keys() and 'zone_id' in self.ct[r].keys():
+                type_in_zone = self.grid.plant.groupby(['zone_id', 'type'])
+                for z, f in self.ct[r]['zone_id'].items():
+                    plant_id = type_in_zone.get_group((z, r)).index.tolist()
+                    profile.loc[:, plant_id] *= f
                 if r in self.ct.keys() and 'plant_id' in self.ct[r].keys():
                     for i, f in self.ct[r]['plant_id'].items():
                         profile.loc[:, i] *= f
