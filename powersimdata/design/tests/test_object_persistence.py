@@ -7,8 +7,9 @@ from powersimdata.design.clean_capacity_scaling \
     import TargetManager, AbstractStrategyManager, Resource
 
 
-save_file_path = os.path.join(
-    'powersimdata', 'design', 'demo', 'data', 'save_files')
+script_path = os.path.dirname(os.path.abspath( __file__ ))
+save_file_path = os.path.join(script_path, '..', 'demo', 'data', 'save_files')
+
 
 def test_create_json_of_target_object():
     try:
