@@ -277,6 +277,76 @@ def test_add_dcline():
         ct.clear()
 
 
+def test_add_gen_add_entries_in_plant_data_frame():
+    new_plant = [
+        {'type': 'solar', 'bus_id': 2050363, 'Pmax': 85},
+        {'type': 'wind', 'bus_id': 9, 'Pmin': 5, 'Pmax': 60},
+        {'type': 'wind_offshore', 'bus_id': 13802, 'Pmax': 175},
+        {'type': 'ng', 'bus_id': 2010687, 'Pmin': 25, 'Pmax': 400,
+         'c0': 1500, 'c1': 50, 'c2': 0.5}]
+    ct.add_plant(new_plant)
+    new_grid = TransformGrid(grid, ct.ct).get_grid()
+
+    new_pmin = new_grid.plant.Pmin.values
+    new_pmax = new_grid.plant.Pmax.values
+    new_status = new_grid.plant.status.values
+
+    try:
+        assert new_grid.plant.shape[0] != grid.plant.shape[0]
+        assert np.array_equal(new_pmin[-len(new_plant):],
+                              np.array([p['Pmin'] if 'Pmin' in p.keys() else 0
+                                        for p in new_plant]))
+        assert np.array_equal(new_pmax[-len(new_plant):],
+                              np.array([p['Pmax'] for p in new_plant]))
+        assert np.array_equal(new_status[-len(new_plant):],
+                              np.array([1] * len(new_plant)))
+    finally:
+        ct.clear()
+
+
+def test_add_gen_add_entries_in_gencost_data_frame():
+    new_plant = [
+        {'type': 'solar', 'bus_id': 2050363, 'Pmax': 15},
+        {'type': 'wind', 'bus_id': 555, 'Pmin': 5, 'Pmax': 60},
+        {'type': 'wind_offshore', 'bus_id': 60123, 'Pmax': 175},
+        {'type': 'ng', 'bus_id': 2010687, 'Pmin': 25, 'Pmax': 400,
+         'c0': 1500, 'c1': 50, 'c2': 0.5}]
+    ct.add_plant(new_plant)
+    new_grid = TransformGrid(grid, ct.ct).get_grid()
+
+    new_c0 = new_grid.gencost['before'].c0.values
+    new_c1 = new_grid.gencost['before'].c1.values
+    new_c2 = new_grid.gencost['before'].c2.values
+    new_type = new_grid.gencost['before'].type.values
+    new_startup = new_grid.gencost['before'].startup.values
+    new_shutdown = new_grid.gencost['before'].shutdown.values
+    new_n = new_grid.gencost['before'].n.values
+
+    try:
+        assert new_grid.gencost['before'] is new_grid.gencost['after']
+        assert new_grid.gencost['before'].shape[0] != grid.gencost[
+            'before'].shape[0]
+        assert np.array_equal(new_c0[-len(new_plant):],
+                              np.array([p['c0'] if 'c0' in p.keys() else 0
+                                        for p in new_plant]))
+        assert np.array_equal(new_c1[-len(new_plant):],
+                              np.array([p['c1'] if 'c1' in p.keys() else 0
+                                        for p in new_plant]))
+        assert np.array_equal(new_c2[-len(new_plant):],
+                              np.array([p['c2'] if 'c2' in p.keys() else 0
+                                        for p in new_plant]))
+        assert np.array_equal(new_type[-len(new_plant):],
+                              np.array([2] * len(new_plant)))
+        assert np.array_equal(new_startup[-len(new_plant):],
+                              np.array([0] * len(new_plant)))
+        assert np.array_equal(new_shutdown[-len(new_plant):],
+                              np.array([0] * len(new_plant)))
+        assert np.array_equal(new_n[-len(new_plant):],
+                              np.array([3] * len(new_plant)))
+    finally:
+        ct.clear()
+
+
 def test_add_storage():
     storage = {
         2021005: 116.0,
