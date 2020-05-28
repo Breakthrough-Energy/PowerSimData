@@ -122,11 +122,10 @@ class TransformGrid(object):
 
         """
         for dcline_id, factor in self.ct['dcline']['dcline_id'].items():
+            self.grid.dcline.loc[dcline_id, 'Pmin'] *= factor
+            self.grid.dcline.loc[dcline_id, 'Pmax'] *= factor
             if factor == 0:
                 self.grid.dcline.loc[dcline_id, 'status'] = 0
-            else:
-                self.grid.dcline.loc[dcline_id, 'Pmin'] *= factor
-                self.grid.dcline.loc[dcline_id, 'Pmax'] *= factor
 
     def _add_branch(self):
         """Adds branch(es) to the grid.
