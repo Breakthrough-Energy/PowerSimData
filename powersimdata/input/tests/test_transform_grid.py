@@ -228,15 +228,10 @@ def test_scale_dcline():
         assert not new_pmin.equals(pmin)
         assert not new_pmax.equals(pmax)
         for i, f in zip(dcline_id, factor):
-            if f == 0:
-                assert new_status.loc[i] == 0
-                assert new_status.loc[i] == 0
-                assert new_pmin.loc[i] == pmin.loc[i]
-                assert new_pmax.loc[i] == pmax.loc[i]
-            else:
-                assert new_pmin.loc[i] == f * pmin.loc[i]
-                assert new_pmax.loc[i] == f * pmax.loc[i]
-                assert new_status.loc[i] == status.loc[i] == 1
+            assert new_pmin.loc[i] == f * pmin.loc[i]
+            assert new_pmax.loc[i] == f * pmax.loc[i]
+            assert status.loc[i] == 1
+            assert new_status.loc[i] == 0 if f == 0 else 1
     finally:
         ct.clear()
 
