@@ -64,12 +64,13 @@ def _check_field(field_name):
     """Checks field name.
 
     :param str field_name: *'PG'*, *'PF'*, *'PF_DCLINE'*, *'LMP'*, *'CONGU'*,
-        or *'CONGL'*, '*'AVERAGED_CONG'*', *'STORAGE_PG'* or *'STORAGE_E'*.
+        *'CONGL'*, *'AVERAGED_CONG'*, *'STORAGE_PG'*, *'STORAGE_E'*,
+        or *'LOAD_SHED'*
     :raises ValueError: if not *'PG'*, *'PF'*, *'PF_DCLINE'*, *'LMP'*,
-        *'CONGU'*, or *'CONGL'*, *'AVERAGED_CONG'*, *'STORAGE_PG'* or
-        *'STORAGE_E'*.
+        *'CONGU'*, or *'CONGL'*, *'AVERAGED_CONG'*, *'STORAGE_PG'*,
+        *'STORAGE_E'*, or *'LOAD_SHED'*.
     """
     possible = ['PG', 'PF', 'PF_DCLINE', 'LMP', 'CONGU', 'CONGL',
-                'AVERAGED_CONG', 'STORAGE_PG', 'STORAGE_E']
+                'AVERAGED_CONG', 'STORAGE_PG', 'STORAGE_E', 'LOAD_SHED']
     if field_name not in possible:
         raise ValueError('Only %s data can be loaded' % " | ".join(possible))

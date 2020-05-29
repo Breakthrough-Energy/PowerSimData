@@ -1,3 +1,4 @@
+from powersimdata.utility import const
 from powersimdata.input.grid import Grid
 from powersimdata.input.scaler import ScaleProfile
 from powersimdata.input.profiles import InputData
@@ -5,7 +6,11 @@ from powersimdata.output.profiles import OutputData
 from powersimdata.scenario.state import State
 
 import copy
+import os
+import numpy as np
 import pandas as pd
+import pickle
+from scipy.sparse import coo_matrix
 
 
 class Analyze(State):
@@ -192,6 +197,52 @@ class Analyze(State):
 
         return storage_e
 
+    def get_load_shed(self):
+        """Returns LOAD_SHED data frame, either via loading or calculating.
+
+        :return: (*pandas.DataFrame*) -- data frame of load shed (hour x bus).
+        """
+        scenario_id = self._scenario_info['id']
+        output_data = OutputData(self._ssh)
+        try:
+            # It's either on the server or in our local ScenarioData folder
+            load_shed = output_data.get_data(scenario_id, 'LOAD_SHED')
+        except FileNotFoundError:
+            # The scenario was run without load_shed, and we must construct it
+            infeasibilities = self._parse_infeasibilities()
+            hours = pd.date_range(start=self._scenario_info['start_date'],
+                                  end=self._scenario_info['end_date'],
+                                  freq='1H').tolist()
+            buses = self.get_grid().bus.index
+            if infeasibilities is None:
+                print('No infeasibilities, constructing DataFrame')
+                load_shed_data = coo_matrix((len(hours), len(buses)))
+                load_shed = pd.DataFrame.sparse.from_spmatrix(load_shed_data)
+            else:
+                print('Infeasibilities, constructing DataFrame')
+                bus_demand = self.get_bus_demand()
+                load_shed = np.zeros((len(hours), len(buses)))
+                # Convert '24H' to 24
+                interval = int(self._scenario_info['interval'][:-1])
+                for i, v in infeasibilities.items():
+                    start = i * interval
+                    end = (i+1) * interval
+                    base_demand = bus_demand.iloc[start:end, :].to_numpy()
+                    shed_demand = base_demand * (v / 100)
+                    load_shed[start:end, :] = shed_demand
+                load_shed = pd.DataFrame(load_shed, columns=buses, index=hours)
+                load_shed = load_shed.astype(pd.SparseDtype("float", 0))
+            load_shed.index = hours
+            load_shed.index.name = 'UTC'
+            load_shed.columns = buses
+
+            filename = scenario_id + '_LOAD_SHED.pkl'
+            filepath = os.path.join(const.LOCAL_DIR, filename)
+            with open(filepath, 'wb') as f:
+                pickle.dump(load_shed, f)
+
+        return load_shed
+
     def get_ct(self):
         """Returns change table.
 
@@ -234,6 +285,23 @@ class Analyze(State):
                         self._scenario_info['interval']) - pd.Timedelta('1H')
                     demand[start:end] *= 1. - value / 100.
                 return demand
+
+    def get_bus_demand(self):
+        """Returns demand profiles by bus.
+
+        :return: (*pandas.DataFrame*) -- data frame of demand.
+        """
+        profile = ScaleProfile(self._ssh, self._scenario_info['id'],
+                               self.get_grid(), self.get_ct())
+        demand = profile.get_demand()
+        bus = self.get_grid().bus
+        bus['zone_Pd'] = bus.groupby('zone_id')['Pd'].transform('sum')
+        bus['zone_share'] = bus['Pd'] / bus['zone_Pd']
+        zone_bus_shares = pd.DataFrame({
+            z: bus.groupby('zone_id').get_group(z).zone_share
+            for z in demand.columns}).fillna(0)
+        bus_demand = demand.dot(zone_bus_shares.T)
+        return bus_demand
 
     def get_hydro(self):
         """Returns hydro profile
