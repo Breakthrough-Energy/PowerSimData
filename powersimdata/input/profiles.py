@@ -95,3 +95,24 @@ def _read_data(file_name):
         raise ValueError('Unknown extension! %s' % ext)
 
     return data
+
+
+def get_bus_demand(ssh_client, scenario_id, grid):
+    """Returns demand profiles by bus.
+
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param str scenario_id: scenario id.
+    :param powersimdata.input.grid.Grid grid: grid to construct bus demand for.
+    :return: (*pandas.DataFrame*) -- data frame of demand.
+    """
+    input = InputData(ssh_client)
+    demand = input.get_data(scenario_id, 'demand')
+    bus = grid.bus
+    bus['zone_Pd'] = bus.groupby('zone_id')['Pd'].transform('sum')
+    bus['zone_share'] = bus['Pd'] / bus['zone_Pd']
+    zone_bus_shares = pd.DataFrame({
+        z: bus.groupby('zone_id').get_group(z).zone_share
+        for z in demand.columns}).fillna(0)
+    bus_demand = demand.dot(zone_bus_shares.T)
+
+    return bus_demand
