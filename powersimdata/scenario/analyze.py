@@ -1,6 +1,6 @@
 from powersimdata.utility import const
 from powersimdata.input.grid import Grid
-from powersimdata.input.scaler import ScaleProfile
+from powersimdata.input.scaler import TransformProfile
 from powersimdata.input.profiles import InputData
 from powersimdata.output.profiles import OutputData, construct_load_shed
 from powersimdata.scenario.state import State
@@ -240,8 +240,8 @@ class Analyze(State):
             potentially modified one be returned.
         :return: (*pandas.DataFrame*) -- data frame of demand.
         """
-        profile = ScaleProfile(self._ssh, self._scenario_info['id'],
-                               self.get_grid(), self.get_ct())
+        profile = TransformProfile(self._ssh, self._scenario_info['id'],
+                                   self.get_grid(), self.get_ct())
         demand = profile.get_demand()
 
         if original:
@@ -267,8 +267,8 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of hydro power output.
         """
-        profile = ScaleProfile(self._ssh, self._scenario_info['id'],
-                               self.get_grid(), self.get_ct())
+        profile = TransformProfile(self._ssh, self._scenario_info['id'],
+                                   self.get_grid(), self.get_ct())
         return profile.get_hydro()
 
     def get_solar(self):
@@ -276,8 +276,8 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of solar power output.
         """
-        profile = ScaleProfile(self._ssh, self._scenario_info['id'],
-                               self.get_grid(), self.get_ct())
+        profile = TransformProfile(self._ssh, self._scenario_info['id'],
+                                   self.get_grid(), self.get_ct())
         return profile.get_solar()
 
     def get_wind(self):
@@ -285,6 +285,6 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of wind power output.
         """
-        profile = ScaleProfile(self._ssh, self._scenario_info['id'],
-                               self.get_grid(), self.get_ct())
+        profile = TransformProfile(self._ssh, self._scenario_info['id'],
+                                   self.get_grid(), self.get_ct())
         return profile.get_wind()
