@@ -1,11 +1,14 @@
+from powersimdata.utility import const
 from powersimdata.input.grid import Grid
 from powersimdata.input.scaler import ScaleProfile
 from powersimdata.input.profiles import InputData
-from powersimdata.output.profiles import OutputData
+from powersimdata.output.profiles import OutputData, construct_load_shed
 from powersimdata.scenario.state import State
 
 import copy
+import os
 import pandas as pd
+import pickle
 
 
 class Analyze(State):
@@ -191,6 +194,30 @@ class Analyze(State):
                                          'STORAGE_E')
 
         return storage_e
+
+    def get_load_shed(self):
+        """Returns LOAD_SHED data frame, either via loading or calculating.
+
+        :return: (*pandas.DataFrame*) -- data frame of load shed (hour x bus).
+        """
+        scenario_id = self._scenario_info['id']
+        try:
+            # It's either on the server or in our local ScenarioData folder
+            output_data = OutputData(self._ssh)
+            load_shed = output_data.get_data(scenario_id, 'LOAD_SHED')
+        except FileNotFoundError:
+            # The scenario was run without load_shed, and we must construct it
+            grid = self.get_grid()
+            infeasibilities = self._parse_infeasibilities()
+            load_shed = construct_load_shed(
+                self._ssh, self._scenario_info, grid, infeasibilities)
+
+            filename = scenario_id + '_LOAD_SHED.pkl'
+            filepath = os.path.join(const.LOCAL_DIR, filename)
+            with open(filepath, 'wb') as f:
+                pickle.dump(load_shed, f)
+
+        return load_shed
 
     def get_ct(self):
         """Returns change table.
