@@ -184,6 +184,8 @@ def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95,
     :param list/set/tuple/None allowlist: only select from these branch IDs.
     :param list/set/tuple/None denylist: never select any of these branch IDs.
     :param str method: prioritization method: 'branches', 'MW', or 'MWmiles'.
+    :raises ValueError: if 'method' not recognized, or not enough branches to
+        upgrade.
     :return: (*set*) -- A set of ints representing branch indices.
     """
     
