@@ -143,6 +143,7 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=False):
 
 
 def scale_congested_mesh_branches(change_table, ref_scenario, upgrade_n=100,
+                                  allowlist=None, denylist=None,
                                   quantile=0.95, increment=1,
                                   method='branches'):
     """Use a reference scenario as a baseline for branch scaling, and further
@@ -163,46 +164,57 @@ def scale_congested_mesh_branches(change_table, ref_scenario, upgrade_n=100,
     # We need a Scenario object that's in Analyze state to get congu/congl,
     # but we can't import Scenario to check against, because circular imports.
     branches_to_upgrade = _identify_mesh_branch_upgrades(
-        ref_scenario, upgrade_n=upgrade_n, quantile=quantile, method=method)
+        ref_scenario, upgrade_n=upgrade_n, quantile=quantile, method=method,
+        allowlist=allowlist, denylist=denylist)
     _increment_branch_scaling(
         change_table, branches_to_upgrade, ref_scenario, value=increment)
 
 
 def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95,
+                                   allowlist=None, denylist=None,
                                    method='branches'):
     """Identify the N most congested branches in a previous scenario, based on
     the quantile value of congestion duals. A quantile value of 0.95 obtains
     the branches with highest dual in top 5% of hours.
-    
+
     :param powersimdata.scenario.scenario.Scenario ref_scenario: the reference
         scenario to be used to determine the most congested branches.
     :param int upgrade_n: the number of branches to upgrade.
     :param float quantile: the quantile to use to judge branch congestion.
+    :param list/set/tuple/None allowlist: only select from these branch IDs.
+    :param list/set/tuple/None denylist: never select any of these branch IDs.
     :param str method: prioritization method: 'branches', 'MW', or 'MWmiles'.
     :return: (*set*) -- A set of ints representing branch indices.
     """
     
+    # How big does a dual value have to be to be 'real' and not barrier cruft?
+    cong_significance_cutoff = 1e-6     # $/MWh
+    # If we rank by MW-miles, what 'length' do we give to zero-length branches?
+    zero_length_value = 1       # miles
+
     # Validate method input
     allowed_methods = ('branches', 'MW', 'MWmiles')
     if method not in allowed_methods:
         allowed_list = ', '.join(allowed_methods)
         raise ValueError(f'method must be one of: {allowed_list}')
 
-    # How big does a dual value have to be to be 'real' and not barrier cruft?
-    cong_significance_cutoff = 1e-6     # $/MWh
-    # If we rank by MW-miles, what 'length' do we give to zero-length branches?
-    zero_length_value = 1       # miles
-    
     # Get raw congestion dual values, add them
     rss = ref_scenario.state
     ref_cong_abs = rss.get_congu() + rss.get_congl()
-    
-    # Parse 2-D array to vector of quantile values, filter out non-significant
+    all_branches = set(ref_cong_abs.columns.tolist())
+    # Create validated composite allowlist
+    composite_allowlist = _construct_composite_allowlist(
+        all_branches, allowlist, denylist)
+
+    # Parse 2-D array to vector of quantile values
     quantile_cong_abs = ref_cong_abs.quantile(quantile)
+    # Filter out insignificant values
     significance_bitmask = (quantile_cong_abs > cong_significance_cutoff)
     quantile_cong_abs = quantile_cong_abs.where(significance_bitmask).dropna()
+    # Filter based on composite allowlist
+    quantile_cong_abs = quantile_cong_abs.filter(items=composite_allowlist)
     congested_indices = list(quantile_cong_abs.index)
-    
+
     # Ensure that we have enough congested branches to upgrade
     num_congested = len(quantile_cong_abs)
     if num_congested < upgrade_n:
@@ -237,10 +249,50 @@ def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95,
     else:
         # By process of elimination, all that's left is method 'branches'
         branch_metric = quantile_cong_abs
-    
+
     # Sort by our metric, grab indexes for N largest values (tail), return
     ranked_branches = set(branch_metric.sort_values().tail(upgrade_n).index)
     return ranked_branches
+
+
+def _construct_composite_allowlist(valid_branches, allowlist, denylist):
+    """Create a set of allowed branches by selecting from a set of all branches
+    either only from the allow list, or everything but the deny list.
+
+    :param list/set/tuple valid_branches: List of valid branches to select.
+    :param list/set/tuple/None allowlist: only select from these branch IDs.
+    :param list/set/tuple/None denylist: never select any of these branch IDs.
+    :raises ValueError: if both allowlist and denylist are specified, or if
+        allowlist or denylist contain IDs not in valid_branches.
+    :raises TypeError: if valid_branches, allowlist, or denylist are bad type.
+    :return (*set*) -- set of allowed branch IDs.
+    """
+    # Validate valid_branches/allowlist/denylist Type and combination
+    if not isinstance(valid_branches, (list, set, tuple)):
+        raise TypeError('allowlist must be a list, tuple, set, or None')
+    if not ((allowlist is None) or isinstance(allowlist, (list, set, tuple))):
+        raise TypeError('allowlist must be a list, tuple, set, or None')
+    if not ((denylist is None) or isinstance(denylist, (list, set, tuple))):
+        raise TypeError('denylist must be a list, tuple, set, or None')
+    if (allowlist is not None) and (denylist is not None):
+        raise ValueError('Cannot specify both allowlist and denylist')
+
+    # Validate allowlist (if not None), create set of allowed branch IDs
+    if allowlist is None:
+        composite_allowlist = set(valid_branches)
+    else:
+        if set(allowlist) <= set(valid_branches):
+            composite_allowlist = set(allowlist)
+        else:
+            raise ValueError('allowlist contains entires not present in CONG')
+    # Validate denylist (if not None), subtract from set of allowed branch IDs
+    if denylist is not None:
+        if set(denylist) <= set(valid_branches):
+            composite_allowlist -= set(denylist)
+        else:
+            raise ValueError('denylist contains entires not present in CONG')
+
+    return composite_allowlist
 
 
 def _increment_branch_scaling(change_table, branch_ids, ref_scenario, value=1):
