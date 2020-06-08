@@ -982,11 +982,13 @@ class Resource:
             f"prev_generation must be greater than zero. Got {prev_generation}"
         self.prev_generation = prev_generation
 
-    def set_curtailment(self, prev_curtailment):
+    def set_curtailment(self, prev_curtailment, tolerance=1e-3):
         """Sets curtailment from scenario run.
 
         :param float prev_curtailment: calculated curtailment from scenario run.
         """
+        if (-1 * tolerance) <= prev_curtailment < 0:
+            prev_curtailment = 0
         assert (prev_curtailment >= 0), \
             "prev_curtailment must be greater than zero"
         self.prev_curtailment = prev_curtailment
