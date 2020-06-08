@@ -9,7 +9,8 @@ from powersimdata.tests.mock_change_table import MockChangeTable
 from powersimdata.design.transmission import (
     _find_branches_connected_to_bus, _find_first_degree_branches,
     _find_stub_degree, _find_capacity_at_bus, scale_renewable_stubs,
-    _identify_mesh_branch_upgrades, _increment_branch_scaling)
+    _identify_mesh_branch_upgrades, _construct_composite_allowlist,
+    _increment_branch_scaling)
 
 """
 This test network is a ring, with several spurs coming off of it. The central
@@ -190,6 +191,20 @@ class TestIdentifyMesh(unittest.TestCase):
             self.mock_scenario, upgrade_n=2, method='MW')
         self.assertEqual(branches, expected_return)
 
+    def test_identify_mesh_MW_n_2_allowlist(self):
+        expected_return = {102, 103}
+        allowlist = {102, 103, 104}
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, upgrade_n=2, method='MW', allowlist=allowlist)
+        self.assertEqual(branches, expected_return)
+
+    def test_identify_mesh_MW_n_2_denylist(self):
+        expected_return = {101, 103}
+        denylist = [102, 105]
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, upgrade_n=2, method='MW', denylist=denylist)
+        self.assertEqual(branches, expected_return)
+
     def test_identify_mesh_MW_n_1(self):
         expected_return = {102}
         branches = _identify_mesh_branch_upgrades(
@@ -221,6 +236,57 @@ class TestIdentifyMesh(unittest.TestCase):
         with self.assertRaises(ValueError):
             branches = _identify_mesh_branch_upgrades(
             self.mock_scenario, upgrade_n=2, method='does not exist')
+
+
+class TestConstructCompositeAllowlist(unittest.TestCase):
+
+    def test_none_none(self):
+        branch_list = mock_branch['branch_id'].copy()
+        composite_allowlist = _construct_composite_allowlist(
+            mock_branch['branch_id'].copy(), None, None)
+        self.assertEqual(composite_allowlist, set(branch_list))
+
+    def test_good_allowlist(self):
+        allowlist = list(range(101, 105))
+        composite_allowlist = _construct_composite_allowlist(
+            mock_branch['branch_id'].copy(), allowlist, None)
+        self.assertEqual(composite_allowlist, set(allowlist))
+
+    def test_good_denylist(self):
+        denylist = list(range(101, 105))
+        composite_allowlist = _construct_composite_allowlist(
+            mock_branch['branch_id'].copy(), None, denylist)
+        self.assertEqual(composite_allowlist, set(range(105, 109)))
+
+    def test_allowlist_and_denylist_failure(self):
+        allowlist = list(range(101, 105))
+        denylist = list(range(105, 109))
+        with self.assertRaises(ValueError):
+            _construct_composite_allowlist(
+                mock_branch['branch_id'].copy(), allowlist, denylist)
+
+    def test_bad_allowlist_value(self):
+        allowlist = list(range(101, 110))
+        with self.assertRaises(ValueError):
+            _construct_composite_allowlist(
+                mock_branch['branch_id'].copy(), allowlist, None)
+
+    def test_bad_allowlist_entry_type(self):
+        allowlist = [str(i) for i in range(101, 105)]
+        with self.assertRaises(ValueError):
+            _construct_composite_allowlist(
+                mock_branch['branch_id'].copy(), allowlist, None)
+
+    def test_bad_denylist_value(self):
+        denylist = list(range(108, 110))
+        with self.assertRaises(ValueError):
+            _construct_composite_allowlist(
+                mock_branch['branch_id'].copy(), None, denylist)
+
+    def test_bad_denylist_type(self):
+        with self.assertRaises(TypeError):
+            _construct_composite_allowlist(
+                mock_branch['branch_id'].copy(), None, '108')
 
 
 class TestIncrementBranch(unittest.TestCase):
