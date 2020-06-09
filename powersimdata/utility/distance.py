@@ -23,8 +23,11 @@ def haversine(point1, point2):
     # calculate haversine
     lat = lat2 - lat1
     lng = lng2 - lng1
-    d = 2 * _AVG_EARTH_RADIUS_MILES * asin(sqrt(
-        sin(lat * 0.5) ** 2 + cos(lat1) * cos(lat2) * sin(lng * 0.5) ** 2))
+    d = (
+        2
+        * _AVG_EARTH_RADIUS_MILES
+        * asin(sqrt(sin(lat * 0.5) ** 2 + cos(lat1) * cos(lat2) * sin(lng * 0.5) ** 2))
+    )
 
     return d
 

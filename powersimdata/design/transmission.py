@@ -11,8 +11,8 @@ def _find_branches_connected_to_bus(branch, bus_id):
     :param int bus_id: index of bus to find neighbors of.
     :return: (*set*) -- set of bus indexes (integers).
     """
-    branches_from = branch.index[branch['from_bus_id'] == bus_id].tolist()
-    branches_to = branch.index[branch['to_bus_id'] == bus_id].tolist()
+    branches_from = branch.index[branch["from_bus_id"] == bus_id].tolist()
+    branches_to = branch.index[branch["to_bus_id"] == bus_id].tolist()
 
     branches_connected = set(branches_from) | set(branches_to)
 
@@ -26,11 +26,11 @@ def _find_first_degree_branches(branch, branch_id):
     :param int branch_id: index of branches to find neighbors of.
     :return: (*set*) -- set of branch indexes (integers).
     """
-    from_bus = branch.loc[branch_id, 'from_bus_id']
-    to_bus = branch.loc[branch_id, 'to_bus_id']
+    from_bus = branch.loc[branch_id, "from_bus_id"]
+    to_bus = branch.loc[branch_id, "to_bus_id"]
     endpoints = (from_bus, to_bus)
-    to_endpoints = branch.index[branch['to_bus_id'].isin(endpoints)]
-    from_endpoints = branch.index[branch['from_bus_id'].isin(endpoints)]
+    to_endpoints = branch.index[branch["to_bus_id"].isin(endpoints)]
+    from_endpoints = branch.index[branch["from_bus_id"].isin(endpoints)]
     first_degree_branch_idxs = set(to_endpoints) | set(from_endpoints)
 
     return first_degree_branch_idxs
@@ -48,7 +48,8 @@ def _find_stub_degree(branch, bus_id):
     connected_branch_idxs = _find_branches_connected_to_bus(branch, bus_id)
     if len(connected_branch_idxs) == 1:
         second_degree_branch_idxs = _find_first_degree_branches(
-            branch, tuple(connected_branch_idxs)[0])
+            branch, tuple(connected_branch_idxs)[0]
+        )
         if len(second_degree_branch_idxs) == 2:
             # We could keep going recursively, but this is the max in Western.
             return 2, second_degree_branch_idxs
@@ -70,10 +71,10 @@ def _find_capacity_at_bus(plant, bus_id, gentypes):
 
     if isinstance(gentypes, str):
         gentypes = (gentypes,)
-    gentype_plants = plant[plant['type'].isin(gentypes)]
-    at_bus = gentype_plants['bus_id'] == bus_id
+    gentype_plants = plant[plant["type"].isin(gentypes)]
+    at_bus = gentype_plants["bus_id"] == bus_id
     gentype_plants_at_bus = gentype_plants[at_bus]
-    gentype_capacity = gentype_plants_at_bus['Pmax'].sum()
+    gentype_capacity = gentype_plants_at_bus["Pmax"].sum()
 
     return gentype_capacity
 
@@ -98,42 +99,42 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=False):
     ref_plant = change_table.grid.plant
     ref_branch = change_table.grid.branch
     ref_bus = change_table.grid.bus
-    if 'branch' not in ct:
-        ct['branch'] = {}
-    if 'branch_id' not in ct['branch']:
-        ct['branch']['branch_id'] = {}
-    branch_id_ct = ct['branch']['branch_id']
-    
-    ren_types = ('hydro', 'solar', 'wind', 'wind_offshore')
+    if "branch" not in ct:
+        ct["branch"] = {}
+    if "branch_id" not in ct["branch"]:
+        ct["branch"]["branch_id"] = {}
+    branch_id_ct = ct["branch"]["branch_id"]
+
+    ren_types = ("hydro", "solar", "wind", "wind_offshore")
     for r in ren_types:
-        ren_plants = ref_plant[ref_plant['type'] == r]
+        ren_plants = ref_plant[ref_plant["type"] == r]
         for p in ren_plants.index:
-            bus_id = ref_plant.loc[p, 'bus_id']
+            bus_id = ref_plant.loc[p, "bus_id"]
             stub_degree, stub_branches = _find_stub_degree(ref_branch, bus_id)
             if stub_degree > 0:
                 ren_capacity = _find_capacity_at_bus(ref_plant, bus_id, r)
                 if ren_capacity <= 0:
-                    print('%s plant %s at bus %s has 0 Pmax!' % (r, p, bus_id))
+                    print("%s plant %s at bus %s has 0 Pmax!" % (r, p, bus_id))
                     continue
                 # Calculate total scaling factor (zone * plant)
                 gen_scale_factor = 1
                 # First scale by zone_id
-                zone_id = ref_bus.loc[bus_id, 'zone_id']
+                zone_id = ref_bus.loc[bus_id, "zone_id"]
                 try:
-                    gen_scale_factor *= ct[r]['zone_id'][zone_id]
+                    gen_scale_factor *= ct[r]["zone_id"][zone_id]
                 except KeyError:
                     pass
                 # Then scale by plant_id
                 try:
-                    gen_scale_factor *= ct[r]['plant_id'][p]
+                    gen_scale_factor *= ct[r]["plant_id"][p]
                 except KeyError:
                     pass
                 if (gen_scale_factor == 1) and (verbose == True):
-                    print(f'no scaling factor for {r}, {zone_id}, plant {p}')
+                    print(f"no scaling factor for {r}, {zone_id}, plant {p}")
                 for b in stub_branches:
-                    if ref_branch.loc[b, 'rateA'] == 0:
+                    if ref_branch.loc[b, "rateA"] == 0:
                         continue
-                    old_branch_cap = ref_branch.loc[b, 'rateA']
+                    old_branch_cap = ref_branch.loc[b, "rateA"]
                     if old_branch_cap < ren_capacity * gen_scale_factor:
                         new_branch_cap = ren_capacity * gen_scale_factor + fuzz
                         branch_id_ct[b] = new_branch_cap / old_branch_cap
@@ -142,9 +143,14 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=False):
         return ct
 
 
-def scale_congested_mesh_branches(change_table, ref_scenario, upgrade_n=100,
-                                  quantile=0.95, increment=1,
-                                  method='branches'):
+def scale_congested_mesh_branches(
+    change_table,
+    ref_scenario,
+    upgrade_n=100,
+    quantile=0.95,
+    increment=1,
+    method="branches",
+):
     """Use a reference scenario as a baseline for branch scaling, and further
     increment branch scaling based on observed congestion duals.
     
@@ -163,13 +169,16 @@ def scale_congested_mesh_branches(change_table, ref_scenario, upgrade_n=100,
     # We need a Scenario object that's in Analyze state to get congu/congl,
     # but we can't import Scenario to check against, because circular imports.
     branches_to_upgrade = _identify_mesh_branch_upgrades(
-        ref_scenario, upgrade_n=upgrade_n, quantile=quantile, method=method)
+        ref_scenario, upgrade_n=upgrade_n, quantile=quantile, method=method
+    )
     _increment_branch_scaling(
-        change_table, branches_to_upgrade, ref_scenario, value=increment)
+        change_table, branches_to_upgrade, ref_scenario, value=increment
+    )
 
 
-def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95,
-                                   method='branches'):
+def _identify_mesh_branch_upgrades(
+    ref_scenario, upgrade_n=100, quantile=0.95, method="branches"
+):
     """Identify the N most congested branches in a previous scenario, based on
     the quantile value of congestion duals. A quantile value of 0.95 obtains
     the branches with highest dual in top 5% of hours.
@@ -181,63 +190,62 @@ def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95,
     :param str method: prioritization method: 'branches', 'MW', or 'MWmiles'.
     :return: (*set*) -- A set of ints representing branch indices.
     """
-    
+
     # Validate method input
-    allowed_methods = ('branches', 'MW', 'MWmiles')
+    allowed_methods = ("branches", "MW", "MWmiles")
     if method not in allowed_methods:
-        allowed_list = ', '.join(allowed_methods)
-        raise ValueError(f'method must be one of: {allowed_list}')
+        allowed_list = ", ".join(allowed_methods)
+        raise ValueError(f"method must be one of: {allowed_list}")
 
     # How big does a dual value have to be to be 'real' and not barrier cruft?
-    cong_significance_cutoff = 1e-6     # $/MWh
+    cong_significance_cutoff = 1e-6  # $/MWh
     # If we rank by MW-miles, what 'length' do we give to zero-length branches?
-    zero_length_value = 1       # miles
-    
+    zero_length_value = 1  # miles
+
     # Get raw congestion dual values, add them
     rss = ref_scenario.state
     ref_cong_abs = rss.get_congu() + rss.get_congl()
-    
+
     # Parse 2-D array to vector of quantile values, filter out non-significant
     quantile_cong_abs = ref_cong_abs.quantile(quantile)
-    significance_bitmask = (quantile_cong_abs > cong_significance_cutoff)
+    significance_bitmask = quantile_cong_abs > cong_significance_cutoff
     quantile_cong_abs = quantile_cong_abs.where(significance_bitmask).dropna()
     congested_indices = list(quantile_cong_abs.index)
-    
+
     # Ensure that we have enough congested branches to upgrade
     num_congested = len(quantile_cong_abs)
     if num_congested < upgrade_n:
-        err_msg = 'not enough congested branches: '
-        err_msg += f'{upgrade_n} desired, but only {num_congested} congested.'
+        err_msg = "not enough congested branches: "
+        err_msg += f"{upgrade_n} desired, but only {num_congested} congested."
         raise ValueError(err_msg)
 
     # Calculate selected metric for congested branches
-    if method in ('MW', 'MWmiles'):
+    if method in ("MW", "MWmiles"):
         ref_grid = ref_scenario.state.get_grid()
-        branch_ratings = ref_grid.branch.loc[congested_indices, 'rateA']
+        branch_ratings = ref_grid.branch.loc[congested_indices, "rateA"]
         # Calculate 'original' branch capacities, since that's our increment
         ref_ct = ref_scenario.state.get_ct()
         try:
-            branch_ct = ref_ct['branch']['branch_id']
+            branch_ct = ref_ct["branch"]["branch_id"]
         except KeyError:
             branch_ct = {}
         branch_prev_scaling = pd.Series(
-            {i: (branch_ct[i] if i in branch_ct else 1)
-            for i in congested_indices})
+            {i: (branch_ct[i] if i in branch_ct else 1) for i in congested_indices}
+        )
         branch_ratings = branch_ratings / branch_prev_scaling
-    if method == 'MW':
+    if method == "MW":
         branch_metric = quantile_cong_abs / branch_ratings
-    elif method == 'MWmiles':
+    elif method == "MWmiles":
         branch_lengths = ref_grid.branch.loc[congested_indices].apply(
-            lambda x: haversine(
-                (x.from_lat, x.from_lon), (x.to_lat, x.to_lon)),
-            axis=1)
+            lambda x: haversine((x.from_lat, x.from_lon), (x.to_lat, x.to_lon)), axis=1
+        )
         # Replace zero-length branches by designated default, don't divide by 0
         branch_lengths = branch_lengths.replace(0, value=zero_length_value)
         branch_metric = quantile_cong_abs / (branch_ratings * branch_lengths)
     else:
         # By process of elimination, all that's left is method 'branches'
         branch_metric = quantile_cong_abs
-    
+
     # Sort by our metric, grab indexes for N largest values (tail), return
     ranked_branches = set(branch_metric.sort_values().tail(upgrade_n).index)
     return ranked_branches
@@ -257,19 +265,19 @@ def _increment_branch_scaling(change_table, branch_ids, ref_scenario, value=1):
     """
     # Ensure that ct has proper keys
     ct = change_table.ct
-    if 'branch' not in ct:
-        ct['branch'] = {}
-    if 'branch_id' not in ct['branch']:
-        ct['branch']['branch_id'] = {}
-    branch_scaling = ct['branch']['branch_id']
-    
+    if "branch" not in ct:
+        ct["branch"] = {}
+    if "branch_id" not in ct["branch"]:
+        ct["branch"]["branch_id"] = {}
+    branch_scaling = ct["branch"]["branch_id"]
+
     # Get previous scenario's branch scaling
     ref_ct = ref_scenario.state.get_ct()
     try:
-        ref_branch_scaling = ref_ct['branch']['branch_id'].copy()
+        ref_branch_scaling = ref_ct["branch"]["branch_id"].copy()
     except KeyError:
         ref_branch_scaling = {}
-    
+
     # Determine the final ref branch scaling after incrementing
     for branch in branch_ids:
         if branch in ref_branch_scaling:

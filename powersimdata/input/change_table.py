@@ -2,13 +2,26 @@ import os
 import pickle
 
 from powersimdata.design.transmission import (
-    scale_congested_mesh_branches, scale_renewable_stubs)
+    scale_congested_mesh_branches,
+    scale_renewable_stubs,
+)
 from powersimdata.utility import const
 from powersimdata.utility.distance import haversine
 
 
-_resources = ('coal', 'dfo', 'geothermal', 'ng', 'nuclear',
-              'hydro', 'solar', 'wind', 'wind_offshore', 'biomass', 'other')
+_resources = (
+    "coal",
+    "dfo",
+    "geothermal",
+    "ng",
+    "nuclear",
+    "hydro",
+    "solar",
+    "wind",
+    "wind_offshore",
+    "biomass",
+    "other",
+)
 
 
 class ChangeTable(object):
@@ -87,7 +100,7 @@ class ChangeTable(object):
             print("-----------------------")
             for p in possible:
                 print(p)
-            raise ValueError('Invalid resource: %s' % resource)
+            raise ValueError("Invalid resource: %s" % resource)
 
     def _check_zone(self, zone_name):
         """Checks load zones.
@@ -103,8 +116,7 @@ class ChangeTable(object):
                 print("--------------")
                 for p in possible:
                     print(p)
-                raise ValueError('Invalid load zone(s): %s' %
-                                 " | ".join(zone_name))
+                raise ValueError("Invalid load zone(s): %s" % " | ".join(zone_name))
 
     def _get_plant_id(self, zone_name, resource):
         """Returns the plant identification number of all the generators
@@ -117,9 +129,11 @@ class ChangeTable(object):
         """
         plant_id = []
         try:
-            plant_id = self.grid.plant.groupby(
-                ['zone_name', 'type']).get_group(
-                (zone_name, resource)).index.values.tolist()
+            plant_id = (
+                self.grid.plant.groupby(["zone_name", "type"])
+                .get_group((zone_name, resource))
+                .index.values.tolist()
+            )
         except KeyError:
             pass
 
@@ -131,19 +145,19 @@ class ChangeTable(object):
         :param set which: set of strings of what to clear from self.ct
         """
         if which is None:
-            which = {'all'}
+            which = {"all"}
         if isinstance(which, str):
             which = {which}
-        allowed = {'all', 'branch', 'dcline', 'plant', 'storage'}
+        allowed = {"all", "branch", "dcline", "plant", "storage"}
         if not which <= allowed:
-            raise ValueError('which must contain only: ' + ' | '.join(allowed))
-        if 'all' in which:
+            raise ValueError("which must contain only: " + " | ".join(allowed))
+        if "all" in which:
             self.ct = {}
             return
-        for key in ('branch', 'dcline', 'storage'):
+        for key in ("branch", "dcline", "storage"):
             if key in which:
                 del self.ct[key]
-        if 'plant' in which:
+        if "plant" in which:
             for r in _resources:
                 if r in self.ct:
                     del self.ct[r]
@@ -171,19 +185,21 @@ class ChangeTable(object):
                 except ValueError:
                     self.ct.pop(resource)
                     return
-                if 'zone_id' not in self.ct[resource]:
-                    self.ct[resource]['zone_id'] = {}
+                if "zone_id" not in self.ct[resource]:
+                    self.ct[resource]["zone_id"] = {}
                 for z in zone_name.keys():
                     if len(self._get_plant_id(z, resource)) == 0:
                         print("No %s plants in %s." % (resource, z))
                     else:
-                        self.ct[resource]['zone_id'][
-                            self.grid.zone2id[z]] = zone_name[z]
-                if len(self.ct[resource]['zone_id']) == 0:
+                        self.ct[resource]["zone_id"][self.grid.zone2id[z]] = zone_name[
+                            z
+                        ]
+                if len(self.ct[resource]["zone_id"]) == 0:
                     self.ct.pop(resource)
             if plant_id is not None:
-                plant_id_interconnect = set(self.grid.plant.groupby(
-                    'type').get_group(resource).index)
+                plant_id_interconnect = set(
+                    self.grid.plant.groupby("type").get_group(resource).index
+                )
                 diff = set(plant_id.keys()).difference(plant_id_interconnect)
                 if len(diff) != 0:
                     print("No %s plant(s) with the following id:" % resource)
@@ -192,10 +208,10 @@ class ChangeTable(object):
                     self.ct.pop(resource)
                     return
                 else:
-                    if 'plant_id' not in self.ct[resource]:
-                        self.ct[resource]['plant_id'] = {}
+                    if "plant_id" not in self.ct[resource]:
+                        self.ct[resource]["plant_id"] = {}
                     for i in plant_id.keys():
-                        self.ct[resource]['plant_id'][i] = plant_id[i]
+                        self.ct[resource]["plant_id"][i] = plant_id[i]
         else:
             print("<zone> and/or <plant_id> must be set. Return.")
             return
@@ -212,19 +228,18 @@ class ChangeTable(object):
             scaling factor for the increase/decrease in capacity of the line(s).
         """
         if bool(zone_name) or bool(branch_id) is True:
-            if 'branch' not in self.ct:
-                self.ct['branch'] = {}
+            if "branch" not in self.ct:
+                self.ct["branch"] = {}
             if zone_name is not None:
                 try:
                     self._check_zone(list(zone_name.keys()))
                 except ValueError:
-                    self.ct.pop('branch')
+                    self.ct.pop("branch")
                     return
-                if 'zone_id' not in self.ct['branch']:
-                    self.ct['branch']['zone_id'] = {}
+                if "zone_id" not in self.ct["branch"]:
+                    self.ct["branch"]["zone_id"] = {}
                 for z in zone_name.keys():
-                    self.ct['branch']['zone_id'][
-                        self.grid.zone2id[z]] = zone_name[z]
+                    self.ct["branch"]["zone_id"][self.grid.zone2id[z]] = zone_name[z]
             if branch_id is not None:
                 branch_id_interconnect = set(self.grid.branch.index)
                 diff = set(branch_id.keys()).difference(branch_id_interconnect)
@@ -232,13 +247,13 @@ class ChangeTable(object):
                     print("No branch with the following id:")
                     for i in list(diff):
                         print(i)
-                    self.ct.pop('branch')
+                    self.ct.pop("branch")
                     return
                 else:
-                    if 'branch_id' not in self.ct['branch']:
-                        self.ct['branch']['branch_id'] = {}
+                    if "branch_id" not in self.ct["branch"]:
+                        self.ct["branch"]["branch_id"] = {}
                     for i in branch_id.keys():
-                        self.ct['branch']['branch_id'][i] = branch_id[i]
+                        self.ct["branch"]["branch_id"][i] = branch_id[i]
         else:
             print("<zone> and/or <branch_id> must be set. Return.")
             return
@@ -250,20 +265,20 @@ class ChangeTable(object):
             (are) the id of the line(s) and the associated value is the scaling
             factor for the increase/decrease in capacity of the line(s).
         """
-        if 'dcline' not in self.ct:
-            self.ct['dcline'] = {}
+        if "dcline" not in self.ct:
+            self.ct["dcline"] = {}
         diff = set(dcline_id.keys()).difference(set(self.grid.dcline.index))
         if len(diff) != 0:
             print("No dc line with the following id:")
             for i in list(diff):
                 print(i)
-            self.ct.pop('dcline')
+            self.ct.pop("dcline")
             return
         else:
-            if 'dcline_id' not in self.ct['dcline']:
-                self.ct['dcline']['dcline_id'] = {}
+            if "dcline_id" not in self.ct["dcline"]:
+                self.ct["dcline"]["dcline_id"] = {}
             for i in dcline_id.keys():
-                self.ct['dcline']['dcline_id'][i] = dcline_id[i]
+                self.ct["dcline"]["dcline_id"][i] = dcline_id[i]
 
     def scale_demand(self, zone_name=None, zone_id=None):
         """Sets load scaling factor in change table.
@@ -276,19 +291,18 @@ class ChangeTable(object):
             the scaling factor for the increase/decrease in load.
         """
         if bool(zone_name) or bool(zone_id) is True:
-            if 'demand' not in self.ct:
-                self.ct['demand'] = {}
-            if 'zone_id' not in self.ct['demand']:
-                self.ct['demand']['zone_id'] = {}
+            if "demand" not in self.ct:
+                self.ct["demand"] = {}
+            if "zone_id" not in self.ct["demand"]:
+                self.ct["demand"]["zone_id"] = {}
             if zone_name is not None:
                 try:
                     self._check_zone(list(zone_name.keys()))
                 except ValueError:
-                    self.ct.pop('demand')
+                    self.ct.pop("demand")
                     return
                 for z in zone_name.keys():
-                    self.ct['demand']['zone_id'][
-                        self.grid.zone2id[z]] = zone_name[z]
+                    self.ct["demand"]["zone_id"][self.grid.zone2id[z]] = zone_name[z]
             if zone_id is not None:
                 zone_id_interconnect = set(self.grid.id2zone.keys())
                 diff = set(zone_id.keys()).difference(zone_id_interconnect)
@@ -296,11 +310,11 @@ class ChangeTable(object):
                     print("No zone with the following id:")
                     for i in list(diff):
                         print(i)
-                    self.ct.pop('demand')
+                    self.ct.pop("demand")
                     return
                 else:
                     for i in zone_id.keys():
-                        self.ct['demand']['zone_id'][i] = zone_id[i]
+                        self.ct["demand"]["zone_id"][i] = zone_id[i]
         else:
             print("<zone> and/or <zone_id> must be set. Return.")
             return
@@ -312,7 +326,7 @@ class ChangeTable(object):
             :mod:`powersimdata.design.transmission` module.
         """
         scale_renewable_stubs(self, **kwargs)
-    
+
     def scale_congested_mesh_branches(self, ref_scenario, **kwargs):
         """Scales congested branches based on previous scenario results.
         :param powersimdata.scenario.scenario.Scenario ref_scenario: the
@@ -329,21 +343,21 @@ class ChangeTable(object):
         :param dict bus_id: key(s) for the id of bus(es), value(s) is (are)
             capacity of the energy storage system in MW.
         """
-        if 'storage' not in self.ct:
-            self.ct['storage'] = {}
+        if "storage" not in self.ct:
+            self.ct["storage"] = {}
 
         diff = set(bus_id.keys()).difference(set(self.grid.bus.index))
         if len(diff) != 0:
             print("No bus with the following id:")
             for i in list(diff):
                 print(i)
-            self.ct.pop('storage')
+            self.ct.pop("storage")
             return
         else:
-            if 'bus_id' not in self.ct['storage']:
-                self.ct['storage']['bus_id'] = {}
+            if "bus_id" not in self.ct["storage"]:
+                self.ct["storage"]["bus_id"] = {}
             for i in bus_id.keys():
-                self.ct['storage']['bus_id'][i] = bus_id[i]
+                self.ct["storage"]["bus_id"][i] = bus_id[i]
 
     def add_dcline(self, dcline):
         """Adds HVDC line(s).
@@ -352,10 +366,10 @@ class ChangeTable(object):
             the information needed to create a new dcline.
         """
         if not isinstance(dcline, list):
-            print('Argument enclosing new HVDC line(s) must be a list')
+            print("Argument enclosing new HVDC line(s) must be a list")
             return
 
-        self._add_line('new_dcline', dcline)
+        self._add_line("new_dcline", dcline)
 
     def add_branch(self, branch):
         """Sets parameters of new branch(es) in change table.
@@ -364,10 +378,10 @@ class ChangeTable(object):
             the information needed to create a new branch.
         """
         if not isinstance(branch, list):
-            print('Argument enclosing new AC line(s) must be a list')
+            print("Argument enclosing new AC line(s) must be a list")
             return
 
-        self._add_line('new_branch', branch)
+        self._add_line("new_branch", branch)
 
     def _add_line(self, key, info):
         """Handles line(s) addition in change table.
@@ -379,50 +393,55 @@ class ChangeTable(object):
         if key not in self.ct:
             self.ct[key] = []
 
-        required_info = ['capacity', 'from_bus_id', 'to_bus_id']
+        required_info = ["capacity", "from_bus_id", "to_bus_id"]
         for i, line in enumerate(info):
             if not isinstance(line, dict):
-                print('Each entry must be a dictionary')
+                print("Each entry must be a dictionary")
                 self.ct.pop(key)
                 return
             elif set(line.keys()) != set(required_info):
-                print('Dictionary must have %s as keys'
-                      % ' | '.join(required_info))
+                print("Dictionary must have %s as keys" % " | ".join(required_info))
                 self.ct.pop(key)
                 return
             else:
-                start = line['from_bus_id']
-                end = line['to_bus_id']
+                start = line["from_bus_id"]
+                end = line["to_bus_id"]
                 if start not in self.grid.bus.index:
-                    print("No bus with the following id for line #%d: %d" %
-                          (i + 1, start))
+                    print(
+                        "No bus with the following id for line #%d: %d" % (i + 1, start)
+                    )
                     self.ct.pop(key)
                     return
                 elif end not in self.grid.bus.index:
-                    print("No bus with the following id for line #%d: %d" %
-                          (i + 1, end))
+                    print(
+                        "No bus with the following id for line #%d: %d" % (i + 1, end)
+                    )
                     self.ct.pop(key)
                     return
                 elif start == end:
                     print("buses of line #%d must be different" % (i + 1))
                     self.ct.pop(key)
                     return
-                elif line['capacity'] < 0:
+                elif line["capacity"] < 0:
                     print("capacity of line #%d must be positive" % (i + 1))
                     self.ct.pop(key)
                     return
-                elif key == 'new_branch' and \
-                        self.grid.bus.interconnect[start] != \
-                        self.grid.bus.interconnect[end]:
-                    print("Buses of line #%d must be in same interconnect"
-                          % (i + 1))
+                elif (
+                    key == "new_branch"
+                    and self.grid.bus.interconnect[start]
+                    != self.grid.bus.interconnect[end]
+                ):
+                    print("Buses of line #%d must be in same interconnect" % (i + 1))
                     self.ct.pop(key)
                     return
 
-                elif haversine((self.grid.bus.lat[start],
-                                self.grid.bus.lon[start]),
-                               (self.grid.bus.lat[end],
-                                self.grid.bus.lon[end])) == 0:
+                elif (
+                    haversine(
+                        (self.grid.bus.lat[start], self.grid.bus.lon[start]),
+                        (self.grid.bus.lat[end], self.grid.bus.lon[end]),
+                    )
+                    == 0
+                ):
                     print("Distance between buses of line #%d is 0" % (i + 1))
                     self.ct.pop(key)
                     return

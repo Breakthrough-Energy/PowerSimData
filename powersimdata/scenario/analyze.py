@@ -17,8 +17,8 @@ class Analyze(State):
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     """
 
-    name = 'analyze'
-    allowed = ['delete']
+    name = "analyze"
+    allowed = ["delete"]
 
     def __init__(self, scenario):
         """Constructor.
@@ -27,8 +27,10 @@ class Analyze(State):
         self._scenario_info = scenario.info
         self._ssh = scenario.ssh
 
-        print("SCENARIO: %s | %s\n" % (self._scenario_info['plan'],
-                                       self._scenario_info['name']))
+        print(
+            "SCENARIO: %s | %s\n"
+            % (self._scenario_info["plan"], self._scenario_info["name"])
+        )
         print("--> State\n%s" % self.name)
 
         self._set_ct_and_grid()
@@ -38,13 +40,15 @@ class Analyze(State):
 
         """
         input_data = InputData(self._ssh)
-        grid_mat_path = input_data.get_data(self._scenario_info['id'], 'grid')
-        self.grid = Grid(interconnect=[None],
-                         source=grid_mat_path,
-                         engine=self._scenario_info['engine'])
+        grid_mat_path = input_data.get_data(self._scenario_info["id"], "grid")
+        self.grid = Grid(
+            interconnect=[None],
+            source=grid_mat_path,
+            engine=self._scenario_info["engine"],
+        )
 
-        if self._scenario_info['change_table'] == 'Yes':
-            self.ct = input_data.get_data(self._scenario_info['id'], 'ct')
+        if self._scenario_info["change_table"] == "Yes":
+            self.ct = input_data.get_data(self._scenario_info["id"], "ct")
         else:
             self.ct = {}
 
@@ -67,13 +71,13 @@ class Analyze(State):
         :return: (*dict*) -- keys are the interval number and the values are
             the decrease in percent (%) applied to the original demand profile.
         """
-        field = self._scenario_info['infeasibilities']
-        if field == '':
+        field = self._scenario_info["infeasibilities"]
+        if field == "":
             return None
         else:
             infeasibilities = {}
-            for entry in field.split('_'):
-                item = entry.split(':')
+            for entry in field.split("_"):
+                item = entry.split(":")
                 infeasibilities[int(item[0])] = int(item[1])
             return infeasibilities
 
@@ -85,14 +89,20 @@ class Analyze(State):
         if infeasibilities is None:
             print("There are no infeasibilities.")
         else:
-            dates = pd.date_range(start=self._scenario_info['start_date'],
-                                  end=self._scenario_info['end_date'],
-                                  freq=self._scenario_info['interval'])
+            dates = pd.date_range(
+                start=self._scenario_info["start_date"],
+                end=self._scenario_info["end_date"],
+                freq=self._scenario_info["interval"],
+            )
             for key, value in infeasibilities.items():
-                print("demand in %s - %s interval has been reduced by %d%%" %
-                      (dates[key],
-                       dates[key]+pd.Timedelta(self._scenario_info['interval']),
-                       value))
+                print(
+                    "demand in %s - %s interval has been reduced by %d%%"
+                    % (
+                        dates[key],
+                        dates[key] + pd.Timedelta(self._scenario_info["interval"]),
+                        value,
+                    )
+                )
 
     def get_pg(self):
         """Returns PG data frame.
@@ -100,8 +110,7 @@ class Analyze(State):
         :return: (*pandas.DataFrame*) -- data frame of power generated.
         """
         output_data = OutputData(self._ssh)
-        pg = output_data.get_data(self._scenario_info['id'],
-                                  'PG')
+        pg = output_data.get_data(self._scenario_info["id"], "PG")
 
         return pg
 
@@ -111,8 +120,7 @@ class Analyze(State):
         :return: (*pandas.DataFrame*) -- data frame of power flow.
         """
         output_data = OutputData(self._ssh)
-        pf = output_data.get_data(self._scenario_info['id'],
-                                  'PF')
+        pf = output_data.get_data(self._scenario_info["id"], "PF")
 
         return pf
 
@@ -122,8 +130,7 @@ class Analyze(State):
         :return: (*pandas.DataFrame*) -- data frame of power flow on DC line(s).
         """
         output_data = OutputData(self._ssh)
-        dcline_pf = output_data.get_data(self._scenario_info['id'],
-                                         'PF_DCLINE')
+        dcline_pf = output_data.get_data(self._scenario_info["id"], "PF_DCLINE")
 
         return dcline_pf
 
@@ -133,30 +140,27 @@ class Analyze(State):
         :return: (*pandas.DataFrame*) -- data frame of nodal prices.
         """
         output_data = OutputData(self._ssh)
-        lmp = output_data.get_data(self._scenario_info['id'],
-                                   'LMP')
+        lmp = output_data.get_data(self._scenario_info["id"], "LMP")
 
         return lmp
-    
+
     def get_congu(self):
         """Returns CONGU data frame. CONGU = Congestion, Upper flow limit
 
         :return: (*pandas.DataFrame*) -- data frame of branch flow mu (upper).
         """
         output_data = OutputData(self._ssh)
-        congu = output_data.get_data(self._scenario_info['id'],
-                                     'CONGU')
+        congu = output_data.get_data(self._scenario_info["id"], "CONGU")
 
         return congu
-    
+
     def get_congl(self):
         """Returns CONGL data frame. CONGL = Congestion, Lower flow limit
 
         :return: (*pandas.DataFrame*) -- data frame of branch flow mu (lower).
         """
         output_data = OutputData(self._ssh)
-        congl = output_data.get_data(self._scenario_info['id'],
-                                     'CONGL')
+        congl = output_data.get_data(self._scenario_info["id"], "CONGL")
 
         return congl
 
@@ -167,8 +171,7 @@ class Analyze(State):
             the branch id as indices an the averaged CONGL and CONGU as columns.
         """
         output_data = OutputData(self._ssh)
-        mean_cong = output_data.get_data(self._scenario_info['id'],
-                                         'AVERAGED_CONG')
+        mean_cong = output_data.get_data(self._scenario_info["id"], "AVERAGED_CONG")
 
         return mean_cong
 
@@ -179,8 +182,7 @@ class Analyze(State):
             storage units.
         """
         output_data = OutputData(self._ssh)
-        storage_pg = output_data.get_data(self._scenario_info['id'],
-                                          'STORAGE_PG')
+        storage_pg = output_data.get_data(self._scenario_info["id"], "STORAGE_PG")
 
         return storage_pg
 
@@ -190,8 +192,7 @@ class Analyze(State):
         :return: (*pandas.DataFrame*) -- data frame of energy state of charge.
         """
         output_data = OutputData(self._ssh)
-        storage_e = output_data.get_data(self._scenario_info['id'],
-                                         'STORAGE_E')
+        storage_e = output_data.get_data(self._scenario_info["id"], "STORAGE_E")
 
         return storage_e
 
@@ -200,21 +201,22 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of load shed (hour x bus).
         """
-        scenario_id = self._scenario_info['id']
+        scenario_id = self._scenario_info["id"]
         try:
             # It's either on the server or in our local ScenarioData folder
             output_data = OutputData(self._ssh)
-            load_shed = output_data.get_data(scenario_id, 'LOAD_SHED')
+            load_shed = output_data.get_data(scenario_id, "LOAD_SHED")
         except FileNotFoundError:
             # The scenario was run without load_shed, and we must construct it
             grid = self.get_grid()
             infeasibilities = self._parse_infeasibilities()
             load_shed = construct_load_shed(
-                self._ssh, self._scenario_info, grid, infeasibilities)
+                self._ssh, self._scenario_info, grid, infeasibilities
+            )
 
-            filename = scenario_id + '_LOAD_SHED.pkl'
+            filename = scenario_id + "_LOAD_SHED.pkl"
             filepath = os.path.join(const.LOCAL_DIR, filename)
-            with open(filepath, 'wb') as f:
+            with open(filepath, "wb") as f:
                 pickle.dump(load_shed, f)
 
         return load_shed
@@ -240,16 +242,19 @@ class Analyze(State):
             potentially modified one be returned.
         :return: (*pandas.DataFrame*) -- data frame of demand.
         """
-        profile = ScaleProfile(self._ssh, self._scenario_info['id'],
-                               self.get_grid(), self.get_ct())
+        profile = ScaleProfile(
+            self._ssh, self._scenario_info["id"], self.get_grid(), self.get_ct()
+        )
         demand = profile.get_demand()
 
         if original:
             return demand
         else:
-            dates = pd.date_range(start=self._scenario_info['start_date'],
-                                  end=self._scenario_info['end_date'],
-                                  freq=self._scenario_info['interval'])
+            dates = pd.date_range(
+                start=self._scenario_info["start_date"],
+                end=self._scenario_info["end_date"],
+                freq=self._scenario_info["interval"],
+            )
             infeasibilities = self._parse_infeasibilities()
             if infeasibilities is None:
                 print("No infeasibilities. Return original profile.")
@@ -257,9 +262,12 @@ class Analyze(State):
             else:
                 for key, value in infeasibilities.items():
                     start = dates[key]
-                    end = dates[key] + pd.Timedelta(
-                        self._scenario_info['interval']) - pd.Timedelta('1H')
-                    demand[start:end] *= 1. - value / 100.
+                    end = (
+                        dates[key]
+                        + pd.Timedelta(self._scenario_info["interval"])
+                        - pd.Timedelta("1H")
+                    )
+                    demand[start:end] *= 1.0 - value / 100.0
                 return demand
 
     def get_hydro(self):
@@ -267,8 +275,9 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of hydro power output.
         """
-        profile = ScaleProfile(self._ssh, self._scenario_info['id'],
-                               self.get_grid(), self.get_ct())
+        profile = ScaleProfile(
+            self._ssh, self._scenario_info["id"], self.get_grid(), self.get_ct()
+        )
         return profile.get_hydro()
 
     def get_solar(self):
@@ -276,8 +285,9 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of solar power output.
         """
-        profile = ScaleProfile(self._ssh, self._scenario_info['id'],
-                               self.get_grid(), self.get_ct())
+        profile = ScaleProfile(
+            self._ssh, self._scenario_info["id"], self.get_grid(), self.get_ct()
+        )
         return profile.get_solar()
 
     def get_wind(self):
@@ -285,6 +295,7 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of wind power output.
         """
-        profile = ScaleProfile(self._ssh, self._scenario_info['id'],
-                               self.get_grid(), self.get_ct())
+        profile = ScaleProfile(
+            self._ssh, self._scenario_info["id"], self.get_grid(), self.get_ct()
+        )
         return profile.get_wind()

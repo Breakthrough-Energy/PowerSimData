@@ -21,7 +21,8 @@ class Create(State):
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     """
-    name = 'create'
+
+    name = "create"
     allowed = []
 
     def __init__(self, scenario):
@@ -32,20 +33,23 @@ class Create(State):
         self.grid = None
         self.ct = None
         self._scenario_status = None
-        self._scenario_info = OrderedDict([
-            ('plan', ''),
-            ('name', ''),
-            ('state', 'create'),
-            ('interconnect', ''),
-            ('base_demand', ''),
-            ('base_hydro', ''),
-            ('base_solar', ''),
-            ('base_wind', ''),
-            ('change_table', ''),
-            ('start_date', ''),
-            ('end_date', ''),
-            ('interval', ''),
-            ('engine', '')])
+        self._scenario_info = OrderedDict(
+            [
+                ("plan", ""),
+                ("name", ""),
+                ("state", "create"),
+                ("interconnect", ""),
+                ("base_demand", ""),
+                ("base_hydro", ""),
+                ("base_solar", ""),
+                ("base_wind", ""),
+                ("change_table", ""),
+                ("start_date", ""),
+                ("end_date", ""),
+                ("interval", ""),
+                ("engine", ""),
+            ]
+        )
         self._ssh = scenario.ssh
 
     def _update_scenario_info(self):
@@ -53,32 +57,37 @@ class Create(State):
 
         """
         if self.builder is not None:
-            self._scenario_info['plan'] = self.builder.plan_name
-            self._scenario_info['name'] = self.builder.scenario_name
-            self._scenario_info['start_date'] = self.builder.start_date
-            self._scenario_info['end_date'] = self.builder.end_date
-            self._scenario_info['interval'] = self.builder.interval
-            self._scenario_info['base_demand'] = self.builder.demand
-            self._scenario_info['base_hydro'] = self.builder.hydro
-            self._scenario_info['base_solar'] = self.builder.solar
-            self._scenario_info['base_wind'] = self.builder.wind
-            self._scenario_info['engine'] = self.builder.engine
+            self._scenario_info["plan"] = self.builder.plan_name
+            self._scenario_info["name"] = self.builder.scenario_name
+            self._scenario_info["start_date"] = self.builder.start_date
+            self._scenario_info["end_date"] = self.builder.end_date
+            self._scenario_info["interval"] = self.builder.interval
+            self._scenario_info["base_demand"] = self.builder.demand
+            self._scenario_info["base_hydro"] = self.builder.hydro
+            self._scenario_info["base_solar"] = self.builder.solar
+            self._scenario_info["base_wind"] = self.builder.wind
+            self._scenario_info["engine"] = self.builder.engine
             if bool(self.builder.change_table.ct):
-                self._scenario_info['change_table'] = 'Yes'
+                self._scenario_info["change_table"] = "Yes"
             else:
-                self._scenario_info['change_table'] = 'No'
+                self._scenario_info["change_table"] = "No"
 
     def _generate_scenario_id(self):
         """Generates scenario id.
 
         """
         print("--> Generating scenario id")
-        script = ("(flock -e 200; \
+        script = (
+            "(flock -e 200; \
                    id=$(awk -F',' 'END{print $1+1}' %s); \
                    echo $id, >> %s; \
-                   echo $id) 200>%s" %
-                  (const.SCENARIO_LIST, const.SCENARIO_LIST,
-                   posixpath.join(const.HOME_DIR, 'scenario.lockfile')))
+                   echo $id) 200>%s"
+            % (
+                const.SCENARIO_LIST,
+                const.SCENARIO_LIST,
+                posixpath.join(const.HOME_DIR, "scenario.lockfile"),
+            )
+        )
 
         stdin, stdout, stderr = self._ssh.exec_command(script)
         err_message = stderr.readlines()
@@ -86,8 +95,8 @@ class Create(State):
             raise IOError(err_message[0].strip())
         else:
             scenario_id = stdout.readlines()[0].splitlines()[0]
-            self._scenario_info['id'] = scenario_id
-            self._scenario_info.move_to_end('id', last=False)
+            self._scenario_info["id"] = scenario_id
+            self._scenario_info.move_to_end("id", last=False)
 
     def _add_entry_in_scenario_list(self):
         """Adds scenario to the scenario list file on server.
@@ -97,8 +106,10 @@ class Create(State):
         print("--> Adding entry in scenario table on server")
         entry = ",".join(self._scenario_info.values())
         options = "-F, -v INPLACE_SUFFIX=.bak -i inplace"
-        program = ("'{for(i=1; i<=NF; i++){if($1==%s) $0=\"%s\"}};1'" %
-                   (self._scenario_info['id'], entry))
+        program = "'{for(i=1; i<=NF; i++){if($1==%s) $0=\"%s\"}};1'" % (
+            self._scenario_info["id"],
+            entry,
+        )
         command = "awk %s %s %s" % (options, program, const.SCENARIO_LIST)
 
         stdin, stdout, stderr = self._ssh.exec_command(command)
@@ -111,23 +122,23 @@ class Create(State):
         :raises IOError: if execute list file on server cannot be updated.
         """
         print("--> Adding entry in execute table on server\n")
-        entry = "%s,created" % self._scenario_info['id']
+        entry = "%s,created" % self._scenario_info["id"]
         command = "echo %s >> %s" % (entry, const.EXECUTE_LIST)
 
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to update %s on server" % const.EXECUTE_LIST)
-        self._scenario_status = 'created'
-        self.allowed.append('execute')
+        self._scenario_status = "created"
+        self.allowed.append("execute")
 
     def _upload_change_table(self):
         """Uploads change table to server.
 
         """
         print("--> Writing change table on local machine")
-        self.builder.change_table.write(self._scenario_info['id'])
+        self.builder.change_table.write(self._scenario_info["id"])
         print("--> Uploading change table to server")
-        file_name = self._scenario_info['id'] + '_ct.pkl'
+        file_name = self._scenario_info["id"] + "_ct.pkl"
         upload(self._ssh, file_name, const.LOCAL_DIR, const.INPUT_DIR)
         print("--> Deleting change table on local machine")
         os.remove(os.path.join(const.LOCAL_DIR, file_name))
@@ -137,10 +148,9 @@ class Create(State):
 
         """
         print("--> Creating links to base profiles on server")
-        for p in ['demand', 'hydro', 'solar', 'wind']:
-            version = self._scenario_info['base_' + p]
-            self.builder.profile.create_link(self._scenario_info['id'],
-                                             p, version)
+        for p in ["demand", "hydro", "solar", "wind"]:
+            version = self._scenario_info["base_" + p]
+            self.builder.profile.create_link(self._scenario_info["id"], p, version)
 
     def get_ct(self):
         """Returns change table.
@@ -151,7 +161,7 @@ class Create(State):
         if self.builder is not None:
             return copy.deepcopy(self.builder.change_table.ct)
         else:
-            raise Exception('Call set_builder method first')
+            raise Exception("Call set_builder method first")
 
     def get_grid(self):
         """Returns Grid.
@@ -162,7 +172,7 @@ class Create(State):
         if self.builder is not None:
             return self.builder.get_grid()
         else:
-            raise Exception('Call set_builder method first')
+            raise Exception("Call set_builder method first")
 
     def create_scenario(self):
         """Creates scenario.
@@ -181,15 +191,17 @@ class Create(State):
                 print(field)
             return
         else:
-            print("CREATING SCENARIO: %s | %s \n" %
-                  (self._scenario_info['plan'], self._scenario_info['name']))
+            print(
+                "CREATING SCENARIO: %s | %s \n"
+                % (self._scenario_info["plan"], self._scenario_info["name"])
+            )
 
             # Generate scenario id
             self._generate_scenario_id()
             # Add missing information
-            self._scenario_info['state'] = 'execute'
-            self._scenario_info['runtime'] = ''
-            self._scenario_info['infeasibilities'] = ''
+            self._scenario_info["state"] = "execute"
+            self._scenario_info["runtime"] = ""
+            self._scenario_info["infeasibilities"] = ""
             self.grid = self.builder.get_grid()
             self.ct = self.builder.change_table.ct
             # Add scenario to scenario list file on server
@@ -202,8 +214,9 @@ class Create(State):
             # Add scenario to execute list file on server
             self._add_entry_in_execute_list()
 
-            print("SCENARIO SUCCESSFULLY CREATED WITH ID #%s" %
-                  self._scenario_info['id'])
+            print(
+                "SCENARIO SUCCESSFULLY CREATED WITH ID #%s" % self._scenario_info["id"]
+            )
             self.switch(Execute)
 
     def print_scenario_info(self):
@@ -226,38 +239,38 @@ class Create(State):
         check_interconnect(interconnect)
         n = len(interconnect)
         if n == 1:
-            if 'Eastern' in interconnect:
+            if "Eastern" in interconnect:
                 self.builder = Eastern(self._ssh)
-            elif 'Texas' in interconnect:
+            elif "Texas" in interconnect:
                 self.builder = Texas(self._ssh)
-            elif 'Western' in interconnect:
+            elif "Western" in interconnect:
                 self.builder = Western(self._ssh)
-            elif 'USA' in interconnect:
+            elif "USA" in interconnect:
                 self.builder = USA(self._ssh)
         elif n == 2:
-            if 'Western' in interconnect and 'Texas' in interconnect:
+            if "Western" in interconnect and "Texas" in interconnect:
                 self.builder = TexasWestern(self._ssh)
-            elif 'Eastern' in interconnect and 'Texas' in interconnect:
-                print('Not implemented yet')
+            elif "Eastern" in interconnect and "Texas" in interconnect:
+                print("Not implemented yet")
                 return
-            elif 'Eastern' in interconnect and 'Western' in interconnect:
-                print('Not implemented yet')
+            elif "Eastern" in interconnect and "Western" in interconnect:
+                print("Not implemented yet")
                 return
         print("--> Summary")
         print("# Existing study")
         if self.builder.existing.empty:
-            print('Nothing yet')
+            print("Nothing yet")
         else:
             plan = [p for p in self.builder.existing.plan.unique()]
             print("%s" % " | ".join(plan))
 
         print("# Available profiles")
-        for p in ['demand', 'hydro', 'solar', 'wind']:
+        for p in ["demand", "hydro", "solar", "wind"]:
             possible = self.builder.get_base_profile(p)
             if len(possible) != 0:
                 print("%s: %s" % (p, " | ".join(possible)))
 
-        self._scenario_info['interconnect'] = self.builder.name
+        self._scenario_info["interconnect"] = self.builder.name
 
 
 class _Builder(object):
@@ -270,17 +283,17 @@ class _Builder(object):
     change_table = None
     profile = None
     existing = None
-    plan_name = ''
-    scenario_name = ''
-    start_date = '2016-01-01 00:00:00'
-    end_date = '2016-12-31 23:00:00'
-    interval = '144H'
-    demand = ''
-    hydro = ''
-    solar = ''
-    wind = ''
-    engine = 'REISE'
-    name = 'builder'
+    plan_name = ""
+    scenario_name = ""
+    start_date = "2016-01-01 00:00:00"
+    end_date = "2016-12-31 23:00:00"
+    interval = "144H"
+    demand = ""
+    hydro = ""
+    solar = ""
+    wind = ""
+    engine = "REISE"
+    name = "builder"
 
     def set_name(self, plan_name, scenario_name):
         """Sets scenario name.
@@ -293,8 +306,9 @@ class _Builder(object):
         if plan_name in self.existing.plan.tolist():
             scenario = self.existing[self.existing.plan == plan_name]
             if scenario_name in scenario.name.tolist():
-                raise Exception('Combination %s - %s already exists' %
-                                (plan_name, scenario_name))
+                raise Exception(
+                    "Combination %s - %s already exists" % (plan_name, scenario_name)
+                )
         self.plan_name = plan_name
         self.scenario_name = scenario_name
 
@@ -308,19 +322,19 @@ class _Builder(object):
         :raises Exception: if start date, end date or interval are not properly
             defined.
         """
-        min_ts = pd.Timestamp('2016-01-01 00:00:00')
-        max_ts = pd.Timestamp('2016-12-31 23:00:00')
+        min_ts = pd.Timestamp("2016-01-01 00:00:00")
+        max_ts = pd.Timestamp("2016-12-31 23:00:00")
 
         start_ts = pd.Timestamp(start_date)
         end_ts = pd.Timestamp(end_date)
-        hours = (end_ts - start_ts) / np.timedelta64(1, 'h') + 1
+        hours = (end_ts - start_ts) / np.timedelta64(1, "h") + 1
         if start_ts > end_ts:
             raise Exception("start_date > end_date")
         elif start_ts < min_ts or start_ts >= max_ts:
             raise Exception("start_date not in [%s,%s[" % (min_ts, max_ts))
         elif end_ts <= min_ts or end_ts > max_ts:
             raise Exception("end_date not in ]%s,%s]" % (min_ts, max_ts))
-        elif hours % int(interval.split('H', 1)[0]) != 0:
+        elif hours % int(interval.split("H", 1)[0]) != 0:
             raise Exception("Incorrect interval for start and end dates")
         else:
             self.start_date = start_date
@@ -344,31 +358,32 @@ class _Builder(object):
         """
         possible = self.get_base_profile(kind)
         if len(possible) == 0:
-            raise Exception("No %s profile available in %s" %
-                            (kind, " + ".join(self.interconnect)))
+            raise Exception(
+                "No %s profile available in %s" % (kind, " + ".join(self.interconnect))
+            )
         elif version in possible:
-            if kind == 'demand':
+            if kind == "demand":
                 self.demand = version
-            if kind == 'hydro':
+            if kind == "hydro":
                 self.hydro = version
-            if kind == 'solar':
+            if kind == "solar":
                 self.solar = version
-            if kind == 'wind':
+            if kind == "wind":
                 self.wind = version
         else:
-            raise Exception("Available %s profiles for %s: %s" %
-                            (kind,
-                             " + ".join(self.interconnect),
-                             " | ".join(possible)))
+            raise Exception(
+                "Available %s profiles for %s: %s"
+                % (kind, " + ".join(self.interconnect), " | ".join(possible))
+            )
 
     def set_engine(self, engine):
         """Sets simulation engine to be used for scenarion.
 
         :param str engine: simulation engine
         """
-        possible = ['REISE', 'REISE.jl']
+        possible = ["REISE", "REISE.jl"]
         if engine not in possible:
-            print('Available engines: %s' % ' | '.join(possible))
+            print("Available engines: %s" % " | ".join(possible))
             return
         else:
             self.engine = engine
@@ -400,10 +415,11 @@ class Eastern(_Builder):
     """Builder for Eastern interconnect.
 
     """
-    name = 'Eastern'
+
+    name = "Eastern"
 
     def __init__(self, ssh_client):
-        self.interconnect = ['Eastern']
+        self.interconnect = ["Eastern"]
         self.base_grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
         self.change_table = ChangeTable(self.base_grid)
@@ -416,13 +432,14 @@ class Texas(_Builder):
     """Builder for Texas interconnect.
 
     """
-    name = 'Texas'
+
+    name = "Texas"
 
     def __init__(self, ssh_client):
         """Constructor.
 
         """
-        self.interconnect = ['Texas']
+        self.interconnect = ["Texas"]
         self.base_grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
         self.change_table = ChangeTable(self.base_grid)
@@ -436,13 +453,14 @@ class Western(_Builder):
 
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
-    name = 'Western'
+
+    name = "Western"
 
     def __init__(self, ssh_client):
         """Constructor.
 
         """
-        self.interconnect = ['Western']
+        self.interconnect = ["Western"]
         self.base_grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
         self.change_table = ChangeTable(self.base_grid)
@@ -456,10 +474,11 @@ class TexasWestern(_Builder):
 
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
-    name = 'Texas_Western'
+
+    name = "Texas_Western"
 
     def __init__(self, ssh_client):
-        self.interconnect = ['Texas', 'Western']
+        self.interconnect = ["Texas", "Western"]
         self.base_grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
         self.change_table = ChangeTable(self.base_grid)
@@ -472,30 +491,33 @@ class TexasEastern(_Builder):
     """Builder for Texas + Eastern interconnect.
 
     """
-    name = 'Texas_Eastern'
+
+    name = "Texas_Eastern"
 
     def __init__(self):
-        self.interconnect = ['Texas', 'Eastern']
+        self.interconnect = ["Texas", "Eastern"]
 
 
 class EasternWestern(_Builder):
     """Builder for Eastern + Western interconnect.
 
     """
-    name = 'Eastern_Western'
+
+    name = "Eastern_Western"
 
     def __init__(self):
-        self.interconnect = ['Eastern', 'Western']
+        self.interconnect = ["Eastern", "Western"]
 
 
 class USA(_Builder):
     """Builder for USA interconnect.
 
     """
-    name = 'USA'
+
+    name = "USA"
 
     def __init__(self, ssh_client):
-        self.interconnect = ['USA']
+        self.interconnect = ["USA"]
         self.base_grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
         self.change_table = ChangeTable(self.base_grid)
@@ -524,20 +546,19 @@ class CSV(object):
         :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         :return: (*list*) -- available version for selected profile kind.
         """
-        possible = ['demand', 'hydro', 'solar', 'wind']
+        possible = ["demand", "hydro", "solar", "wind"]
         if kind not in possible:
             raise NameError("Choose from %s" % " | ".join(possible))
 
-        available = interconnect2name(self.interconnect) + '_' + kind + '_*'
+        available = interconnect2name(self.interconnect) + "_" + kind + "_*"
         query = posixpath.join(const.BASE_PROFILE_DIR, available)
         stdin, stdout, stderr = self._ssh.exec_command("ls " + query)
         if len(stderr.readlines()) != 0:
             print("No %s profiles available." % kind)
             possible = []
         else:
-            filename = [os.path.basename(line.rstrip())
-                        for line in stdout.readlines()]
-            possible = [f[f.rfind('_') + 1:-4] for f in filename]
+            filename = [os.path.basename(line.rstrip()) for line in stdout.readlines()]
+            possible = [f[f.rfind("_") + 1 : -4] for f in filename]
         return possible
 
     def create_link(self, scenario_id, kind, version):
@@ -549,11 +570,13 @@ class CSV(object):
         :raises IOError: if symbolic link cannot be created.
         """
         interconnect = interconnect2name(self.interconnect)
-        source = interconnect + '_' + kind + '_' + version + '.csv'
-        target = scenario_id + '_' + kind + '.csv'
+        source = interconnect + "_" + kind + "_" + version + ".csv"
+        target = scenario_id + "_" + kind + ".csv"
 
-        command = "ln -s %s %s" % (const.BASE_PROFILE_DIR + '/' + source,
-                                   const.INPUT_DIR + '/' + target)
+        command = "ln -s %s %s" % (
+            const.BASE_PROFILE_DIR + "/" + source,
+            const.INPUT_DIR + "/" + target,
+        )
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to create link to %s profile." % kind)

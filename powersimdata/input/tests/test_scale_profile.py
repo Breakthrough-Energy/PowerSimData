@@ -6,7 +6,7 @@ from powersimdata.input.scaler import ScaleProfile
 
 @pytest.fixture(scope="module")
 def scenario():
-    return Scenario('519')
+    return Scenario("519")
 
 
 @pytest.fixture(scope="module")
@@ -31,10 +31,9 @@ def demand_from_scenario(scenario):
 
 @pytest.fixture(scope="module")
 def scaled_profile(scenario):
-    return ScaleProfile(scenario.ssh,
-                        scenario.info['id'],
-                        scenario.state.grid,
-                        scenario.state.ct)
+    return ScaleProfile(
+        scenario.ssh, scenario.info["id"], scenario.state.grid, scenario.state.ct
+    )
 
 
 @pytest.mark.integration

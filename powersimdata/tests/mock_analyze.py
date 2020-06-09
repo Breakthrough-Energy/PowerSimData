@@ -3,8 +3,19 @@ from powersimdata.tests.mock_grid import MockGrid
 
 
 class MockAnalyze:
-    def __init__(self, grid_attrs, congl=None, congu=None, ct=None,
-                 demand=None, lmp=None, pg=None, solar=None, wind=None, hydro=None):
+    def __init__(
+        self,
+        grid_attrs,
+        congl=None,
+        congu=None,
+        ct=None,
+        demand=None,
+        lmp=None,
+        pg=None,
+        solar=None,
+        wind=None,
+        hydro=None,
+    ):
         """Constructor.
 
         :param dict grid_attrs: fields to be added to grid.
@@ -28,7 +39,7 @@ class MockAnalyze:
         self.solar = solar
         self.wind = wind
         self.hydro = hydro
-        self.name = 'analyze'
+        self.name = "analyze"
 
     def get_congl(self):
         """Get congl.

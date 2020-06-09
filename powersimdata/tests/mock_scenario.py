@@ -10,7 +10,7 @@ class MockScenario:
         :param pandas.DataFrame pg: dummy pg
         """
         self.state = MockAnalyze(grid_attrs, **kwargs)
-        self.info = {id: '111'}
+        self.info = {id: "111"}
 
     @property
     def __class__(self):

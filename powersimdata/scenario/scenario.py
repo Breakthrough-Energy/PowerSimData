@@ -1,7 +1,9 @@
 from powersimdata.utility import const
-from powersimdata.utility.transfer_data import (setup_server_connection,
-                                                get_scenario_table,
-                                                get_execute_table)
+from powersimdata.utility.transfer_data import (
+    setup_server_connection,
+    get_scenario_table,
+    get_execute_table,
+)
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create
 from powersimdata.scenario.execute import Execute
@@ -9,7 +11,8 @@ from powersimdata.scenario.execute import Execute
 from collections import OrderedDict
 
 import pandas as pd
-pd.set_option('display.max_colwidth', -1)
+
+pd.set_option("display.max_colwidth", -1)
 
 
 class Scenario(object):
@@ -23,7 +26,7 @@ class Scenario(object):
 
         """
         if not isinstance(descriptor, str):
-            raise TypeError('Descriptor must be a string')
+            raise TypeError("Descriptor must be a string")
 
         self.ssh = setup_server_connection()
         if not descriptor:
@@ -31,11 +34,11 @@ class Scenario(object):
         else:
             self._set_info(descriptor)
             try:
-                state = self.info['state']
+                state = self.info["state"]
                 self._set_status()
-                if state == 'execute':
+                if state == "execute":
                     self.state = Execute(self)
-                elif state == 'analyze':
+                elif state == "analyze":
                     self.state = Analyze(self)
             except AttributeError:
                 return
@@ -55,10 +58,22 @@ class Scenario(object):
             print("------------------")
             print("SCENARIO NOT FOUND")
             print("------------------")
-            print(table.to_string(index=False, justify='center',
-                                  columns=['id', 'plan', 'name', 'interconnect',
-                                           'base_demand', 'base_hydro',
-                                           'base_solar', 'base_wind']))
+            print(
+                table.to_string(
+                    index=False,
+                    justify="center",
+                    columns=[
+                        "id",
+                        "plan",
+                        "name",
+                        "interconnect",
+                        "base_demand",
+                        "base_hydro",
+                        "base_solar",
+                        "base_wind",
+                    ],
+                )
+            )
 
         try:
             int(descriptor)
@@ -66,26 +81,35 @@ class Scenario(object):
             if scenario.shape[0] == 0:
                 not_found_message(scenario_table)
             else:
-                self.info = scenario.to_dict('records', into=OrderedDict)[0]
+                self.info = scenario.to_dict("records", into=OrderedDict)[0]
             return
         except ValueError:
             scenario = scenario_table[scenario_table.name == descriptor]
             if scenario.shape[0] == 0:
                 not_found_message(scenario_table)
             elif scenario.shape[0] == 1:
-                self.info = scenario.to_dict('records', into=OrderedDict)[0]
+                self.info = scenario.to_dict("records", into=OrderedDict)[0]
             elif scenario.shape[0] > 1:
                 print("-----------------------")
                 print("MULTIPLE SCENARIO FOUND")
                 print("-----------------------")
-                print('Use id to access scenario')
-                print(scenario_table.to_string(index=False, justify='center',
-                                               columns=['id', 'plan', 'name',
-                                                        'interconnect',
-                                                        'base_demand',
-                                                        'base_hydro',
-                                                        'base_solar',
-                                                        'base_wind']))
+                print("Use id to access scenario")
+                print(
+                    scenario_table.to_string(
+                        index=False,
+                        justify="center",
+                        columns=[
+                            "id",
+                            "plan",
+                            "name",
+                            "interconnect",
+                            "base_demand",
+                            "base_hydro",
+                            "base_solar",
+                            "base_wind",
+                        ],
+                    )
+                )
             return
 
     def _set_status(self):
@@ -95,10 +119,9 @@ class Scenario(object):
         """
         execute_table = get_execute_table(self.ssh)
 
-        status = execute_table[execute_table.id == self.info['id']]
+        status = execute_table[execute_table.id == self.info["id"]]
         if status.shape[0] == 0:
-            raise Exception("Scenario not found in %s on server" %
-                            const.EXECUTE_LIST)
+            raise Exception("Scenario not found in %s on server" % const.EXECUTE_LIST)
         elif status.shape[0] == 1:
             self.status = status.status.values[0]
 
