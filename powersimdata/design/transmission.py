@@ -1,5 +1,7 @@
 import pandas as pd
 
+from powersimdata.design.scenario_info import area_to_loadzone
+from powersimdata.input.grid import Grid
 from powersimdata.utility.distance import haversine
 
 
@@ -139,6 +141,51 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=False):
 
     if not inplace:
         return ct
+
+
+def get_branches_by_area(grid, area_names, method='either'):
+    """Given a set of area names, select branches which are in one or more of
+    these areas.
+
+    :param powersimdata.input.grid.Grid grid: Grid to query for topology.
+    :param list/set/tuple area_names: an iterable of area names, used to look
+        up zone names via powersimdata.design.scenario_info.area_to_loadzone.
+    :param str method: whether to include branches which span zones. Options:
+        - 'internal': only select branches which are to/from the same area.
+        - 'bridging': only select branches which connect area to another.
+        - 'either': select branches if either end is in area. Equivalent to
+        'internal' + 'bridging'.
+    :raise TypeError: if area_names not a list/set/tuple, or method not a str.
+    :raise ValueError: if not all elements of area_names are strings, if method
+        is not one of the recognized methods.
+    :return: (*set*) -- a set of branch IDs.
+    """
+    allowed_methods = {'internal', 'bridging', 'either'}
+    if not isinstance(grid, Grid):
+        raise TypeError('grid must be a Grid object')
+    if not isinstance(area_names, (list, set, tuple)):
+        raise TypeError('area_names must be list, set, or tuple')
+    if not all([isinstance(a, str) for a in area_names]):
+        raise ValueError('each value in area_names must be a str')
+    if not isinstance(method, str):
+        raise TypeError('method must be a str')
+    if method not in allowed_methods:
+        raise ValueError('valid methods are: ' + ' | '.join(allowed_methods))
+
+    branch = grid.branch
+    selected_branches = set()
+    for a in area_names:
+        load_zone_names = area_to_loadzone(grid, a)
+        to_bus_in_area = branch.to_zone_name.isin(load_zone_names)
+        from_bus_in_area = branch.from_zone_name.isin(load_zone_names)
+        if method in ('internal', 'either'):
+            internal_branches = branch[to_bus_in_area & from_bus_in_area].index
+            selected_branches |= set(internal_branches)
+        if method in ('bridging', 'either'):
+            bridging_branches = branch[to_bus_in_area ^ from_bus_in_area].index
+            selected_branches |= set(bridging_branches)
+
+    return selected_branches
 
 
 def scale_congested_mesh_branches(change_table, ref_scenario, upgrade_n=100,
