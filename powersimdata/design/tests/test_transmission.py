@@ -389,7 +389,8 @@ class TestScaleRenewableStubs(unittest.TestCase):
     def test_empty_ct_inplace_true(self):
         expected_ct = {'branch': {'branch_id': {103: (11/8), 107: (21/15)}}}
         change_table = MockChangeTable(mock_grid)
-        returned = scale_renewable_stubs(change_table, verbose=False)
+        returned = scale_renewable_stubs(
+            change_table, inplace=True, verbose=False)
         self.assertIsNone(returned)
         self.assertEqual(change_table.ct, expected_ct)
 
