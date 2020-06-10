@@ -4,8 +4,8 @@ from powersimdata.utility.transfer_data import (get_execute_table,
                                                 upload)
 from powersimdata.input.profiles import InputData
 from powersimdata.input.grid import Grid
-from powersimdata.input.scaler import TransformGrid
-from powersimdata.input.scaler import TransformProfile
+from powersimdata.input.transform_grid import TransformGrid
+from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.scenario.state import State
 
 from collections import OrderedDict
@@ -368,7 +368,7 @@ class SimulationInput(object):
     def _prepare_scaled_profile(self, kind, profile):
         """Loads, scales and writes on local machine a base profile.
 
-        :param powersimdata.input.scaler.TransformProfile profile: a
+        :param powersimdata.input.transform_profile.TransformProfile profile: a
             TransformProfile object
         :param str kind: one of *'hydro'*, *'solar'*, *'wind'* or *'demand'*.
         """

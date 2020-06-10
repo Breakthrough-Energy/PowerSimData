@@ -4,7 +4,8 @@ from powersimdata.input.profiles import InputData
 from powersimdata.utility.transfer_data import setup_server_connection
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.scenario.scenario import Scenario
-from powersimdata.input.scaler import TransformProfile, TransformGrid
+from powersimdata.input.transform_grid import TransformGrid
+from powersimdata.input.transform_profile import TransformProfile
 
 ssh_client = setup_server_connection()
 input_data = InputData(ssh_client)

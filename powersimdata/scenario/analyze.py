@@ -1,6 +1,6 @@
 from powersimdata.utility import const
 from powersimdata.input.grid import Grid
-from powersimdata.input.scaler import TransformProfile
+from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.input.profiles import InputData
 from powersimdata.output.profiles import OutputData, construct_load_shed
 from powersimdata.scenario.state import State

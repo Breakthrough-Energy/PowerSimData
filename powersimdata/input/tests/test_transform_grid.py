@@ -3,7 +3,7 @@ import numpy as np
 
 from powersimdata.input.grid import Grid
 from powersimdata.input.change_table import ChangeTable
-from powersimdata.input.scaler import TransformGrid
+from powersimdata.input.transform_grid import TransformGrid
 
 grid = Grid(['USA'])
 ct = ChangeTable(grid)
