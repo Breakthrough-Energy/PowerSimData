@@ -110,5 +110,5 @@ class MockGrid(object):
 
     @property
     def __class__(self):
-        """If anyone asks, I'm a ChangeTable object!"""
+        """If anyone asks, I'm a Grid object!"""
         return Grid
