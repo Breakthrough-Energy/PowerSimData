@@ -9,8 +9,8 @@ from powersimdata.tests.mock_change_table import MockChangeTable
 from powersimdata.design.transmission import (
     _find_branches_connected_to_bus, _find_first_degree_branches,
     _find_stub_degree, _find_capacity_at_bus, scale_renewable_stubs,
-    _identify_mesh_branch_upgrades, _construct_composite_allow_list,
-    _increment_branch_scaling)
+    get_branches_by_area, _identify_mesh_branch_upgrades,
+    _construct_composite_allow_list, _increment_branch_scaling)
 
 """
 This test network is a ring, with several spurs coming off of it. The central
@@ -107,6 +107,76 @@ class TestStubTopologyHelpers(unittest.TestCase):
     def test_find_capacity_at_bus_7_solar_ng(self):
         gen_capacity = _find_capacity_at_bus(self.plant, 7, ('solar', 'ng'))
         self.assertEqual(gen_capacity, 40)
+
+
+class TestGetBranchesByArea(unittest.TestCase):
+
+    def setUp(self):
+        self.grid = mock_grid
+        from_zone_name = [self.grid.bus.loc[i, 'zone_id']
+                          for i in self.grid.branch.from_bus_id]
+        to_zone_name = [self.grid.bus.loc[i, 'zone_id']
+                        for i in self.grid.branch.to_bus_id]
+        self.grid.branch['from_zone_name'] = from_zone_name
+        self.grid.branch['to_zone_name'] = to_zone_name
+        self.grid.id2zone = {1: 'W', 2: 'E'}
+        self.grid.zone2id = {'W': 1, 'E': 2}
+
+    def test_internal_W(self):
+        branch_idxs = get_branches_by_area(self.grid, {'W'}, method='internal')
+        assert branch_idxs == {106, 107, 108}
+
+    def test_internal_E(self):
+        branch_idxs = get_branches_by_area(self.grid, ['E'], method='internal')
+        assert branch_idxs == {102, 103, 104}
+
+    def test_internal_EW(self):
+        branch_idxs = get_branches_by_area(self.grid, ('W', 'E'), 'internal')
+        assert branch_idxs == {102, 103, 104, 106, 107, 108}
+
+    def test_bridging_W(self):
+        branch_idxs = get_branches_by_area(self.grid, ['W'], method='bridging')
+        assert branch_idxs == {101, 105}
+
+    def test_bridging_E(self):
+        branch_idxs = get_branches_by_area(self.grid, {'E'}, method='bridging')
+        assert branch_idxs == {101, 105}
+
+    def test_bridging_EW(self):
+        branch_idxs = get_branches_by_area(self.grid, ('W', 'E'), 'bridging')
+        assert branch_idxs == {101, 105}
+
+    def test_either_W(self):
+        branch_idxs = get_branches_by_area(self.grid, ('W',), method='either')
+        assert branch_idxs == {101, 105, 106, 107, 108}
+
+    def test_either_E(self):
+        branch_idxs = get_branches_by_area(self.grid, ('E',), method='either')
+        assert branch_idxs == {101, 102, 103, 104, 105}
+
+    def test_either_EW(self):
+        branch_idxs = get_branches_by_area(self.grid, ('E', 'W'), 'either')
+        assert branch_idxs == {101, 102, 103, 104, 105, 106, 107, 108}
+
+    def test_bad_grid_type(self):
+        with self.assertRaises(TypeError):
+            get_branches_by_area('grid', ['E'], 'either')
+
+    def test_bad_area_type(self):
+        with self.assertRaises(TypeError):
+            get_branches_by_area(self.grid, 'E', 'either')
+
+    def test_bad_area_name(self):
+        with self.assertRaises(ValueError):
+            get_branches_by_area(self.grid, ['S'], 'internal')
+
+    def test_bad_method_type(self):
+        with self.assertRaises(TypeError):
+            get_branches_by_area(self.grid, ['E'], ['bridging'])
+
+    def test_bad_method_name(self):
+        with self.assertRaises(ValueError):
+            get_branches_by_area(self.grid, ['E'], 'purple')
 
 
 class TestIdentifyMesh(unittest.TestCase):
