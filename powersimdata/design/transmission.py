@@ -1,6 +1,7 @@
-import numpy as np
 import pandas as pd
 
+from powersimdata.design.scenario_info import area_to_loadzone
+from powersimdata.input.grid import Grid
 from powersimdata.utility.distance import haversine
 
 
@@ -128,7 +129,7 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=False):
                     gen_scale_factor *= ct[r]['plant_id'][p]
                 except KeyError:
                     pass
-                if (gen_scale_factor == 1) and (verbose == True):
+                if verbose and gen_scale_factor == 1:
                     print(f'no scaling factor for {r}, {zone_id}, plant {p}')
                 for b in stub_branches:
                     if ref_branch.loc[b, 'rateA'] == 0:
@@ -142,7 +143,53 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=False):
         return ct
 
 
+def get_branches_by_area(grid, area_names, method='either'):
+    """Given a set of area names, select branches which are in one or more of
+    these areas.
+
+    :param powersimdata.input.grid.Grid grid: Grid to query for topology.
+    :param list/set/tuple area_names: an iterable of area names, used to look
+        up zone names via powersimdata.design.scenario_info.area_to_loadzone.
+    :param str method: whether to include branches which span zones. Options:
+        - 'internal': only select branches which are to/from the same area.
+        - 'bridging': only select branches which connect area to another.
+        - 'either': select branches if either end is in area. Equivalent to
+        'internal' + 'bridging'.
+    :raise TypeError: if area_names not a list/set/tuple, or method not a str.
+    :raise ValueError: if not all elements of area_names are strings, if method
+        is not one of the recognized methods.
+    :return: (*set*) -- a set of branch IDs.
+    """
+    allowed_methods = {'internal', 'bridging', 'either'}
+    if not isinstance(grid, Grid):
+        raise TypeError('grid must be a Grid object')
+    if not isinstance(area_names, (list, set, tuple)):
+        raise TypeError('area_names must be list, set, or tuple')
+    if not all([isinstance(a, str) for a in area_names]):
+        raise ValueError('each value in area_names must be a str')
+    if not isinstance(method, str):
+        raise TypeError('method must be a str')
+    if method not in allowed_methods:
+        raise ValueError('valid methods are: ' + ' | '.join(allowed_methods))
+
+    branch = grid.branch
+    selected_branches = set()
+    for a in area_names:
+        load_zone_names = area_to_loadzone(grid, a)
+        to_bus_in_area = branch.to_zone_name.isin(load_zone_names)
+        from_bus_in_area = branch.from_zone_name.isin(load_zone_names)
+        if method in ('internal', 'either'):
+            internal_branches = branch[to_bus_in_area & from_bus_in_area].index
+            selected_branches |= set(internal_branches)
+        if method in ('bridging', 'either'):
+            bridging_branches = branch[to_bus_in_area ^ from_bus_in_area].index
+            selected_branches |= set(bridging_branches)
+
+    return selected_branches
+
+
 def scale_congested_mesh_branches(change_table, ref_scenario, upgrade_n=100,
+                                  allow_list=None, deny_list=None,
                                   quantile=0.95, increment=1,
                                   method='branches'):
     """Use a reference scenario as a baseline for branch scaling, and further
@@ -153,6 +200,8 @@ def scale_congested_mesh_branches(change_table, ref_scenario, upgrade_n=100,
     :param powersimdata.scenario.scenario.Scenario ref_scenario: the reference
         scenario to be used in bootstrapping the branch scaling factors.
     :param int upgrade_n: the number of branches to upgrade.
+    :param list/set/tuple/None allow_list: only select from these branch IDs.
+    :param list/set/tuple/None deny_list: never select any of these branch IDs.
     :param float quantile: the quantile to use to judge branch congestion.
     :param [float/int] increment: branch increment, relative to original
         capacity.
@@ -163,46 +212,59 @@ def scale_congested_mesh_branches(change_table, ref_scenario, upgrade_n=100,
     # We need a Scenario object that's in Analyze state to get congu/congl,
     # but we can't import Scenario to check against, because circular imports.
     branches_to_upgrade = _identify_mesh_branch_upgrades(
-        ref_scenario, upgrade_n=upgrade_n, quantile=quantile, method=method)
+        ref_scenario, upgrade_n=upgrade_n, quantile=quantile, method=method,
+        allow_list=allow_list, deny_list=deny_list)
     _increment_branch_scaling(
         change_table, branches_to_upgrade, ref_scenario, value=increment)
 
 
 def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95,
+                                   allow_list=None, deny_list=None,
                                    method='branches'):
     """Identify the N most congested branches in a previous scenario, based on
     the quantile value of congestion duals. A quantile value of 0.95 obtains
     the branches with highest dual in top 5% of hours.
-    
+
     :param powersimdata.scenario.scenario.Scenario ref_scenario: the reference
         scenario to be used to determine the most congested branches.
     :param int upgrade_n: the number of branches to upgrade.
     :param float quantile: the quantile to use to judge branch congestion.
+    :param list/set/tuple/None allow_list: only select from these branch IDs.
+    :param list/set/tuple/None deny_list: never select any of these branch IDs.
     :param str method: prioritization method: 'branches', 'MW', or 'MWmiles'.
+    :raises ValueError: if 'method' not recognized, or not enough branches to
+        upgrade.
     :return: (*set*) -- A set of ints representing branch indices.
     """
     
+    # How big does a dual value have to be to be 'real' and not barrier cruft?
+    cong_significance_cutoff = 1e-6     # $/MWh
+    # If we rank by MW-miles, what 'length' do we give to zero-length branches?
+    zero_length_value = 1       # miles
+
     # Validate method input
     allowed_methods = ('branches', 'MW', 'MWmiles')
     if method not in allowed_methods:
         allowed_list = ', '.join(allowed_methods)
         raise ValueError(f'method must be one of: {allowed_list}')
 
-    # How big does a dual value have to be to be 'real' and not barrier cruft?
-    cong_significance_cutoff = 1e-6     # $/MWh
-    # If we rank by MW-miles, what 'length' do we give to zero-length branches?
-    zero_length_value = 1       # miles
-    
     # Get raw congestion dual values, add them
     rss = ref_scenario.state
     ref_cong_abs = rss.get_congu() + rss.get_congl()
-    
-    # Parse 2-D array to vector of quantile values, filter out non-significant
+    all_branches = set(ref_cong_abs.columns.tolist())
+    # Create validated composite allow list
+    composite_allow_list = _construct_composite_allow_list(
+        all_branches, allow_list, deny_list)
+
+    # Parse 2-D array to vector of quantile values
     quantile_cong_abs = ref_cong_abs.quantile(quantile)
+    # Filter out insignificant values
     significance_bitmask = (quantile_cong_abs > cong_significance_cutoff)
     quantile_cong_abs = quantile_cong_abs.where(significance_bitmask).dropna()
+    # Filter based on composite allow list
+    quantile_cong_abs = quantile_cong_abs.filter(items=composite_allow_list)
     congested_indices = list(quantile_cong_abs.index)
-    
+
     # Ensure that we have enough congested branches to upgrade
     num_congested = len(quantile_cong_abs)
     if num_congested < upgrade_n:
@@ -222,7 +284,7 @@ def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95,
             branch_ct = {}
         branch_prev_scaling = pd.Series(
             {i: (branch_ct[i] if i in branch_ct else 1)
-            for i in congested_indices})
+             for i in congested_indices})
         branch_ratings = branch_ratings / branch_prev_scaling
     if method == 'MW':
         branch_metric = quantile_cong_abs / branch_ratings
@@ -237,10 +299,51 @@ def _identify_mesh_branch_upgrades(ref_scenario, upgrade_n=100, quantile=0.95,
     else:
         # By process of elimination, all that's left is method 'branches'
         branch_metric = quantile_cong_abs
-    
+
     # Sort by our metric, grab indexes for N largest values (tail), return
     ranked_branches = set(branch_metric.sort_values().tail(upgrade_n).index)
     return ranked_branches
+
+
+def _construct_composite_allow_list(valid_branches, allow_list, deny_list):
+    """Create a set of allowed branches by selecting from a set of all branches
+    either only from the allow list, or everything but the deny list.
+
+    :param list/set/tuple valid_branches: List of valid branches to select.
+    :param list/set/tuple/None allow_list: only select from these branch IDs.
+    :param list/set/tuple/None deny_list: never select any of these branch IDs.
+    :raises ValueError: if both allow_list and deny_list are specified, or if
+        allow_list or deny_list contain IDs not in valid_branches.
+    :raises TypeError: if valid_branches, allow_list, or deny_list are bad type.
+    :return (*set*) -- set of allowed branch IDs.
+    """
+    # Validate valid_branches/allow_list/deny_list Type and combination
+    iterable_types = (list, set, tuple)
+    if not isinstance(valid_branches, iterable_types):
+        raise TypeError('allow_list must be a list, tuple, set, or None')
+    if not ((allow_list is None) or isinstance(allow_list, iterable_types)):
+        raise TypeError('allow_list must be a list, tuple, set, or None')
+    if not ((deny_list is None) or isinstance(deny_list, iterable_types)):
+        raise TypeError('deny_list must be a list, tuple, set, or None')
+    if (allow_list is not None) and (deny_list is not None):
+        raise ValueError('Cannot specify both allow_list and deny_list')
+
+    # Validate allow_list (if not None), create set of allowed branch IDs
+    if allow_list is None:
+        composite_allow_list = set(valid_branches)
+    else:
+        if set(allow_list) <= set(valid_branches):
+            composite_allow_list = set(allow_list)
+        else:
+            raise ValueError('allow_list contains branch IDs not in results')
+    # Validate deny_list (if not None), subtract from set of allowed branch IDs
+    if deny_list is not None:
+        if set(deny_list) <= set(valid_branches):
+            composite_allow_list -= set(deny_list)
+        else:
+            raise ValueError('deny_list contains branch IDs not in results')
+
+    return composite_allow_list
 
 
 def _increment_branch_scaling(change_table, branch_ids, ref_scenario, value=1):

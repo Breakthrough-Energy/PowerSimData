@@ -9,7 +9,8 @@ from powersimdata.tests.mock_change_table import MockChangeTable
 from powersimdata.design.transmission import (
     _find_branches_connected_to_bus, _find_first_degree_branches,
     _find_stub_degree, _find_capacity_at_bus, scale_renewable_stubs,
-    _identify_mesh_branch_upgrades, _increment_branch_scaling)
+    get_branches_by_area, _identify_mesh_branch_upgrades,
+    _construct_composite_allow_list, _increment_branch_scaling)
 
 """
 This test network is a ring, with several spurs coming off of it. The central
@@ -108,6 +109,76 @@ class TestStubTopologyHelpers(unittest.TestCase):
         self.assertEqual(gen_capacity, 40)
 
 
+class TestGetBranchesByArea(unittest.TestCase):
+
+    def setUp(self):
+        self.grid = mock_grid
+        from_zone_name = [self.grid.bus.loc[i, 'zone_id']
+                          for i in self.grid.branch.from_bus_id]
+        to_zone_name = [self.grid.bus.loc[i, 'zone_id']
+                        for i in self.grid.branch.to_bus_id]
+        self.grid.branch['from_zone_name'] = from_zone_name
+        self.grid.branch['to_zone_name'] = to_zone_name
+        self.grid.id2zone = {1: 'W', 2: 'E'}
+        self.grid.zone2id = {'W': 1, 'E': 2}
+
+    def test_internal_W(self):
+        branch_idxs = get_branches_by_area(self.grid, {'W'}, method='internal')
+        assert branch_idxs == {106, 107, 108}
+
+    def test_internal_E(self):
+        branch_idxs = get_branches_by_area(self.grid, ['E'], method='internal')
+        assert branch_idxs == {102, 103, 104}
+
+    def test_internal_EW(self):
+        branch_idxs = get_branches_by_area(self.grid, ('W', 'E'), 'internal')
+        assert branch_idxs == {102, 103, 104, 106, 107, 108}
+
+    def test_bridging_W(self):
+        branch_idxs = get_branches_by_area(self.grid, ['W'], method='bridging')
+        assert branch_idxs == {101, 105}
+
+    def test_bridging_E(self):
+        branch_idxs = get_branches_by_area(self.grid, {'E'}, method='bridging')
+        assert branch_idxs == {101, 105}
+
+    def test_bridging_EW(self):
+        branch_idxs = get_branches_by_area(self.grid, ('W', 'E'), 'bridging')
+        assert branch_idxs == {101, 105}
+
+    def test_either_W(self):
+        branch_idxs = get_branches_by_area(self.grid, ('W',), method='either')
+        assert branch_idxs == {101, 105, 106, 107, 108}
+
+    def test_either_E(self):
+        branch_idxs = get_branches_by_area(self.grid, ('E',), method='either')
+        assert branch_idxs == {101, 102, 103, 104, 105}
+
+    def test_either_EW(self):
+        branch_idxs = get_branches_by_area(self.grid, ('E', 'W'), 'either')
+        assert branch_idxs == {101, 102, 103, 104, 105, 106, 107, 108}
+
+    def test_bad_grid_type(self):
+        with self.assertRaises(TypeError):
+            get_branches_by_area('grid', ['E'], 'either')
+
+    def test_bad_area_type(self):
+        with self.assertRaises(TypeError):
+            get_branches_by_area(self.grid, 'E', 'either')
+
+    def test_bad_area_name(self):
+        with self.assertRaises(ValueError):
+            get_branches_by_area(self.grid, ['S'], 'internal')
+
+    def test_bad_method_type(self):
+        with self.assertRaises(TypeError):
+            get_branches_by_area(self.grid, ['E'], ['bridging'])
+
+    def test_bad_method_name(self):
+        with self.assertRaises(ValueError):
+            get_branches_by_area(self.grid, ['E'], 'purple')
+
+
 class TestIdentifyMesh(unittest.TestCase):
 
     def setUp(self):
@@ -190,6 +261,20 @@ class TestIdentifyMesh(unittest.TestCase):
             self.mock_scenario, upgrade_n=2, method='MW')
         self.assertEqual(branches, expected_return)
 
+    def test_identify_mesh_MW_n_2_allow_list(self):
+        expected_return = {102, 103}
+        allow_list = {102, 103, 104}
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, upgrade_n=2, method='MW', allow_list=allow_list)
+        self.assertEqual(branches, expected_return)
+
+    def test_identify_mesh_MW_n_2_deny_list(self):
+        expected_return = {101, 103}
+        deny_list = [102, 105]
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, upgrade_n=2, method='MW', deny_list=deny_list)
+        self.assertEqual(branches, expected_return)
+
     def test_identify_mesh_MW_n_1(self):
         expected_return = {102}
         branches = _identify_mesh_branch_upgrades(
@@ -223,6 +308,57 @@ class TestIdentifyMesh(unittest.TestCase):
             self.mock_scenario, upgrade_n=2, method='does not exist')
 
 
+class TestConstructCompositeAllowlist(unittest.TestCase):
+
+    def test_none_none(self):
+        branch_list = mock_branch['branch_id'].copy()
+        composite_allow_list = _construct_composite_allow_list(
+            mock_branch['branch_id'].copy(), None, None)
+        self.assertEqual(composite_allow_list, set(branch_list))
+
+    def test_good_allow_list(self):
+        allow_list = list(range(101, 105))
+        composite_allow_list = _construct_composite_allow_list(
+            mock_branch['branch_id'].copy(), allow_list, None)
+        self.assertEqual(composite_allow_list, set(allow_list))
+
+    def test_good_deny_list(self):
+        deny_list = list(range(101, 105))
+        composite_allow_list = _construct_composite_allow_list(
+            mock_branch['branch_id'].copy(), None, deny_list)
+        self.assertEqual(composite_allow_list, set(range(105, 109)))
+
+    def test_allow_list_and_deny_list_failure(self):
+        allow_list = list(range(101, 105))
+        deny_list = list(range(105, 109))
+        with self.assertRaises(ValueError):
+            _construct_composite_allow_list(
+                mock_branch['branch_id'].copy(), allow_list, deny_list)
+
+    def test_bad_allow_list_value(self):
+        allow_list = list(range(101, 110))
+        with self.assertRaises(ValueError):
+            _construct_composite_allow_list(
+                mock_branch['branch_id'].copy(), allow_list, None)
+
+    def test_bad_allow_list_entry_type(self):
+        allow_list = [str(i) for i in range(101, 105)]
+        with self.assertRaises(ValueError):
+            _construct_composite_allow_list(
+                mock_branch['branch_id'].copy(), allow_list, None)
+
+    def test_bad_deny_list_value(self):
+        deny_list = list(range(108, 110))
+        with self.assertRaises(ValueError):
+            _construct_composite_allow_list(
+                mock_branch['branch_id'].copy(), None, deny_list)
+
+    def test_bad_deny_list_type(self):
+        with self.assertRaises(TypeError):
+            _construct_composite_allow_list(
+                mock_branch['branch_id'].copy(), None, '108')
+
+
 class TestIncrementBranch(unittest.TestCase):
 
     def setUp(self):
@@ -245,12 +381,13 @@ class TestIncrementBranch(unittest.TestCase):
                 'demand': {'zone_id': {'W': 0.9, 'E': 0.8}},
                 }
             )
+        orig_ct = self.ref_scenario.state.get_ct()
+        self.orig_branch_scaling = orig_ct['branch']['branch_id']
 
     def test_increment_branch_scaling_ref_only(self):
         change_table = MockChangeTable(grid=mock_grid, ct=self.ct)
         expected_ct = self.ct.copy()
-        expected_ct['branch'] = {'branch_id':
-            self.ref_scenario.state.get_ct()['branch']['branch_id'].copy()}
+        expected_ct['branch'] = {'branch_id': self.orig_branch_scaling.copy()}
         self.assertNotEqual(change_table.ct, expected_ct)
         _increment_branch_scaling(
             change_table, branch_ids=set(), ref_scenario=self.ref_scenario)
@@ -259,8 +396,7 @@ class TestIncrementBranch(unittest.TestCase):
     def test_increment_branch_scaling_ref_and_increment(self):
         change_table = MockChangeTable(grid=mock_grid, ct=self.ct)
         expected_ct = self.ct.copy()
-        expected_ct['branch'] = {'branch_id':
-            self.ref_scenario.state.get_ct()['branch']['branch_id'].copy()}
+        expected_ct['branch'] = {'branch_id': self.orig_branch_scaling.copy()}
         expected_ct['branch']['branch_id'][102] = 3.5
         expected_ct['branch']['branch_id'][103] = 3
         expected_ct['branch']['branch_id'][107] = 2
@@ -274,8 +410,7 @@ class TestIncrementBranch(unittest.TestCase):
     def test_increment_branch_scaling_ref_and_custom_increment(self):
         change_table = MockChangeTable(grid=mock_grid, ct=self.ct)
         expected_ct = self.ct.copy()
-        expected_ct['branch'] = {'branch_id':
-            self.ref_scenario.state.get_ct()['branch']['branch_id'].copy()}
+        expected_ct['branch'] = {'branch_id': self.orig_branch_scaling.copy()}
         expected_ct['branch']['branch_id'][101] = 2.0
         expected_ct['branch']['branch_id'][105] = 4.5
         expected_ct['branch']['branch_id'][106] = 1.5
@@ -292,8 +427,7 @@ class TestIncrementBranch(unittest.TestCase):
         change_table = MockChangeTable(grid=mock_grid, ct=self.ct)
         change_table.ct['branch'] = {'branch_id': {101: 2}}
         expected_ct = change_table.ct.copy()
-        expected_ct['branch'] = {'branch_id':
-            self.ref_scenario.state.get_ct()['branch']['branch_id'].copy()}
+        expected_ct['branch'] = {'branch_id': self.orig_branch_scaling.copy()}
         expected_ct['branch']['branch_id'][101] = 2.5
         self.assertNotEqual(change_table.ct, expected_ct)
         _increment_branch_scaling(
@@ -305,8 +439,7 @@ class TestIncrementBranch(unittest.TestCase):
         change_table = MockChangeTable(grid=mock_grid, ct=self.ct)
         change_table.ct['branch'] = {'branch_id': {101: 3}}
         expected_ct = change_table.ct.copy()
-        expected_ct['branch'] = {'branch_id':
-            self.ref_scenario.state.get_ct()['branch']['branch_id'].copy()}
+        expected_ct['branch'] = {'branch_id': self.orig_branch_scaling.copy()}
         expected_ct['branch']['branch_id'][101] = 3
         self.assertNotEqual(change_table.ct, expected_ct)
         _increment_branch_scaling(
@@ -317,21 +450,22 @@ class TestIncrementBranch(unittest.TestCase):
 class TestScaleRenewableStubs(unittest.TestCase):
 
     def test_empty_ct_inplace_default(self):
-        expected_ct = {'branch':{'branch_id':{103: (11/8), 107: (21/15)}}}
+        expected_ct = {'branch': {'branch_id': {103: (11/8), 107: (21/15)}}}
         change_table = MockChangeTable(mock_grid)
         returned = scale_renewable_stubs(change_table, verbose=False)
         self.assertIsNone(returned)
         self.assertEqual(change_table.ct, expected_ct)
 
     def test_empty_ct_inplace_true(self):
-        expected_ct = {'branch':{'branch_id':{103: (11/8), 107: (21/15)}}}
+        expected_ct = {'branch': {'branch_id': {103: (11/8), 107: (21/15)}}}
         change_table = MockChangeTable(mock_grid)
-        returned = scale_renewable_stubs(change_table, verbose=False)
+        returned = scale_renewable_stubs(
+            change_table, inplace=True, verbose=False)
         self.assertIsNone(returned)
         self.assertEqual(change_table.ct, expected_ct)
 
     def test_empty_ct_inplace_false(self):
-        expected_ct = {'branch':{'branch_id':{103: (11/8), 107: (21/15)}}}
+        expected_ct = {'branch': {'branch_id': {103: (11/8), 107: (21/15)}}}
         change_table = MockChangeTable(mock_grid)
         returned = scale_renewable_stubs(
             change_table, inplace=False, verbose=False)
@@ -339,40 +473,40 @@ class TestScaleRenewableStubs(unittest.TestCase):
         self.assertEqual(returned, expected_ct)
 
     def test_empty_ct_no_fuzz(self):
-        expected_ct = {'branch':{'branch_id':{103: (10/8), 107: (20/15)}}}
+        expected_ct = {'branch': {'branch_id': {103: (10/8), 107: (20/15)}}}
         change_table = MockChangeTable(mock_grid)
         returned = scale_renewable_stubs(change_table, fuzz=0, verbose=False)
         self.assertIsNone(returned)
         self.assertEqual(change_table.ct, expected_ct)
 
     def test_existing_ct_unrelated_branch_id(self):
-        ct = {'branch':{'branch_id':{105: 2}}}
+        ct = {'branch': {'branch_id': {105: 2}}}
         change_table = MockChangeTable(mock_grid, ct=ct)
         expected_ct = {
-            'branch':{'branch_id':{103: (11/8), 105:2, 107: (21/15)}}}
+            'branch': {'branch_id': {103: (11/8), 105:2, 107: (21/15)}}}
         scale_renewable_stubs(change_table, verbose=False)
         self.assertEqual(change_table.ct, expected_ct)
 
     def test_existing_ct_zone_id_wind(self):
-        ct = {'wind':{'zone_id':{'E': 2}}}
+        ct = {'wind': {'zone_id': {'E': 2}}}
         change_table = MockChangeTable(mock_grid, ct=ct)
         expected_ct = {
-            'wind':{'zone_id':{'E': 2}},
-            'branch':{'branch_id':{103: (21/8), 104: (31/25), 107: (21/15)}}
+            'wind': {'zone_id': {'E': 2}},
+            'branch': {'branch_id': {103: (21/8), 104: (31/25), 107: (21/15)}}
             }
         scale_renewable_stubs(change_table, verbose=False)
         self.assertEqual(change_table.ct, expected_ct)
 
     def test_existing_ct_zone_id_solar_wind(self):
         ct = {
-            'wind':{'zone_id':{'E': 2}},
-            'solar':{'zone_id':{'W': 3}},
+            'wind': {'zone_id': {'E': 2}},
+            'solar': {'zone_id': {'W': 3}},
             }
         change_table = MockChangeTable(mock_grid, ct=ct)
         expected_ct = {
-            'wind':{'zone_id':{'E': 2}},
-            'solar':{'zone_id':{'W': 3}},
-            'branch':{'branch_id':{
+            'wind': {'zone_id': {'E': 2}},
+            'solar': {'zone_id': {'W': 3}},
+            'branch': {'branch_id': {
                 103: (21/8), 104: (31/25), 107: (61/15), 108: (61/25)}},
             }
         scale_renewable_stubs(change_table, verbose=False)
