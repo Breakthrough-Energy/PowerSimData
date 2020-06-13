@@ -60,20 +60,20 @@ class TransformProfile(object):
             columns corresponding to new generators inserted to the grid via
             the change table.
         """
-        neighbor_id_to_new_plant_id = {}
-        scaling = []
+        new_plant_ids, neighbor_ids, scaling = [], [], []
         plant = self.grid.plant
         for i, entry in enumerate(self.ct['new_plant']):
             if entry['type'] in self.scale_keys[resource]:
-                neighbor_id = entry['plant_id_neighbor']
                 new_plant_id = plant.index[-len(self.ct['new_plant']) + i]
-                neighbor_id_to_new_plant_id[neighbor_id] = new_plant_id
+                new_plant_ids.append(new_plant_id)
+                neighbor_id = entry['plant_id_neighbor']
+                neighbor_ids.append(neighbor_id)
                 scaling.append(entry['Pmax'] / plant.loc[neighbor_id, 'Pmax'])
 
-        if len(neighbor_id_to_new_plant_id) > 0:
-            neighbor_profiles = profile[neighbor_id_to_new_plant_id.keys()]
-            new_profiles = neighbor_profiles.multiply(scaling, axis=1).rename(
-                columns=neighbor_id_to_new_plant_id)
+        if len(new_plant_ids) > 0:
+            neighbor_profiles = profile[neighbor_ids]
+            new_profiles = neighbor_profiles.multiply(scaling, axis=1)
+            new_profiles.columns = new_plant_ids
             joined_profiles = profile.join(new_profiles)
             return joined_profiles
         else:
