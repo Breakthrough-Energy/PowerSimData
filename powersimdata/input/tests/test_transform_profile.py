@@ -184,6 +184,7 @@ def test_add_plant(scenario, base_solar, base_wind):
         {'type': 'solar', 'bus_id': 70040, 'Pmax': 85},
         {'type': 'wind', 'bus_id': 9, 'Pmin': 5, 'Pmax': 60},
         {'type': 'wind_offshore', 'bus_id': 13802, 'Pmax': 175},
+        {'type': 'wind_offshore', 'bus_id': 13802, 'Pmax': 100},
         {'type': 'ng', 'bus_id': 60374, 'Pmin': 25, 'Pmax': 400,
          'c0': 1500, 'c1': 50, 'c2': 0.5}]
 
@@ -198,16 +199,16 @@ def test_add_plant(scenario, base_solar, base_wind):
 
     new_solar = tp.get_solar()
     assert not new_solar.equals(base_solar)
-    assert base_solar.equals(new_solar.drop(new_grid.plant.index[-4], axis=1))
+    assert base_solar.equals(new_solar.drop(new_grid.plant.index[-5], axis=1))
     assert not len(base_solar.columns) == len(new_solar.columns)
     assert len(set(new_solar.columns) - set(base_solar.columns)) == 1
     assert set(new_solar.columns) - set(base_solar.columns) == {
-        new_grid.plant.index[-4]}
+        new_grid.plant.index[-5]}
 
     new_wind = tp.get_wind()
     assert not new_wind.equals(base_wind)
-    assert base_wind.equals(new_wind.drop(new_grid.plant.index[-3:-1], axis=1))
+    assert base_wind.equals(new_wind.drop(new_grid.plant.index[-4:-1], axis=1))
     assert not len(base_wind.columns) == len(new_wind.columns)
-    assert len(set(new_wind.columns) - set(base_wind.columns)) == 2
+    assert len(set(new_wind.columns) - set(base_wind.columns)) == 3
     assert set(new_wind.columns) - set(base_wind.columns) == set(
-        new_grid.plant.index[-3:-1])
+        new_grid.plant.index[-4:-1])
