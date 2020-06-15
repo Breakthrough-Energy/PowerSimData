@@ -5,8 +5,9 @@ from powersimdata.utility.transfer_data import (setup_server_connection,
 from getpass import getuser
 from numpy.testing import assert_array_equal
 import pandas as pd
+import pytest
 
-
+@pytest.mark.integration
 def test_setup_server_connection():
     ssh_client = setup_server_connection()
     _, stdout, _ = ssh_client.exec_command('whoami')
@@ -14,6 +15,7 @@ def test_setup_server_connection():
     ssh_client.close()
 
 
+@pytest.mark.integration
 def test_get_scenario_file_from_server_type():
     ssh_client = setup_server_connection()
     table = get_scenario_table(ssh_client)
@@ -21,6 +23,7 @@ def test_get_scenario_file_from_server_type():
     assert isinstance(table, pd.DataFrame)
 
 
+@pytest.mark.integration
 def test_get_scenario_file_from_server_header():
     header = ['id',
               'plan',
@@ -44,6 +47,7 @@ def test_get_scenario_file_from_server_header():
     assert_array_equal(table.columns, header)
 
 
+@pytest.mark.integration
 def test_get_execute_file_from_server_type():
     ssh_client = setup_server_connection()
     table = get_execute_table(ssh_client)
@@ -51,6 +55,7 @@ def test_get_execute_file_from_server_type():
     assert isinstance(table, pd.DataFrame)
 
 
+@pytest.mark.integration
 def test_get_execute_file_from_server_header():
     header = ['id',
               'status']

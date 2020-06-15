@@ -23,4 +23,4 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Test with pytest
         run: |
-          pytest --ignore powersimdata/input/tests/test_scale_profile.py --ignore powersimdata/utility/tests/test_transfer_data.py
+          pytest . -m 'not integration'
