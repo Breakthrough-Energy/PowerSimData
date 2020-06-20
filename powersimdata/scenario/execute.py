@@ -14,7 +14,7 @@ import numpy as np
 import os
 import posixpath
 from scipy.io import savemat
-from subprocess import Popen, PIPE
+from subprocess import Popen
 
 
 class Execute(State):
@@ -118,10 +118,12 @@ class Execute(State):
         cmd = [
             'ssh', username+'@'+const.SERVER_ADDRESS,
             'export PYTHONPATH="%s:$PYTHONPATH";' % path_to_package,
-            'python3',
+            'nohup', 'python3', '-u',
             '%s' % path_to_script,
-            self._scenario_info['id']]
-        process = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            self._scenario_info['id'],
+            '</dev/null >/dev/null 2>&1 &'
+        ]
+        process = Popen(cmd)
         print("PID: %s" % process.pid)
         return process
 
