@@ -1,5 +1,4 @@
-from math import radians, cos, sin, asin, sqrt
-
+from math import degrees, radians, cos, sin, acos, asin, sqrt
 import geopy.distance
 
 
@@ -38,3 +37,58 @@ def great_circle_distance(x):
     site_coords = (x.from_lat, x.from_lon)
     place2_coords = (x.to_lat, x.to_lon)
     return geopy.distance.vincenty(site_coords, place2_coords).km
+
+
+def ll2uv(lon, lat):
+    """Convert (longitude, latitude) to unit vector.
+
+    :param float lon: longitude of the site (in deg.) measured eastward from
+        Greenwich, UK.
+    :param float lat: latitude of the site (in deg.). Equator is the zero point.
+    :return: (*list*) -- 3-components (x,y,z) unit vector.
+    """
+    cos_lat = cos(radians(lat))
+    sin_lat = sin(radians(lat))
+    cos_lon = cos(radians(lon))
+    sin_lon = sin(radians(lon))
+
+    uv = [cos_lat * cos_lon, cos_lat * sin_lon, sin_lat]
+
+    return uv
+
+
+def angular_distance(uv1, uv2):
+    """Calculate the angular distance between two vectors.
+
+    :param list uv1: 3-components vector as returned by :func:`ll2uv`.
+    :param list uv2: 3-components vector as returned by :func:`ll2uv`.
+    :return: (*float*) -- angle (in degrees).
+    """
+    cos_angle = uv1[0]*uv2[0] + uv1[1]*uv2[1] + uv1[2]*uv2[2]
+    if cos_angle >= 1:
+        cos_angle = 1
+    if cos_angle <= -1:
+        cos_angle = -1
+    angle = degrees(acos(cos_angle))
+
+    return angle
+
+
+def find_closest_neighbor(point, neighbors):
+    """Locates the closest neighbor.
+
+    :param tuple point: (lon, lat) in degrees.
+    :param list neighbors: each element of the list are the (lon, lat)
+        of potential neighbor.
+    :return: (*int*) -- id of the closest neighbor
+    """
+    uv_point = ll2uv(point[0], point[1])
+    id_neighbor = None
+    angle_min = float('inf')
+    for i, n in enumerate(neighbors):
+        angle = angular_distance(uv_point, ll2uv(n[0], n[1]))
+        if angle < angle_min:
+            id_neighbor = i
+            angle_min = angle
+
+    return id_neighbor

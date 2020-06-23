@@ -4,7 +4,7 @@ from powersimdata.scenario.state import State
 from powersimdata.scenario.execute import Execute
 from powersimdata.input.grid import Grid
 from powersimdata.input.change_table import ChangeTable
-from powersimdata.input.scaler import TransformGrid
+from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.scenario.helpers import interconnect2name, check_interconnect
 
 import copy
