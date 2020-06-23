@@ -22,13 +22,12 @@ def download(ssh_client, file_name, from_dir, to_dir):
     from_path = posixpath.join(from_dir, file_name)
     stdin, stdout, stderr = ssh_client.exec_command("ls " + from_path)
     if len(stderr.readlines()) != 0:
-        raise FileNotFoundError("%s not found in %s on server" %
-                                (file_name, from_dir))
+        raise FileNotFoundError("%s not found in %s on server" % (file_name, from_dir))
     else:
         print("Transferring %s from server" % file_name)
         sftp = ssh_client.open_sftp()
         to_path = os.path.join(to_dir, file_name)
-        cbk, bar = progress_bar(ascii=True, unit='b', unit_scale=True)
+        cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
         sftp.get(from_path, to_path, callback=cbk)
         bar.close()
         sftp.close()
@@ -48,8 +47,9 @@ def upload(ssh_client, file_name, from_dir, to_dir, change_name_to=None):
     from_path = os.path.join(from_dir, file_name)
 
     if os.path.isfile(from_path) is False:
-        raise FileNotFoundError("%s not found in %s on local machine" %
-                                (file_name, from_dir))
+        raise FileNotFoundError(
+            "%s not found in %s on local machine" % (file_name, from_dir)
+        )
     else:
         if bool(change_name_to):
             to_path = posixpath.join(to_dir, change_name_to)
@@ -57,8 +57,7 @@ def upload(ssh_client, file_name, from_dir, to_dir, change_name_to=None):
             to_path = posixpath.join(to_dir, file_name)
         stdin, stdout, stderr = ssh_client.exec_command("ls " + to_path)
         if len(stderr.readlines()) == 0:
-            raise IOError("%s already exists in %s on server" %
-                          (file_name, to_dir))
+            raise IOError("%s already exists in %s on server" % (file_name, to_dir))
         else:
             print("Transferring %s to server" % file_name)
             sftp = ssh_client.open_sftp()
@@ -73,10 +72,10 @@ def get_scenario_table(ssh_client):
     :return: (*pandas*) -- data frame.
     """
     sftp = ssh_client.open_sftp()
-    file_object = sftp.file(const.SCENARIO_LIST, 'rb')
+    file_object = sftp.file(const.SCENARIO_LIST, "rb")
 
     scenario_list = pd.read_csv(file_object)
-    scenario_list.fillna('', inplace=True)
+    scenario_list.fillna("", inplace=True)
 
     sftp.close()
 
@@ -91,9 +90,9 @@ def get_execute_table(ssh_client):
     """
     sftp = ssh_client.open_sftp()
 
-    file_object = sftp.file(const.EXECUTE_LIST, 'rb')
+    file_object = sftp.file(const.EXECUTE_LIST, "rb")
     execute_list = pd.read_csv(file_object)
-    execute_list.fillna('', inplace=True)
+    execute_list.fillna("", inplace=True)
 
     sftp.close()
 
@@ -109,15 +108,15 @@ def setup_server_connection():
     try:
         client.load_system_host_keys()
     except IOError:
-        print('Could not find ssh host keys.')
-        ssh_known_hosts = input('Provide ssh known_hosts key file =')
+        print("Could not find ssh host keys.")
+        ssh_known_hosts = input("Provide ssh known_hosts key file =")
         while True:
             try:
                 client.load_system_host_keys(str(ssh_known_hosts))
                 break
             except IOError:
-                print('Cannot read file, try again')
-                ssh_known_hosts = input('Provide ssh known_hosts key file =')
+                print("Cannot read file, try again")
+                ssh_known_hosts = input("Provide ssh known_hosts key file =")
 
     client.connect(const.SERVER_ADDRESS, timeout=60)
 
@@ -137,4 +136,5 @@ def progress_bar(*args, **kwargs):
         bar.total = int(b)
         bar.update(int(a - last[0]))
         last[0] = a
+
     return show, bar

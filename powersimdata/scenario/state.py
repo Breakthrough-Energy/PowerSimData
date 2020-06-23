@@ -13,12 +13,12 @@ class State(object):
             :class:`.Execute`.
         """
         if state.name in self.allowed:
-            print('State switching: %s --> %s' % (self, state.name))
+            print("State switching: %s --> %s" % (self, state.name))
             self._leave()
             self.__class__ = state
             self._enter()
         else:
-            print('State switching: %s -/-> %s' % (self, state.name))
+            print("State switching: %s -/-> %s" % (self, state.name))
 
     def __str__(self):
         """
@@ -31,9 +31,9 @@ class State(object):
         """Cleans when leaving state.
 
         """
-        if self.name == 'create':
+        if self.name == "create":
             del self.builder
-        elif self.name == 'analyze':
+        elif self.name == "analyze":
             del self.grid
             del self.ct
 

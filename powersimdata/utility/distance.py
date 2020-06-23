@@ -22,8 +22,11 @@ def haversine(point1, point2):
     # calculate haversine
     lat = lat2 - lat1
     lng = lng2 - lng1
-    d = 2 * _AVG_EARTH_RADIUS_MILES * asin(sqrt(
-        sin(lat * 0.5) ** 2 + cos(lat1) * cos(lat2) * sin(lng * 0.5) ** 2))
+    d = (
+        2
+        * _AVG_EARTH_RADIUS_MILES
+        * asin(sqrt(sin(lat * 0.5) ** 2 + cos(lat1) * cos(lat2) * sin(lng * 0.5) ** 2))
+    )
 
     return d
 
@@ -64,7 +67,7 @@ def angular_distance(uv1, uv2):
     :param list uv2: 3-components vector as returned by :func:`ll2uv`.
     :return: (*float*) -- angle (in degrees).
     """
-    cos_angle = uv1[0]*uv2[0] + uv1[1]*uv2[1] + uv1[2]*uv2[2]
+    cos_angle = uv1[0] * uv2[0] + uv1[1] * uv2[1] + uv1[2] * uv2[2]
     if cos_angle >= 1:
         cos_angle = 1
     if cos_angle <= -1:
@@ -84,7 +87,7 @@ def find_closest_neighbor(point, neighbors):
     """
     uv_point = ll2uv(point[0], point[1])
     id_neighbor = None
-    angle_min = float('inf')
+    angle_min = float("inf")
     for i, n in enumerate(neighbors):
         angle = angular_distance(uv_point, ll2uv(n[0], n[1]))
         if angle < angle_min:
