@@ -7,7 +7,8 @@ from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
 class Grid(object):
     """Grid
     """
-    def __init__(self, interconnect, source='usa_tamu', engine='REISE'):
+
+    def __init__(self, interconnect, source="usa_tamu", engine="REISE"):
         """Constructor
         :param list interconnect: interconnect name(s).
         :param str source: model used to build the network.
@@ -16,23 +17,23 @@ class Grid(object):
         :raises ValueError: if model or engine does not exist.
         """
         if not isinstance(source, str):
-            raise TypeError('source must be a string')
+            raise TypeError("source must be a string")
         if not isinstance(engine, str):
             got_type = type(engine).__name__
-            raise TypeError('engine must be a str, instead got %s' % got_type)
+            raise TypeError("engine must be a str, instead got %s" % got_type)
 
-        if source == 'usa_tamu':
+        if source == "usa_tamu":
             data = TAMU(interconnect)
-        elif os.path.splitext(source)[1] == '.mat':
-            if engine == 'REISE':
+        elif os.path.splitext(source)[1] == ".mat":
+            if engine == "REISE":
                 data = FromREISE(source)
-            elif engine == 'REISE.jl':
+            elif engine == "REISE.jl":
                 data = FromREISEjl(source)
             else:
-                raise ValueError('Unknown engine %s!' % engine)
+                raise ValueError("Unknown engine %s!" % engine)
 
         else:
-            raise ValueError('%s not implemented' % source)
+            raise ValueError("%s not implemented" % source)
 
         self.data_loc = data.data_loc
         self.interconnect = data.interconnect
@@ -74,19 +75,19 @@ class Grid(object):
                     assert (ref[col] == test[col]).all()
 
         if not isinstance(other, Grid):
-            err_msg = 'Unable to compare Grid & %s' % type(other).__name__
+            err_msg = "Unable to compare Grid & %s" % type(other).__name__
             raise NotImplementedError(err_msg)
 
         try:
             # compare gencost
             # Comparing 'after' will fail if one Grid was linearized
-            self_data = self.gencost['before']
-            other_data = other.gencost['before']
+            self_data = self.gencost["before"]
+            other_data = other.gencost["before"]
             _univ_eq(self_data, other_data)
 
             # compare storage
-            self_storage_num = len(self.storage['gencost'])
-            other_storage_num = len(other.storage['gencost'])
+            self_storage_num = len(self.storage["gencost"])
+            other_storage_num = len(other.storage["gencost"])
             if self_storage_num == 0:
                 assert other_storage_num == 0
             else:
@@ -96,24 +97,24 @@ class Grid(object):
                 assert self_keys == other_keys
                 for subkey in self_keys:
                     # REISE will modify gencost and some gen columns
-                    if subkey != 'gencost':
+                    if subkey != "gencost":
                         self_data = self.storage[subkey]
                         other_data = other.storage[subkey]
-                        if subkey == 'gen':
-                            excluded_cols = ['ramp_10', 'ramp_30']
+                        if subkey == "gen":
+                            excluded_cols = ["ramp_10", "ramp_30"]
                             self_data = self_data.drop(excluded_cols, axis=1)
                             other_data = other_data.drop(excluded_cols, axis=1)
                         _univ_eq(self_data, other_data)
 
             # compare bus
             # MOST changes BUS_TYPE for buses with DC Lines attached
-            self_df = self.bus.drop('type', axis=1)
-            other_df = other.bus.drop('type', axis=1)
+            self_df = self.bus.drop("type", axis=1)
+            other_df = other.bus.drop("type", axis=1)
             _univ_eq(self_df, other_df)
 
             # compare plant
             # REISE does some modifications to Plant data
-            excluded_cols = ['status', 'Pmin', 'ramp_10', 'ramp_30']
+            excluded_cols = ["status", "Pmin", "ramp_10", "ramp_30"]
             self_df = self.plant.drop(excluded_cols, axis=1)
             other_df = other.plant.drop(excluded_cols, axis=1)
             _univ_eq(self_df, other_df)
@@ -145,19 +146,19 @@ def get_type2color():
     :return: (*dict*) -- generator type to color mapping.
     """
     type2color = {
-        'wind': "xkcd:green",
-        'solar': "xkcd:amber",
-        'hydro': "xkcd:light blue",
-        'ng': "xkcd:orchid",
-        'nuclear': "xkcd:silver",
-        'coal': "xkcd:light brown",
-        'geothermal': "xkcd:hot pink",
-        'dfo': "xkcd:royal blue",
-        'biomass': "xkcd:dark green",
-        'other': "xkcd:melon",
-        'storage': "xkcd:orange",
-        'wind_offshore': "xkcd:teal",
-        }
+        "wind": "xkcd:green",
+        "solar": "xkcd:amber",
+        "hydro": "xkcd:light blue",
+        "ng": "xkcd:orchid",
+        "nuclear": "xkcd:silver",
+        "coal": "xkcd:light brown",
+        "geothermal": "xkcd:hot pink",
+        "dfo": "xkcd:royal blue",
+        "biomass": "xkcd:dark green",
+        "other": "xkcd:melon",
+        "storage": "xkcd:orange",
+        "wind_offshore": "xkcd:teal",
+    }
     return type2color
 
 
@@ -166,17 +167,17 @@ def get_id2type():
     :return: (*tuple*) -- generator type to generator id mapping.
     """
     id2type = {
-        0: 'wind',
-        1: 'solar',
-        2: 'hydro',
-        3: 'ng',
-        4: 'nuclear',
-        5: 'coal',
-        6: 'geothermal',
-        7: 'dfo',
-        8: 'biomass',
-        9: 'other',
-        10: 'storage',
-        11: 'wind_offshore',
-        }
+        0: "wind",
+        1: "solar",
+        2: "hydro",
+        3: "ng",
+        4: "nuclear",
+        5: "coal",
+        6: "geothermal",
+        7: "dfo",
+        8: "biomass",
+        9: "other",
+        10: "storage",
+        11: "wind_offshore",
+    }
     return id2type

@@ -1,7 +1,9 @@
 from powersimdata.utility import const
-from powersimdata.utility.transfer_data import (get_execute_table,
-                                                get_scenario_table,
-                                                upload)
+from powersimdata.utility.transfer_data import (
+    get_execute_table,
+    get_scenario_table,
+    upload,
+)
 from powersimdata.input.profiles import InputData
 from powersimdata.input.grid import Grid
 from powersimdata.input.transform_grid import TransformGrid
@@ -22,7 +24,8 @@ class Execute(State):
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     """
-    name = 'execute'
+
+    name = "execute"
     allowed = []
 
     def __init__(self, scenario):
@@ -33,8 +36,10 @@ class Execute(State):
         self._scenario_status = scenario.status
         self._ssh = scenario.ssh
 
-        print("SCENARIO: %s | %s\n" % (self._scenario_info['plan'],
-                                       self._scenario_info['name']))
+        print(
+            "SCENARIO: %s | %s\n"
+            % (self._scenario_info["plan"], self._scenario_info["name"])
+        )
         print("--> State\n%s" % self.name)
         print("--> Status\n%s" % self._scenario_status)
 
@@ -44,10 +49,10 @@ class Execute(State):
         """Sets change table and grid.
 
         """
-        base_grid = Grid(self._scenario_info['interconnect'].split('_'))
-        if self._scenario_info['change_table'] == 'Yes':
+        base_grid = Grid(self._scenario_info["interconnect"].split("_"))
+        if self._scenario_info["change_table"] == "Yes":
             input_data = InputData(self._ssh)
-            self.ct = input_data.get_data(self._scenario_info['id'], 'ct')
+            self.ct = input_data.get_data(self._scenario_info["id"], "ct")
             self.grid = TransformGrid(base_grid, self.ct).get_grid()
         else:
             self.ct = {}
@@ -72,18 +77,19 @@ class Execute(State):
 
         """
         execute_table = get_execute_table(self._ssh)
-        scenario_id = self._scenario_info['id']
-        self._scenario_status = execute_table[execute_table.id == scenario_id
-                                              ].status.values[0]
+        scenario_id = self._scenario_info["id"]
+        self._scenario_status = execute_table[
+            execute_table.id == scenario_id
+        ].status.values[0]
 
     def _update_scenario_info(self):
         """Updates scenario information.
 
         """
         scenario_table = get_scenario_table(self._ssh)
-        scenario_id = self._scenario_info['id']
+        scenario_id = self._scenario_info["id"]
         scenario = scenario_table[scenario_table.id == scenario_id]
-        self._scenario_info = scenario.to_dict('records', into=OrderedDict)[0]
+        self._scenario_info = scenario.to_dict("records", into=OrderedDict)[0]
 
     def _update_execute_list(self, status):
         """Updates status in execute list file on server.
@@ -93,8 +99,10 @@ class Execute(State):
         """
         print("--> Updating status in execute table on server")
         options = "-F, -v OFS=',' -v INPLACE_SUFFIX=.bak -i inplace"
-        program = ("'{for(i=1; i<=NF; i++){if($1==%s) $2=\"%s\"}};1'" %
-                   (self._scenario_info['id'], status))
+        program = "'{for(i=1; i<=NF; i++){if($1==%s) $2=\"%s\"}};1'" % (
+            self._scenario_info["id"],
+            status,
+        )
         command = "awk %s %s %s" % (options, program, const.EXECUTE_LIST)
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
@@ -106,22 +114,23 @@ class Execute(State):
         :param str script: script to be used.
         :return: (*subprocess.Popen*) -- process used to run script
         """
-        path_to_package = posixpath.join(const.HOME_DIR,
-                                         self._scenario_info['engine'])
-        if self._scenario_info['engine'] == 'REISE':
-            folder = 'pyreise'
+        path_to_package = posixpath.join(const.HOME_DIR, self._scenario_info["engine"])
+        if self._scenario_info["engine"] == "REISE":
+            folder = "pyreise"
         else:
-            folder = 'pyreisejl'
-        path_to_script = posixpath.join(path_to_package, folder,
-                                        'utility', script)
+            folder = "pyreisejl"
+        path_to_script = posixpath.join(path_to_package, folder, "utility", script)
         username = os.getlogin()
         cmd = [
-            'ssh', username+'@'+const.SERVER_ADDRESS,
+            "ssh",
+            username + "@" + const.SERVER_ADDRESS,
             'export PYTHONPATH="%s:$PYTHONPATH";' % path_to_package,
-            'nohup', 'python3', '-u',
-            '%s' % path_to_script,
-            self._scenario_info['id'],
-            '</dev/null >/dev/null 2>&1 &'
+            "nohup",
+            "python3",
+            "-u",
+            "%s" % path_to_script,
+            self._scenario_info["id"],
+            "</dev/null >/dev/null 2>&1 &",
         ]
         process = Popen(cmd)
         print("PID: %s" % process.pid)
@@ -153,20 +162,21 @@ class Execute(State):
 
         """
         self._update_scenario_status()
-        if self._scenario_status == 'created':
+        if self._scenario_status == "created":
             print("---------------------------")
             print("PREPARING SIMULATION INPUTS")
             print("---------------------------")
 
-            si = SimulationInput(self._ssh, self._scenario_info['id'],
-                                 self.grid, self.ct)
+            si = SimulationInput(
+                self._ssh, self._scenario_info["id"], self.grid, self.ct
+            )
             si.create_folder()
-            for r in ['demand', 'hydro', 'solar', 'wind']:
+            for r in ["demand", "hydro", "solar", "wind"]:
                 si.prepare_profile(r)
 
             si.prepare_mpc_file()
 
-            self._update_execute_list('prepared')
+            self._update_execute_list("prepared")
         else:
             print("---------------------------")
             print("SCENARIO CANNOT BE PREPARED")
@@ -180,7 +190,7 @@ class Execute(State):
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
         print("--> Launching simulation on server")
-        return self._run_script('call.py')
+        return self._run_script("call.py")
 
     def extract_simulation_output(self):
         """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL} on server.
@@ -189,9 +199,9 @@ class Execute(State):
             data.
         """
         self._update_scenario_status()
-        if self._scenario_status == 'finished':
+        if self._scenario_status == "finished":
             print("--> Extracting output data on server")
-            return self._run_script('extract_data.py')
+            return self._run_script("extract_data.py")
         else:
             print("---------------------------")
             print("OUTPUTS CANNOT BE EXTRACTED")
@@ -218,8 +228,7 @@ class SimulationInput(object):
         self.grid = grid
         self.ct = ct
 
-        self._tmp_dir = '%s/scenario_%s' % (const.EXECUTE_DIR,
-                                            scenario_id)
+        self._tmp_dir = "%s/scenario_%s" % (const.EXECUTE_DIR, scenario_id)
 
     def create_folder(self):
         """Creates folder on server that will enclose simulation inputs.
@@ -241,97 +250,133 @@ class SimulationInput(object):
         grid = copy.deepcopy(self.grid)
 
         print("Building MPC file")
-        mpc = {'mpc': {'version': '2', 'baseMVA': 100.0}}
+        mpc = {"mpc": {"version": "2", "baseMVA": 100.0}}
 
         # zone
-        mpc['mpc']['zone'] = np.array(list(grid.id2zone.items()), dtype=object)
+        mpc["mpc"]["zone"] = np.array(list(grid.id2zone.items()), dtype=object)
 
         # sub
         sub = grid.sub.copy()
         subid = sub.index.values[np.newaxis].T
-        mpc['mpc']['sub'] = sub.values
-        mpc['mpc']['subid'] = subid
+        mpc["mpc"]["sub"] = sub.values
+        mpc["mpc"]["subid"] = subid
 
         # bus
         bus = grid.bus.copy()
         busid = bus.index.values[np.newaxis].T
         bus.reset_index(level=0, inplace=True)
-        bus.drop(columns=['interconnect', 'lat', 'lon'], inplace=True)
-        mpc['mpc']['bus'] = bus.values
-        mpc['mpc']['busid'] = busid
+        bus.drop(columns=["interconnect", "lat", "lon"], inplace=True)
+        mpc["mpc"]["bus"] = bus.values
+        mpc["mpc"]["busid"] = busid
 
         # bus2sub
         bus2sub = grid.bus2sub.copy()
-        mpc['mpc']['bus2sub'] = bus2sub.values
+        mpc["mpc"]["bus2sub"] = bus2sub.values
 
         # plant
         gen = grid.plant.copy()
         genid = gen.index.values[np.newaxis].T
         genfuel = gen.type.values[np.newaxis].T
         genfuelcost = gen.GenFuelCost.values[np.newaxis].T
-        heatratecurve = gen[['GenIOB', 'GenIOC', 'GenIOD']].values
+        heatratecurve = gen[["GenIOB", "GenIOC", "GenIOD"]].values
         gen.reset_index(inplace=True, drop=True)
-        gen.drop(columns=['type', 'interconnect', 'lat', 'lon', 'zone_id',
-                          'zone_name', 'GenFuelCost', 'GenIOB', 'GenIOC',
-                          'GenIOD'],
-                 inplace=True)
-        mpc['mpc']['gen'] = gen.values
-        mpc['mpc']['genid'] = genid
-        mpc['mpc']['genfuel'] = genfuel
-        mpc['mpc']['genfuelcost'] = genfuelcost
-        mpc['mpc']['heatratecurve'] = heatratecurve
+        gen.drop(
+            columns=[
+                "type",
+                "interconnect",
+                "lat",
+                "lon",
+                "zone_id",
+                "zone_name",
+                "GenFuelCost",
+                "GenIOB",
+                "GenIOC",
+                "GenIOD",
+            ],
+            inplace=True,
+        )
+        mpc["mpc"]["gen"] = gen.values
+        mpc["mpc"]["genid"] = genid
+        mpc["mpc"]["genfuel"] = genfuel
+        mpc["mpc"]["genfuelcost"] = genfuelcost
+        mpc["mpc"]["heatratecurve"] = heatratecurve
         # branch
         branch = grid.branch.copy()
         branchid = branch.index.values[np.newaxis].T
         branchdevicetype = branch.branch_device_type.values[np.newaxis].T
         branch.reset_index(inplace=True, drop=True)
-        branch.drop(columns=['interconnect', 'from_lat', 'from_lon', 'to_lat',
-                             'to_lon', 'from_zone_id', 'to_zone_id',
-                             'from_zone_name', 'to_zone_name',
-                             'branch_device_type'], inplace=True)
-        mpc['mpc']['branch'] = branch.values
-        mpc['mpc']['branchid'] = branchid
-        mpc['mpc']['branchdevicetype'] = branchdevicetype
+        branch.drop(
+            columns=[
+                "interconnect",
+                "from_lat",
+                "from_lon",
+                "to_lat",
+                "to_lon",
+                "from_zone_id",
+                "to_zone_id",
+                "from_zone_name",
+                "to_zone_name",
+                "branch_device_type",
+            ],
+            inplace=True,
+        )
+        mpc["mpc"]["branch"] = branch.values
+        mpc["mpc"]["branchid"] = branchid
+        mpc["mpc"]["branchdevicetype"] = branchdevicetype
 
         # generation cost
         gencost = grid.gencost.copy()
-        gencost['before'].reset_index(inplace=True, drop=True)
-        gencost['before'].drop(columns=['interconnect'], inplace=True)
-        mpc['mpc']['gencost'] = gencost['before'].values
+        gencost["before"].reset_index(inplace=True, drop=True)
+        gencost["before"].drop(columns=["interconnect"], inplace=True)
+        mpc["mpc"]["gencost"] = gencost["before"].values
 
         # DC line
         if len(grid.dcline) > 0:
             dcline = grid.dcline.copy()
             dclineid = dcline.index.values[np.newaxis].T
             dcline.reset_index(inplace=True, drop=True)
-            dcline.drop(columns=['from_interconnect', 'to_interconnect'],
-                        inplace=True)
-            mpc['mpc']['dcline'] = dcline.values
-            mpc['mpc']['dclineid'] = dclineid
+            dcline.drop(columns=["from_interconnect", "to_interconnect"], inplace=True)
+            mpc["mpc"]["dcline"] = dcline.values
+            mpc["mpc"]["dclineid"] = dclineid
 
         # energy storage
-        if len(grid.storage['gen']) > 0:
+        if len(grid.storage["gen"]) > 0:
             storage = grid.storage.copy()
 
-            mpc_storage = {'storage': {
-                'xgd_table': np.array([]),
-                'gen': np.array(storage['gen'].values, dtype=np.float64),
-                'sd_table': {'colnames': storage['StorageData'].columns.values[
-                            np.newaxis],
-                             'data': storage['StorageData'].values}}}
+            mpc_storage = {
+                "storage": {
+                    "xgd_table": np.array([]),
+                    "gen": np.array(storage["gen"].values, dtype=np.float64),
+                    "sd_table": {
+                        "colnames": storage["StorageData"].columns.values[np.newaxis],
+                        "data": storage["StorageData"].values,
+                    },
+                }
+            }
 
-            file_name = '%s_case_storage.mat' % self.scenario_id
-            savemat(os.path.join(const.LOCAL_DIR, file_name), mpc_storage,
-                    appendmat=False)
-            upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir,
-                   change_name_to='case_storage.mat')
+            file_name = "%s_case_storage.mat" % self.scenario_id
+            savemat(
+                os.path.join(const.LOCAL_DIR, file_name), mpc_storage, appendmat=False
+            )
+            upload(
+                self._ssh,
+                file_name,
+                const.LOCAL_DIR,
+                self._tmp_dir,
+                change_name_to="case_storage.mat",
+            )
 
         # MPC file
-        file_name = '%s_case.mat' % self.scenario_id
+        file_name = "%s_case.mat" % self.scenario_id
         savemat(os.path.join(const.LOCAL_DIR, file_name), mpc, appendmat=False)
 
-        upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir,
-               change_name_to='case.mat')
+        upload(
+            self._ssh,
+            file_name,
+            const.LOCAL_DIR,
+            self._tmp_dir,
+            change_name_to="case.mat",
+        )
 
         print("Deleting %s on local machine" % file_name)
         os.remove(os.path.join(const.LOCAL_DIR, file_name))
@@ -341,8 +386,7 @@ class SimulationInput(object):
 
         :param kind: one of *demand*, *'hydro'*, *'solar'* or *'wind'*.
         """
-        profile = TransformProfile(self._ssh, self.scenario_id,
-                                   self.grid, self.ct)
+        profile = TransformProfile(self._ssh, self.scenario_id, self.grid, self.ct)
         if bool(profile.scale_keys[kind] & set(self.ct.keys())):
             self._prepare_scaled_profile(kind, profile)
         else:
@@ -355,15 +399,16 @@ class SimulationInput(object):
         :raises IOError: if file cannot be copied.
         """
         print("--> Copying %s base profile into temporary folder" % kind)
-        command = "cp -a %s/%s_%s.csv %s/%s.csv" % (const.INPUT_DIR,
-                                                    self.scenario_id,
-                                                    kind,
-                                                    self._tmp_dir,
-                                                    kind)
+        command = "cp -a %s/%s_%s.csv %s/%s.csv" % (
+            const.INPUT_DIR,
+            self.scenario_id,
+            kind,
+            self._tmp_dir,
+            kind,
+        )
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to copy inputs in %s on server" %
-                          self._tmp_dir)
+            raise IOError("Failed to copy inputs in %s on server" % self._tmp_dir)
 
     def _prepare_scaled_profile(self, kind, profile):
         """Loads, scales and writes on local machine a base profile.
@@ -372,18 +417,24 @@ class SimulationInput(object):
             TransformProfile object
         :param str kind: one of *'hydro'*, *'solar'*, *'wind'* or *'demand'*.
         """
-        if kind == 'demand':
+        if kind == "demand":
             profile = profile.get_demand()
         else:
             profile = profile.get_power_output(kind)
 
-        print("Writing scaled %s profile in %s on local machine" %
-              (kind, const.LOCAL_DIR))
-        file_name = '%s_%s.csv' % (self.scenario_id, kind)
+        print(
+            "Writing scaled %s profile in %s on local machine" % (kind, const.LOCAL_DIR)
+        )
+        file_name = "%s_%s.csv" % (self.scenario_id, kind)
         profile.to_csv(os.path.join(const.LOCAL_DIR, file_name))
 
-        upload(self._ssh, file_name, const.LOCAL_DIR, self._tmp_dir,
-               change_name_to='%s.csv' % kind)
+        upload(
+            self._ssh,
+            file_name,
+            const.LOCAL_DIR,
+            self._tmp_dir,
+            change_name_to="%s.csv" % kind,
+        )
 
         print("Deleting %s on local machine" % file_name)
         os.remove(os.path.join(const.LOCAL_DIR, file_name))

@@ -1,3 +1,6 @@
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+![Pytest](https://github.com/intvenlab/PowerSimData/workflows/Run%20pytest/badge.svg)
+
 # PowerSimData
 This package enables communication with the server to carry out power-flow study
 in the U.S. electrical grid. State pattern is used to alter the behavior of the

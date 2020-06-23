@@ -18,12 +18,14 @@ class InputData(object):
         if not os.path.exists(const.LOCAL_DIR):
             os.makedirs(const.LOCAL_DIR)
 
-        self.file_extension = {'demand': 'csv',
-                               'hydro': 'csv',
-                               'solar': 'csv',
-                               'wind': 'csv',
-                               'ct': 'pkl',
-                               'grid': 'mat'}
+        self.file_extension = {
+            "demand": "csv",
+            "hydro": "csv",
+            "solar": "csv",
+            "wind": "csv",
+            "ct": "pkl",
+            "grid": "mat",
+        }
         self._ssh = ssh_client
 
     def _check_field(self, field_name):
@@ -36,8 +38,7 @@ class InputData(object):
         """
         possible = list(self.file_extension.keys())
         if field_name not in possible:
-            raise ValueError("Only %s data can be loaded" %
-                             " | ".join(possible))
+            raise ValueError("Only %s data can be loaded" % " | ".join(possible))
 
     def get_data(self, scenario_id, field_name):
         """Returns data either from server or local directory.
@@ -54,14 +55,13 @@ class InputData(object):
 
         print("--> Loading %s" % field_name)
         ext = self.file_extension[field_name]
-        file_name = scenario_id + '_' + field_name + '.' + ext
+        file_name = scenario_id + "_" + field_name + "." + ext
 
         try:
             data = _read_data(file_name)
             return data
         except FileNotFoundError:
-            print('%s not found in %s on local machine' %
-                  (file_name, const.LOCAL_DIR))
+            print("%s not found in %s on local machine" % (file_name, const.LOCAL_DIR))
 
         try:
             download(self._ssh, file_name, const.INPUT_DIR, const.LOCAL_DIR)
@@ -82,17 +82,17 @@ def _read_data(file_name):
     """
     ext = file_name.split(".")[-1]
     filepath = os.path.join(const.LOCAL_DIR, file_name)
-    if ext == 'pkl':
+    if ext == "pkl":
         data = pd.read_pickle(filepath)
-    elif ext == 'csv':
+    elif ext == "csv":
         data = pd.read_csv(filepath, index_col=0, parse_dates=True)
         data.columns = data.columns.astype(int)
-    elif ext == 'mat':
+    elif ext == "mat":
         # Try to load the matfile, just to check if it exists locally
-        open(filepath, 'r')
+        open(filepath, "r")
         data = filepath
     else:
-        raise ValueError('Unknown extension! %s' % ext)
+        raise ValueError("Unknown extension! %s" % ext)
 
     return data
 
@@ -106,13 +106,13 @@ def get_bus_demand(ssh_client, scenario_id, grid):
     :return: (*pandas.DataFrame*) -- data frame of demand.
     """
     input = InputData(ssh_client)
-    demand = input.get_data(scenario_id, 'demand')
+    demand = input.get_data(scenario_id, "demand")
     bus = grid.bus
-    bus['zone_Pd'] = bus.groupby('zone_id')['Pd'].transform('sum')
-    bus['zone_share'] = bus['Pd'] / bus['zone_Pd']
-    zone_bus_shares = pd.DataFrame({
-        z: bus.groupby('zone_id').get_group(z).zone_share
-        for z in demand.columns}).fillna(0)
+    bus["zone_Pd"] = bus.groupby("zone_id")["Pd"].transform("sum")
+    bus["zone_share"] = bus["Pd"] / bus["zone_Pd"]
+    zone_bus_shares = pd.DataFrame(
+        {z: bus.groupby("zone_id").get_group(z).zone_share for z in demand.columns}
+    ).fillna(0)
     bus_demand = demand.dot(zone_bus_shares.T)
 
     return bus_demand
