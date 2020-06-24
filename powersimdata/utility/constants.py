@@ -316,6 +316,12 @@ interconnect2loadzone = {
     },
 }
 
+interconnect2loadzone["USA"] = (
+    interconnect2loadzone["Eastern"]
+    | interconnect2loadzone["Western"]
+    | interconnect2loadzone["Texas"]
+)
+
 interconnect2state = {
     "Eastern": [
         "ME",
@@ -358,8 +364,18 @@ interconnect2state = {
     "Texas": ["TX"],
     "Western": ["WA", "OR", "CA", "NV", "AZ", "UT", "NM", "CO", "WY", "ID", "MT"],
 }
+interconnect2state["USA"] = (
+    interconnect2state["Eastern"]
+    + interconnect2state["Western"]
+    + interconnect2state["Texas"]
+)
+interconnect2state["Texas_Western"] = (
+    interconnect2state["Texas"] + interconnect2state["Western"]
+)
 
 state2interconnect = {}
 for k, v in interconnect2state.items():
+    if k in ("USA", "Texas_Western"):
+        continue
     for s in v:
         state2interconnect[s] = k
