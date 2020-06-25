@@ -1,5 +1,16 @@
 from setuptools import setup, find_packages
 
+install_requires = [
+    "cryptography",
+    "geopy",
+    "jsonpickle",
+    "numpy",
+    "pandas",
+    "paramiko",
+    "scipy",
+    "tqdm",
+]
+
 setup(
     name="powersimdata",
     version="0.3",
@@ -10,4 +21,5 @@ setup(
     packages=find_packages(),
     package_data={"powersimdata": ["input/data/*/*"]},
     zip_safe=False,
+    install_requires=install_requires,
 )
