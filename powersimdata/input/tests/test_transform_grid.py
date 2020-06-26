@@ -248,11 +248,16 @@ def test_add_branch():
     ]
     ct.add_branch(new_branch)
     new_grid = TransformGrid(grid, ct.ct).get_grid()
-
     new_capacity = new_grid.branch.rateA.values
+    new_index = new_grid.branch.index
+    old_index = grid.branch.index
 
     try:
         assert new_grid.branch.shape[0] != grid.branch.shape[0]
+        assert np.array_equal(
+            new_index[-len(new_branch) :],
+            range(old_index[-1] + 1, old_index[-1] + 1 + len(new_branch)),
+        )
         assert np.array_equal(
             new_capacity[-len(new_branch) :],
             np.array([ac["capacity"] for ac in new_branch]),
@@ -269,12 +274,17 @@ def test_add_dcline():
     ]
     ct.add_dcline(new_dcline)
     new_grid = TransformGrid(grid, ct.ct).get_grid()
-
     new_pmin = new_grid.dcline.Pmin.values
     new_pmax = new_grid.dcline.Pmax.values
+    new_index = new_grid.dcline.index
+    old_index = grid.dcline.index
 
     try:
         assert new_grid.dcline.shape[0] != grid.dcline.shape[0]
+        assert np.array_equal(
+            new_index[-len(new_dcline) :],
+            range(old_index[-1] + 1, old_index[-1] + 1 + len(new_dcline)),
+        )
         assert np.array_equal(
             new_pmin[-len(new_dcline) :],
             np.array([-1 * dc["capacity"] for dc in new_dcline]),
@@ -308,9 +318,15 @@ def test_add_gen_add_entries_in_plant_data_frame():
     new_pmin = new_grid.plant.Pmin.values
     new_pmax = new_grid.plant.Pmax.values
     new_status = new_grid.plant.status.values
+    new_index = new_grid.plant.index
+    old_index = grid.plant.index
 
     try:
         assert new_grid.plant.shape[0] != grid.plant.shape[0]
+        assert np.array_equal(
+            new_index[-len(new_plant) :],
+            range(old_index[-1] + 1, old_index[-1] + 1 + len(new_plant)),
+        )
         assert np.array_equal(
             new_pmin[-len(new_plant) :],
             np.array([p["Pmin"] if "Pmin" in p.keys() else 0 for p in new_plant]),
@@ -350,10 +366,16 @@ def test_add_gen_add_entries_in_gencost_data_frame():
     new_startup = new_grid.gencost["before"].startup.values
     new_shutdown = new_grid.gencost["before"].shutdown.values
     new_n = new_grid.gencost["before"].n.values
+    new_index = new_grid.gencost["before"].index
+    old_index = grid.gencost["before"].index
 
     try:
         assert new_grid.gencost["before"] is new_grid.gencost["after"]
         assert new_grid.gencost["before"].shape[0] != grid.gencost["before"].shape[0]
+        assert np.array_equal(
+            new_index[-len(new_plant) :],
+            range(old_index[-1] + 1, old_index[-1] + 1 + len(new_plant)),
+        )
         assert np.array_equal(
             new_c0[-len(new_plant) :],
             np.array([p["c0"] if "c0" in p.keys() else 0 for p in new_plant]),
