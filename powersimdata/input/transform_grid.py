@@ -183,7 +183,7 @@ class TransformGrid(object):
             new_branch["to_lon"] = to_lon
             new_branch["to_lat"] = to_lat
             new_branch["x"] = x
-            new_index = [self.grid.plant.index[-1] + 1]
+            new_index = [self.grid.branch.index[-1] + 1]
             self.grid.branch = self.grid.branch.append(
                 pd.DataFrame(new_branch, index=new_index), sort=False
             )
@@ -207,7 +207,7 @@ class TransformGrid(object):
             new_dcline["Pmax"] = entry["capacity"]
             new_dcline["from_interconnect"] = from_interconnect
             new_dcline["to_interconnect"] = to_interconnect
-            new_index = [self.grid.plant.index[-1] + 1]
+            new_index = [self.grid.dcline.index[-1] + 1]
             self.grid.dcline = self.grid.dcline.append(
                 pd.DataFrame(new_dcline, index=new_index), sort=False
             )
