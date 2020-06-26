@@ -8,16 +8,16 @@ class TransformProfile(object):
 
     """
 
-    def __init__(self, ssh_client, scenario_id, grid, ct):
+    def __init__(self, ssh_client, scenario_info, grid, ct):
         """Constructor
 
         :param paramiko.client.SSHClient ssh_client: session with an SSH server.
-        :param str scenario_id: scenario identification number.
+        :param dict scenario_info: scenario information.
         :param powersimdata.input.grid.Grid grid: a Grid object.
         :param dict ct: change table.
         """
         self._input_data = InputData(ssh_client)
-        self.scenario_id = scenario_id
+        self.scenario_info = scenario_info
         self.grid = copy.deepcopy(grid)
         self.ct = copy.deepcopy(ct)
         self.scale_keys = {
@@ -43,7 +43,7 @@ class TransformProfile(object):
                 print(p)
             raise ValueError("Invalid resource: %s" % resource)
 
-        power_output = self._input_data.get_data(self.scenario_id, resource)
+        power_output = self._input_data.get_data(self.scenario_info, resource)
         if not bool(self.ct):
             return power_output
         else:
@@ -128,7 +128,7 @@ class TransformProfile(object):
 
         :return: (*pandas.DataFrame*) -- data frame of demand.
         """
-        demand = self._input_data.get_data(self.scenario_id, "demand")
+        demand = self._input_data.get_data(self.scenario_info, "demand")
         if bool(self.ct) and "demand" in list(self.ct.keys()):
             for key, value in self.ct["demand"]["zone_id"].items():
                 print(
