@@ -1,5 +1,5 @@
+from powersimdata.utility import const, backup
 from powersimdata.utility.transfer_data import download
-from powersimdata.utility import const
 from powersimdata.scenario.helpers import interconnect2name
 
 import os
@@ -10,9 +10,10 @@ class InputData(object):
     """Load input data.
 
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param str data_loc: data location.
     """
 
-    def __init__(self, ssh_client):
+    def __init__(self, ssh_client, data_loc=None):
         """Constructor.
 
         """
@@ -28,6 +29,7 @@ class InputData(object):
             "grid": "mat",
         }
         self._ssh = ssh_client
+        self.data_loc = data_loc
 
     def _check_field(self, field_name):
         """Checks field name.
@@ -60,10 +62,16 @@ class InputData(object):
         if field_name in ["demand", "hydro", "solar", "wind"]:
             interconnect = interconnect2name(scenario_info["interconnect"].split("_"))
             version = scenario_info["base_" + field_name]
-            from_dir = const.BASE_PROFILE_DIR
+            if self.data_loc == "disk":
+                from_dir = backup.BASE_PROFILE_DIR
+            else:
+                from_dir = const.BASE_PROFILE_DIR
             file_name = interconnect + "_" + field_name + "_" + version + "." + ext
         else:
-            from_dir = const.INPUT_DIR
+            if self.data_loc == "disk":
+                from_dir = backup.INPUT_DIR
+            else:
+                from_dir = const.INPUT_DIR
             file_name = scenario_info["id"] + "_" + field_name + "." + ext
 
         try:
