@@ -40,7 +40,7 @@ class Analyze(State):
 
         """
         input_data = InputData(self._ssh)
-        grid_mat_path = input_data.get_data(self._scenario_info["id"], "grid")
+        grid_mat_path = input_data.get_data(self._scenario_info, "grid")
         self.grid = Grid(
             interconnect=[None],
             source=grid_mat_path,
@@ -48,7 +48,7 @@ class Analyze(State):
         )
 
         if self._scenario_info["change_table"] == "Yes":
-            self.ct = input_data.get_data(self._scenario_info["id"], "ct")
+            self.ct = input_data.get_data(self._scenario_info, "ct")
         else:
             self.ct = {}
 
@@ -243,7 +243,7 @@ class Analyze(State):
         :return: (*pandas.DataFrame*) -- data frame of demand.
         """
         profile = TransformProfile(
-            self._ssh, self._scenario_info["id"], self.get_grid(), self.get_ct()
+            self._ssh, self._scenario_info, self.get_grid(), self.get_ct()
         )
         demand = profile.get_demand()
 
@@ -276,7 +276,7 @@ class Analyze(State):
         :return: (*pandas.DataFrame*) -- data frame of hydro power output.
         """
         profile = TransformProfile(
-            self._ssh, self._scenario_info["id"], self.get_grid(), self.get_ct()
+            self._ssh, self._scenario_info, self.get_grid(), self.get_ct()
         )
         return profile.get_hydro()
 
@@ -286,7 +286,7 @@ class Analyze(State):
         :return: (*pandas.DataFrame*) -- data frame of solar power output.
         """
         profile = TransformProfile(
-            self._ssh, self._scenario_info["id"], self.get_grid(), self.get_ct()
+            self._ssh, self._scenario_info, self.get_grid(), self.get_ct()
         )
         return profile.get_solar()
 
@@ -296,6 +296,6 @@ class Analyze(State):
         :return: (*pandas.DataFrame*) -- data frame of wind power output.
         """
         profile = TransformProfile(
-            self._ssh, self._scenario_info["id"], self.get_grid(), self.get_ct()
+            self._ssh, self._scenario_info, self.get_grid(), self.get_ct()
         )
         return profile.get_wind()

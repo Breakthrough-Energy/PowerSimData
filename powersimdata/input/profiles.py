@@ -1,5 +1,6 @@
 from powersimdata.utility.transfer_data import download
 from powersimdata.utility import const
+from powersimdata.scenario.helpers import interconnect2name
 
 import os
 import pandas as pd
@@ -40,22 +41,30 @@ class InputData(object):
         if field_name not in possible:
             raise ValueError("Only %s data can be loaded" % " | ".join(possible))
 
-    def get_data(self, scenario_id, field_name):
+    def get_data(self, scenario_info, field_name):
         """Returns data either from server or local directory.
 
-        :param str scenario_id: scenario id.
+        :param dict scenario_info: scenario information.
         :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
             *'ct'* or *'grid'*.
         :return: (*pandas.DataFrame*, *dict*, or *str*) --
             demand, hydro, solar or wind as a data frame, change table as a
-            dictionary, or the path to a matfile with Grid data.
+            dictionary, or the path to a matfile enclosing the grid data.
         :raises FileNotFoundError: if file not found on local machine.
         """
         self._check_field(field_name)
 
         print("--> Loading %s" % field_name)
         ext = self.file_extension[field_name]
-        file_name = scenario_id + "_" + field_name + "." + ext
+
+        if field_name in ["demand", "hydro", "solar", "wind"]:
+            interconnect = interconnect2name(scenario_info["interconnect"].split("_"))
+            version = scenario_info["base_" + field_name]
+            from_dir = const.BASE_PROFILE_DIR
+            file_name = interconnect + "_" + field_name + "_" + version + "." + ext
+        else:
+            from_dir = const.INPUT_DIR
+            file_name = scenario_info["id"] + "_" + field_name + "." + ext
 
         try:
             data = _read_data(file_name)
@@ -64,7 +73,7 @@ class InputData(object):
             print("%s not found in %s on local machine" % (file_name, const.LOCAL_DIR))
 
         try:
-            download(self._ssh, file_name, const.INPUT_DIR, const.LOCAL_DIR)
+            download(self._ssh, file_name, from_dir, const.LOCAL_DIR)
             data = _read_data(file_name)
             return data
         except FileNotFoundError:

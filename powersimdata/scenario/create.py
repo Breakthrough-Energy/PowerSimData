@@ -26,7 +26,7 @@ class Create(State):
     allowed = []
 
     def __init__(self, scenario):
-        """Initializes attributes.
+        """Constructor.
 
         """
         self.builder = None
@@ -143,15 +143,6 @@ class Create(State):
         print("--> Deleting change table on local machine")
         os.remove(os.path.join(const.LOCAL_DIR, file_name))
 
-    def _create_link(self):
-        """Creates links to base profiles on server.
-
-        """
-        print("--> Creating links to base profiles on server")
-        for p in ["demand", "hydro", "solar", "wind"]:
-            version = self._scenario_info["base_" + p]
-            self.builder.profile.create_link(self._scenario_info["id"], p, version)
-
     def get_ct(self):
         """Returns change table.
 
@@ -209,8 +200,6 @@ class Create(State):
             # Upload change table to server
             if bool(self.builder.change_table.ct):
                 self._upload_change_table()
-            # Create symbolic links to base profiles on server
-            self._create_link()
             # Add scenario to execute list file on server
             self._add_entry_in_execute_list()
 
@@ -419,6 +408,9 @@ class Eastern(_Builder):
     name = "Eastern"
 
     def __init__(self, ssh_client):
+        """Constructor.
+
+        """
         self.interconnect = ["Eastern"]
         self.base_grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
@@ -478,6 +470,9 @@ class TexasWestern(_Builder):
     name = "Texas_Western"
 
     def __init__(self, ssh_client):
+        """Constructor.
+
+        """
         self.interconnect = ["Texas", "Western"]
         self.base_grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
@@ -495,6 +490,9 @@ class TexasEastern(_Builder):
     name = "Texas_Eastern"
 
     def __init__(self):
+        """Constructor.
+
+        """
         self.interconnect = ["Texas", "Eastern"]
 
 
@@ -506,6 +504,9 @@ class EasternWestern(_Builder):
     name = "Eastern_Western"
 
     def __init__(self):
+        """Constructor.
+
+        """
         self.interconnect = ["Eastern", "Western"]
 
 
@@ -517,6 +518,9 @@ class USA(_Builder):
     name = "USA"
 
     def __init__(self, ssh_client):
+        """Constructor.
+
+        """
         self.interconnect = ["USA"]
         self.base_grid = Grid(self.interconnect)
         self.profile = CSV(self.interconnect, ssh_client)
@@ -560,23 +564,3 @@ class CSV(object):
             filename = [os.path.basename(line.rstrip()) for line in stdout.readlines()]
             possible = [f[f.rfind("_") + 1 : -4] for f in filename]
         return possible
-
-    def create_link(self, scenario_id, kind, version):
-        """Creates link on server to base profile.
-
-        :param str scenario_id: scenario id.
-        :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
-        :param str version: profile version.
-        :raises IOError: if symbolic link cannot be created.
-        """
-        interconnect = interconnect2name(self.interconnect)
-        source = interconnect + "_" + kind + "_" + version + ".csv"
-        target = scenario_id + "_" + kind + ".csv"
-
-        command = "ln -s %s %s" % (
-            const.BASE_PROFILE_DIR + "/" + source,
-            const.INPUT_DIR + "/" + target,
-        )
-        stdin, stdout, stderr = self._ssh.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError("Failed to create link to %s profile." % kind)

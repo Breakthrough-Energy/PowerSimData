@@ -7,10 +7,11 @@ from powersimdata.scenario.scenario import Scenario
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
 
+
 scenario_id = "564"
 
 
-def is_renewble_profile_scaled(name, grid, ct, base_profile, scaled_profile):
+def is_renewable_profile_scaled(name, grid, ct, base_profile, scaled_profile):
     if name in ct.keys():
         scaled_plant_id = []
         scaling_factor_plant = []
@@ -50,37 +51,38 @@ def scenario():
 
 
 @pytest.fixture(scope="module")
-def base_hydro():
+def base_hydro(scenario):
     ssh_client = setup_server_connection()
     input_data = InputData(ssh_client)
-    base_hydro = input_data.get_data(scenario_id, "hydro")
+    base_hydro = input_data.get_data(scenario.info, "hydro")
     ssh_client.close()
     return base_hydro
 
 
 @pytest.fixture(scope="module")
-def base_wind():
+def base_wind(scenario):
     ssh_client = setup_server_connection()
     input_data = InputData(ssh_client)
-    base_wind = input_data.get_data(scenario_id, "wind")
+    base_wind = input_data.get_data(scenario.info, "wind")
     ssh_client.close()
     return base_wind
 
 
 @pytest.fixture(scope="module")
-def base_solar():
+def base_solar(scenario):
     ssh_client = setup_server_connection()
     input_data = InputData(ssh_client)
-    base_solar = input_data.get_data(scenario_id, "solar")
+    base_solar = input_data.get_data(scenario.info, "solar")
     ssh_client.close()
     return base_solar
 
 
 @pytest.fixture(scope="module")
-def base_demand():
+def base_demand(scenario):
+    print(scenario.info)
     ssh_client = setup_server_connection()
     input_data = InputData(ssh_client)
-    base_demand = input_data.get_data(scenario_id, "demand")
+    base_demand = input_data.get_data(scenario.info, "demand")
     ssh_client.close()
     return base_demand
 
@@ -88,7 +90,7 @@ def base_demand():
 @pytest.mark.integration
 def test_demand_is_scaled(scenario, base_demand):
     tp = TransformProfile(
-        scenario.ssh, scenario_id, scenario.state.get_grid(), scenario.state.get_ct()
+        scenario.ssh, scenario.info, scenario.state.get_grid(), scenario.state.get_ct()
     )
     scaled_demand = tp.get_demand()
     assert not base_demand.equals(scaled_demand)
@@ -109,7 +111,7 @@ def test_demand_is_scaled(scenario, base_demand):
 @pytest.mark.integration
 def test_solar_is_scaled(scenario, base_solar):
     tp = TransformProfile(
-        scenario.ssh, scenario_id, scenario.state.get_grid(), scenario.state.get_ct()
+        scenario.ssh, scenario.info, scenario.state.get_grid(), scenario.state.get_ct()
     )
     scaled_solar = tp.get_solar()
     assert not base_solar.equals(scaled_solar)
@@ -117,7 +119,7 @@ def test_solar_is_scaled(scenario, base_solar):
     ct = scenario.state.get_ct()
     grid = scenario.state.get_grid()
     if "solar" in ct.keys():
-        is_renewble_profile_scaled("solar", grid, ct, base_solar, scaled_solar)
+        is_renewable_profile_scaled("solar", grid, ct, base_solar, scaled_solar)
 
 
 @pytest.mark.integration
@@ -128,19 +130,19 @@ def test_wind_is_scaled(scenario, base_wind):
     # Scale a offshore wind turbine twice via zone_id and plant_id
     ct["wind_offshore"]["plant_id"][13905] = 0
 
-    tp = TransformProfile(scenario.ssh, scenario_id, grid, ct)
+    tp = TransformProfile(scenario.ssh, scenario.info, grid, ct)
 
     scaled_wind = tp.get_wind()
     assert not base_wind.equals(scaled_wind)
 
     if "wind" in ct.keys():
-        is_renewble_profile_scaled("wind", grid, ct, base_wind, scaled_wind)
+        is_renewable_profile_scaled("wind", grid, ct, base_wind, scaled_wind)
 
 
 @pytest.mark.integration
 def test_hydro_is_scaled(scenario, base_hydro):
     tp = TransformProfile(
-        scenario.ssh, scenario_id, scenario.state.get_grid(), scenario.state.get_ct()
+        scenario.ssh, scenario.info, scenario.state.get_grid(), scenario.state.get_ct()
     )
     scaled_hydro = tp.get_hydro()
     assert not base_hydro.equals(scaled_hydro)
@@ -148,7 +150,7 @@ def test_hydro_is_scaled(scenario, base_hydro):
     ct = scenario.state.get_ct()
     grid = scenario.state.get_grid()
     if "hydro" in ct.keys():
-        is_renewble_profile_scaled("hydro", grid, ct, base_hydro, scaled_hydro)
+        is_renewable_profile_scaled("hydro", grid, ct, base_hydro, scaled_hydro)
 
 
 @pytest.mark.integration
@@ -176,7 +178,7 @@ def test_add_plant(scenario, base_solar, base_wind):
     tg = TransformGrid(grid, ct.ct)
     new_grid = tg.get_grid()
 
-    tp = TransformProfile(scenario.ssh, scenario_id, new_grid, ct.ct)
+    tp = TransformProfile(scenario.ssh, scenario.info, new_grid, ct.ct)
 
     new_solar = tp.get_solar()
     assert not new_solar.equals(base_solar)

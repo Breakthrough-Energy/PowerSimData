@@ -4,6 +4,7 @@ from powersimdata.utility.transfer_data import (
     get_scenario_table,
     upload,
 )
+from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.input.profiles import InputData
 from powersimdata.input.grid import Grid
 from powersimdata.input.transform_grid import TransformGrid
@@ -52,7 +53,7 @@ class Execute(State):
         base_grid = Grid(self._scenario_info["interconnect"].split("_"))
         if self._scenario_info["change_table"] == "Yes":
             input_data = InputData(self._ssh)
-            self.ct = input_data.get_data(self._scenario_info["id"], "ct")
+            self.ct = input_data.get_data(self._scenario_info, "ct")
             self.grid = TransformGrid(base_grid, self.ct).get_grid()
         else:
             self.ct = {}
@@ -99,10 +100,10 @@ class Execute(State):
         """
         print("--> Updating status in execute table on server")
         options = "-F, -v OFS=',' -v INPLACE_SUFFIX=.bak -i inplace"
-        program = "'{for(i=1; i<=NF; i++){if($1==%s) $2=\"%s\"}};1'" % (
-            self._scenario_info["id"],
-            status,
-        )
+        # AWK parses the file line-by-line. When the entry of the first column is equal
+        # to the scenario identification number, the second column is replaced by the
+        # status parameter.
+        program = "'{if($1==%s) $2=\"%s\"};1'" % (self._scenario_info["id"], status)
         command = "awk %s %s %s" % (options, program, const.EXECUTE_LIST)
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
@@ -167,12 +168,10 @@ class Execute(State):
             print("PREPARING SIMULATION INPUTS")
             print("---------------------------")
 
-            si = SimulationInput(
-                self._ssh, self._scenario_info["id"], self.grid, self.ct
-            )
+            si = SimulationInput(self._ssh, self._scenario_info, self.grid, self.ct)
             si.create_folder()
-            for r in ["demand", "hydro", "solar", "wind"]:
-                si.prepare_profile(r)
+            for p in ["demand", "hydro", "solar", "wind"]:
+                si.prepare_profile(p)
 
             si.prepare_mpc_file()
 
@@ -213,22 +212,22 @@ class Execute(State):
 class SimulationInput(object):
     """Prepares scenario for execution.
 
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param dict scenario_info: scenario information.
+    :param powersimdata.input.grid.Grid grid: a Grid object.
+    :param dict ct: change table.
     """
 
-    def __init__(self, ssh_client, scenario_id, grid, ct):
+    def __init__(self, ssh_client, scenario_info, grid, ct):
         """Constructor.
 
-        :param paramiko.client.SSHClient ssh_client: session with an SSH server.
-        :param str scenario_id: scenario identification number.
-        :param powersimdata.input.grid.Grid grid: a Grid object.
-        :param dict ct: change table.
         """
         self._ssh = ssh_client
-        self.scenario_id = scenario_id
+        self._scenario_info = scenario_info
         self.grid = grid
         self.ct = ct
 
-        self._tmp_dir = "%s/scenario_%s" % (const.EXECUTE_DIR, scenario_id)
+        self.TMP_DIR = "%s/scenario_%s" % (const.EXECUTE_DIR, scenario_info["id"])
 
     def create_folder(self):
         """Creates folder on server that will enclose simulation inputs.
@@ -236,10 +235,10 @@ class SimulationInput(object):
         :raises IOError: if folder cannot be created.
         """
         print("--> Creating temporary folder on server for simulation inputs")
-        command = "mkdir %s" % self._tmp_dir
+        command = "mkdir %s" % self.TMP_DIR
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to create %s on server" % self._tmp_dir)
+            raise IOError("Failed to create %s on server" % self.TMP_DIR)
 
     def prepare_mpc_file(self):
         """Creates MATPOWER case file.
@@ -354,7 +353,7 @@ class SimulationInput(object):
                 }
             }
 
-            file_name = "%s_case_storage.mat" % self.scenario_id
+            file_name = "%s_case_storage.mat" % self._scenario_info["id"]
             savemat(
                 os.path.join(const.LOCAL_DIR, file_name), mpc_storage, appendmat=False
             )
@@ -362,19 +361,21 @@ class SimulationInput(object):
                 self._ssh,
                 file_name,
                 const.LOCAL_DIR,
-                self._tmp_dir,
+                self.TMP_DIR,
                 change_name_to="case_storage.mat",
             )
+            print("Deleting %s on local machine" % file_name)
+            os.remove(os.path.join(const.LOCAL_DIR, file_name))
 
         # MPC file
-        file_name = "%s_case.mat" % self.scenario_id
+        file_name = "%s_case.mat" % self._scenario_info["id"]
         savemat(os.path.join(const.LOCAL_DIR, file_name), mpc, appendmat=False)
 
         upload(
             self._ssh,
             file_name,
             const.LOCAL_DIR,
-            self._tmp_dir,
+            self.TMP_DIR,
             change_name_to="case.mat",
         )
 
@@ -386,29 +387,32 @@ class SimulationInput(object):
 
         :param kind: one of *demand*, *'hydro'*, *'solar'* or *'wind'*.
         """
-        profile = TransformProfile(self._ssh, self.scenario_id, self.grid, self.ct)
+        profile = TransformProfile(self._ssh, self._scenario_info, self.grid, self.ct)
         if bool(profile.scale_keys[kind] & set(self.ct.keys())):
             self._prepare_scaled_profile(kind, profile)
         else:
-            self._copy_base_profile(kind)
+            self._create_link_to_base_profile(kind)
 
-    def _copy_base_profile(self, kind):
-        """Copies base profile in temporary directory on server.
+    def _create_link_to_base_profile(self, kind):
+        """Creates link to base profile in temporary directory on server.
 
         :param str kind: one of *demand*, *'hydro'*, *'solar'* or *'wind'*.
-        :raises IOError: if file cannot be copied.
+        :raises IOError: if link cannot be created.
         """
-        print("--> Copying %s base profile into temporary folder" % kind)
-        command = "cp -a %s/%s_%s.csv %s/%s.csv" % (
-            const.INPUT_DIR,
-            self.scenario_id,
-            kind,
-            self._tmp_dir,
-            kind,
+        print("--> Creating link to %s base profile into temporary folder" % kind)
+
+        interconnect = interconnect2name(self._scenario_info["interconnect"].split("_"))
+        version = self._scenario_info["base_" + kind]
+        source = interconnect + "_" + kind + "_" + version + ".csv"
+        target = kind + ".csv"
+
+        command = "ln -s %s %s" % (
+            posixpath.join(const.BASE_PROFILE_DIR, source),
+            posixpath.join(self.TMP_DIR, target),
         )
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to copy inputs in %s on server" % self._tmp_dir)
+            raise IOError("Failed to create link to %s profile." % kind)
 
     def _prepare_scaled_profile(self, kind, profile):
         """Loads, scales and writes on local machine a base profile.
@@ -425,14 +429,14 @@ class SimulationInput(object):
         print(
             "Writing scaled %s profile in %s on local machine" % (kind, const.LOCAL_DIR)
         )
-        file_name = "%s_%s.csv" % (self.scenario_id, kind)
+        file_name = "%s_%s.csv" % (self._scenario_info["id"], kind)
         profile.to_csv(os.path.join(const.LOCAL_DIR, file_name))
 
         upload(
             self._ssh,
             file_name,
             const.LOCAL_DIR,
-            self._tmp_dir,
+            self.TMP_DIR,
             change_name_to="%s.csv" % kind,
         )
 
