@@ -31,20 +31,27 @@ duration of the intervals. The simulation engine can also be selected in the
 building phase of the scenario.
 
 The `Scenario` class handles the following tasks:
-* build a scenario (**create** state).
-* launch the scenario and extract the output data (**execute** state).
-* retrieve the output data (**analyze** state).
-* delete a scenario (**delete** state).
+* build a scenario (**create** state);
+* launch the scenario and extract the output data (**execute** state);
+* retrieve the output data (**analyze** state);
+* delete a scenario (**delete** state);
+* move a scenario to a backup disk
 
 When a `Scenario` class is instantiated, its state is set either to **create**,
-**execute** or **analyze**. This is handled in the constructor of the `Scenario` class.
-Only one argument (type `str`) is required to create a `Scenario` object. Instantiating
-a `Scenario` object with a string that doesn't match any existing scenarios
-identification number or name will result in a printout of the list of valid scenarios
-and their details. If a valid arguments is passed and the scenario has been ran and its
-output data have been extracted, the state will be set to **analyze**. If the scenario
-has only been created or ran but not extracted the state will be set to **execute**.
-Finally, an empty string instantiates the `Scenario` class in the **create** state.
+**execute** or **analyze**. The initial state of the `Scenario` object is set in the
+constructor of the class. Only one argument (type `str`) is required to create a
+`Scenario` object:
+* an empty string instantiates the `Scenario` class in the **create** state. A scenario
+can then be built.
+* If a valid scenario identification number or name is provided:
+  - if the scenario has been ran and its output data have been extracted, the state
+  will be set to **analyze**.
+  - If the scenario has only been created or ran but not extracted the state will be
+  then set to **execute**.
+
+Note that instantiating a `Scenario` object with a string that doesn't match any
+existing scenarios identification number or name will result in a printout of the list
+of existing scenarios and their information.
 
 
 
@@ -214,7 +221,8 @@ finished running.
 from powersimdata.scenario.scenario import Scenario
 
 scenario = Scenario('dummy')
-scenario.print_scenario_info()  # print scenario information
+# print scenario information
+scenario.print_scenario_info()
 
 # prepare simulation inputs
 scenario.state.prepare_simulation_input()
@@ -239,18 +247,42 @@ from powersimdata.scenario.scenario import Scenario
 from powersimdata.scenario.delete import Delete
 
 scenario = Scenario('dummy')
-print(scenario.state.name)  # print name of Scenario object state
-print(scenario.state.allowed)  # print list of accessible states
+# print name of Scenario object state
+print(scenario.state.name)
+# print list of accessible states
+print(scenario.state.allowed)
 
+# switch state
 scenario.change(Delete)
-print(scenario.state.name)  # print name of Scenario object state
+# print name of Scenario object state
+print(scenario.state.name)
 
-# Delete scenario
+# delete scenario
 scenario.state.delete_scenario()
 ```
-After the `delete_scenario` method is called, the state of the `Scenario` object
-is changed automatically to **create**.
 
+
+### E. Moving a Scenario to Backup disk
+A scenario can be move to a backup disk. The **move** state is only accessible from the
+**analyze** state. The code snippet below shows
+```python
+from powersimdata.scenario.scenario import Scenario
+from powersimdata.scenario.move import Move
+
+scenario = Scenario('dummy')
+# print name of Scenario object state
+print(scenario.state.name)
+# print list of accessible states
+print(scenario.state.allowed)
+
+# switch state
+scenario.change(Move)
+# print name of Scenario object state
+print(scenario.state.name)
+
+# move scenario
+scenario.state.move_scenario()
+```
 
 
 ## 2. U.S. Electric Grid and Interconnection
