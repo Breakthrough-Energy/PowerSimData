@@ -51,22 +51,18 @@ class Delete(State):
             raise IOError("Failed to delete entry in %s on server" % const.EXECUTE_LIST)
 
         # Delete links to base profiles on server
-        print("--> Deleting scenario inputs on server")
+        print("--> Deleting scenario input data on server")
         command = "rm -f %s/%s_*" % (const.INPUT_DIR, self._scenario_info["id"])
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError(
-                "Failed to delete scenario inputs in %s on server" % const.INPUT_DIR
-            )
+            raise IOError("Failed to delete scenario input data on server")
 
         # Delete output profiles
-        print("--> Deleting scenario outputs on server")
+        print("--> Deleting scenario output data on server")
         command = "rm -f %s/%s_*" % (const.OUTPUT_DIR, self._scenario_info["id"])
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError(
-                "Failed to delete scenario inputs in %s on server" % const.OUTPUT_DIR
-            )
+            raise IOError("Failed to delete scenario output data on server")
 
         # Delete temporary folder enclosing simulation inputs
         print("--> Deleting temporary folder on server")
@@ -74,10 +70,10 @@ class Delete(State):
         command = "rm -rf %s" % tmp_dir
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to create %s on server" % tmp_dir)
+            raise IOError("Failed to delete temporary folder on server")
 
         # Delete local files
-        print("--> Deleting MPC file and profiles on local machine")
+        print("--> Deleting input and output data on local machine")
         local_file = glob.glob(
             os.path.join(const.LOCAL_DIR, self._scenario_info["id"] + "_*")
         )

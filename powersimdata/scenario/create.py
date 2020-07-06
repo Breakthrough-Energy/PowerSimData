@@ -106,10 +106,10 @@ class Create(State):
         print("--> Adding entry in scenario table on server")
         entry = ",".join(self._scenario_info.values())
         options = "-F, -v INPLACE_SUFFIX=.bak -i inplace"
-        program = "'{for(i=1; i<=NF; i++){if($1==%s) $0=\"%s\"}};1'" % (
-            self._scenario_info["id"],
-            entry,
-        )
+        # AWK parses the file line-by-line. When the entry of the first column is
+        # equal to the scenario identification number, the entire line is replaced
+        # by the scenaario information.
+        program = "'{if($1==%s) $0=\"%s\"};1'" % (self._scenario_info["id"], entry,)
         command = "awk %s %s %s" % (options, program, const.SCENARIO_LIST)
 
         stdin, stdout, stderr = self._ssh.exec_command(command)

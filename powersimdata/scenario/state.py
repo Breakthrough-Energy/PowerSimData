@@ -18,7 +18,9 @@ class State(object):
             self.__class__ = state
             self._enter()
         else:
-            print("State switching: %s -/-> %s" % (self, state.name))
+            raise Exception(
+                "State switching: %s --> %s not permitted" % (self, state.name)
+            )
 
     def __str__(self):
         """

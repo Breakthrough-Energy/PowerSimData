@@ -18,13 +18,14 @@ class Analyze(State):
     """
 
     name = "analyze"
-    allowed = ["delete"]
+    allowed = []
 
     def __init__(self, scenario):
         """Constructor.
 
         """
         self._scenario_info = scenario.info
+        self._scenario_status = scenario.status
         self._ssh = scenario.ssh
 
         print(
@@ -33,7 +34,15 @@ class Analyze(State):
         )
         print("--> State\n%s" % self.name)
 
+        self._set_allowed_state()
         self._set_ct_and_grid()
+
+    def _set_allowed_state(self):
+        """Sets allowed state.
+
+        """
+        if self._scenario_status == "extracted":
+            self.allowed = ["delete", "move"]
 
     def _set_ct_and_grid(self):
         """Sets change table and grid.
