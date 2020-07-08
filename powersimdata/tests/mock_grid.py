@@ -144,9 +144,13 @@ plant_columns = [
     "lon",
 ]
 
+mock_branch = {"branch_id": []}
+mock_bus = {"bus_id": []}
+mock_plant = {"plant_id": []}
+
 
 class MockGrid(object):
-    def __init__(self, grid_attrs):
+    def __init__(self, grid_attrs=None):
         """ Constructor.
 
         :param dict grid_attrs: dictionary of {*field_name*, *data_dict*} pairs
@@ -155,6 +159,9 @@ class MockGrid(object):
             in which the keys are the column name of the data frame associated
             to *field_name* and the values are a list of values.
         """
+        if grid_attrs is None:
+            grid_attrs = {"branch": mock_branch, "bus": mock_bus, "plant": mock_plant}
+
         if not isinstance(grid_attrs, dict):
             raise TypeError("grid_attrs must be a dict")
 
