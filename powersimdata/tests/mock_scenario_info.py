@@ -6,7 +6,7 @@ from powersimdata.tests.mock_scenario import MockScenario
 class MockScenarioInfo(ScenarioInfo):
     def __init__(self, scenario=None):
         self._DEFAULT_FLOAT = 42
-        scenario = scenario or MockScenario()
+        scenario = scenario if scenario is not None else MockScenario()
         super().__init__(scenario)
 
     def area_to_loadzone(self, area, area_type=None):
