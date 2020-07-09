@@ -1,10 +1,11 @@
-import unittest
-
+import pytest
 import pandas as pd
 
 from powersimdata.tests.mock_scenario import MockScenario
+from powersimdata.tests.mock_scenario_info import MockScenarioInfo
 from powersimdata.tests.mock_grid import MockGrid
 
+period_num = 4
 
 # plant_id is the index
 mock_plant = {
@@ -18,85 +19,109 @@ mock_plant = {
 }
 
 
-class TestMocks(unittest.TestCase):
-    def setUp(self):
-        self.period_num = 4
-        self.mock_pg = pd.DataFrame(
-            {
-                plant_id: [(i + 1) * p for p in range(self.period_num)]
-                for i, plant_id in enumerate(mock_plant["plant_id"])
-            }
-        )
-        self.mock_pg.set_index(
-            pd.date_range(start="2016-01-01", periods=self.period_num, freq="H"),
-            inplace=True,
-        )
-        self.mock_pg.index.name = "UTC"
-
-        solar_plant_id = [
-            plant_id
+@pytest.fixture
+def mock_pg():
+    pg = pd.DataFrame(
+        {
+            plant_id: [(i + 1) * p for p in range(period_num)]
             for i, plant_id in enumerate(mock_plant["plant_id"])
-            if mock_plant["type"][i] == "solar"
-        ]
-        self.mock_solar = self.mock_pg[solar_plant_id] * 2
+        }
+    )
 
-        wind_plant_id = [
-            plant_id
-            for i, plant_id in enumerate(mock_plant["plant_id"])
-            if mock_plant["type"][i] == "wind"
-        ]
-        self.mock_wind = self.mock_pg[wind_plant_id] * 4
+    pg.set_index(
+        pd.date_range(start="2016-01-01", periods=period_num, freq="H"), inplace=True,
+    )
+    pg.index.name = "UTC"
+    return pg
 
-        hydro_plant_id = [
-            plant_id
-            for i, plant_id in enumerate(mock_plant["plant_id"])
-            if mock_plant["type"][i] == "hydro"
-        ]
-        self.mock_hydro = self.mock_pg[hydro_plant_id] * 1.5
 
-    # check that MockGrid is working correctly
+@pytest.fixture
+def mock_solar(mock_pg):
+    solar_plant_id = [
+        plant_id
+        for i, plant_id in enumerate(mock_plant["plant_id"])
+        if mock_plant["type"][i] == "solar"
+    ]
+    return mock_pg[solar_plant_id] * 2
+
+
+@pytest.fixture
+def mock_wind(mock_pg):
+    wind_plant_id = [
+        plant_id
+        for i, plant_id in enumerate(mock_plant["plant_id"])
+        if mock_plant["type"][i] == "wind"
+    ]
+    return mock_pg[wind_plant_id] * 4
+
+
+@pytest.fixture
+def mock_hydro(mock_pg):
+    hydro_plant_id = [
+        plant_id
+        for i, plant_id in enumerate(mock_plant["plant_id"])
+        if mock_plant["type"][i] == "hydro"
+    ]
+    return mock_pg[hydro_plant_id] * 1.5
+
+
+class TestMockGrid:
     def test_mock_grid_successes(self):
         grid = MockGrid(grid_attrs={"plant": mock_plant})
-        self.assertTrue(isinstance(grid, object), "MockGrid should return an object")
-        self.assertTrue(
-            hasattr(grid, "plant"), "Plant property should be in the MockGrid"
-        )
-        self.assertEqual(
-            len(grid.branch), 0, "Branch dataframe should be empty in the MockGrid"
-        )
+        assert isinstance(grid, object), "MockGrid should return an object"
+        assert hasattr(grid, "plant"), "Plant property should be in the MockGrid"
+        assert len(grid.branch) == 0, "Branch dataframe should be empty in the MockGrid"
 
     def test_mock_grid_failures(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             MockGrid(grid_attrs="foo")
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             MockGrid(grid_attrs={1: "foo"})
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             MockGrid(grid_attrs={"foo": "bar"})
 
-    def test_mock_pg_stored_properly(self):
-        scenario = MockScenario(grid_attrs={"plant": mock_plant}, pg=self.mock_pg)
+
+class TestMockScenario:
+    def test_mock_pg_stored_properly(self, mock_pg):
+        scenario = MockScenario(grid_attrs={"plant": mock_plant}, pg=mock_pg)
         pg = scenario.state.get_pg()
         err_msg = "pg should have dimension (periodNum * len(plant))"
-        self.assertEqual(pg.shape, self.mock_pg.shape, err_msg)
+        assert pg.shape == mock_pg.shape, err_msg
 
-    def test_mock_solar_stored_properly(self):
-        scenario = MockScenario(grid_attrs={"plant": mock_plant}, solar=self.mock_solar)
+    def test_mock_solar_stored_properly(self, mock_solar):
+        scenario = MockScenario(grid_attrs={"plant": mock_plant}, solar=mock_solar)
         solar = scenario.state.get_solar()
         err_msg = "solar should have dimension (periodNum * len(solar_plant))"
-        self.assertEqual(solar.shape, self.mock_solar.shape, err_msg)
+        assert solar.shape == mock_solar.shape, err_msg
 
-    def test_mock_wind_stored_properly(self):
-        scenario = MockScenario(grid_attrs={"plant": mock_plant}, wind=self.mock_wind)
+    def test_mock_wind_stored_properly(self, mock_wind):
+        scenario = MockScenario(grid_attrs={"plant": mock_plant}, wind=mock_wind)
         wind = scenario.state.get_wind()
         err_msg = "wind should have dimension (periodNum * len(wind_plant))"
-        self.assertEqual(wind.shape, self.mock_wind.shape, err_msg)
+        assert wind.shape == mock_wind.shape, err_msg
 
-    def test_mock_hydro_stored_properly(self):
-        scenario = MockScenario(grid_attrs={"plant": mock_plant}, hydro=self.mock_hydro)
+    def test_mock_hydro_stored_properly(self, mock_hydro):
+        scenario = MockScenario(grid_attrs={"plant": mock_plant}, hydro=mock_hydro)
         hydro = scenario.state.get_hydro()
         err_msg = "hydro should have dimension (periodNum * len(hydro_plant))"
-        self.assertEqual(hydro.shape, self.mock_hydro.shape, err_msg)
+        assert hydro.shape == mock_hydro.shape, err_msg
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TestMockScenarioInfo:
+    def test_create_mock_scenario_info(self):
+        assert MockScenarioInfo() is not None
+
+    def test_default_float(self):
+        mock_s_info = MockScenarioInfo()
+        assert 42 == mock_s_info.get_demand(1, 2, 3)
+
+    def test_info_set_correctly(self):
+        mock_s_info = MockScenarioInfo()
+        mock_scenario = MockScenario()
+        for k in mock_scenario.info.keys():
+            assert k in mock_s_info.info.keys()
+
+    def test_grid_set_correctly(self):
+        mock_scenario = MockScenario()
+        mock_s_info = MockScenarioInfo(mock_scenario)
+        assert mock_scenario.state.get_grid() == mock_s_info.grid
