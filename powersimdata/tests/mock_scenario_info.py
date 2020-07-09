@@ -4,15 +4,10 @@ from powersimdata.tests.mock_scenario import MockScenario
 
 
 class MockScenarioInfo(ScenarioInfo):
-    def __init__(self, mock_scenario=None, mock_grid=None):
+    def __init__(self, scenario=None):
         self._DEFAULT_FLOAT = 42
-        self.grid = mock_grid or MockGrid()
-        self._set_info(mock_scenario)
-
-    def _set_info(self, scenario):
-        if scenario is None:
-            scenario = MockScenario()
-        self.info = scenario.info
+        scenario = scenario or MockScenario()
+        super().__init__(scenario)
 
     def area_to_loadzone(self, area, area_type=None):
         return set()
