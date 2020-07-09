@@ -144,10 +144,6 @@ plant_columns = [
     "lon",
 ]
 
-mock_branch = {"branch_id": []}
-mock_bus = {"bus_id": []}
-mock_plant = {"plant_id": []}
-
 
 class MockGrid(object):
     def __init__(self, grid_attrs=None):
@@ -160,7 +156,7 @@ class MockGrid(object):
             to *field_name* and the values are a list of values.
         """
         if grid_attrs is None:
-            grid_attrs = {"branch": mock_branch, "bus": mock_bus, "plant": mock_plant}
+            grid_attrs = {}
 
         if not isinstance(grid_attrs, dict):
             raise TypeError("grid_attrs must be a dict")
