@@ -281,7 +281,7 @@ class _Builder(object):
     hydro = ""
     solar = ""
     wind = ""
-    engine = "REISE"
+    engine = "REISE.jl"
     name = "builder"
 
     def set_name(self, plan_name, scenario_name):
