@@ -1,6 +1,6 @@
 from powersimdata.input.profiles import get_bus_demand
 from powersimdata.utility.transfer_data import download
-from powersimdata.utility import const
+from powersimdata.utility import const, backup
 
 import numpy as np
 import os
@@ -12,15 +12,17 @@ class OutputData(object):
     """Load output data.
 
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param str data_loc: data location.
     """
 
-    def __init__(self, ssh_client):
+    def __init__(self, ssh_client, data_loc=None):
         """Constructor
 
         """
         if not os.path.exists(const.LOCAL_DIR):
             os.makedirs(const.LOCAL_DIR)
         self._ssh = ssh_client
+        self.data_loc = data_loc
 
     def get_data(self, scenario_id, field_name):
         """Returns data either from server or from local directory.
@@ -44,7 +46,10 @@ class OutputData(object):
             print("%s not found in %s on local machine" % (file_name, const.LOCAL_DIR))
 
         try:
-            download(self._ssh, file_name, const.OUTPUT_DIR, const.LOCAL_DIR)
+            if self.data_loc == "disk":
+                download(self._ssh, file_name, backup.OUTPUT_DIR, const.LOCAL_DIR)
+            else:
+                download(self._ssh, file_name, const.OUTPUT_DIR, const.LOCAL_DIR)
             data = _read_data(file_name)
             return data
         except FileNotFoundError:
