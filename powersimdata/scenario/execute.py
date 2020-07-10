@@ -407,7 +407,7 @@ class SimulationInput(object):
         target = kind + ".csv"
 
         command = "ln -s %s %s" % (
-            posixpath.join(const.BASE_PROFILE_DIR, source),
+            posixpath.join("../../raw", source),
             posixpath.join(self.TMP_DIR, target),
         )
         stdin, stdout, stderr = self._ssh.exec_command(command)
