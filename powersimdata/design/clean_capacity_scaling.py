@@ -907,7 +907,7 @@ class ResourceManager:
 
     def __init__(self):
         """Creates an empty dictionary to hold resource objects.
-        
+
         """
         self.resources = {}
 
