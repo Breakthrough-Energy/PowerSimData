@@ -3,6 +3,7 @@ import json
 import os
 import pickle
 
+import numpy as np
 import pandas as pd
 
 from powersimdata.design.scenario_info import ScenarioInfo, area_to_loadzone
@@ -45,6 +46,50 @@ def _apply_zone_scale_factor_to_ct(ct, fuel, zone_id, scale_factor):
         ct[fuel]["zone_id"][zone_id] = scale_factor
     else:
         ct[fuel]["zone_id"][zone_id] *= scale_factor
+
+
+def load_targets_from_csv(filename):
+    """Interprets a CSV file as a set of targets, ensuring that required columns are present,
+    and filling in default values for optional columns.
+
+    :param str filename: filepath to targets csv.
+    :return: (*pandas.DataFrame*) -- DataFrame of targets from csv file
+    :raises TypeError: if filename is not a string
+    :raises ValueError: if one or more required columns is missing.
+    """
+    # Constants
+    mandatory_columns = {
+        "region_name",
+        "ce_target_fraction",
+    }
+    optional_column_defaults = {
+        "allowed_resources": "solar, wind",
+        "external_ce_addl_historical_amount": 0,
+        "solar_percentage": np.nan,
+    }
+
+    # Validate input
+    if not isinstance(filename, str):
+        raise TypeError("filename must be a str")
+    # Interpret as object so that we can fillna() with a mixed-type dict
+    raw_targets = pd.read_csv(filename).astype(object)
+    raw_columns = set(raw_targets.columns)
+    if not mandatory_columns <= raw_columns:
+        missing_columns = mandatory_columns - raw_columns
+        raise ValueError(f'Missing columns: {", ".join(missing_columns)}')
+    raw_targets.set_index("region_name", inplace=True)
+    # Report which columns are used vs. unused
+    ignored_columns = raw_columns - mandatory_columns - optional_column_defaults.keys()
+    print(f"ignoring: {ignored_columns}")
+
+    for column in optional_column_defaults.keys():
+        # Fill optional columns that are missing entirely
+        if column not in raw_columns:
+            raw_targets[column] = np.nan
+    # Fill any empty cells within optional columns
+    raw_targets.fillna(value=optional_column_defaults, inplace=True)
+
+    return raw_targets
 
 
 class AbstractStrategyManager:
