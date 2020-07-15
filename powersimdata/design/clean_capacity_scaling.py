@@ -13,6 +13,7 @@ from powersimdata.input.grid import Grid
 def _check_solar_fraction(solar_fraction):
     """Checks that the solar_fraction is between 0 and 1, or is None.
 
+    :param float scale_fraction: desired solar fraction for new capacity.
     :raises TypeError: if type is not int, float, or None.
     :raises ValueError: if value is not between 0 and 1.
     """
