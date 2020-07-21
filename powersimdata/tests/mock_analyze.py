@@ -5,7 +5,7 @@ from powersimdata.tests.mock_grid import MockGrid
 class MockAnalyze:
     def __init__(
         self,
-        grid_attrs,
+        grid_attrs=None,
         congl=None,
         congu=None,
         ct=None,

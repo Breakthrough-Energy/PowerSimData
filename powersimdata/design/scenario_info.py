@@ -12,10 +12,10 @@ def _check_state(scenario):
 
     :param powersimdata.scenario.scenario.Scenario scenario:
         scenario instance
-    :raise Exception: if the scenario is not in 'analyze' state.
+    :raise TypeError: if the scenario is not in 'analyze' state.
     """
     if scenario.state.name != "analyze":
-        raise Exception("Scenario state must be 'analyze.'")
+        raise TypeError("Scenario state must be 'analyze.'")
 
 
 def area_to_loadzone(grid, area, area_type=None):
@@ -27,13 +27,17 @@ def area_to_loadzone(grid, area, area_type=None):
     :param str area_type: one of: *'loadzone'*, *'state'*,
         *'state_abbr'*, *'interconnect'*
     :return: (*set*) -- set of loadzone names associated with the query area.
-    :raise Exception: if area is invalid or the combination of
-        area and area_type is invalid or the type of area_type is invalid.
+    :raise TypeError: if area is not None or str
+    :raise ValueError: if area is invalid or the combination of area and area_type is invalid
 
     .. note:: if area_type is not specified, the function will check the
         area in the order of 'state', 'loadzone', 'state abbreviation',
         'interconnect' and 'all'.
     """
+
+    def raise_invalid_area(area_type):
+        raise ValueError("Invalid area for area_type=%s" % area_type)
+
     if area_type is not None and not isinstance(area_type, str):
         raise TypeError("'area_type' should be either None or str.")
     if area_type:
@@ -41,22 +45,22 @@ def area_to_loadzone(grid, area, area_type=None):
             if area in grid.zone2id:
                 loadzone_set = {area}
             else:
-                raise ValueError("Invalid area for area_type=%s" % area_type)
+                raise_invalid_area(area_type)
         elif area_type == "state":
             if area in list(abv2state.values()):
                 loadzone_set = state2loadzone[area]
             else:
-                raise ValueError("Invalid area for area_type=%s" % area_type)
+                raise_invalid_area(area_type)
         elif area_type == "state_abbr":
             if area in abv2state:
                 loadzone_set = state2loadzone[abv2state[area]]
             else:
-                raise ValueError("Invalid area for area_type=%s" % area_type)
+                raise_invalid_area(area_type)
         elif area_type == "interconnect":
             if area in {"Texas", "Western", "Eastern"}:
                 loadzone_set = interconnect2loadzone[area]
             else:
-                raise ValueError("Invalid area for area_type=%s" % area_type)
+                raise_invalid_area(area_type)
         else:
             print(
                 "%s is incorrect. Available area_types are 'loadzone',"
@@ -84,7 +88,7 @@ class ScenarioInfo:
     """Gather information from previous scenarios for capacity scaling.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :raise Exception: if the scenario is not in 'analyze' state.
+    :raise TypeError: if the scenario is not in 'analyze' state.
     """
 
     def __init__(self, scenario):
@@ -110,7 +114,7 @@ class ScenarioInfo:
         """
         return area_to_loadzone(self.grid, area, area_type)
 
-    def check_time_range(self, start_time, end_time):
+    def _check_time_range(self, start_time, end_time):
         """Check if the start_time and end_time define a valid time range of
             the given scenario
 
@@ -120,14 +124,14 @@ class ScenarioInfo:
             *'YYYY-MM-DD HH:MM:SS'*
         :return: (*tuple*) -- a pair of integer indicates the index of
             the start timestamp and end timestamp in self.pg
-        :raise Exception: if the time range is invalid.
+        :raise ValueError: if the time range is invalid.
         """
         if (start_time not in self.pg.index) or (end_time not in self.pg.index):
-            print(
-                "Available time range [%s, %s]"
-                % (str(self.pg.index[0]), str(self.pg.index[-1]))
+            available_times = "Available time range [%s, %s]" % (
+                str(self.pg.index[0]),
+                str(self.pg.index[-1]),
             )
-            raise ValueError("Time range out of scope!")
+            raise ValueError(f"Time range out of scope! {available_times}")
         start_i = self.pg.index.get_loc(start_time)
         end_i = self.pg.index.get_loc(end_time)
         if start_i > end_i:
@@ -166,7 +170,7 @@ class ScenarioInfo:
             based on the specified parameters
         """
         loadzone_set = self.area_to_loadzone(area, area_type)
-        self.check_time_range(start_time, end_time)
+        self._check_time_range(start_time, end_time)
         total_demand = (
             self.demand.loc[
                 start_time:end_time,
@@ -222,7 +226,7 @@ class ScenarioInfo:
             ].index
         )
         query_pg_df = self.pg[plant_id_list]
-        self.check_time_range(start_time, end_time)
+        self._check_time_range(start_time, end_time)
         total_generation = query_pg_df.loc[start_time:end_time].sum().sum()
         return float(total_generation)
 
@@ -241,7 +245,7 @@ class ScenarioInfo:
             *'state_abbr'*, *'interconnect'*
         :return: (*float*) -- total resource from profile (in MWh)
             based on the specified parameters
-        :raise Exception: if the resource type is invalid
+        :raise ValueError: if the resource type is invalid
         """
         loadzone_set = self.area_to_loadzone(area, area_type)
         plant_id_list = list(
@@ -253,7 +257,7 @@ class ScenarioInfo:
         if gentype not in self.profile:
             raise ValueError("Invalid resource type")
         query_profile_df = self.profile[gentype][plant_id_list]
-        self.check_time_range(start_time, end_time)
+        self._check_time_range(start_time, end_time)
         total_resource = query_profile_df.loc[start_time:end_time].sum().sum()
         return float(total_resource)
 
@@ -298,8 +302,10 @@ class ScenarioInfo:
         :param str area_type: one of: *'loadzone'*, *'state'*,
             *'state_abbr'*, *'interconnect'*
         :return: (*float*) -- capacity factor based on the specified parameters
+        :raise ZeroDivisionError: if no generator of gentype is found in the
+        area
         """
-        start_i, end_i = self.check_time_range(start_time, end_time)
+        start_i, end_i = self._check_time_range(start_time, end_time)
         total_hours = end_i - start_i + 1
         total_capacity = self.get_capacity(gentype, area, area_type)
         if total_capacity == 0:
