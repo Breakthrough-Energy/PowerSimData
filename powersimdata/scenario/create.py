@@ -85,7 +85,7 @@ class Create(State):
             % (
                 const.SCENARIO_LIST,
                 const.SCENARIO_LIST,
-                posixpath.join(const.HOME_DIR, "scenario.lockfile"),
+                posixpath.join(const.DATA_ROOT_DIR, "scenario.lockfile"),
             )
         )
 
