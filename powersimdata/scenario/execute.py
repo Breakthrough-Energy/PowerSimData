@@ -115,7 +115,7 @@ class Execute(State):
         :param str script: script to be used.
         :return: (*subprocess.Popen*) -- process used to run script
         """
-        path_to_package = posixpath.join(const.HOME_DIR, self._scenario_info["engine"])
+        path_to_package = posixpath.join(const.MODEL_DIR, self._scenario_info["engine"])
         if self._scenario_info["engine"] == "REISE":
             folder = "pyreise"
         else:
