@@ -118,7 +118,8 @@ def setup_server_connection():
                 print("Cannot read file, try again")
                 ssh_known_hosts = input("Provide ssh known_hosts key file =")
 
-    client.connect(const.SERVER_ADDRESS, timeout=60)
+    server_user = const.get_server_user()
+    client.connect(const.SERVER_ADDRESS, username=server_user, timeout=60)
 
     return client
 
