@@ -1,4 +1,7 @@
-# This file taken from github/gitignore
+# This is specific to this package
+powersimdata/utility/.server_user
+
+# The remainder of this file taken from github/gitignore
 # https://github.com/github/gitignore/blob/master/Python.gitignore
 
 
