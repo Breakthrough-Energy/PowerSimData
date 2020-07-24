@@ -119,7 +119,7 @@ class Execute(State):
         if extra_args is None:
             extra_args = []
 
-        path_to_package = posixpath.join(const.HOME_DIR, self._scenario_info["engine"])
+        path_to_package = posixpath.join(const.MODEL_DIR, self._scenario_info["engine"])
         if self._scenario_info["engine"] == "REISE":
             folder = "pyreise"
         else:
@@ -187,13 +187,15 @@ class Execute(State):
             print("Current status: %s" % self._scenario_status)
             return
 
-    def launch_simulation(self):
+    def launch_simulation(self, threads=None):
         """Launches simulation on server.
 
+        :param int/None threads: the number of threads to be used (None -> auto).
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
         print("--> Launching simulation on server")
-        return self._run_script("call.py")
+        extra_args = None if threads is None else [threads]
+        return self._run_script("call.py", extra_args=extra_args)
 
     def extract_simulation_output(self):
         """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL} on server.
