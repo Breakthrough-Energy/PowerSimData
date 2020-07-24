@@ -121,7 +121,7 @@ class Execute(State):
         else:
             folder = "pyreisejl"
         path_to_script = posixpath.join(path_to_package, folder, "utility", script)
-        username = os.getlogin()
+        username = const.get_server_user()
         cmd = [
             "ssh",
             username + "@" + const.SERVER_ADDRESS,
