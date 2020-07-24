@@ -109,30 +109,34 @@ class Execute(State):
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to update %s on server" % const.EXECUTE_LIST)
 
-    def _run_script(self, script):
+    def _run_script(self, script, extra_args=None):
         """Returns running process
 
         :param str script: script to be used.
+        :param list/None extra_args: list of strings to be passed after scenario id.
         :return: (*subprocess.Popen*) -- process used to run script
         """
-        path_to_package = posixpath.join(const.MODEL_DIR, self._scenario_info["engine"])
+        if extra_args is None:
+            extra_args = []
+
+        path_to_package = posixpath.join(const.HOME_DIR, self._scenario_info["engine"])
         if self._scenario_info["engine"] == "REISE":
             folder = "pyreise"
         else:
             folder = "pyreisejl"
         path_to_script = posixpath.join(path_to_package, folder, "utility", script)
         username = const.get_server_user()
-        cmd = [
-            "ssh",
-            username + "@" + const.SERVER_ADDRESS,
-            'export PYTHONPATH="%s:$PYTHONPATH";' % path_to_package,
+        cmd_ssh = ["ssh", username + "@" + const.SERVER_ADDRESS]
+        cmd_pythonpath = [f'export PYTHONPATH="{path_to_package}:$PYTHONPATH";']
+        cmd_pythoncall = [
             "nohup",
             "python3",
             "-u",
-            "%s" % path_to_script,
+            path_to_script,
             self._scenario_info["id"],
-            "</dev/null >/dev/null 2>&1 &",
         ]
+        cmd_io_redirect = ["</dev/null >/dev/null 2>&1 &"]
+        cmd = cmd_ssh + cmd_pythonpath + cmd_pythoncall + extra_args + cmd_io_redirect
         process = Popen(cmd)
         print("PID: %s" % process.pid)
         return process
