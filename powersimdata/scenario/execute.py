@@ -118,6 +118,8 @@ class Execute(State):
         """
         if extra_args is None:
             extra_args = []
+        else:
+            extra_args = [str(a) for a in extra_args]
 
         path_to_package = posixpath.join(const.MODEL_DIR, self._scenario_info["engine"])
         if self._scenario_info["engine"] == "REISE":
