@@ -23,7 +23,7 @@ def get_server_user():
     dir_path = os.path.dirname(os.path.realpath(__file__))
     try:
         with open(os.path.join(dir_path, ".server_user")) as f:
-            server_user = f.read()
+            server_user = f.read().strip()
     except FileNotFoundError:
         server_user = os.getlogin()
 
