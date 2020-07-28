@@ -109,12 +109,16 @@ class Execute(State):
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to update %s on server" % const.EXECUTE_LIST)
 
-    def _run_script(self, script):
+    def _run_script(self, script, extra_args=None):
         """Returns running process
 
         :param str script: script to be used.
+        :param list/None extra_args: list of strings to be passed after scenario id.
         :return: (*subprocess.Popen*) -- process used to run script
         """
+        if extra_args is None:
+            extra_args = []
+
         path_to_package = posixpath.join(const.MODEL_DIR, self._scenario_info["engine"])
         if self._scenario_info["engine"] == "REISE":
             folder = "pyreise"
@@ -122,17 +126,17 @@ class Execute(State):
             folder = "pyreisejl"
         path_to_script = posixpath.join(path_to_package, folder, "utility", script)
         username = const.get_server_user()
-        cmd = [
-            "ssh",
-            username + "@" + const.SERVER_ADDRESS,
-            'export PYTHONPATH="%s:$PYTHONPATH";' % path_to_package,
+        cmd_ssh = ["ssh", username + "@" + const.SERVER_ADDRESS]
+        cmd_pythonpath = [f'export PYTHONPATH="{path_to_package}:$PYTHONPATH";']
+        cmd_pythoncall = [
             "nohup",
             "python3",
             "-u",
-            "%s" % path_to_script,
+            path_to_script,
             self._scenario_info["id"],
-            "</dev/null >/dev/null 2>&1 &",
         ]
+        cmd_io_redirect = ["</dev/null >/dev/null 2>&1 &"]
+        cmd = cmd_ssh + cmd_pythonpath + cmd_pythoncall + extra_args + cmd_io_redirect
         process = Popen(cmd)
         print("PID: %s" % process.pid)
         return process
@@ -183,13 +187,15 @@ class Execute(State):
             print("Current status: %s" % self._scenario_status)
             return
 
-    def launch_simulation(self):
+    def launch_simulation(self, threads=None):
         """Launches simulation on server.
 
+        :param int/None threads: the number of threads to be used (None -> auto).
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
         print("--> Launching simulation on server")
-        return self._run_script("call.py")
+        extra_args = None if threads is None else [threads]
+        return self._run_script("call.py", extra_args=extra_args)
 
     def extract_simulation_output(self):
         """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL} on server.
