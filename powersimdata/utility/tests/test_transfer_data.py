@@ -1,10 +1,10 @@
 from powersimdata.data_access.scenario_list import ScenarioListManager
+from powersimdata.utility.const import get_server_user
 from powersimdata.utility.transfer_data import (
     setup_server_connection,
     get_execute_table,
 )
 
-from getpass import getuser
 from numpy.testing import assert_array_equal
 import pandas as pd
 import pytest
@@ -24,7 +24,7 @@ def scenario_table(ssh_client):
 @pytest.mark.integration
 def test_setup_server_connection(ssh_client):
     _, stdout, _ = ssh_client.exec_command("whoami")
-    assert stdout.read().decode("utf-8").strip() == getuser()
+    assert stdout.read().decode("utf-8").strip() == get_server_user()
     ssh_client.close()
 
 
