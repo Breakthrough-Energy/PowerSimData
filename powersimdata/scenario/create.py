@@ -1,3 +1,4 @@
+from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.utility import const
 from powersimdata.utility.transfer_data import upload
 from powersimdata.scenario.state import State
