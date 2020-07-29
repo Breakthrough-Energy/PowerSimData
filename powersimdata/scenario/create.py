@@ -1,5 +1,5 @@
 from powersimdata.utility import const
-from powersimdata.utility.transfer_data import get_scenario_table, upload
+from powersimdata.utility.transfer_data import upload
 from powersimdata.scenario.state import State
 from powersimdata.scenario.execute import Execute
 from powersimdata.input.grid import Grid
@@ -50,7 +50,7 @@ class Create(State):
                 ("engine", ""),
             ]
         )
-        self._ssh = scenario.ssh
+        super().__init__(scenario)
 
     def _update_scenario_info(self):
         """Updates scenario information.
@@ -72,49 +72,11 @@ class Create(State):
             else:
                 self._scenario_info["change_table"] = "No"
 
-    def _generate_scenario_id(self):
-        """Generates scenario id.
-
-        """
-        print("--> Generating scenario id")
-        script = (
-            "(flock -e 200; \
-                   id=$(awk -F',' 'END{print $1+1}' %s); \
-                   echo $id, >> %s; \
-                   echo $id) 200>%s"
-            % (
-                const.SCENARIO_LIST,
-                const.SCENARIO_LIST,
-                posixpath.join(const.DATA_ROOT_DIR, "scenario.lockfile"),
-            )
-        )
-
-        stdin, stdout, stderr = self._ssh.exec_command(script)
-        err_message = stderr.readlines()
-        if err_message:
-            raise IOError(err_message[0].strip())
-        else:
-            scenario_id = stdout.readlines()[0].splitlines()[0]
-            self._scenario_info["id"] = scenario_id
-            self._scenario_info.move_to_end("id", last=False)
-
-    def _add_entry_in_scenario_list(self):
-        """Adds scenario to the scenario list file on server.
-
-        :raises IOError: if scenario list file on server cannot be updated.
-        """
-        print("--> Adding entry in scenario table on server")
-        entry = ",".join(self._scenario_info.values())
-        options = "-F, -v INPLACE_SUFFIX=.bak -i inplace"
-        # AWK parses the file line-by-line. When the entry of the first column is
-        # equal to the scenario identification number, the entire line is replaced
-        # by the scenaario information.
-        program = "'{if($1==%s) $0=\"%s\"};1'" % (self._scenario_info["id"], entry,)
-        command = "awk %s %s %s" % (options, program, const.SCENARIO_LIST)
-
-        stdin, stdout, stderr = self._ssh.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError("Failed to update %s on server" % const.SCENARIO_LIST)
+    # update scenario list
+    def _generate_and_set_scenario_id(self):
+        scenario_id = self._scenario_list_manager.generate_scenario_id()
+        self._scenario_info["id"] = scenario_id
+        self._scenario_info.move_to_end("id", last=False)
 
     def _add_entry_in_execute_list(self):
         """Adds scenario to the execute list file on server.
@@ -188,7 +150,7 @@ class Create(State):
             )
 
             # Generate scenario id
-            self._generate_scenario_id()
+            self._generate_and_set_scenario_id()
             # Add missing information
             self._scenario_info["state"] = "execute"
             self._scenario_info["runtime"] = ""
@@ -196,7 +158,7 @@ class Create(State):
             self.grid = self.builder.get_grid()
             self.ct = self.builder.change_table.ct
             # Add scenario to scenario list file on server
-            self._add_entry_in_scenario_list()
+            self._scenario_list_manager.add_entry(self._scenario_info)
             # Upload change table to server
             if bool(self.builder.change_table.ct):
                 self._upload_change_table()
@@ -283,6 +245,18 @@ class _Builder(object):
     wind = ""
     engine = "REISE.jl"
     name = "builder"
+
+    def __init__(self, interconnect, ssh_client):
+        """Constructor.
+
+        """
+        self.base_grid = Grid(interconnect)
+        self.profile = CSV(interconnect, ssh_client)
+        self.change_table = ChangeTable(self.base_grid)
+        self._scenario_list_manager = ScenarioListManager(ssh_client)
+
+        table = self._scenario_list_manager.get_scenario_table()
+        self.existing = table[table.interconnect == self.name]
 
     def set_name(self, plan_name, scenario_name):
         """Sets scenario name.
@@ -412,12 +386,7 @@ class Eastern(_Builder):
 
         """
         self.interconnect = ["Eastern"]
-        self.base_grid = Grid(self.interconnect)
-        self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.base_grid)
-
-        table = get_scenario_table(ssh_client)
-        self.existing = table[table.interconnect == self.name]
+        super().__init__(self.interconnect, ssh_client)
 
 
 class Texas(_Builder):
@@ -432,12 +401,7 @@ class Texas(_Builder):
 
         """
         self.interconnect = ["Texas"]
-        self.base_grid = Grid(self.interconnect)
-        self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.base_grid)
-
-        table = get_scenario_table(ssh_client)
-        self.existing = table[table.interconnect == self.name]
+        super().__init__(self.interconnect, ssh_client)
 
 
 class Western(_Builder):
@@ -453,12 +417,7 @@ class Western(_Builder):
 
         """
         self.interconnect = ["Western"]
-        self.base_grid = Grid(self.interconnect)
-        self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.base_grid)
-
-        table = get_scenario_table(ssh_client)
-        self.existing = table[table.interconnect == self.name]
+        super().__init__(self.interconnect, ssh_client)
 
 
 class TexasWestern(_Builder):
@@ -474,12 +433,7 @@ class TexasWestern(_Builder):
 
         """
         self.interconnect = ["Texas", "Western"]
-        self.base_grid = Grid(self.interconnect)
-        self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.base_grid)
-
-        table = get_scenario_table(ssh_client)
-        self.existing = table[table.interconnect == self.name]
+        super().__init__(self.interconnect, ssh_client)
 
 
 class TexasEastern(_Builder):
@@ -494,6 +448,7 @@ class TexasEastern(_Builder):
 
         """
         self.interconnect = ["Texas", "Eastern"]
+        super().__init__(self.interconnect, ssh_client)
 
 
 class EasternWestern(_Builder):
@@ -508,6 +463,7 @@ class EasternWestern(_Builder):
 
         """
         self.interconnect = ["Eastern", "Western"]
+        super().__init__(self.interconnect, ssh_client)
 
 
 class USA(_Builder):
@@ -522,12 +478,7 @@ class USA(_Builder):
 
         """
         self.interconnect = ["USA"]
-        self.base_grid = Grid(self.interconnect)
-        self.profile = CSV(self.interconnect, ssh_client)
-        self.change_table = ChangeTable(self.base_grid)
-
-        table = get_scenario_table(ssh_client)
-        self.existing = table[table.interconnect == self.name]
+        super().__init__(self.interconnect, ssh_client)
 
 
 class CSV(object):

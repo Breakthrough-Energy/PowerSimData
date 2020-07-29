@@ -1,7 +1,6 @@
 from powersimdata.utility import const
 from powersimdata.utility.transfer_data import (
     get_execute_table,
-    get_scenario_table,
     upload,
 )
 from powersimdata.scenario.helpers import interconnect2name
@@ -35,7 +34,7 @@ class Execute(State):
         """
         self._scenario_info = scenario.info
         self._scenario_status = scenario.status
-        self._ssh = scenario.ssh
+        super().__init__(scenario)
 
         print(
             "SCENARIO: %s | %s\n"
@@ -87,7 +86,7 @@ class Execute(State):
         """Updates scenario information.
 
         """
-        scenario_table = get_scenario_table(self._ssh)
+        scenario_table = self._scenario_list_manager.get_scenario_table()
         scenario_id = self._scenario_info["id"]
         scenario = scenario_table[scenario_table.id == scenario_id]
         self._scenario_info = scenario.to_dict("records", into=OrderedDict)[0]

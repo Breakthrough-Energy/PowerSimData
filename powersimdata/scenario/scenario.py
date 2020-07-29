@@ -1,7 +1,7 @@
+from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.utility import const
 from powersimdata.utility.transfer_data import (
     setup_server_connection,
-    get_scenario_table,
     get_execute_table,
 )
 from powersimdata.scenario.analyze import Analyze
@@ -29,6 +29,8 @@ class Scenario(object):
             raise TypeError("Descriptor must be a string")
 
         self.ssh = setup_server_connection()
+        self._scenario_list_manager = ScenarioListManager(self.ssh)
+
         if not descriptor:
             self.state = Create(self)
         else:
@@ -48,7 +50,7 @@ class Scenario(object):
 
         :param str descriptor: scenario descriptor.
         """
-        scenario_table = get_scenario_table(self.ssh)
+        scenario_table = self._scenario_list_manager.get_scenario_table()
 
         def not_found_message(table):
             """Print message when scenario is not found.

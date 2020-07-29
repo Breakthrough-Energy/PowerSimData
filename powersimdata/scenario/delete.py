@@ -13,6 +13,9 @@ class Delete(State):
     name = "delete"
     allowed = []
 
+    def __init__(self, scenario):
+        super().__init__(scenario)
+
     def print_scenario_info(self):
         """Prints scenario information.
 
@@ -33,14 +36,7 @@ class Delete(State):
         """
 
         # Delete entry in scenario list
-        print("--> Deleting entry in scenario table on server")
-        entry = ",".join(self._scenario_info.values())
-        command = "sed -i.bak '/%s/d' %s" % (entry, const.SCENARIO_LIST)
-        stdin, stdout, stderr = self._ssh.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError(
-                "Failed to delete entry in %s on server" % const.SCENARIO_LIST
-            )
+        self._scenario_list_manager.delete_entry(self._scenario_info)
 
         # Delete entry in execute list
         print("--> Deleting entry in execute table on server")
