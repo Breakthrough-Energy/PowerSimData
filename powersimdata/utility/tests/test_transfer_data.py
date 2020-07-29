@@ -12,7 +12,9 @@ import pytest
 
 @pytest.fixture
 def ssh_client():
-    return setup_server_connection()
+    ssh_client = setup_server_connection()
+    yield ssh_client
+    ssh_client.close()
 
 
 @pytest.fixture
@@ -25,12 +27,10 @@ def scenario_table(ssh_client):
 def test_setup_server_connection(ssh_client):
     _, stdout, _ = ssh_client.exec_command("whoami")
     assert stdout.read().decode("utf-8").strip() == get_server_user()
-    ssh_client.close()
 
 
 @pytest.mark.integration
 def test_get_scenario_file_from_server_type(ssh_client, scenario_table):
-    ssh_client.close()
     assert isinstance(scenario_table, pd.DataFrame)
 
 
@@ -54,14 +54,12 @@ def test_get_scenario_file_from_server_header(ssh_client, scenario_table):
         "runtime",
         "infeasibilities",
     ]
-    ssh_client.close()
     assert_array_equal(scenario_table.columns, header)
 
 
 @pytest.mark.integration
 def test_get_execute_file_from_server_type(ssh_client):
     table = get_execute_table(ssh_client)
-    ssh_client.close()
     assert isinstance(table, pd.DataFrame)
 
 
@@ -69,5 +67,4 @@ def test_get_execute_file_from_server_type(ssh_client):
 def test_get_execute_file_from_server_header(ssh_client):
     header = ["id", "status"]
     table = get_execute_table(ssh_client)
-    ssh_client.close()
     assert_array_equal(table.columns, header)

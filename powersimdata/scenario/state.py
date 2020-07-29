@@ -23,7 +23,7 @@ class State(object):
         """Switches state.
 
         :param class state: One of :class:`.Analyze`, :class:`.Create`,
-            :class:`.Execute`, :class:`.Delete`.
+            :class:`.Execute`, :class:`.Delete`, :class:`.Move`.
         """
         if state.name in self.allowed:
             print("State switching: %s --> %s" % (self, state.name))
