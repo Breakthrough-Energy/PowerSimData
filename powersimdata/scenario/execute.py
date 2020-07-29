@@ -118,6 +118,8 @@ class Execute(State):
         """
         if extra_args is None:
             extra_args = []
+        else:
+            extra_args = [str(a) for a in extra_args]
 
         path_to_package = posixpath.join(const.MODEL_DIR, self._scenario_info["engine"])
         if self._scenario_info["engine"] == "REISE":
@@ -194,7 +196,15 @@ class Execute(State):
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
         print("--> Launching simulation on server")
-        extra_args = None if threads is None else [threads]
+        if threads is None:
+            extra_args = None
+        else:
+            if not isinstance(threads, int):
+                raise TypeError("threads must be an int")
+            if threads < 1:
+                raise ValueError("threads must be a positive value")
+            extra_args = [threads]
+
         return self._run_script("call.py", extra_args=extra_args)
 
     def extract_simulation_output(self):

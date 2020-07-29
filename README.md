@@ -236,6 +236,11 @@ scenario.state.print_scenario_status()
 # Extract data
 process_extract = scenario.state.extract_simulation_output()
 ```
+As an optional parameter, the number of threads used to run the simulation can
+be specified using for example:
+```python
+process_run = scenario.state.launch_simulation(threads=8)
+```
 
 
 ### D. Deleting a Scenario
