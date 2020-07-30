@@ -291,6 +291,11 @@ interconnect2loadzone = {
     },
 }
 
+# Map loadzone to interconnect
+loadzone2interconnect = {}
+for interconnect, zone_set in interconnect2loadzone.items():
+    loadzone2interconnect.update({zone: interconnect for zone in zone_set})
+
 interconnect2loadzone["USA"] = (
     interconnect2loadzone["Eastern"]
     | interconnect2loadzone["Western"]
