@@ -131,36 +131,6 @@ abv2state = {
     "WY": "Wyoming",
 }
 
-# Map loadzone to state
-loadzone2state = {
-    "Florida Panhandle": "Florida",
-    "Florida North": "Florida",
-    "Florida South": "Florida",
-    "Georgia North": "Georgia",
-    "Georgia South": "Georgia",
-    "Chicago North Illinois": "Illinois",
-    "Illinois Downstate": "Illinois",
-    "Michigan Northern": "Michigan",
-    "Michigan Southern": "Michigan",
-    "Minnesota Northern": "Minnesota",
-    "Minnesota Southern": "Minnesota",
-    "Missouri East": "Missouri",
-    "Missouri West": "Missouri",
-    "Montana Eastern": "Montana",
-    "New York City": "New York",
-    "Western North Carolina": "North Carolina",
-    "New Mexico Eastern": "New Mexico",
-    "Upstate New York": "New York",
-    "Ohio River": "Ohio",
-    "Ohio Lake Erie": "Ohio",
-    "Pennsylvania Eastern": "Pennsylvania",
-    "Pennsylvania Western": "Pennsylvania",
-    "East Texas": "Texas",
-    "Texas Panhandle": "Texas",
-    "Virginia Mountains": "Virginia",
-    "Virginia Tidewater": "Virginia",
-}
-
 # Map state to loadzone
 state2loadzone = {
     "Washington": {"Washington"},
@@ -230,6 +200,11 @@ state2loadzone = {
     "South Dakota": {"South Dakota"},
     "North Dakota": {"North Dakota"},
 }
+
+# Map loadzone to state
+loadzone2state = {}
+for state, zone_set in state2loadzone.items():
+    loadzone2state.update({zone: state for zone in zone_set})
 
 interconnect2loadzone = {
     "Texas": {
@@ -315,6 +290,11 @@ interconnect2loadzone = {
         "Montana Eastern",
     },
 }
+
+# Map loadzone to interconnect
+loadzone2interconnect = {}
+for interconnect, zone_set in interconnect2loadzone.items():
+    loadzone2interconnect.update({zone: interconnect for zone in zone_set})
 
 interconnect2loadzone["USA"] = (
     interconnect2loadzone["Eastern"]
