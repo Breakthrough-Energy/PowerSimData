@@ -1,4 +1,4 @@
-from powersimdata.utility import const, backup
+from powersimdata.utility import server_setup, backup
 from powersimdata.utility.transfer_data import download
 from powersimdata.scenario.helpers import interconnect2name
 
@@ -17,8 +17,8 @@ class InputData(object):
         """Constructor.
 
         """
-        if not os.path.exists(const.LOCAL_DIR):
-            os.makedirs(const.LOCAL_DIR)
+        if not os.path.exists(server_setup.LOCAL_DIR):
+            os.makedirs(server_setup.LOCAL_DIR)
 
         self.file_extension = {
             "demand": "csv",
@@ -65,23 +65,26 @@ class InputData(object):
             if self.data_loc == "disk":
                 from_dir = backup.BASE_PROFILE_DIR
             else:
-                from_dir = const.BASE_PROFILE_DIR
+                from_dir = server_setup.BASE_PROFILE_DIR
             file_name = interconnect + "_" + field_name + "_" + version + "." + ext
         else:
             if self.data_loc == "disk":
                 from_dir = backup.INPUT_DIR
             else:
-                from_dir = const.INPUT_DIR
+                from_dir = server_setup.INPUT_DIR
             file_name = scenario_info["id"] + "_" + field_name + "." + ext
 
         try:
             data = _read_data(file_name)
             return data
         except FileNotFoundError:
-            print("%s not found in %s on local machine" % (file_name, const.LOCAL_DIR))
+            print(
+                "%s not found in %s on local machine"
+                % (file_name, server_setup.LOCAL_DIR)
+            )
 
         try:
-            download(self._ssh, file_name, from_dir, const.LOCAL_DIR)
+            download(self._ssh, file_name, from_dir, server_setup.LOCAL_DIR)
             data = _read_data(file_name)
             return data
         except FileNotFoundError:
@@ -98,7 +101,7 @@ def _read_data(file_name):
     :raises ValueError: if extension is unknown.
     """
     ext = file_name.split(".")[-1]
-    filepath = os.path.join(const.LOCAL_DIR, file_name)
+    filepath = os.path.join(server_setup.LOCAL_DIR, file_name)
     if ext == "pkl":
         data = pd.read_pickle(filepath)
     elif ext == "csv":

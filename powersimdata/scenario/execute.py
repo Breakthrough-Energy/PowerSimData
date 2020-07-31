@@ -1,4 +1,4 @@
-from powersimdata.utility import const
+from powersimdata.utility import server_setup
 from powersimdata.utility.transfer_data import (
     get_execute_table,
     upload,
@@ -103,10 +103,10 @@ class Execute(State):
         # to the scenario identification number, the second column is replaced by the
         # status parameter.
         program = "'{if($1==%s) $2=\"%s\"};1'" % (self._scenario_info["id"], status)
-        command = "awk %s %s %s" % (options, program, const.EXECUTE_LIST)
+        command = "awk %s %s %s" % (options, program, server_setup.EXECUTE_LIST)
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to update %s on server" % const.EXECUTE_LIST)
+            raise IOError("Failed to update %s on server" % server_setup.EXECUTE_LIST)
 
     def _run_script(self, script, extra_args=None):
         """Returns running process
@@ -120,14 +120,16 @@ class Execute(State):
         else:
             extra_args = [str(a) for a in extra_args]
 
-        path_to_package = posixpath.join(const.MODEL_DIR, self._scenario_info["engine"])
+        path_to_package = posixpath.join(
+            server_setup.MODEL_DIR, self._scenario_info["engine"]
+        )
         if self._scenario_info["engine"] == "REISE":
             folder = "pyreise"
         else:
             folder = "pyreisejl"
         path_to_script = posixpath.join(path_to_package, folder, "utility", script)
-        username = const.get_server_user()
-        cmd_ssh = ["ssh", username + "@" + const.SERVER_ADDRESS]
+        username = server_setup.get_server_user()
+        cmd_ssh = ["ssh", username + "@" + server_setup.SERVER_ADDRESS]
         cmd_pythonpath = [f'export PYTHONPATH="{path_to_package}:$PYTHONPATH";']
         cmd_pythoncall = [
             "nohup",
@@ -242,7 +244,10 @@ class SimulationInput(object):
         self.grid = grid
         self.ct = ct
 
-        self.TMP_DIR = "%s/scenario_%s" % (const.EXECUTE_DIR, scenario_info["id"])
+        self.TMP_DIR = "%s/scenario_%s" % (
+            server_setup.EXECUTE_DIR,
+            scenario_info["id"],
+        )
 
     def create_folder(self):
         """Creates folder on server that will enclose simulation inputs.
@@ -370,32 +375,34 @@ class SimulationInput(object):
 
             file_name = "%s_case_storage.mat" % self._scenario_info["id"]
             savemat(
-                os.path.join(const.LOCAL_DIR, file_name), mpc_storage, appendmat=False
+                os.path.join(server_setup.LOCAL_DIR, file_name),
+                mpc_storage,
+                appendmat=False,
             )
             upload(
                 self._ssh,
                 file_name,
-                const.LOCAL_DIR,
+                server_setup.LOCAL_DIR,
                 self.TMP_DIR,
                 change_name_to="case_storage.mat",
             )
             print("Deleting %s on local machine" % file_name)
-            os.remove(os.path.join(const.LOCAL_DIR, file_name))
+            os.remove(os.path.join(server_setup.LOCAL_DIR, file_name))
 
         # MPC file
         file_name = "%s_case.mat" % self._scenario_info["id"]
-        savemat(os.path.join(const.LOCAL_DIR, file_name), mpc, appendmat=False)
+        savemat(os.path.join(server_setup.LOCAL_DIR, file_name), mpc, appendmat=False)
 
         upload(
             self._ssh,
             file_name,
-            const.LOCAL_DIR,
+            server_setup.LOCAL_DIR,
             self.TMP_DIR,
             change_name_to="case.mat",
         )
 
         print("Deleting %s on local machine" % file_name)
-        os.remove(os.path.join(const.LOCAL_DIR, file_name))
+        os.remove(os.path.join(server_setup.LOCAL_DIR, file_name))
 
     def prepare_profile(self, kind):
         """Prepares profile for simulation.
@@ -442,18 +449,19 @@ class SimulationInput(object):
             profile = profile.get_power_output(kind)
 
         print(
-            "Writing scaled %s profile in %s on local machine" % (kind, const.LOCAL_DIR)
+            "Writing scaled %s profile in %s on local machine"
+            % (kind, server_setup.LOCAL_DIR)
         )
         file_name = "%s_%s.csv" % (self._scenario_info["id"], kind)
-        profile.to_csv(os.path.join(const.LOCAL_DIR, file_name))
+        profile.to_csv(os.path.join(server_setup.LOCAL_DIR, file_name))
 
         upload(
             self._ssh,
             file_name,
-            const.LOCAL_DIR,
+            server_setup.LOCAL_DIR,
             self.TMP_DIR,
             change_name_to="%s.csv" % kind,
         )
 
         print("Deleting %s on local machine" % file_name)
-        os.remove(os.path.join(const.LOCAL_DIR, file_name))
+        os.remove(os.path.join(server_setup.LOCAL_DIR, file_name))

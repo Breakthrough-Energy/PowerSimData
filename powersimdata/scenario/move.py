@@ -1,5 +1,5 @@
 from powersimdata.scenario.state import State
-from powersimdata.utility import const, backup
+from powersimdata.utility import server_setup, backup
 from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.utility.transfer_data import get_execute_table
 
@@ -46,10 +46,10 @@ class Move(State):
         print("--> Updating status in execute table on server")
         options = "-F, -v OFS=',' -v INPLACE_SUFFIX=.bak -i inplace"
         program = "'{if($1==%s) $2=\"%s\"};1'" % (self._scenario_info["id"], "moved")
-        command = "awk %s %s %s" % (options, program, const.EXECUTE_LIST)
+        command = "awk %s %s %s" % (options, program, server_setup.EXECUTE_LIST)
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to update %s on server" % const.EXECUTE_LIST)
+            raise IOError("Failed to update %s on server" % server_setup.EXECUTE_LIST)
 
         # Delete attributes
         self._clean()
@@ -80,7 +80,9 @@ class BackUpDisk(object):
 
         """
         print("--> Moving scenario input data to backup disk")
-        source = posixpath.join(const.INPUT_DIR, self._scenario_info["id"] + "_*")
+        source = posixpath.join(
+            server_setup.INPUT_DIR, self._scenario_info["id"] + "_*"
+        )
         target = backup.INPUT_DIR
         command = "\cp -pu %s %s; rm -rf %s" % (source, target, source)
         stdin, stdout, stderr = self._ssh.exec_command(command)
@@ -98,7 +100,7 @@ class BackUpDisk(object):
             source = interconnect + "_" + kind + "_" + version + ".csv"
 
             command = "\cp -pu %s %s" % (
-                posixpath.join(const.BASE_PROFILE_DIR, source),
+                posixpath.join(server_setup.BASE_PROFILE_DIR, source),
                 backup.BASE_PROFILE_DIR,
             )
             stdin, stdout, stderr = self._ssh.exec_command(command)
@@ -110,7 +112,9 @@ class BackUpDisk(object):
 
         """
         print("--> Moving scenario output data to backup disk")
-        source = posixpath.join(const.OUTPUT_DIR, self._scenario_info["id"] + "_*")
+        source = posixpath.join(
+            server_setup.OUTPUT_DIR, self._scenario_info["id"] + "_*"
+        )
         target = backup.OUTPUT_DIR
         command = "\cp -pu %s %s; rm -rf %s" % (source, target, source)
         stdin, stdout, stderr = self._ssh.exec_command(command)
@@ -121,7 +125,7 @@ class BackUpDisk(object):
         """
         print("--> Moving temporary folder to backup disk")
         source = posixpath.join(
-            const.EXECUTE_DIR, "scenario_" + self._scenario_info["id"]
+            server_setup.EXECUTE_DIR, "scenario_" + self._scenario_info["id"]
         )
         target = backup.EXECUTE_DIR
         command = "\cp -Rpu %s %s; rm -rf %s " % (source, target, source)

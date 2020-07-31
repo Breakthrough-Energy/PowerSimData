@@ -1,4 +1,4 @@
-from powersimdata.utility import const
+from powersimdata.utility import server_setup
 from powersimdata.input.grid import Grid
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.input.profiles import InputData
@@ -226,7 +226,7 @@ class Analyze(State):
             )
 
             filename = scenario_id + "_LOAD_SHED.pkl"
-            filepath = os.path.join(const.LOCAL_DIR, filename)
+            filepath = os.path.join(server_setup.LOCAL_DIR, filename)
             with open(filepath, "wb") as f:
                 pickle.dump(load_shed, f)
 

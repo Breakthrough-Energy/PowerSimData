@@ -1,4 +1,4 @@
-from powersimdata.utility import const
+from powersimdata.utility import server_setup
 
 import pandas as pd
 import paramiko
@@ -21,7 +21,7 @@ class ScenarioListManager:
         :return: (*pandas.DataFrame*) -- scenario list as a data frame.
         """
         sftp = self.ssh_client.open_sftp()
-        file_object = sftp.file(const.SCENARIO_LIST, "rb")
+        file_object = sftp.file(server_setup.SCENARIO_LIST, "rb")
 
         scenario_list = pd.read_csv(file_object)
         scenario_list.fillna("", inplace=True)
@@ -41,9 +41,9 @@ class ScenarioListManager:
                    echo $id, >> %s; \
                    echo $id) 200>%s"
             % (
-                const.SCENARIO_LIST,
-                const.SCENARIO_LIST,
-                posixpath.join(const.DATA_ROOT_DIR, "scenario.lockfile"),
+                server_setup.SCENARIO_LIST,
+                server_setup.SCENARIO_LIST,
+                posixpath.join(server_setup.DATA_ROOT_DIR, "scenario.lockfile"),
             )
         )
 
@@ -68,7 +68,7 @@ class ScenarioListManager:
         # equal to the scenario identification number, the entire line is replaced
         # by the scenaario information.
         program = "'{if($1==%s) $0=\"%s\"};1'" % (scenario_info["id"], entry,)
-        command = "awk %s %s %s" % (options, program, const.SCENARIO_LIST)
+        command = "awk %s %s %s" % (options, program, server_setup.SCENARIO_LIST)
 
         self._execute_and_check_err(command)
 
@@ -79,7 +79,7 @@ class ScenarioListManager:
         """
         print("--> Deleting entry in scenario table on server")
         entry = ",".join(scenario_info.values())
-        command = "sed -i.bak '/%s/d' %s" % (entry, const.SCENARIO_LIST)
+        command = "sed -i.bak '/%s/d' %s" % (entry, server_setup.SCENARIO_LIST)
 
         self._execute_and_check_err(command)
 
@@ -90,5 +90,5 @@ class ScenarioListManager:
         _, _, stderr = self.ssh_client.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError(
-                "Failed to delete entry in %s on server" % const.SCENARIO_LIST
+                "Failed to delete entry in %s on server" % server_setup.SCENARIO_LIST
             )

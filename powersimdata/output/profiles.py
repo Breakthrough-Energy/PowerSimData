@@ -1,6 +1,6 @@
 from powersimdata.input.profiles import get_bus_demand
 from powersimdata.utility.transfer_data import download
-from powersimdata.utility import const, backup
+from powersimdata.utility import server_setup, backup
 
 import numpy as np
 import os
@@ -19,8 +19,8 @@ class OutputData(object):
         """Constructor
 
         """
-        if not os.path.exists(const.LOCAL_DIR):
-            os.makedirs(const.LOCAL_DIR)
+        if not os.path.exists(server_setup.LOCAL_DIR):
+            os.makedirs(server_setup.LOCAL_DIR)
         self._ssh = ssh_client
         self.data_loc = data_loc
 
@@ -43,13 +43,23 @@ class OutputData(object):
             data = _read_data(file_name)
             return data
         except FileNotFoundError:
-            print("%s not found in %s on local machine" % (file_name, const.LOCAL_DIR))
+            print(
+                "%s not found in %s on local machine"
+                % (file_name, server_setup.LOCAL_DIR)
+            )
 
         try:
             if self.data_loc == "disk":
-                download(self._ssh, file_name, backup.OUTPUT_DIR, const.LOCAL_DIR)
+                download(
+                    self._ssh, file_name, backup.OUTPUT_DIR, server_setup.LOCAL_DIR
+                )
             else:
-                download(self._ssh, file_name, const.OUTPUT_DIR, const.LOCAL_DIR)
+                download(
+                    self._ssh,
+                    file_name,
+                    server_setup.OUTPUT_DIR,
+                    server_setup.LOCAL_DIR,
+                )
             data = _read_data(file_name)
             return data
         except FileNotFoundError:
@@ -62,7 +72,7 @@ def _read_data(file_name):
     :param str file_name: file name
     :return: (*pandas.DataFrame*) -- specified file as a data frame.
     """
-    data = pd.read_pickle(os.path.join(const.LOCAL_DIR, file_name))
+    data = pd.read_pickle(os.path.join(server_setup.LOCAL_DIR, file_name))
 
     return data
 

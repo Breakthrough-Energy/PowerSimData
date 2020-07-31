@@ -5,7 +5,7 @@ from powersimdata.design.transmission import (
     scale_congested_mesh_branches,
     scale_renewable_stubs,
 )
-from powersimdata.utility import const
+from powersimdata.utility import server_setup
 from powersimdata.utility.distance import haversine, find_closest_neighbor
 
 
@@ -59,9 +59,9 @@ class ChangeTable(object):
             increase/decrease of capacity of the plant or plants in the zone
             (1.2 would correspond to a 20% increase while 0.95 would be a 5%
             decrease).
-        * *'dcline'*: 
-            value is a dictionary. The latter has *'dcline_id'* as keys and 
-            the and the scaling factor for the increase/decrease in capacity 
+        * *'dcline'*:
+            value is a dictionary. The latter has *'dcline_id'* as keys and
+            the and the scaling factor for the increase/decrease in capacity
             of the line as value.
         * *'storage'*:
             value is a dictionary. The latter has *'bus_id'* as keys and the
@@ -333,7 +333,7 @@ class ChangeTable(object):
 
     def scale_renewable_stubs(self, **kwargs):
         """Scales undersized stub branches connected to renewable generators.
-        
+
         Optional kwargs as documented in the
             :mod:`powersimdata.design.transmission` module.
         """
@@ -343,8 +343,8 @@ class ChangeTable(object):
         """Scales congested branches based on previous scenario results.
         :param powersimdata.scenario.scenario.Scenario ref_scenario: the
             reference scenario to be used in determining branch scaling.
-        
-        Optional kwargs as documented in the 
+
+        Optional kwargs as documented in the
             :mod:`powersimdata.design.transmission` module.
         """
         scale_congested_mesh_branches(self, ref_scenario, **kwargs)
@@ -539,10 +539,10 @@ class ChangeTable(object):
         :param str scenario_id: scenario index.
         :raises IOError: if file already exists on local machine.
         """
-        if not os.path.exists(const.LOCAL_DIR):
-            os.makedirs(const.LOCAL_DIR)
+        if not os.path.exists(server_setup.LOCAL_DIR):
+            os.makedirs(server_setup.LOCAL_DIR)
 
-        file_name = os.path.join(const.LOCAL_DIR, scenario_id + "_ct.pkl")
+        file_name = os.path.join(server_setup.LOCAL_DIR, scenario_id + "_ct.pkl")
         if os.path.isfile(file_name) is False:
             print("Writing %s" % file_name)
             pickle.dump(self.ct, open(file_name, "wb"))
