@@ -26,7 +26,8 @@ class Analyze(State):
         """
         self._scenario_info = scenario.info
         self._scenario_status = scenario.status
-        self._ssh = scenario.ssh
+        super().__init__(scenario)
+
         self.data_loc = "disk" if scenario.status == "moved" else None
 
         print(

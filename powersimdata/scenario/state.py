@@ -1,16 +1,30 @@
+from powersimdata.data_access.scenario_list import ScenarioListManager
+
+
 class State(object):
     """Defines an interface for encapsulating the behavior associated with a
         particular state of the Scenario object.
+    :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
+    :raise TypeError: if not instantiated through a derived class
     """
 
     name = "state"
     allowed = []
 
+    def __init__(self, scenario):
+        """Constructor.
+        """
+        if type(self) == State:
+            raise TypeError("Only subclasses of 'State' can be instantiated directly")
+
+        self._ssh = scenario.ssh
+        self._scenario_list_manager = ScenarioListManager(scenario.ssh)
+
     def switch(self, state):
         """Switches state.
 
-        :param class state: One of :class:`.Analyze` :class:`.Create`,
-            :class:`.Execute`.
+        :param class state: One of :class:`.Analyze`, :class:`.Create`,
+            :class:`.Execute`, :class:`.Delete`, :class:`.Move`.
         """
         if state.name in self.allowed:
             print("State switching: %s --> %s" % (self, state.name))

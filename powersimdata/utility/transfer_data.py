@@ -65,23 +65,6 @@ def upload(ssh_client, file_name, from_dir, to_dir, change_name_to=None):
             sftp.close()
 
 
-def get_scenario_table(ssh_client):
-    """Returns scenario table from server.
-
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
-    :return: (*pandas*) -- data frame.
-    """
-    sftp = ssh_client.open_sftp()
-    file_object = sftp.file(const.SCENARIO_LIST, "rb")
-
-    scenario_list = pd.read_csv(file_object)
-    scenario_list.fillna("", inplace=True)
-
-    sftp.close()
-
-    return scenario_list.astype(str)
-
-
 def get_execute_table(ssh_client):
     """Returns execute table from server.
 
