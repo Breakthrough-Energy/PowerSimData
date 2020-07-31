@@ -73,8 +73,10 @@ class Create(State):
             else:
                 self._scenario_info["change_table"] = "No"
 
-    # update scenario list
     def _generate_and_set_scenario_id(self):
+        """ Generate scenario id on server and set the id on current 
+        ScenarioInfo instance
+        """
         scenario_id = self._scenario_list_manager.generate_scenario_id()
         self._scenario_info["id"] = scenario_id
         self._scenario_info.move_to_end("id", last=False)

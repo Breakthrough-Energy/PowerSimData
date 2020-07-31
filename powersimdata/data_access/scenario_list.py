@@ -8,15 +8,16 @@ import posixpath
 class ScenarioListManager:
     """
     This class is responsible for any modifications to the scenario list.
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
 
     def __init__(self, ssh_client):
+        """Constructor
+        """
         self.ssh_client = ssh_client
 
     def get_scenario_table(self):
         """Returns scenario table from server.
-
-        :param paramiko.client.SSHClient ssh_client: session with an SSH server.
         :return: (*pandas.DataFrame*) -- scenario list as a data frame.
         """
         sftp = self.ssh_client.open_sftp()
@@ -57,7 +58,7 @@ class ScenarioListManager:
     def add_entry(self, scenario_info):
         """Adds scenario to the scenario list file on server.
 
-        :param (*collections.OrderedDict*) scenario_info: Entry to add to scenario list
+        :param collections.OrderedDict scenario_info: Entry to add to scenario list
         :raises IOError: if scenario list file on server cannot be updated.
         """
         print("--> Adding entry in scenario table on server")
@@ -73,7 +74,7 @@ class ScenarioListManager:
 
     def delete_entry(self, scenario_info):
         """ Delete entry in scenario list
-        :param (*collections.OrderedDict*) scenario_info: Entry to delete from scenario list
+        :param collections.OrderedDict scenario_info: Entry to delete from scenario list
         :raises IOError: if scenario list file on server cannot be updated.
         """
         print("--> Deleting entry in scenario table on server")
@@ -84,7 +85,7 @@ class ScenarioListManager:
 
     def _execute_and_check_err(self, command):
         """
-        :param (*str*) command: command to execute over ssh
+        :param str command: command to execute over ssh
         """
         _, _, stderr = self.ssh_client.exec_command(command)
         if len(stderr.readlines()) != 0:

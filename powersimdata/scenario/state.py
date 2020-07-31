@@ -4,6 +4,8 @@ from powersimdata.data_access.scenario_list import ScenarioListManager
 class State(object):
     """Defines an interface for encapsulating the behavior associated with a
         particular state of the Scenario object.
+    :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
+    :raise TypeError: if not instantiated through a derived class
     """
 
     name = "state"
@@ -11,7 +13,6 @@ class State(object):
 
     def __init__(self, scenario):
         """Constructor.
-
         """
         if type(self) == State:
             raise TypeError("Only subclasses of 'State' can be instantiated directly")
