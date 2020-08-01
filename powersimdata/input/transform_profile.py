@@ -1,6 +1,7 @@
 import copy
 
 from powersimdata.input.input_data import InputData
+from powersimdata.input.grid import Grid
 
 
 class TransformProfile(object):
@@ -64,14 +65,15 @@ class TransformProfile(object):
             the change table.
         """
         new_plant_ids, neighbor_ids, scaling = [], [], []
-        plant = self.grid.plant
+        transformed_plant = self.grid.plant
+        base_plant = Grid(self.grid.interconnect).plant
         for i, entry in enumerate(self.ct["new_plant"]):
             if entry["type"] in self.scale_keys[resource]:
-                new_plant_id = plant.index[-len(self.ct["new_plant"]) + i]
+                new_plant_id = transformed_plant.index[-len(self.ct["new_plant"]) + i]
                 new_plant_ids.append(new_plant_id)
                 neighbor_id = entry["plant_id_neighbor"]
                 neighbor_ids.append(neighbor_id)
-                scaling.append(entry["Pmax"] / plant.loc[neighbor_id, "Pmax"])
+                scaling.append(entry["Pmax"] / base_plant.loc[neighbor_id, "Pmax"])
 
         if len(new_plant_ids) > 0:
             neighbor_profiles = profile[neighbor_ids]
