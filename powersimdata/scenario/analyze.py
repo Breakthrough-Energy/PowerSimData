@@ -2,7 +2,7 @@ from powersimdata.utility import server_setup
 from powersimdata.input.grid import Grid
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.input.profiles import InputData
-from powersimdata.output.profiles import OutputData, construct_load_shed
+from powersimdata.output.output_data import OutputData, construct_load_shed
 from powersimdata.scenario.state import State
 
 import copy
