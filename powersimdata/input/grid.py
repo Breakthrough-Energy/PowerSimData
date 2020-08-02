@@ -1,20 +1,22 @@
 import os
 
-from powersimdata.input.usa_tamu_model import TAMU
+from powersimdata.network.usa_tamu.usa_tamu_model import TAMU
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
 
 
 class Grid(object):
     """Grid
+
+    :param list interconnect: interconnect name(s).
+    :param str source: model used to build the network.
+    :param str engine: engine used to run scenario, if using ScenarioGrid.
+    :raises TypeError: if source and engine are not both strings.
+    :raises ValueError: if model or engine does not exist.
     """
 
     def __init__(self, interconnect, source="usa_tamu", engine="REISE"):
-        """Constructor
-        :param list interconnect: interconnect name(s).
-        :param str source: model used to build the network.
-        :param str engine: engine used to run scenario, if using ScenarioGrid.
-        :raises TypeError: if source and engine are not both strings.
-        :raises ValueError: if model or engine does not exist.
+        """Constructor.
+
         """
         if not isinstance(source, str):
             raise TypeError("source must be a string")
@@ -53,12 +55,14 @@ class Grid(object):
 
     def __eq__(self, other):
         """Used when 'self == other' is evaluated.
+
         :param object other: other object to be compared against.
         :return: (*bool*).
         """
 
         def _univ_eq(ref, test):
             """Check for {boolean, dataframe, or column data} equality.
+
             :param object ref: one object to be tested (order does not matter).
             :param object test: another object to be tested.
             :raises AssertionError: if no equality can be confirmed.
@@ -143,6 +147,7 @@ class Grid(object):
 
 def get_type2color():
     """Defines generator type to generator color mapping. Used for plotting.
+
     :return: (*dict*) -- generator type to color mapping.
     """
     type2color = {
@@ -164,6 +169,7 @@ def get_type2color():
 
 def get_id2type():
     """Defines generator type to generator id mapping.
+    
     :return: (*tuple*) -- generator type to generator id mapping.
     """
     id2type = {

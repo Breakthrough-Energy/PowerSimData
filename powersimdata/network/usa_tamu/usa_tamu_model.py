@@ -1,7 +1,7 @@
 import os
 
 from powersimdata.input.abstract_grid import AbstractGrid
-from powersimdata.input.csv_reader import CSVReader
+from powersimdata.network.csv_reader import CSVReader
 from powersimdata.input.helpers import (
     csv_to_data_frame,
     add_zone_to_grid_data_frames,
@@ -12,12 +12,12 @@ from powersimdata.input.helpers import (
 class TAMU(AbstractGrid):
     """TAMU network.
 
+    :param list interconnect: interconnect name(s).
     """
 
     def __init__(self, interconnect):
         """Constructor.
 
-        :param list interconnect: interconnect name(s).
         """
         super().__init__()
         self._set_data_loc()
@@ -32,7 +32,7 @@ class TAMU(AbstractGrid):
         :raises IOError: if directory does not exist.
         """
         top_dirname = os.path.dirname(__file__)
-        data_loc = os.path.join(top_dirname, "data", "usa_tamu")
+        data_loc = os.path.join(top_dirname, "data")
         if os.path.isdir(data_loc) is False:
             raise IOError("%s directory not found" % data_loc)
         else:
@@ -69,7 +69,7 @@ class TAMU(AbstractGrid):
 
     def _drop_interconnect(self):
         """Trim data frames to only keep information pertaining to the user
-            defined interconnect(s)
+            defined interconnect(s).
 
         """
         for key, value in self.__dict__.items():

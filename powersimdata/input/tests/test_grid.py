@@ -3,11 +3,10 @@ import pandas as pd
 import pytest
 import copy
 
-from powersimdata.input.usa_tamu_model import check_interconnect
+from powersimdata.network.usa_tamu.usa_tamu_model import TAMU, check_interconnect
 from powersimdata.input.helpers import add_column_to_data_frame
 from powersimdata.input.scenario_grid import format_gencost, link
 from powersimdata.input.grid import Grid
-from powersimdata.input.usa_tamu_model import TAMU
 
 
 def test_interconnect_type():
