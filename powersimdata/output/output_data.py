@@ -1,4 +1,4 @@
-from powersimdata.input.profiles import get_bus_demand
+from powersimdata.input.input_data import get_bus_demand
 from powersimdata.utility.transfer_data import download
 from powersimdata.utility import server_setup, backup
 

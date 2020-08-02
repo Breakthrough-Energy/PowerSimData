@@ -1,6 +1,6 @@
 import copy
 
-from powersimdata.input.profiles import InputData
+from powersimdata.input.input_data import InputData
 
 
 class TransformProfile(object):

@@ -4,7 +4,7 @@ from powersimdata.utility.transfer_data import (
     upload,
 )
 from powersimdata.scenario.helpers import interconnect2name
-from powersimdata.input.profiles import InputData
+from powersimdata.input.input_data import InputData
 from powersimdata.input.grid import Grid
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
@@ -244,9 +244,8 @@ class SimulationInput(object):
         self.grid = grid
         self.ct = ct
 
-        self.TMP_DIR = "%s/scenario_%s" % (
-            server_setup.EXECUTE_DIR,
-            scenario_info["id"],
+        self.TMP_DIR = posixpath.join(
+            server_setup.EXECUTE_DIR, "scenario_%s" % scenario_info["id"]
         )
 
     def create_folder(self):

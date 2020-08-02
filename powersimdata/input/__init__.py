@@ -4,7 +4,7 @@ __all__ = [
     "csv_reader",
     "grid",
     "helpers",
-    "profiles",
+    "input_data",
     "scenario_grid",
     "transform_grid",
     "transform_profile",
