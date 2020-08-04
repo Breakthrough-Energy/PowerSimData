@@ -18,7 +18,7 @@ setup(
     author="Kaspar Mueller",
     author_email="kmueller@intven.com",
     packages=find_packages(),
-    package_data={"powersimdata": ["input/data/*/*"]},
+    package_data={"powersimdata": ["network/*/data/*.csv"]},
     zip_safe=False,
     install_requires=install_requires,
 )
