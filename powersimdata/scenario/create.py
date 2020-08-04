@@ -74,8 +74,8 @@ class Create(State):
                 self._scenario_info["change_table"] = "No"
 
     def _generate_and_set_scenario_id(self):
-        """ Generate scenario id on server and set the id on current
-        ScenarioInfo instance
+        """Generates scenario id.
+
         """
         scenario_id = self._scenario_list_manager.generate_scenario_id()
         self._scenario_info["id"] = scenario_id
@@ -113,7 +113,7 @@ class Create(State):
             raise Exception("Call set_builder method first")
 
     def get_grid(self):
-        """Returns Grid.
+        """Returns the Grid object.
 
         :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
         :raises Exception: if no Grid object has been assigned yet.
@@ -278,8 +278,7 @@ class _Builder(object):
         :param str start_date: start date.
         :param str end_date: start date.
         :param str interval: interval.
-        :raises Exception: if start date, end date or interval are not properly
-            defined.
+        :raises Exception: if start date, end date or interval are not properly defined.
         """
         min_ts = pd.Timestamp("2016-01-01 00:00:00")
         max_ts = pd.Timestamp("2016-12-31 23:00:00")
