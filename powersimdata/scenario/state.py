@@ -1,4 +1,5 @@
 from powersimdata.data_access.scenario_list import ScenarioListManager
+from powersimdata.data_access.execute_list import ExecuteListManager
 
 
 class State(object):
@@ -19,6 +20,7 @@ class State(object):
 
         self._ssh = scenario.ssh
         self._scenario_list_manager = ScenarioListManager(scenario.ssh)
+        self._execute_list_manager = ExecuteListManager(scenario.ssh)
 
     def switch(self, state):
         """Switches state.

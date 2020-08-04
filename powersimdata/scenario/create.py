@@ -82,17 +82,10 @@ class Create(State):
         self._scenario_info.move_to_end("id", last=False)
 
     def _add_entry_in_execute_list(self):
-        """Adds scenario to the execute list file on server.
-
-        :raises IOError: if execute list file on server cannot be updated.
+        """Adds scenario to the execute list file on server and update status
+        information
         """
-        print("--> Adding entry in execute table on server\n")
-        entry = "%s,created" % self._scenario_info["id"]
-        command = "echo %s >> %s" % (entry, server_setup.EXECUTE_LIST)
-
-        stdin, stdout, stderr = self._ssh.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError("Failed to update %s on server" % server_setup.EXECUTE_LIST)
+        self._execute_list_manager.add_entry(self._scenario_info)
         self._scenario_status = "created"
         self.allowed.append("execute")
 

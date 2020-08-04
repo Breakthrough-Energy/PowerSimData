@@ -1,8 +1,5 @@
 from powersimdata.utility import server_setup
-from powersimdata.utility.transfer_data import (
-    get_execute_table,
-    upload,
-)
+from powersimdata.utility.transfer_data import upload
 from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.input.input_data import InputData
 from powersimdata.input.grid import Grid
@@ -76,7 +73,7 @@ class Execute(State):
         """Updates scenario status.
 
         """
-        execute_table = get_execute_table(self._ssh)
+        execute_table = self._execute_list_manager.get_execute_table()
         scenario_id = self._scenario_info["id"]
         self._scenario_status = execute_table[
             execute_table.id == scenario_id
@@ -90,23 +87,6 @@ class Execute(State):
         scenario_id = self._scenario_info["id"]
         scenario = scenario_table[scenario_table.id == scenario_id]
         self._scenario_info = scenario.to_dict("records", into=OrderedDict)[0]
-
-    def _update_execute_list(self, status):
-        """Updates status in execute list file on server.
-
-        :param str status: execution status.
-        :raises IOError: if execute list file on server cannot be updated.
-        """
-        print("--> Updating status in execute table on server")
-        options = "-F, -v OFS=',' -v INPLACE_SUFFIX=.bak -i inplace"
-        # AWK parses the file line-by-line. When the entry of the first column is equal
-        # to the scenario identification number, the second column is replaced by the
-        # status parameter.
-        program = "'{if($1==%s) $2=\"%s\"};1'" % (self._scenario_info["id"], status)
-        command = "awk %s %s %s" % (options, program, server_setup.EXECUTE_LIST)
-        stdin, stdout, stderr = self._ssh.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError("Failed to update %s on server" % server_setup.EXECUTE_LIST)
 
     def _run_script(self, script, extra_args=None):
         """Returns running process
@@ -182,7 +162,9 @@ class Execute(State):
 
             si.prepare_mpc_file()
 
-            self._update_execute_list("prepared")
+            self._execute_list_manager.update_execute_list(
+                "prepared", self._scenario_info
+            )
         else:
             print("---------------------------")
             print("SCENARIO CANNOT BE PREPARED")
