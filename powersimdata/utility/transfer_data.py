@@ -1,4 +1,4 @@
-from powersimdata.utility import const
+from powersimdata.utility import server_setup
 
 import os
 import posixpath
@@ -73,7 +73,7 @@ def get_execute_table(ssh_client):
     """
     sftp = ssh_client.open_sftp()
 
-    file_object = sftp.file(const.EXECUTE_LIST, "rb")
+    file_object = sftp.file(server_setup.EXECUTE_LIST, "rb")
     execute_list = pd.read_csv(file_object)
     execute_list.fillna("", inplace=True)
 
@@ -101,8 +101,8 @@ def setup_server_connection():
                 print("Cannot read file, try again")
                 ssh_known_hosts = input("Provide ssh known_hosts key file =")
 
-    server_user = const.get_server_user()
-    client.connect(const.SERVER_ADDRESS, username=server_user, timeout=60)
+    server_user = server_setup.get_server_user()
+    client.connect(server_setup.SERVER_ADDRESS, username=server_user, timeout=60)
 
     return client
 

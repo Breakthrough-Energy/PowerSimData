@@ -1,4 +1,4 @@
-from powersimdata.utility import const
+from powersimdata.utility import server_setup
 from powersimdata.scenario.state import State
 
 import os
@@ -41,28 +41,33 @@ class Delete(State):
         # Delete entry in execute list
         print("--> Deleting entry in execute table on server")
         entry = "^%s,extracted" % self._scenario_info["id"]
-        command = "sed -i.bak '/%s/d' %s" % (entry, const.EXECUTE_LIST)
+        command = "sed -i.bak '/%s/d' %s" % (entry, server_setup.EXECUTE_LIST)
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to delete entry in %s on server" % const.EXECUTE_LIST)
+            raise IOError(
+                "Failed to delete entry in %s on server" % server_setup.EXECUTE_LIST
+            )
 
         # Delete links to base profiles on server
         print("--> Deleting scenario input data on server")
-        command = "rm -f %s/%s_*" % (const.INPUT_DIR, self._scenario_info["id"])
+        command = "rm -f %s/%s_*" % (server_setup.INPUT_DIR, self._scenario_info["id"])
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to delete scenario input data on server")
 
         # Delete output profiles
         print("--> Deleting scenario output data on server")
-        command = "rm -f %s/%s_*" % (const.OUTPUT_DIR, self._scenario_info["id"])
+        command = "rm -f %s/%s_*" % (server_setup.OUTPUT_DIR, self._scenario_info["id"])
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to delete scenario output data on server")
 
         # Delete temporary folder enclosing simulation inputs
         print("--> Deleting temporary folder on server")
-        tmp_dir = "%s/scenario_%s" % (const.EXECUTE_DIR, self._scenario_info["id"])
+        tmp_dir = "%s/scenario_%s" % (
+            server_setup.EXECUTE_DIR,
+            self._scenario_info["id"],
+        )
         command = "rm -rf %s" % tmp_dir
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
@@ -71,7 +76,7 @@ class Delete(State):
         # Delete local files
         print("--> Deleting input and output data on local machine")
         local_file = glob.glob(
-            os.path.join(const.LOCAL_DIR, self._scenario_info["id"] + "_*")
+            os.path.join(server_setup.LOCAL_DIR, self._scenario_info["id"] + "_*")
         )
         if local_file:
             for f in local_file:

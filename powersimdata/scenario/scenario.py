@@ -1,5 +1,5 @@
 from powersimdata.data_access.scenario_list import ScenarioListManager
-from powersimdata.utility import const
+from powersimdata.utility import server_setup
 from powersimdata.utility.transfer_data import (
     setup_server_connection,
     get_execute_table,
@@ -123,7 +123,9 @@ class Scenario(object):
 
         status = execute_table[execute_table.id == self.info["id"]]
         if status.shape[0] == 0:
-            raise Exception("Scenario not found in %s on server" % const.EXECUTE_LIST)
+            raise Exception(
+                "Scenario not found in %s on server" % server_setup.EXECUTE_LIST
+            )
         elif status.shape[0] == 1:
             self.status = status.status.values[0]
 

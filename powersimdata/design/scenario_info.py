@@ -1,6 +1,6 @@
 import warnings
 
-from powersimdata.utility.constants import (
+from powersimdata.network.usa_tamu.constants import (
     abv2state,
     state2loadzone,
     interconnect2loadzone,

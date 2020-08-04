@@ -1,5 +1,5 @@
 from powersimdata.data_access.scenario_list import ScenarioListManager
-from powersimdata.utility.const import get_server_user
+from powersimdata.utility.server_setup import get_server_user
 from powersimdata.utility.transfer_data import (
     setup_server_connection,
     get_execute_table,

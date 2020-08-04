@@ -1,5 +1,5 @@
 from powersimdata.data_access.scenario_list import ScenarioListManager
-from powersimdata.utility import const
+from powersimdata.utility import server_setup
 from powersimdata.utility.transfer_data import upload
 from powersimdata.scenario.state import State
 from powersimdata.scenario.execute import Execute
@@ -74,7 +74,7 @@ class Create(State):
                 self._scenario_info["change_table"] = "No"
 
     def _generate_and_set_scenario_id(self):
-        """ Generate scenario id on server and set the id on current 
+        """ Generate scenario id on server and set the id on current
         ScenarioInfo instance
         """
         scenario_id = self._scenario_list_manager.generate_scenario_id()
@@ -88,11 +88,11 @@ class Create(State):
         """
         print("--> Adding entry in execute table on server\n")
         entry = "%s,created" % self._scenario_info["id"]
-        command = "echo %s >> %s" % (entry, const.EXECUTE_LIST)
+        command = "echo %s >> %s" % (entry, server_setup.EXECUTE_LIST)
 
         stdin, stdout, stderr = self._ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to update %s on server" % const.EXECUTE_LIST)
+            raise IOError("Failed to update %s on server" % server_setup.EXECUTE_LIST)
         self._scenario_status = "created"
         self.allowed.append("execute")
 
@@ -104,9 +104,9 @@ class Create(State):
         self.builder.change_table.write(self._scenario_info["id"])
         print("--> Uploading change table to server")
         file_name = self._scenario_info["id"] + "_ct.pkl"
-        upload(self._ssh, file_name, const.LOCAL_DIR, const.INPUT_DIR)
+        upload(self._ssh, file_name, server_setup.LOCAL_DIR, server_setup.INPUT_DIR)
         print("--> Deleting change table on local machine")
-        os.remove(os.path.join(const.LOCAL_DIR, file_name))
+        os.remove(os.path.join(server_setup.LOCAL_DIR, file_name))
 
     def get_ct(self):
         """Returns change table.
@@ -509,7 +509,7 @@ class CSV(object):
             raise NameError("Choose from %s" % " | ".join(possible))
 
         available = interconnect2name(self.interconnect) + "_" + kind + "_*"
-        query = posixpath.join(const.BASE_PROFILE_DIR, available)
+        query = posixpath.join(server_setup.BASE_PROFILE_DIR, available)
         stdin, stdout, stderr = self._ssh.exec_command("ls " + query)
         if len(stderr.readlines()) != 0:
             print("No %s profiles available." % kind)
