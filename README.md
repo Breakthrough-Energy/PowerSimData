@@ -132,7 +132,7 @@ scenario.state.builder.set_name('test', 'dummy')
 # set start date, end date and interval
 scenario.state.builder.set_time('2016-08-01 00:00:00',
                                 '2016-08-31 23:00:00',
-                                '124H')
+                                '24H')
 # set demand profile version
 scenario.state.builder.set_base_profile('demand', 'v4')
 # set hydro profile version
@@ -163,9 +163,9 @@ scenario.state.builder.change_table.add_dcline(
 
 # add a solar plant in NV, a coal plant in ID and a natural gas plant in OR
 scenario.state.builder.change_table.add_plant(
-    [{'type': 'solar', 'bus_id': 2030454, 'Pmax': 75}],
-    [{"type": "coal", "bus_id": 2074334, "Pmin": 25, "Pmax": 750, "c0": 1800, "c1": 30, "c2": 0.0025}],
-    [{"type": "ng", "bus_id": 2090018, "Pmax": 75, "c0": 900, "c1": 30, "c2": 0.0015}])
+    [{'type': 'solar', 'bus_id': 2030454, 'Pmax': 75},
+     {"type": "coal", "bus_id": 2074334, "Pmin": 25, "Pmax": 750, "c0": 1800, "c1": 30, "c2": 0.0025},
+     {"type": "ng", "bus_id": 2090018, "Pmax": 75, "c0": 900, "c1": 30, "c2": 0.0015}])
 
 # get grid used in scenario
 grid = scenario.state.get_grid()
