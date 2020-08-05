@@ -33,9 +33,8 @@ class ExecuteListManager:
         """Adds scenario to the execute list file on server.
 
         :param collections.OrderedDict scenario_info: entry to add
-        :raises IOError: if execute list file on server cannot be updated.
         """
-        print("--> Adding entry in execute table on server\n")
+        print("--> Adding entry in execute table on server")
         entry = "%s,created" % scenario_info["id"]
         command = "echo %s >> %s" % (entry, server_setup.EXECUTE_LIST)
         err_message = "Failed to update %s on server" % server_setup.EXECUTE_LIST
@@ -58,7 +57,7 @@ class ExecuteListManager:
         _ = self._execute_and_check_err(command, err_message)
 
     def delete_entry(self, scenario_info):
-        """Delete entry from execute list on server.
+        """Deletes entry from execute list on server.
 
         :param collections.OrderedDict scenario_info: entry to delete
         """
