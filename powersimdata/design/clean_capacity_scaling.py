@@ -92,6 +92,91 @@ def load_targets_from_csv(filename):
     return raw_targets
 
 
+def _make_zonename2target(grid, targets, enforced_area_type=None):
+    """Creates a dictionary of {zone_name: target_name} pairs.
+
+    :param powersimdata.input.grid.Grid grid: Grid instance defining the set of zones.
+    :param iterable targets: a collection of strings, used to look up constituent zones.
+    :param str/None enforced_area_type: if provided, specify to area_to_loadzone()
+        that the area type must be this. If None, area_to_loadzone() proceeds in order.
+    :return: (*dict*) -- a dictionary of {zone_name: target_name} pairs.
+    """
+    target_zones = {
+        target_name: area_to_loadzone(grid, target_name, area_type=enforced_area_type)
+        for target_name in targets
+    }
+    zonename2target = {}
+    for target_name, zone_set in target_zones.items():
+        # Filter out parts of states not in this interconnect
+        filtered_zone_set = zone_set & set(grid.zone2id.keys())
+        zonename2target.update({zone: target_name for zone in filtered_zone_set})
+    untargetted_zones = set(grid.zone2id.keys()) - set(zonename2target.keys())
+    if len(untargetted_zones) > 0:
+        err_msg = f"Targets do not cover all load zones. Missing: {untargetted_zones}"
+        raise ValueError(err_msg)
+    return zonename2target
+
+
+def add_resource_data_to_targets(targets, scenario, enforced_area_type=None):
+    targets_and_resources = targets.copy()
+    grid = scenario.state.get_grid()
+    plant = grid.plant
+    curtailment_types = ["hydro", "solar", "wind"]
+    scenario_length = len(scenario.state.get_pg())
+
+    # Map each zone in the grid to a target
+    targets_list = targets.index.tolist()
+    zonename2target = _make_zonename2target(grid, targets_list, enforced_area_type)
+    plant["target_area"] = [zonename2target[z] for z in plant["zone_name"]]
+
+    # Summarize important values by target area & type
+    groupby_cols = [plant.target_area, plant.type]
+    # Capacity
+    capacity_groupby = plant.Pmax.groupby(groupby_cols)
+    capacity_by_target_type = capacity_groupby.sum().unstack(fill_value=0)
+    # Generated energy
+    pg_groupby = scenario.state.get_pg().sum().groupby(groupby_cols)
+    summed_generation = pg_groupby.sum().unstack(fill_value=0)
+    # Calculate: capacity factors, curtailment, no_curtailment_cap_factor
+    # Hydro and solar are straightforward
+    hydro_plant_sum = scenario.state.get_hydro().sum()
+    hydro_plant_targets = plant[plant.type == "hydro"].target_area
+    hydro_potential_by_target = hydro_plant_sum.groupby(hydro_plant_targets).sum()
+    solar_plant_sum = scenario.state.get_solar().sum()
+    solar_plant_targets = plant[plant.type == "solar"].target_area
+    solar_potential_by_target = solar_plant_sum.groupby(solar_plant_targets).sum()
+    # Wind is a little tricker because get_wind() returns 'wind' and 'wind_offshore'
+    onshore_wind_plants = plant[plant.type == "wind"].index
+    onshore_wind_plant_sum = scenario.state.get_wind().sum()[onshore_wind_plants]
+    wind_plant_targets = plant[plant.type == "wind"].target_area
+    wind_potential_by_target = onshore_wind_plant_sum.groupby(wind_plant_targets).sum()
+    potentials_series = [
+        hydro_potential_by_target,
+        solar_potential_by_target,
+        wind_potential_by_target,
+    ]
+    potential = pd.concat(potentials_series, axis=1)
+    possible_energy = scenario_length * capacity_by_target_type[curtailment_types]
+    capacity_factor = summed_generation[curtailment_types] / possible_energy
+    curtailment = (potential - summed_generation[curtailment_types]) / possible_energy
+    no_curtailment_cap_factor = potential / possible_energy
+    # Now add these calculations to
+    total_capacity = capacity_by_target_type.sum()
+    nonzero_capacity_resources = total_capacity[total_capacity > 0].index.tolist()
+    for r in nonzero_capacity_resources:
+        targets_and_resources[f"{r}.prev_capacity"] = capacity_by_target_type[r]
+        targets_and_resources[f"{r}.prev_generation"] = summed_generation[r]
+        if r in curtailment_types:
+            targets_and_resources[f"{r}.prev_cap_factor"] = capacity_factor[r]
+            targets_and_resources[
+                f"{r}.no_curtailment_cap_factor"
+            ] = no_curtailment_cap_factor[r]
+            targets_and_resources[f"{r}.curtailment"] = curtailment[r]
+            targets_and_resources[f"{r}.addl_curtailment"] = 0
+
+    return targets_and_resources
+
+
 class AbstractStrategyManager:
     """
     Base class for strategy objects, contains common functions
