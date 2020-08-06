@@ -296,6 +296,67 @@ def calculate_new_capacities_independent(input_targets, scenario_length):
     return targets
 
 
+def calculate_new_capacities_collaborative(
+    input_targets, scenario_length, solar_fraction=None, addl_curtailment=None
+):
+    """Calculates new capacities based on a Collaborative strategy.
+    :param pandas.DataFrame input_targets: table of targets.
+    :param int scenario_length: number of hours in new scenario.
+    :param float/None solar_fraction: how much new capacity should be solar.
+        If given None, maintain previous ratio.
+    :param dict/None addl_curtailment: how much new curtailment is expected, by resource.
+        If given None, assume zero.
+    :return: (*pandas.DataFrame*) -- targets dataframe with next capacities added.
+    """
+    targets = input_targets.copy()
+    new_resources = ("solar", "wind")
+
+    participating_targets = targets[targets.ce_target > 0]
+    participating_capacity = pd.Series(
+        {
+            resource: participating_targets[f"{resource}.prev_capacity"].sum()
+            for resource in new_resources
+        }
+    )
+    participating_generation = pd.Series(
+        {
+            resource: participating_targets[f"{resource}.prev_generation"].sum()
+            for resource in new_resources
+        }
+    )
+    participating_cap_factor = participating_generation / (
+        participating_capacity * scenario_length
+    )
+    if addl_curtailment is None:
+        addl_curtailment = {resource: 0 for resource in new_resources}
+    expected_cf = participating_cap_factor * (1 - pd.Series(addl_curtailment))
+    if solar_fraction is None:
+        solar_fraction = participating_capacity["solar"] / participating_capacity.sum()
+    avg_new_cf = (expected_cf["solar"] * solar_fraction) + (
+        expected_cf["wind"] * (1 - solar_fraction)
+    )
+    summed_shortfall = participating_targets.ce_shortfall.sum()
+    summed_overgeneration = participating_targets.ce_overgeneration.sum()
+    overall_shortfall = summed_shortfall - summed_overgeneration
+    total_new_capacity = overall_shortfall / (avg_new_cf * scenario_length)
+    new_type_capacity = pd.Series(
+        {
+            "solar": total_new_capacity * solar_fraction,
+            "wind": total_new_capacity * (1 - solar_fraction),
+        }
+    )
+    scaling_factors = 1 + new_type_capacity / participating_capacity
+    for r in ("solar", "wind"):
+        # Fill non-participating targets with previous capacity
+        targets[f"{r}.next_capacity"] = targets[f"{r}.prev_capacity"]
+        # Scale participating targets
+        targets.loc[targets.ce_target > 0, f"{r}.next_capacity"] = (
+            targets.loc[targets.ce_target > 0, f"{r}.prev_capacity"]
+            * scaling_factors[r]
+        )
+    return targets
+
+
 class AbstractStrategyManager:
     """
     Base class for strategy objects, contains common functions
