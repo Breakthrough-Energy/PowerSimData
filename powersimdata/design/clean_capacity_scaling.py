@@ -357,6 +357,44 @@ def calculate_new_capacities_collaborative(
     return targets
 
 
+def create_change_table(input_targets, ref_scenario):
+    """Using a reference scenario, create a change table which scales all
+    plants in a base grid to capacities matching the reference grid, with
+    the exception of wind and solar plants which are scaled up according to
+    the clean capacity scaling logic.
+
+    :param pandas.DataFrame input_targets: table of targets, with previous and
+        next capacities.
+    :param powersimdata.scenario.scenario.Scenario ref_scenario: reference scenario
+        to mimic.
+    :return: (*dict*) -- dictionary to be passed to a change table.
+    """
+    epsilon = 1e-3
+    interconnect = ref_scenario.info["interconnect"]
+    base_grid = Grid([interconnect])
+    grid_zones = base_grid.plant.zone_name.unique()
+    ref_grid = ref_scenario.state.get_grid()
+    ct = mimic_generation_capacity(base_grid, ref_grid)
+    for region in input_targets.index:
+        prev_solar = input_targets.loc[region, "solar.prev_capacity"]
+        prev_wind = input_targets.loc[region, "wind.prev_capacity"]
+        next_solar = input_targets.loc[region, "solar.next_capacity"]
+        next_wind = input_targets.loc[region, "wind.next_capacity"]
+        zone_names = area_to_loadzone(base_grid, region)
+        zone_ids = [base_grid.zone2id[n] for n in zone_names if n in grid_zones]
+        if prev_solar > 0:
+            scale = next_solar / prev_solar
+            if abs(scale - 1) > epsilon:
+                for id in zone_ids:
+                    _apply_zone_scale_factor_to_ct(ct, "solar", id, scale)
+        if prev_wind > 0:
+            scale = next_wind / prev_wind
+            if abs(scale - 1) > epsilon:
+                for id in zone_ids:
+                    _apply_zone_scale_factor_to_ct(ct, "wind", id, scale)
+    return ct
+
+
 class AbstractStrategyManager:
     """
     Base class for strategy objects, contains common functions
