@@ -134,6 +134,16 @@ def _get_scenario_length(scenario):
 
 
 def add_resource_data_to_targets(input_targets, scenario, enforced_area_type=None):
+    """Add resource data to targets. This data includes: previous capacity,
+    previous generation, previous capacity factor (with and without curtailment),
+    and previous curtailment.
+    :param pandas.DataFrame input_targets: table includeing target names, used to
+        summarize resource data.
+    :param powersimdata.scenario.scenario.Scenario scenario: A Scenario instance.
+    :param str/None enforced_area_type: if provided, specify to area_to_loadzone()
+        that the area type must be this. If None, area_to_loadzone() proceeds in order.
+    :return: (*pandas.DataFrame*) -- DataFrame of targets including resource data.
+    """
     targets = input_targets.copy()
     grid = scenario.state.get_grid()
     plant = grid.plant
