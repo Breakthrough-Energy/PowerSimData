@@ -9,6 +9,7 @@ import pandas as pd
 from powersimdata.design.scenario_info import ScenarioInfo, area_to_loadzone
 from powersimdata.design.mimic_grid import mimic_generation_capacity
 from powersimdata.input.grid import Grid
+from powersimdata.scenario.scenario import Scenario
 
 
 def _check_solar_fraction(solar_fraction):
@@ -403,6 +404,86 @@ def create_change_table(input_targets, ref_scenario):
                 for id in zone_ids:
                     _apply_zone_scale_factor_to_ct(ct, "wind", id, scale)
     return ct
+
+
+def calculate_clean_capacity_scaling(
+    ref_scenario,
+    method,
+    targets=None,
+    targets_filename=None,
+    addl_curtailment=None,
+    next_scenario=None,
+    solar_fraction=None,
+):
+    """Given a reference scenario (to get 'baseline' values), a method, and a set
+    of targets (either via a dataframe or a filename to load a dataframe),
+    calculate capacities for a new scenario to meet the calculated shortfall.
+    :param powersimdata.scenario.scenario.Scenario ref_scenario: Scenario instance
+        to get baseline capacities and capacity factors from.
+    :param str method: which capacity scaling method to use.
+    :param pandas.DataFrame/None targets: a dataframe of targets,
+        containing appropriate columns.
+    :param str/None targets_filename: a filepath to a CSV file of targets,
+        containing appropriate columns.
+    :param dict/pandas.DataFrame/None addl_curtailment: additional expected curtailment,
+        either by resource (for method == 'collaborative'),
+        or by target/resource (for method == 'independent').
+    :param powersimdata.scenario.scenario.Scenario/None next_scenario: a Scenario
+        to plan for, using this Scenario's length to determine capacity additions.
+    :param float/None solar_fraction: the fraction of new capacity to be solar,
+        for method == 'collaborative' only.
+        For method == 'independent', these values are specified in the targets table.
+    :return: (*pandas.DataFrame*) -- dataframe of targets including new capacities,
+        plus intermediate values used in calculation.
+    """
+    allowed_methods = {"independent", "collaborative"}
+    # Input validation
+    if not isinstance(ref_scenario, Scenario):
+        raise TypeError("ref_scenario must be a Scenario object")
+    if ref_scenario.state.name != "analyze":
+        raise ValueError("ref_scenario must be in Analyze state")
+    if method not in allowed_methods:
+        raise ValueError(f"method must be one of: {allowed_methods}")
+    if targets is None and targets_filename is None:
+        raise TypeError("One of targets or targets_filename must be given")
+    if targets is not None and targets_filename is not None:
+        raise TypeError("targets and targets_filename cannot both be given")
+    if targets is not None and not isinstance(targets, pd.DataFrame):
+        raise TypeError("targets must be passed as a pandas.DataFrame")
+    if targets_filename is not None:
+        targets = load_targets_from_csv(targets_filename)
+    if next_scenario is not None:
+        if not isinstance(next_scenario, Scenario):
+            raise TypeError("next_scenario must be a Scenario object")
+        next_scenario_length = _get_scenario_length(next_scenario)
+    else:
+        next_scenario_length = _get_scenario_length(ref_scenario)
+
+    # Add extra information to targets
+    targets = add_resource_data_to_targets(targets, ref_scenario)
+    targets = add_demand_to_targets(targets, ref_scenario)
+    targets = add_shortfall_to_targets(targets)
+    # Calculate new capacities
+    if method == "independent":
+        if addl_curtailment is not None:
+            if not isinstance(addl_curtailment, (dict, pd.DataFrame)):
+                raise TypeError("addl_curtailment must be dict or pandas.DataFrame")
+            if isinstance(addl_curtailment, dict):
+                addl_curtailment = pd.DataFrame.from_dict(addl_curtailment)
+                if set(addl_curtailment.columns) <= set(targets.index):
+                    addl_curtailment = addl_curtailment.transpose()
+            if np.sum((addl_curtailment < 0).to_numpy()) > 0:
+                raise ValueError("addl_curtailment contains negative values")
+            if np.sum((addl_curtailment > 1).to_numpy()) > 0:
+                raise ValueError("addl_curtailment contains values > 1")
+        targets = add_new_capacities_independent(
+            targets, next_scenario_length, addl_curtailment
+        )
+    elif method == "collaborative":
+        targets = add_new_capacities_collaborative(
+            targets, next_scenario_length, solar_fraction, addl_curtailment
+        )
+    return targets
 
 
 class AbstractStrategyManager:
