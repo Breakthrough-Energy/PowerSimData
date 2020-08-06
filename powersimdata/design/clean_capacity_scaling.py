@@ -177,6 +177,18 @@ def add_resource_data_to_targets(targets, scenario, enforced_area_type=None):
     return targets_and_resources
 
 
+def add_demand_to_targets(targets, scenario, enforced_area_type=None):
+    grid = scenario.state.get_grid()
+    targets_and_demand = targets.copy()
+
+    zonename2target = _make_zonename2target(grid, targets.index, enforced_area_type)
+    zoneid2target = {grid.zone2id[z]: target for z, target in zonename2target.items()}
+    summed_demand = scenario.state.get_demand().sum().to_frame()
+    summed_demand["target"] = [zoneid2target[id] for id in summed_demand.index]
+    targets_and_demand["demand"] = summed_demand.groupby("target").sum()
+    return targets_and_demand
+
+
 class AbstractStrategyManager:
     """
     Base class for strategy objects, contains common functions
