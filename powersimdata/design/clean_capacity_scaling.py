@@ -252,10 +252,14 @@ def add_shortfall_to_targets(input_targets):
     return targets
 
 
-def add_new_capacities_independent(input_targets, scenario_length):
+def add_new_capacities_independent(
+    input_targets, scenario_length, addl_curtailment=None
+):
     """Calculates new capacities based on an Independent strategy.
     :param pandas.DataFrame input_targets: table of targets.
     :param int scenario_length: number of hours in new scenario.
+    :param pandas.DataFrame/None addl_curtailment: additional expected curtailment
+        by target/resource. If None, assumed zero for all targets/resources.
     :return: (*pandas.DataFrame*) -- targets dataframe with next capacities added.
     """
 
@@ -287,8 +291,12 @@ def add_new_capacities_independent(input_targets, scenario_length):
         new_wind = total_new_capacity * (1 - new_solar_percentage)
         return new_solar, new_wind
 
+    # Parse inputs
+    resources = ["solar", "wind"]
     targets = input_targets.copy()
-    if addl_curtailment is not None:
+    if addl_curtailment is None:
+        addl_curtailment = pd.DataFrame(0, index=targets.index, columns=resources)
+    else:
         addl_curtailment.columns = [
             f"{r}.addl_curtailment" for r in addl_curtailment.columns
         ]
@@ -300,7 +308,7 @@ def add_new_capacities_independent(input_targets, scenario_length):
     # Add new capacity to targets dataframe
     new_solar_wind.columns = ["solar.added_capacity", "wind.added_capacity"]
     targets = pd.concat([targets, new_solar_wind], axis=1)
-    for r in ("solar", "wind"):
+    for r in resources:
         targets[f"{r}.next_capacity"] = (
             targets[f"{r}.prev_capacity"] + targets[f"{r}.added_capacity"]
         )
