@@ -251,7 +251,7 @@ def add_shortfall_to_targets(input_targets):
     return targets
 
 
-def calculate_new_capacities_independent(input_targets, scenario_length):
+def add_new_capacities_independent(input_targets, scenario_length):
     """Calculates new capacities based on an Independent strategy.
     :param pandas.DataFrame input_targets: table of targets.
     :param int scenario_length: number of hours in new scenario.
@@ -306,7 +306,7 @@ def calculate_new_capacities_independent(input_targets, scenario_length):
     return targets
 
 
-def calculate_new_capacities_collaborative(
+def add_new_capacities_collaborative(
     input_targets, scenario_length, solar_fraction=None, addl_curtailment=None
 ):
     """Calculates new capacities based on a Collaborative strategy.
