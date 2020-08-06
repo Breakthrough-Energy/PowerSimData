@@ -37,16 +37,7 @@ class Delete(State):
 
         # Delete entry in scenario list
         self._scenario_list_manager.delete_entry(self._scenario_info)
-
-        # Delete entry in execute list
-        print("--> Deleting entry in execute table on server")
-        entry = "^%s,extracted" % self._scenario_info["id"]
-        command = "sed -i.bak '/%s/d' %s" % (entry, server_setup.EXECUTE_LIST)
-        stdin, stdout, stderr = self._ssh.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError(
-                "Failed to delete entry in %s on server" % server_setup.EXECUTE_LIST
-            )
+        self._execute_list_manager.delete_entry(self._scenario_info)
 
         # Delete links to base profiles on server
         print("--> Deleting scenario input data on server")

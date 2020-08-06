@@ -1,9 +1,7 @@
 from powersimdata.data_access.scenario_list import ScenarioListManager
+from powersimdata.data_access.execute_list import ExecuteListManager
 from powersimdata.utility import server_setup
-from powersimdata.utility.transfer_data import (
-    setup_server_connection,
-    get_execute_table,
-)
+from powersimdata.utility.transfer_data import setup_server_connection
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create
 from powersimdata.scenario.execute import Execute
@@ -30,6 +28,7 @@ class Scenario(object):
 
         self.ssh = setup_server_connection()
         self._scenario_list_manager = ScenarioListManager(self.ssh)
+        self._execute_list_manager = ExecuteListManager(self.ssh)
 
         if not descriptor:
             self.state = Create(self)
@@ -119,7 +118,7 @@ class Scenario(object):
 
         :raises Exception: if scenario not found in execute list on server.
         """
-        execute_table = get_execute_table(self.ssh)
+        execute_table = self._execute_list_manager.get_execute_table()
 
         status = execute_table[execute_table.id == self.info["id"]]
         if status.shape[0] == 0:

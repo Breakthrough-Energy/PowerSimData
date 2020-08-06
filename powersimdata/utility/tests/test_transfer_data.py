@@ -1,9 +1,7 @@
 from powersimdata.data_access.scenario_list import ScenarioListManager
+from powersimdata.data_access.execute_list import ExecuteListManager
 from powersimdata.utility.server_setup import get_server_user
-from powersimdata.utility.transfer_data import (
-    setup_server_connection,
-    get_execute_table,
-)
+from powersimdata.utility.transfer_data import setup_server_connection
 
 from numpy.testing import assert_array_equal
 import pandas as pd
@@ -21,6 +19,12 @@ def ssh_client():
 def scenario_table(ssh_client):
     scenario_list_manager = ScenarioListManager(ssh_client)
     return scenario_list_manager.get_scenario_table()
+
+
+@pytest.fixture
+def execute_table(ssh_client):
+    execute_list_manager = ExecuteListManager(ssh_client)
+    return execute_list_manager.get_execute_table()
 
 
 @pytest.mark.integration
@@ -58,13 +62,11 @@ def test_get_scenario_file_from_server_header(ssh_client, scenario_table):
 
 
 @pytest.mark.integration
-def test_get_execute_file_from_server_type(ssh_client):
-    table = get_execute_table(ssh_client)
-    assert isinstance(table, pd.DataFrame)
+def test_get_execute_file_from_server_type(ssh_client, execute_table):
+    assert isinstance(execute_table, pd.DataFrame)
 
 
 @pytest.mark.integration
-def test_get_execute_file_from_server_header(ssh_client):
+def test_get_execute_file_from_server_header(ssh_client, execute_table):
     header = ["id", "status"]
-    table = get_execute_table(ssh_client)
-    assert_array_equal(table.columns, header)
+    assert_array_equal(execute_table.columns, header)

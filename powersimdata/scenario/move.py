@@ -1,7 +1,6 @@
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup, backup
 from powersimdata.scenario.helpers import interconnect2name
-from powersimdata.utility.transfer_data import get_execute_table
 
 import posixpath
 
@@ -9,10 +8,17 @@ import posixpath
 class Move(State):
     """Moves scenario.
 
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     """
 
     name = "move"
     allowed = []
+
+    def __init__(self, scenario):
+        """Constructor
+
+        """
+        super().__init__(scenario)
 
     def print_scenario_info(self):
         """Prints scenario information.
@@ -42,14 +48,7 @@ class Move(State):
         backup.move_output_data()
         backup.move_temporary_folder()
 
-        # Update status in execute list
-        print("--> Updating status in execute table on server")
-        options = "-F, -v OFS=',' -v INPLACE_SUFFIX=.bak -i inplace"
-        program = "'{if($1==%s) $2=\"%s\"};1'" % (self._scenario_info["id"], "moved")
-        command = "awk %s %s %s" % (options, program, server_setup.EXECUTE_LIST)
-        stdin, stdout, stderr = self._ssh.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError("Failed to update %s on server" % server_setup.EXECUTE_LIST)
+        self._execute_list_manager.update_execute_list("moved", self._scenario_info)
 
         # Delete attributes
         self._clean()
