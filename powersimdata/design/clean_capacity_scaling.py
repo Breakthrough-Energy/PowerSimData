@@ -117,12 +117,28 @@ def _make_zonename2target(grid, targets, enforced_area_type=None):
     return zonename2target
 
 
+def _get_scenario_length(scenario):
+    """Get the number of hours in a scenario.
+    :param powersimdata.scenario.scenario.Scenario scenario: A Scenario instance.
+    :return: (*int*) -- the number of hours in the scenario.
+    """
+
+    if scenario.state.name == "create":
+        start_ts = pd.Timestamp(scenario.state.builder.start_date)
+        end_ts = pd.Timestamp(scenario.state.builder.end_date)
+    else:
+        start_ts = pd.Timestamp(scenario.info["start_date"])
+        end_ts = pd.Timestamp(scenario.info["end_date"])
+    num_hours = (end_ts - start_ts) / pd.Timedelta(hours=1) + 1
+    return num_hours
+
+
 def add_resource_data_to_targets(input_targets, scenario, enforced_area_type=None):
     targets = input_targets.copy()
     grid = scenario.state.get_grid()
     plant = grid.plant
     curtailment_types = ["hydro", "solar", "wind"]
-    scenario_length = len(scenario.state.get_pg())
+    scenario_length = _get_scenario_length(scenario)
 
     # Map each zone in the grid to a target
     targets_list = input_targets.index.tolist()
@@ -222,6 +238,61 @@ def add_shortfall_to_targets(input_targets):
     raw_shortfall = targets.ce_target - total_ce_generation
     targets["ce_shortfall"] = raw_shortfall.clip(lower=0)
     targets["ce_overgeneration"] = (-1 * raw_shortfall).clip(lower=0)
+    return targets
+
+
+def calculate_new_capacities_independent(input_targets, scenario_length):
+    """Calculates new capacities based on an Independent strategy.
+    :param pandas.DataFrame input_targets: table of targets.
+    :param int scenario_length: number of hours in new scenario.
+    :return: (*pandas.DataFrame*) -- targets dataframe with next capacities added.
+    """
+
+    def calculate_added_capacity(target):
+        if pd.isnull(target["solar_percentage"]):
+            new_solar_percentage = target["solar.prev_capacity"] / (
+                target["solar.prev_capacity"] + target["wind.prev_capacity"]
+            )
+        else:
+            new_solar_percentage = target["solar_percentage"]
+        new_wind_percentage = 1 - new_solar_percentage
+        solar_expected_cf = target["solar.prev_cap_factor"] * (
+            1 - target["solar.addl_curtailment"]
+        )
+        wind_expected_cf = target["wind.prev_cap_factor"] * (
+            1 - target["wind.addl_curtailment"]
+        )
+        if np.isnan(solar_expected_cf):
+            avg_new_cf = wind_expected_cf * new_wind_percentage
+        elif np.isnan(wind_expected_cf):
+            avg_new_cf = solar_expected_cf * new_solar_percentage
+        else:
+            avg_new_cf = (
+                solar_expected_cf * new_solar_percentage
+                + wind_expected_cf * new_wind_percentage
+            )
+        total_new_capacity = target["ce_shortfall"] / (avg_new_cf * scenario_length)
+        new_solar = total_new_capacity * new_solar_percentage
+        new_wind = total_new_capacity * (1 - new_solar_percentage)
+        return new_solar, new_wind
+
+    targets = input_targets.copy()
+    if addl_curtailment is not None:
+        addl_curtailment.columns = [
+            f"{r}.addl_curtailment" for r in addl_curtailment.columns
+        ]
+    targets = targets.join(addl_curtailment)
+    # Calculate new capacity
+    new_solar_wind = targets.apply(
+        calculate_added_capacity, result_type="expand", axis=1
+    )
+    # Add new capacity to targets dataframe
+    new_solar_wind.columns = ["solar.added_capacity", "wind.added_capacity"]
+    targets = pd.concat([targets, new_solar_wind], axis=1)
+    for r in ("solar", "wind"):
+        targets[f"{r}.next_capacity"] = (
+            targets[f"{r}.prev_capacity"] + targets[f"{r}.added_capacity"]
+        )
     return targets
 
 
