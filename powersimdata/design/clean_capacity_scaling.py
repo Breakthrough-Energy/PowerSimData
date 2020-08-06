@@ -176,6 +176,14 @@ def add_resource_data_to_targets(input_targets, scenario, enforced_area_type=Non
 
 
 def add_demand_to_targets(input_targets, scenario, enforced_area_type=None):
+    """Add demand data to targets.
+    :param pandas.DataFrame input_targets: table including target names, used to
+        summarize demand.
+    :param powersimdata.scenario.scenario.Scenario scenario: A Scenario instance.
+    :param str/None enforced_area_type: if provided, specify to area_to_loadzone()
+        that the area type must be this. If None, area_to_loadzone() proceeds in order.
+    :return: (*pandas.DataFrame*) -- DataFrame of targets including demand data.
+    """
     grid = scenario.state.get_grid()
     targets = input_targets.copy()
 
