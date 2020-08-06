@@ -117,15 +117,15 @@ def _make_zonename2target(grid, targets, enforced_area_type=None):
     return zonename2target
 
 
-def add_resource_data_to_targets(targets, scenario, enforced_area_type=None):
-    targets_and_resources = targets.copy()
+def add_resource_data_to_targets(input_targets, scenario, enforced_area_type=None):
+    targets = input_targets.copy()
     grid = scenario.state.get_grid()
     plant = grid.plant
     curtailment_types = ["hydro", "solar", "wind"]
     scenario_length = len(scenario.state.get_pg())
 
     # Map each zone in the grid to a target
-    targets_list = targets.index.tolist()
+    targets_list = input_targets.index.tolist()
     zonename2target = _make_zonename2target(grid, targets_list, enforced_area_type)
     plant["target_area"] = [zonename2target[z] for z in plant["zone_name"]]
 
@@ -164,29 +164,27 @@ def add_resource_data_to_targets(targets, scenario, enforced_area_type=None):
     total_capacity = capacity_by_target_type.sum()
     nonzero_capacity_resources = total_capacity[total_capacity > 0].index.tolist()
     for r in nonzero_capacity_resources:
-        targets_and_resources[f"{r}.prev_capacity"] = capacity_by_target_type[r]
-        targets_and_resources[f"{r}.prev_generation"] = summed_generation[r]
+        targets[f"{r}.prev_capacity"] = capacity_by_target_type[r]
+        targets[f"{r}.prev_generation"] = summed_generation[r]
         if r in curtailment_types:
-            targets_and_resources[f"{r}.prev_cap_factor"] = capacity_factor[r]
-            targets_and_resources[
-                f"{r}.no_curtailment_cap_factor"
-            ] = no_curtailment_cap_factor[r]
-            targets_and_resources[f"{r}.curtailment"] = curtailment[r]
-            targets_and_resources[f"{r}.addl_curtailment"] = 0
+            targets[f"{r}.prev_cap_factor"] = capacity_factor[r]
+            targets[f"{r}.no_curtailment_cap_factor"] = no_curtailment_cap_factor[r]
+            targets[f"{r}.curtailment"] = curtailment[r]
+            targets[f"{r}.addl_curtailment"] = 0
 
-    return targets_and_resources
+    return targets
 
 
-def add_demand_to_targets(targets, scenario, enforced_area_type=None):
+def add_demand_to_targets(input_targets, scenario, enforced_area_type=None):
     grid = scenario.state.get_grid()
-    targets_and_demand = targets.copy()
+    targets = input_targets.copy()
 
     zonename2target = _make_zonename2target(grid, targets.index, enforced_area_type)
     zoneid2target = {grid.zone2id[z]: target for z, target in zonename2target.items()}
     summed_demand = scenario.state.get_demand().sum().to_frame()
     summed_demand["target"] = [zoneid2target[id] for id in summed_demand.index]
-    targets_and_demand["demand"] = summed_demand.groupby("target").sum()
-    return targets_and_demand
+    targets["demand"] = summed_demand.groupby("target").sum()
+    return targets
 
 
 class AbstractStrategyManager:
