@@ -123,7 +123,8 @@ def _get_scenario_length(scenario):
     :param powersimdata.scenario.scenario.Scenario scenario: A Scenario instance.
     :return: (*int*) -- the number of hours in the scenario.
     """
-
+    if not isinstance(scenario, Scenario):
+        raise TypeError("next_scenario must be a Scenario object")
     if scenario.state.name == "create":
         start_ts = pd.Timestamp(scenario.state.builder.start_date)
         end_ts = pd.Timestamp(scenario.state.builder.end_date)
@@ -461,8 +462,6 @@ def calculate_clean_capacity_scaling(
     if targets_filename is not None:
         targets = load_targets_from_csv(targets_filename)
     if next_scenario is not None:
-        if not isinstance(next_scenario, Scenario):
-            raise TypeError("next_scenario must be a Scenario object")
         next_scenario_length = _get_scenario_length(next_scenario)
     else:
         next_scenario_length = _get_scenario_length(ref_scenario)
