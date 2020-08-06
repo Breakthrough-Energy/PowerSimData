@@ -195,6 +195,36 @@ def add_demand_to_targets(input_targets, scenario, enforced_area_type=None):
     return targets
 
 
+def add_shortfall_to_targets(input_targets):
+    """Add shortfall data to targets.
+    :param pandas.DataFrame input_targets: table with demand, prev_generation,
+        and ce_target_fraction.
+    :return: (*pandas.DataFrame*) -- DataFrame of targets including shortfall data.
+    """
+    targets = input_targets.copy()
+    allowed_resources_dict = targets.allowed_resources.to_dict()
+    allowed_sets = {
+        target: {resource.strip() for resource in allowed.split(",")}
+        for target, allowed in allowed_resources_dict.items()
+    }
+    # Detect if there are allowed resources that aren't in the grid, and add them
+    all_allowed = set().union(*allowed_sets.values())
+    for resource in all_allowed:
+        if f"{resource}.prev_generation" not in targets.columns:
+            targets[f"{resource}.prev_generation"] = 0
+    targets["prev_ce_generation"] = targets.apply(
+        lambda x: sum([x[f"{r}.prev_generation"] for r in allowed_sets[x.name]]), axis=1
+    )
+    targets["ce_target"] = targets.demand * targets.ce_target_fraction
+    total_ce_generation = (
+        targets.prev_ce_generation + targets.external_ce_addl_historical_amount
+    )
+    raw_shortfall = targets.ce_target - total_ce_generation
+    targets["ce_shortfall"] = raw_shortfall.clip(lower=0)
+    targets["ce_overgeneration"] = (-1 * raw_shortfall).clip(lower=0)
+    return targets
+
+
 class AbstractStrategyManager:
     """
     Base class for strategy objects, contains common functions
