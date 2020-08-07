@@ -438,7 +438,8 @@ def calculate_clean_capacity_scaling(
         either by resource (for method == 'collaborative'),
         or by target/resource (for method == 'independent').
     :param powersimdata.scenario.scenario.Scenario/None next_scenario: a Scenario
-        to plan for, using this Scenario's length to determine capacity additions.
+        to plan for, using this Scenario's length and demand to determine capacity
+        additions.
     :param float/None solar_fraction: the fraction of new capacity to be solar,
         for method == 'collaborative' only.
         For method == 'independent', these values are specified in the targets table.
@@ -461,14 +462,15 @@ def calculate_clean_capacity_scaling(
         raise TypeError("targets must be passed as a pandas.DataFrame")
     if targets_filename is not None:
         targets = load_targets_from_csv(targets_filename)
-    if next_scenario is not None:
-        next_scenario_length = _get_scenario_length(next_scenario)
-    else:
-        next_scenario_length = _get_scenario_length(ref_scenario)
 
     # Add extra information to targets
     targets = add_resource_data_to_targets(targets, ref_scenario)
-    targets = add_demand_to_targets(targets, ref_scenario)
+    if next_scenario is not None:
+        targets = add_demand_to_targets(targets, next_scenario)
+        next_scenario_length = _get_scenario_length(next_scenario)
+    else:
+        targets = add_demand_to_targets(targets, ref_scenario)
+        next_scenario_length = _get_scenario_length(ref_scenario)
     targets = add_shortfall_to_targets(targets)
     # Calculate new capacities
     if method == "independent":
