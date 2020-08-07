@@ -49,11 +49,12 @@ def _apply_zone_scale_factor_to_ct(ct, fuel, zone_id, scale_factor):
         ct[fuel]["zone_id"][zone_id] *= scale_factor
 
 
-def load_targets_from_csv(filename):
+def load_targets_from_csv(filename, drop_ignored=True):
     """Interprets a CSV file as a set of targets, ensuring that required columns are present,
     and filling in default values for optional columns.
 
     :param str filename: filepath to targets csv.
+    :param bool drop_ignored: if True, drop all ignored columns from output.
     :return: (*pandas.DataFrame*) -- DataFrame of targets from csv file
     :raises TypeError: if filename is not a string
     :raises ValueError: if one or more required columns is missing.
@@ -82,6 +83,8 @@ def load_targets_from_csv(filename):
     # Report which columns are used vs. unused
     ignored_columns = raw_columns - mandatory_columns - optional_column_defaults.keys()
     print(f"ignoring: {ignored_columns}")
+    if drop_ignored:
+        raw_targets.drop(ignored_columns, axis=1, inplace=True)
 
     for column in optional_column_defaults.keys():
         # Fill optional columns that are missing entirely
