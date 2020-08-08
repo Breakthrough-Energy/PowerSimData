@@ -421,13 +421,10 @@ class SimulationInput(object):
         """Loads, scales and writes on local machine a base profile.
 
         :param powersimdata.input.transform_profile.TransformProfile profile: a
-            TransformProfile object
+            TransformProfile object.
         :param str kind: one of *'hydro'*, *'solar'*, *'wind'* or *'demand'*.
         """
-        if kind == "demand":
-            profile = profile.get_demand()
-        else:
-            profile = profile.get_power_output(kind)
+        profile = profile.get_profile(kind)
 
         print(
             "Writing scaled %s profile in %s on local machine"

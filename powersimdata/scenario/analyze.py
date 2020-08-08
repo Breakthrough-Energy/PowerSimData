@@ -256,7 +256,7 @@ class Analyze(State):
         profile = TransformProfile(
             self._ssh, self._scenario_info, self.get_grid(), self.get_ct()
         )
-        demand = profile.get_demand()
+        demand = profile.get_profile("demand")
 
         if original:
             return demand
@@ -284,29 +284,29 @@ class Analyze(State):
     def get_hydro(self):
         """Returns hydro profile
 
-        :return: (*pandas.DataFrame*) -- data frame of hydro power output.
+        :return: (*pandas.DataFrame*) -- data frame of hydro energy output.
         """
         profile = TransformProfile(
             self._ssh, self._scenario_info, self.get_grid(), self.get_ct()
         )
-        return profile.get_hydro()
+        return profile.get_profile("hydro")
 
     def get_solar(self):
         """Returns solar profile
 
-        :return: (*pandas.DataFrame*) -- data frame of solar power output.
+        :return: (*pandas.DataFrame*) -- data frame of solar energy output.
         """
         profile = TransformProfile(
             self._ssh, self._scenario_info, self.get_grid(), self.get_ct()
         )
-        return profile.get_solar()
+        return profile.get_profile("solar")
 
     def get_wind(self):
         """Returns wind profile
 
-        :return: (*pandas.DataFrame*) -- data frame of wind power output.
+        :return: (*pandas.DataFrame*) -- data frame of wind energy output.
         """
         profile = TransformProfile(
             self._ssh, self._scenario_info, self.get_grid(), self.get_ct()
         )
-        return profile.get_wind()
+        return profile.get_profile("wind")

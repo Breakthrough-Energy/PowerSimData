@@ -134,7 +134,7 @@ class Create(State):
         :return: (*pandas.DataFrame*) -- profile.
         :raises Exception: if :meth:`_Builder.set_base_profile` has not been called yet.
         """
-        if hasattr(self.builder, name):
+        if getattr(self.builder, name):
             profile = TransformProfile(
                 self._ssh,
                 {
@@ -144,7 +144,7 @@ class Create(State):
                 self.get_grid(),
                 self.get_ct(),
             )
-            return eval("profile.get_" + name + "()")
+            return profile.get_profile(name)
         else:
             raise Exception("Set base %s profile version first" % name)
 

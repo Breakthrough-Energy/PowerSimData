@@ -29,22 +29,14 @@ class TransformProfile(object):
         }
         self.base_plant = Grid(self.grid.interconnect).plant
 
-    def get_power_output(self, resource):
+    def _get_renewable_profile(self, resource):
         """Returns the transformed grid.
 
         :param str resource: *'hydro'*, *'solar'* or *'wind'*.
         :return: (*pandas.DataFrame*) -- power output for generators of
             specified type with plant identification number  as columns and
             UTC timestamp as index.
-        :raises ValueError: if invalid resource.
         """
-        possible = ["hydro", "solar", "wind"]
-        if resource not in possible:
-            print("Choose one of:")
-            for p in possible:
-                print(p)
-            raise ValueError("Invalid resource: %s" % resource)
-
         power_output = self._input_data.get_data(self.scenario_info, resource)
         if not bool(self.ct):
             return power_output
@@ -104,28 +96,7 @@ class TransformProfile(object):
 
         return profile
 
-    def get_hydro(self):
-        """Returns scaled hydro profile.
-
-        :return: (*pandas.DataFrame*) -- data frame of hydro.
-        """
-        return self.get_power_output("hydro")
-
-    def get_solar(self):
-        """Returns scaled solar profile.
-
-        :return: (*pandas.DataFrame*) -- data frame of solar.
-        """
-        return self.get_power_output("solar")
-
-    def get_wind(self):
-        """Returns scaled wind profile.
-
-        :return: (*pandas.DataFrame*) -- data frame of wind.
-        """
-        return self.get_power_output("wind")
-
-    def get_demand(self):
+    def _get_demand_profile(self):
         """Returns scaled demand profile.
 
         :return: (*pandas.DataFrame*) -- data frame of demand.
@@ -139,3 +110,19 @@ class TransformProfile(object):
                 )
                 demand.loc[:, key] *= value
         return demand
+
+    def get_profile(self, name):
+        """Returns profile.
+
+        :param str name: either *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :return: (*pandas.DataFrame*) -- profile.
+        :raises ValueError: if argument not one of *'demand'*, *'hydro'*, *'solar'* or
+            *'wind'*.
+        """
+        possible = ["demand", "hydro", "solar", "wind"]
+        if name not in possible:
+            raise ValueError("Choose from %s" % " | ".join(possible))
+        elif name == "demand":
+            return self._get_demand_profile()
+        else:
+            return self._get_renewable_profile(name)
