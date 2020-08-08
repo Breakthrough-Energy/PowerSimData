@@ -1,6 +1,7 @@
 import copy
 
 from powersimdata.input.input_data import InputData
+from powersimdata.input.grid import Grid
 
 
 class TransformProfile(object):
@@ -26,6 +27,7 @@ class TransformProfile(object):
             "hydro": {"hydro"},
             "demand": {"demand"},
         }
+        self.base_plant = Grid(self.grid.interconnect).plant
 
     def get_power_output(self, resource):
         """Returns the transformed grid.
@@ -64,14 +66,14 @@ class TransformProfile(object):
             the change table.
         """
         new_plant_ids, neighbor_ids, scaling = [], [], []
-        plant = self.grid.plant
+        transformed_plant = self.grid.plant
         for i, entry in enumerate(self.ct["new_plant"]):
             if entry["type"] in self.scale_keys[resource]:
-                new_plant_id = plant.index[-len(self.ct["new_plant"]) + i]
+                new_plant_id = transformed_plant.index[-len(self.ct["new_plant"]) + i]
                 new_plant_ids.append(new_plant_id)
                 neighbor_id = entry["plant_id_neighbor"]
                 neighbor_ids.append(neighbor_id)
-                scaling.append(entry["Pmax"] / plant.loc[neighbor_id, "Pmax"])
+                scaling.append(entry["Pmax"] / self.base_plant.loc[neighbor_id, "Pmax"])
 
         if len(new_plant_ids) > 0:
             neighbor_profiles = profile[neighbor_ids]
@@ -92,13 +94,13 @@ class TransformProfile(object):
         """
         for r in self.scale_keys[resource]:
             if r in self.ct.keys() and "zone_id" in self.ct[r].keys():
-                type_in_zone = self.grid.plant.groupby(["zone_id", "type"])
+                type_in_zone = self.base_plant.groupby(["zone_id", "type"])
                 for z, f in self.ct[r]["zone_id"].items():
                     plant_id = type_in_zone.get_group((z, r)).index.tolist()
                     profile.loc[:, plant_id] *= f
-                if r in self.ct.keys() and "plant_id" in self.ct[r].keys():
-                    for i, f in self.ct[r]["plant_id"].items():
-                        profile.loc[:, i] *= f
+            if r in self.ct.keys() and "plant_id" in self.ct[r].keys():
+                for i, f in self.ct[r]["plant_id"].items():
+                    profile.loc[:, i] *= f
 
         return profile
 
