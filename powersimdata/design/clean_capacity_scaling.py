@@ -332,7 +332,7 @@ def add_new_capacities_collaborative(
     :return: (*pandas.DataFrame*) -- targets dataframe with next capacities added.
     """
     targets = input_targets.copy()
-    new_resources = ("solar", "wind")
+    new_resources = {"solar", "wind"}
 
     participating_targets = targets[targets.ce_target > 0]
     participating_capacity = pd.Series(
@@ -352,6 +352,17 @@ def add_new_capacities_collaborative(
     )
     if addl_curtailment is None:
         addl_curtailment = {resource: 0 for resource in new_resources}
+    else:
+        if not isinstance(addl_curtailment, dict):
+            raise TypeError("addl_curtailment must be supplied as a dict")
+        # Check that only proper keys are supplied
+        if not set(addl_curtailment.keys()) <= new_resources:
+            raise ValueError(f"addl_curtailment keys are limited to {new_resources}")
+        # Check that values are numbers between 0 and 1
+        if not all([isinstance(x, (int, float)) for x in addl_curtailment.values()]):
+            raise ValueError("addl_curtailment values must be numeric")
+        if any([(x < 0) or (x > 1) for x in addl_curtailment.values()]):
+            raise ValueError("addl_curtailment must be between 0 and 1")
     expected_cf = participating_cap_factor * (1 - pd.Series(addl_curtailment))
     if solar_fraction is None:
         solar_fraction = participating_capacity["solar"] / participating_capacity.sum()
