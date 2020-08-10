@@ -6,6 +6,7 @@ from powersimdata.scenario.execute import Execute
 from powersimdata.input.grid import Grid
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.transform_grid import TransformGrid
+from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.scenario.helpers import interconnect2name, check_interconnect
 
 import copy
@@ -74,8 +75,8 @@ class Create(State):
                 self._scenario_info["change_table"] = "No"
 
     def _generate_and_set_scenario_id(self):
-        """ Generate scenario id on server and set the id on current
-        ScenarioInfo instance
+        """Generates scenario id.
+
         """
         scenario_id = self._scenario_list_manager.generate_scenario_id()
         self._scenario_info["id"] = scenario_id
@@ -83,7 +84,8 @@ class Create(State):
 
     def _add_entry_in_execute_list(self):
         """Adds scenario to the execute list file on server and update status
-        information
+            information.
+
         """
         self._execute_list_manager.add_entry(self._scenario_info)
         self._scenario_status = "created"
@@ -105,23 +107,78 @@ class Create(State):
         """Returns change table.
 
         :return: (*dict*) -- change table.
-        :raises Exception: if no change table has been assigned yet.
+        :raises Exception: if :attr:`builder` has not been assigned yet through
+            meth:`set_builder`.
         """
         if self.builder is not None:
             return copy.deepcopy(self.builder.change_table.ct)
         else:
-            raise Exception("Call set_builder method first")
+            raise Exception("Change table does not exist yet")
 
     def get_grid(self):
-        """Returns Grid.
+        """Returns the Grid object.
 
         :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
-        :raises Exception: if no Grid object has been assigned yet.
+        :raises Exception: if :attr:`builder` has not been assigned yet through
+            meth:`set_builder`.
         """
         if self.builder is not None:
             return self.builder.get_grid()
         else:
-            raise Exception("Call set_builder method first")
+            raise Exception("Grid object does not exist yet")
+
+    def get_profile(self, name):
+        """Returns demand, hydro, solar or wind  profile.
+
+        :param str name: either *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :return: (*pandas.DataFrame*) -- profile.
+        :raises Exception: if :meth:`_Builder.set_base_profile` has not been called yet.
+        """
+        if getattr(self.builder, name):
+            profile = TransformProfile(
+                self._ssh,
+                {
+                    "interconnect": self.builder.name,
+                    "base_%s" % name: getattr(self.builder, name),
+                },
+                self.get_grid(),
+                self.get_ct(),
+            )
+            return profile.get_profile(name)
+        else:
+            raise Exception("Set base %s profile version first" % name)
+
+    def get_demand(self):
+        """Returns demand profile.
+
+        :return: (*pandas.DataFrame*) -- load with zone id as columns and UTC timestamp
+            as index.
+        """
+        return self.get_profile("demand")
+
+    def get_hydro(self):
+        """Returns hydro profile.
+
+        :return: (*pandas.DataFrame*) -- hydro energy output with plant id as columns
+            and UTC timestamp as index.
+        """
+        return self.get_profile("hydro")
+
+    def get_solar(self):
+        """Returns solar profile.
+
+        :return: (*pandas.DataFrame*) -- solar energy output with plant id as columns
+            and UTC timestamp as index.
+        """
+        return self.get_profile("solar")
+
+    def get_wind(self):
+        """Returns wind profile.
+
+        :return: (*pandas.DataFrame*) -- power output with plant identification number
+            as columns and UTC timestamp as index.
+        """
+        return self.get_profile("wind")
 
     def create_scenario(self):
         """Creates scenario.
@@ -278,8 +335,7 @@ class _Builder(object):
         :param str start_date: start date.
         :param str end_date: start date.
         :param str interval: interval.
-        :raises Exception: if start date, end date or interval are not properly
-            defined.
+        :raises Exception: if start date, end date or interval are not properly defined.
         """
         min_ts = pd.Timestamp("2016-01-01 00:00:00")
         max_ts = pd.Timestamp("2016-12-31 23:00:00")

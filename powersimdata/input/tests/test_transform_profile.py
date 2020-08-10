@@ -92,7 +92,7 @@ def test_demand_is_scaled(scenario, base_demand):
     tp = TransformProfile(
         scenario.ssh, scenario.info, scenario.state.get_grid(), scenario.state.get_ct()
     )
-    scaled_demand = tp.get_demand()
+    scaled_demand = tp.get_profile("demand")
     assert not base_demand.equals(scaled_demand)
 
     ct = scenario.state.get_ct()
@@ -113,7 +113,7 @@ def test_solar_is_scaled(scenario, base_solar):
     tp = TransformProfile(
         scenario.ssh, scenario.info, scenario.state.get_grid(), scenario.state.get_ct()
     )
-    scaled_solar = tp.get_solar()
+    scaled_solar = tp.get_profile("solar")
     assert not base_solar.equals(scaled_solar)
 
     ct = scenario.state.get_ct()
@@ -132,7 +132,7 @@ def test_wind_is_scaled(scenario, base_wind):
 
     tp = TransformProfile(scenario.ssh, scenario.info, grid, ct)
 
-    scaled_wind = tp.get_wind()
+    scaled_wind = tp.get_profile("wind")
     assert not base_wind.equals(scaled_wind)
 
     if "wind" in ct.keys():
@@ -144,7 +144,7 @@ def test_hydro_is_scaled(scenario, base_hydro):
     tp = TransformProfile(
         scenario.ssh, scenario.info, scenario.state.get_grid(), scenario.state.get_ct()
     )
-    scaled_hydro = tp.get_hydro()
+    scaled_hydro = tp.get_profile("hydro")
     assert not base_hydro.equals(scaled_hydro)
 
     ct = scenario.state.get_ct()
@@ -180,7 +180,7 @@ def test_add_plant(scenario, base_solar, base_wind):
 
     tp = TransformProfile(scenario.ssh, scenario.info, new_grid, ct.ct)
 
-    new_solar = tp.get_solar()
+    new_solar = tp.get_profile("solar")
     assert not new_solar.equals(base_solar)
     assert base_solar.equals(new_solar.drop(new_grid.plant.index[-5], axis=1))
     assert not len(base_solar.columns) == len(new_solar.columns)
@@ -189,7 +189,7 @@ def test_add_plant(scenario, base_solar, base_wind):
         new_grid.plant.index[-5]
     }
 
-    new_wind = tp.get_wind()
+    new_wind = tp.get_profile("wind")
     assert not new_wind.equals(base_wind)
     assert base_wind.equals(new_wind.drop(new_grid.plant.index[-4:-1], axis=1))
     assert not len(base_wind.columns) == len(new_wind.columns)
