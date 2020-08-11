@@ -51,13 +51,15 @@ class Scenario(object):
         """
         scenario_table = self._scenario_list_manager.get_scenario_table()
 
-        def not_found_message(table):
-            """Print message when scenario is not found.
+        def err_message(table, text):
+            """Print message when scenario is not found or multiple matches are
+            found.
 
-            :param pandas table: scenario table.
+            :param pandas.DataFrame table: scenario table.
+            :param str text: message to print.
             """
             print("------------------")
-            print("SCENARIO NOT FOUND")
+            print(text)
             print("------------------")
             print(
                 table.to_string(
@@ -79,39 +81,16 @@ class Scenario(object):
         try:
             int(descriptor)
             scenario = scenario_table[scenario_table.id == descriptor]
-            if scenario.shape[0] == 0:
-                not_found_message(scenario_table)
-            else:
-                self.info = scenario.to_dict("records", into=OrderedDict)[0]
-            return
         except ValueError:
             scenario = scenario_table[scenario_table.name == descriptor]
-            if scenario.shape[0] == 0:
-                not_found_message(scenario_table)
-            elif scenario.shape[0] == 1:
-                self.info = scenario.to_dict("records", into=OrderedDict)[0]
-            elif scenario.shape[0] > 1:
-                print("-----------------------")
-                print("MULTIPLE SCENARIO FOUND")
-                print("-----------------------")
+            if scenario.shape[0] > 1:
+                err_message(scenario_table, "MULTIPLE SCENARIO FOUND")
                 print("Use id to access scenario")
-                print(
-                    scenario_table.to_string(
-                        index=False,
-                        justify="center",
-                        columns=[
-                            "id",
-                            "plan",
-                            "name",
-                            "interconnect",
-                            "base_demand",
-                            "base_hydro",
-                            "base_solar",
-                            "base_wind",
-                        ],
-                    )
-                )
-            return
+
+        if scenario.shape[0] == 0:
+            err_message(scenario_table, "SCENARIO NOT FOUND")
+        elif scenario.shape[0] == 1:
+            self.info = scenario.to_dict("records", into=OrderedDict)[0]
 
     def _set_status(self):
         """Sets execution status of scenario.
