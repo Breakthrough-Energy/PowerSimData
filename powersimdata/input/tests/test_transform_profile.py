@@ -117,6 +117,42 @@ def are_renewable_added(ssh_client, base_grid, base_profile_resource, resource):
     ct.clear()
 
 
+def get_renewable_change_table_by_zone(base_grid, resource):
+    n_zone = 6
+    zones = get_zone_with_resource(base_grid, resource)
+
+    ct = ChangeTable(base_grid)
+    ct.scale_plant_capacity(
+        resource,
+        zone_name={
+            z: f
+            for z, f in zip(
+                np.random.choice(zones, size=n_zone, replace=False),
+                2 * np.random.random(size=n_zone),
+            )
+        },
+    )
+    return ct.ct
+
+
+def get_renewable_change_table_by_id(base_grid, resource):
+    n_plant = 50
+    plants = get_plant_with_resource(base_grid, resource)
+
+    ct = ChangeTable(base_grid)
+    ct.scale_plant_capacity(
+        resource,
+        plant_id={
+            z: f
+            for z, f in zip(
+                np.random.choice(plants, size=n_plant, replace=False),
+                2 * np.random.random(size=n_plant),
+            )
+        },
+    )
+    return ct.ct
+
+
 @pytest.fixture(scope="module")
 def ssh_client():
     ssh_client = setup_server_connection()
@@ -197,59 +233,38 @@ def test_demand_is_scaled(ssh_client, base_grid, base_demand):
 
 @pytest.mark.integration
 def test_solar_is_scaled_by_zone(ssh_client, base_grid, base_solar):
-    n_zone = 6
-    zone_with_solar = get_zone_with_resource(base_grid, "solar")
+    ct = get_renewable_change_table_by_zone(base_grid, "solar")
+    is_renewable_profile_scaled(ssh_client, ct, base_grid, base_solar, "solar")
 
-    ct = ChangeTable(base_grid)
-    ct.scale_plant_capacity(
-        "solar",
-        zone_name={
-            z: f
-            for z, f in zip(
-                np.random.choice(zone_with_solar, size=n_zone, replace=False),
-                2 * np.random.random(size=n_zone),
-            )
-        },
-    )
-    is_renewable_profile_scaled(ssh_client, ct.ct, base_grid, base_solar, "solar")
+
+@pytest.mark.integration
+def test_solar_is_scaled_by_id(ssh_client, base_grid, base_solar):
+    ct = get_renewable_change_table_by_id(base_grid, "solar")
+    is_renewable_profile_scaled(ssh_client, ct, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
 def test_wind_is_scaled_by_zone(ssh_client, base_grid, base_wind):
-    n_zone = 6
-    zone_with_solar = get_zone_with_resource(base_grid, "wind")
+    ct = get_renewable_change_table_by_zone(base_grid, "wind")
+    is_renewable_profile_scaled(ssh_client, ct, base_grid, base_wind, "wind")
 
-    ct = ChangeTable(base_grid)
-    ct.scale_plant_capacity(
-        "wind",
-        zone_name={
-            z: f
-            for z, f in zip(
-                np.random.choice(zone_with_solar, size=n_zone, replace=False),
-                2 * np.random.random(size=n_zone),
-            )
-        },
-    )
-    is_renewable_profile_scaled(ssh_client, ct.ct, base_grid, base_wind, "wind")
+
+@pytest.mark.integration
+def test_wind_is_scaled_by_id(ssh_client, base_grid, base_wind):
+    ct = get_renewable_change_table_by_id(base_grid, "wind")
+    is_renewable_profile_scaled(ssh_client, ct, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
 def test_hydro_is_scaled_by_zone(ssh_client, base_grid, base_hydro):
-    n_zone = 6
-    zone_with_solar = get_zone_with_resource(base_grid, "hydro")
+    ct = get_renewable_change_table_by_zone(base_grid, "hydro")
+    is_renewable_profile_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
 
-    ct = ChangeTable(base_grid)
-    ct.scale_plant_capacity(
-        "hydro",
-        zone_name={
-            z: f
-            for z, f in zip(
-                np.random.choice(zone_with_solar, size=n_zone, replace=False),
-                2 * np.random.random(size=n_zone),
-            )
-        },
-    )
-    is_renewable_profile_scaled(ssh_client, ct.ct, base_grid, base_hydro, "hydro")
+
+@pytest.mark.integration
+def test_hydro_is_scaled_by_id(ssh_client, base_grid, base_hydro):
+    ct = get_renewable_change_table_by_id(base_grid, "hydro")
+    is_renewable_profile_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
