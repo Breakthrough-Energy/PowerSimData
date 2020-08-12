@@ -244,6 +244,14 @@ def test_solar_is_scaled_by_id(ssh_client, base_grid, base_solar):
 
 
 @pytest.mark.integration
+def test_solar_is_scaled_by_zone_and_id(ssh_client, base_grid, base_solar):
+    ct_zone = get_renewable_change_table_by_zone(base_grid, "solar")
+    ct_id = get_renewable_change_table_by_id(base_grid, "solar")
+    ct = {**ct_zone, **ct_id["solar"]}
+    is_renewable_profile_scaled(ssh_client, ct, base_grid, base_solar, "solar")
+
+
+@pytest.mark.integration
 def test_wind_is_scaled_by_zone(ssh_client, base_grid, base_wind):
     ct = get_renewable_change_table_by_zone(base_grid, "wind")
     is_renewable_profile_scaled(ssh_client, ct, base_grid, base_wind, "wind")
@@ -256,6 +264,14 @@ def test_wind_is_scaled_by_id(ssh_client, base_grid, base_wind):
 
 
 @pytest.mark.integration
+def test_wind_is_scaled_by_zone_and_id(ssh_client, base_grid, base_wind):
+    ct_zone = get_renewable_change_table_by_zone(base_grid, "wind")
+    ct_id = get_renewable_change_table_by_id(base_grid, "wind")
+    ct = {**ct_zone, **ct_id["wind"]}
+    is_renewable_profile_scaled(ssh_client, ct, base_grid, base_wind, "wind")
+
+
+@pytest.mark.integration
 def test_hydro_is_scaled_by_zone(ssh_client, base_grid, base_hydro):
     ct = get_renewable_change_table_by_zone(base_grid, "hydro")
     is_renewable_profile_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
@@ -264,6 +280,14 @@ def test_hydro_is_scaled_by_zone(ssh_client, base_grid, base_hydro):
 @pytest.mark.integration
 def test_hydro_is_scaled_by_id(ssh_client, base_grid, base_hydro):
     ct = get_renewable_change_table_by_id(base_grid, "hydro")
+    is_renewable_profile_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
+
+
+@pytest.mark.integration
+def test_hydro_is_scaled_by_zone_and_id(ssh_client, base_grid, base_hydro):
+    ct_zone = get_renewable_change_table_by_zone(base_grid, "hydro")
+    ct_id = get_renewable_change_table_by_id(base_grid, "hydro")
+    ct = {**ct_zone, **ct_id["hydro"]}
     is_renewable_profile_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
 
 
