@@ -1,5 +1,6 @@
 from powersimdata.utility import server_setup
 
+from pathlib import Path
 import pandas as pd
 import paramiko
 import posixpath
@@ -18,19 +19,41 @@ class ScenarioListManager:
         self.ssh_client = ssh_client
 
     def get_scenario_table(self):
-        """Returns scenario table from server.
+        """Returns scenario table from server if possible, otherwise read local
+        copy. Updates the local copy upon successful server connection.
 
         :return: (*pandas.DataFrame*) -- scenario list as a data frame.
         """
-        sftp = self.ssh_client.open_sftp()
-        file_object = sftp.file(server_setup.SCENARIO_LIST, "rb")
+        local_path = Path(server_setup.LOCAL_DIR, "ScenarioList.csv")
 
-        scenario_list = pd.read_csv(file_object)
-        scenario_list.fillna("", inplace=True)
+        try:
+            scenario_list = self._get_from_server()
+            scenario_list.to_csv(local_path, index=False)
+            return scenario_list
+        except:
+            print("Failed to download scenario list from server.")
+            print("Falling back to local cache...")
 
-        sftp.close()
+        if local_path.is_file():
+            return self._parse_csv(local_path)
 
-        return scenario_list.astype(str)
+    def _get_from_server(self):
+        """Return scenario table from server.
+        :return: (*pandas.DataFrame*) -- scenario list as a data frame.
+        """
+        with self.ssh_client.open_sftp() as sftp:
+            file_object = sftp.file(server_setup.SCENARIO_LIST, "rb")
+            return self._parse_csv(file_object)
+
+    def _parse_csv(self, file_object):
+        """Read file from disk into data frame
+        :param str, path object or file-like object file_object: a reference to
+        the csv file
+        :return: (*pandas.DataFrame*) -- scenario list as a data frame.
+        """
+        table = pd.read_csv(file_object)
+        table.fillna("", inplace=True)
+        return table.astype(str)
 
     def generate_scenario_id(self):
         """Generates scenario id.

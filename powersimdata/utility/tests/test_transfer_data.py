@@ -4,6 +4,7 @@ from powersimdata.utility.server_setup import get_server_user
 from powersimdata.utility.transfer_data import setup_server_connection
 
 from numpy.testing import assert_array_equal
+from pandas.testing import assert_frame_equal
 import pandas as pd
 import pytest
 
@@ -59,6 +60,13 @@ def test_get_scenario_file_from_server_header(ssh_client, scenario_table):
         "infeasibilities",
     ]
     assert_array_equal(scenario_table.columns, header)
+
+
+@pytest.mark.integration
+def test_get_scenario_file_local(ssh_client, scenario_table):
+    scm = ScenarioListManager(None)
+    from_local = scm.get_scenario_table()
+    assert_frame_equal(from_local, scenario_table)
 
 
 @pytest.mark.integration
