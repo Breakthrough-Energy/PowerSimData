@@ -84,7 +84,7 @@ class Scenario(object):
         except ValueError:
             scenario = scenario_table[scenario_table.name == descriptor]
             if scenario.shape[0] > 1:
-                err_message(scenario_table, "MULTIPLE SCENARIO FOUND")
+                err_message(scenario, "MULTIPLE SCENARIO FOUND")
                 print("Use id to access scenario")
 
         if scenario.shape[0] == 0:
