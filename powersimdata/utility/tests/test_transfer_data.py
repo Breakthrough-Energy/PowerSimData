@@ -70,6 +70,13 @@ def test_get_scenario_file_local(ssh_client, scenario_table):
 
 
 @pytest.mark.integration
+def test_get_execute_file_local(ssh_client, execute_table):
+    ecm = ExecuteListManager(None)
+    from_local = ecm.get_execute_table()
+    assert_frame_equal(from_local, execute_table)
+
+
+@pytest.mark.integration
 def test_get_execute_file_from_server_type(ssh_client, execute_table):
     assert isinstance(execute_table, pd.DataFrame)
 
