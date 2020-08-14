@@ -7,7 +7,6 @@ from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.grid import Grid
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
-from powersimdata.scenario.helpers import interconnect2name
 
 interconnect = ["Western"]
 param = {
@@ -176,6 +175,24 @@ def _check_new_plants_are_not_scaled(
     assert new_profile.equals(scaled_profile[new_profile.columns])
 
 
+def _check_profile_of_new_plants_are_produced_correctly(
+    base_grid, base_profile_resource, resource
+):
+    ct_new = get_change_table_for_new_plant_addition(base_grid, resource)
+    new_profile = _check_new_plants_are_added(
+        ssh_client, ct_new, base_grid, base_profile_resource, resource
+    )
+    neighbor_id = [d["plant_id_neighbor"] for d in ct_new["new_plant"]]
+    neighbor_pmax = base_grid.plant.loc[neighbor_id].Pmax.to_list()
+    new_plant_pmax = [d["Pmax"] for d in ct_new["new_plant"]]
+
+    for i, c in enumerate(new_profile.columns):
+        neighbor_profile = base_profile_resource[1][neighbor_id[i]]
+        assert new_profile[c].equals(
+            neighbor_profile.multiply(new_plant_pmax[i] / neighbor_pmax[i])
+        )
+
+
 @pytest.fixture(scope="module")
 def ssh_client():
     ssh_client = setup_server_connection()
@@ -327,19 +344,19 @@ def test_hydro_is_scaled_by_zone_and_id(ssh_client, base_grid, base_hydro):
 
 
 @pytest.mark.integration
-def test_new_solar(ssh_client, base_grid, base_solar):
+def test_new_solar_are_added(ssh_client, base_grid, base_solar):
     ct = get_change_table_for_new_plant_addition(base_grid, "solar")
     _ = _check_new_plants_are_added(ssh_client, ct, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
-def test_new_wind(ssh_client, base_grid, base_wind):
+def test_new_wind_are_added(ssh_client, base_grid, base_wind):
     ct = get_change_table_for_new_plant_addition(base_grid, "wind")
     _ = _check_new_plants_are_added(ssh_client, ct, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
-def test_new_hydro(ssh_client, base_grid, base_hydro):
+def test_new_hydro_added(ssh_client, base_grid, base_hydro):
     ct = get_change_table_for_new_plant_addition(base_grid, "hydro")
     _ = _check_new_plants_are_added(ssh_client, ct, base_grid, base_hydro, "hydro")
 
@@ -357,3 +374,18 @@ def test_new_wind_are_not_scaled(ssh_client, base_grid, base_wind):
 @pytest.mark.integration
 def test_new_hydro_are_not_scaled(ssh_client, base_grid, base_hydro):
     _check_new_plants_are_not_scaled(ssh_client, base_grid, base_hydro, "hydro")
+
+
+@pytest.mark.integration
+def test_new_solar_profile(base_grid, base_solar):
+    _check_profile_of_new_plants_are_produced_correctly(base_grid, base_solar, "solar")
+
+
+@pytest.mark.integration
+def test_new_wind_profile(base_grid, base_wind):
+    _check_profile_of_new_plants_are_produced_correctly(base_grid, base_wind, "wind")
+
+
+@pytest.mark.integration
+def test_new_hydro_profile(base_grid, base_hydro):
+    _check_profile_of_new_plants_are_produced_correctly(base_grid, base_hydro, "hydro")
