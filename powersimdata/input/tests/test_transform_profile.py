@@ -24,28 +24,14 @@ param = {
 
 
 def get_zone_with_resource(base_grid, resource):
-    zone = []
-    for z in base_grid.zone2id.keys():
-        try:
-            base_grid.plant.groupby(["zone_name", "type"]).get_group((z, resource))
-            zone.append(z)
-        except KeyError:
-            pass
+    zone = list(
+        base_grid.plant.groupby("type").get_group(resource)["zone_name"].unique()
+    )
     return zone
 
 
 def get_plant_with_resource(base_grid, resource):
-    plant_id = []
-    for i in interconnect:
-        try:
-            plant_id_interconnect = (
-                base_grid.plant.groupby(["interconnect", "type"])
-                .get_group((i, resource))
-                .index.to_list()
-            )
-            plant_id += plant_id_interconnect
-        except KeyError:
-            pass
+    plant_id = list(base_grid.plant.groupby("type").get_group(resource).index)
     return plant_id
 
 
