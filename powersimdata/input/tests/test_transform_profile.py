@@ -10,6 +10,17 @@ from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.scenario.helpers import interconnect2name
 
 interconnect = ["Western"]
+param = {
+    "Western": {
+        "demand": "v4",
+        "hydro": "v2",
+        "solar": "v4.1",
+        "wind": "v5.2",
+        "n_zone_to_scale": 6,
+        "n_plant_to_scale": 50,
+        "n_plant_to_add": 100,
+    }
+}
 
 
 def get_zone_with_resource(base_grid, resource):
@@ -39,7 +50,7 @@ def get_plant_with_resource(base_grid, resource):
 
 
 def get_change_table_for_zone_scaling(base_grid, resource):
-    n_zone = 6
+    n_zone = param["_".join(interconnect)]["n_zone_to_scale"]
     zones = get_zone_with_resource(base_grid, resource)
 
     ct = ChangeTable(base_grid)
@@ -57,7 +68,7 @@ def get_change_table_for_zone_scaling(base_grid, resource):
 
 
 def get_change_table_for_id_scaling(base_grid, resource):
-    n_plant = 50
+    n_plant = param["_".join(interconnect)]["n_plant_to_scale"]
     plants = get_plant_with_resource(base_grid, resource)
 
     ct = ChangeTable(base_grid)
@@ -75,7 +86,7 @@ def get_change_table_for_id_scaling(base_grid, resource):
 
 
 def get_change_table_for_new_plant_addition(base_grid, resource):
-    n_plant = 100
+    n_plant = param["_".join(interconnect)]["n_plant_to_add"]
     new_plant_bus_id = np.random.choice(
         base_grid.bus.index, size=n_plant, replace=False
     )
@@ -140,7 +151,7 @@ def _check_plants_are_scaled(
 def _check_new_plants_are_added(
     ssh_client, ct, base_grid, base_profile_resource, resource
 ):
-    n_plant = len(ct["new_plant"])
+    n_plant = param["_".join(interconnect)]["n_plant_to_add"]
     profile_info = base_profile_resource[0]
     base_profile = base_profile_resource[1]
 
@@ -195,7 +206,10 @@ def base_grid():
 @pytest.fixture(scope="module")
 def base_hydro(ssh_client):
     input_data = InputData(ssh_client)
-    profile_info = {"interconnect": "_".join(interconnect), "base_hydro": "v2"}
+    profile_info = {
+        "interconnect": "_".join(interconnect),
+        "base_hydro": param["_".join(interconnect)]["hydro"],
+    }
     profile = input_data.get_data(profile_info, "hydro")
     return profile_info, profile
 
@@ -203,7 +217,10 @@ def base_hydro(ssh_client):
 @pytest.fixture(scope="module")
 def base_wind(ssh_client):
     input_data = InputData(ssh_client)
-    profile_info = {"interconnect": "_".join(interconnect), "base_wind": "v5.2"}
+    profile_info = {
+        "interconnect": "_".join(interconnect),
+        "base_wind": param["_".join(interconnect)]["wind"],
+    }
     profile = input_data.get_data(profile_info, "wind")
     return profile_info, profile
 
@@ -211,7 +228,10 @@ def base_wind(ssh_client):
 @pytest.fixture(scope="module")
 def base_solar(ssh_client):
     input_data = InputData(ssh_client)
-    profile_info = {"interconnect": "_".join(interconnect), "base_solar": "v4.1"}
+    profile_info = {
+        "interconnect": "_".join(interconnect),
+        "base_solar": param["_".join(interconnect)]["solar"],
+    }
     profile = input_data.get_data(profile_info, "solar")
     return profile_info, profile
 
@@ -219,14 +239,17 @@ def base_solar(ssh_client):
 @pytest.fixture(scope="module")
 def base_demand(ssh_client):
     input_data = InputData(ssh_client)
-    profile_info = {"interconnect": "_".join(interconnect), "base_demand": "v4"}
+    profile_info = {
+        "interconnect": "_".join(interconnect),
+        "base_demand": param["_".join(interconnect)]["demand"],
+    }
     profile = input_data.get_data(profile_info, "demand")
     return profile_info, profile
 
 
 @pytest.mark.integration
 def test_demand_is_scaled(ssh_client, base_grid, base_demand):
-    n_zone = 8
+    n_zone = param["_".join(interconnect)]["n_zone_to_scale"]
     profile_info = base_demand[0]
     base_profile = base_demand[1]
 
