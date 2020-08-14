@@ -38,7 +38,7 @@ def get_plant_with_resource(base_grid, resource):
     return plant_id
 
 
-def get_renewable_change_table_by_zone(base_grid, resource):
+def get_change_table_for_zone_scaling(base_grid, resource):
     n_zone = 6
     zones = get_zone_with_resource(base_grid, resource)
 
@@ -56,7 +56,7 @@ def get_renewable_change_table_by_zone(base_grid, resource):
     return ct.ct
 
 
-def get_renewable_change_table_by_id(base_grid, resource):
+def get_change_table_for_id_scaling(base_grid, resource):
     n_plant = 50
     plants = get_plant_with_resource(base_grid, resource)
 
@@ -74,7 +74,7 @@ def get_renewable_change_table_by_id(base_grid, resource):
     return ct.ct
 
 
-def get_renewable_change_table_new_plant(base_grid, resource):
+def get_change_table_for_new_plant_addition(base_grid, resource):
     n_plant = 100
     new_plant_bus_id = np.random.choice(
         base_grid.bus.index, size=n_plant, replace=False
@@ -90,7 +90,7 @@ def get_renewable_change_table_new_plant(base_grid, resource):
     return ct.ct
 
 
-def is_renewable_profile_scaled(
+def _check_plants_are_scaled(
     ssh_client, ct, base_grid, base_profile_resource, resource
 ):
     profile_info = base_profile_resource[0]
@@ -137,7 +137,9 @@ def is_renewable_profile_scaled(
     return transformed_profile
 
 
-def are_renewable_added(ssh_client, ct, base_grid, base_profile_resource, resource):
+def _check_new_plants_are_added(
+    ssh_client, ct, base_grid, base_profile_resource, resource
+):
     n_plant = len(ct["new_plant"])
     profile_info = base_profile_resource[0]
     base_profile = base_profile_resource[1]
@@ -156,6 +158,25 @@ def are_renewable_added(ssh_client, ct, base_grid, base_profile_resource, resour
     )
 
     return transformed_profile.drop(base_profile.columns, axis=1)
+
+
+def _check_new_plants_are_not_scaled(
+    ssh_client, base_grid, base_profile_resource, resource
+):
+    ct_zone = get_change_table_for_zone_scaling(base_grid, resource)
+    ct_id = get_change_table_for_id_scaling(base_grid, resource)
+    ct_new = get_change_table_for_new_plant_addition(base_grid, resource)
+    ct = {**ct_zone, **ct_id[resource], **ct_new}
+    # profile of new plants
+    new_profile = _check_new_plants_are_added(
+        ssh_client, ct_new, base_grid, base_profile_resource, resource
+    )
+    # transformed profile
+    scaled_profile = _check_plants_are_scaled(
+        ssh_client, ct, base_grid, base_profile_resource, resource
+    )
+    # check that the profiles of new plants in the scaled profile are not scaled
+    assert new_profile.equals(scaled_profile[new_profile.columns])
 
 
 @pytest.fixture(scope="module")
@@ -238,129 +259,92 @@ def test_demand_is_scaled(ssh_client, base_grid, base_demand):
 
 @pytest.mark.integration
 def test_solar_is_scaled_by_zone(ssh_client, base_grid, base_solar):
-    ct = get_renewable_change_table_by_zone(base_grid, "solar")
-    _ = is_renewable_profile_scaled(ssh_client, ct, base_grid, base_solar, "solar")
+    ct = get_change_table_for_zone_scaling(base_grid, "solar")
+    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
 def test_solar_is_scaled_by_id(ssh_client, base_grid, base_solar):
-    ct = get_renewable_change_table_by_id(base_grid, "solar")
-    _ = is_renewable_profile_scaled(ssh_client, ct, base_grid, base_solar, "solar")
+    ct = get_change_table_for_id_scaling(base_grid, "solar")
+    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
 def test_solar_is_scaled_by_zone_and_id(ssh_client, base_grid, base_solar):
-    ct_zone = get_renewable_change_table_by_zone(base_grid, "solar")
-    ct_id = get_renewable_change_table_by_id(base_grid, "solar")
+    ct_zone = get_change_table_for_zone_scaling(base_grid, "solar")
+    ct_id = get_change_table_for_id_scaling(base_grid, "solar")
     ct = {**ct_zone, **ct_id["solar"]}
-    _ = is_renewable_profile_scaled(ssh_client, ct, base_grid, base_solar, "solar")
+    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
 def test_wind_is_scaled_by_zone(ssh_client, base_grid, base_wind):
-    ct = get_renewable_change_table_by_zone(base_grid, "wind")
-    _ = is_renewable_profile_scaled(ssh_client, ct, base_grid, base_wind, "wind")
+    ct = get_change_table_for_zone_scaling(base_grid, "wind")
+    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
 def test_wind_is_scaled_by_id(ssh_client, base_grid, base_wind):
-    ct = get_renewable_change_table_by_id(base_grid, "wind")
-    _ = is_renewable_profile_scaled(ssh_client, ct, base_grid, base_wind, "wind")
+    ct = get_change_table_for_id_scaling(base_grid, "wind")
+    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
 def test_wind_is_scaled_by_zone_and_id(ssh_client, base_grid, base_wind):
-    ct_zone = get_renewable_change_table_by_zone(base_grid, "wind")
-    ct_id = get_renewable_change_table_by_id(base_grid, "wind")
+    ct_zone = get_change_table_for_zone_scaling(base_grid, "wind")
+    ct_id = get_change_table_for_id_scaling(base_grid, "wind")
     ct = {**ct_zone, **ct_id["wind"]}
-    _ = is_renewable_profile_scaled(ssh_client, ct, base_grid, base_wind, "wind")
+    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
 def test_hydro_is_scaled_by_zone(ssh_client, base_grid, base_hydro):
-    ct = get_renewable_change_table_by_zone(base_grid, "hydro")
-    _ = is_renewable_profile_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
+    ct = get_change_table_for_zone_scaling(base_grid, "hydro")
+    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
 def test_hydro_is_scaled_by_id(ssh_client, base_grid, base_hydro):
-    ct = get_renewable_change_table_by_id(base_grid, "hydro")
-    _ = is_renewable_profile_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
+    ct = get_change_table_for_id_scaling(base_grid, "hydro")
+    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
 def test_hydro_is_scaled_by_zone_and_id(ssh_client, base_grid, base_hydro):
-    ct_zone = get_renewable_change_table_by_zone(base_grid, "hydro")
-    ct_id = get_renewable_change_table_by_id(base_grid, "hydro")
+    ct_zone = get_change_table_for_zone_scaling(base_grid, "hydro")
+    ct_id = get_change_table_for_id_scaling(base_grid, "hydro")
     ct = {**ct_zone, **ct_id["hydro"]}
-    _ = is_renewable_profile_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
+    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
 def test_new_solar(ssh_client, base_grid, base_solar):
-    ct = get_renewable_change_table_new_plant(base_grid, "solar")
-    _ = are_renewable_added(ssh_client, ct, base_grid, base_solar, "solar")
+    ct = get_change_table_for_new_plant_addition(base_grid, "solar")
+    _ = _check_new_plants_are_added(ssh_client, ct, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
 def test_new_wind(ssh_client, base_grid, base_wind):
-    ct = get_renewable_change_table_new_plant(base_grid, "wind")
-    _ = are_renewable_added(ssh_client, ct, base_grid, base_wind, "wind")
+    ct = get_change_table_for_new_plant_addition(base_grid, "wind")
+    _ = _check_new_plants_are_added(ssh_client, ct, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
 def test_new_hydro(ssh_client, base_grid, base_hydro):
-    ct = get_renewable_change_table_new_plant(base_grid, "hydro")
-    _ = are_renewable_added(ssh_client, ct, base_grid, base_hydro, "hydro")
+    ct = get_change_table_for_new_plant_addition(base_grid, "hydro")
+    _ = _check_new_plants_are_added(ssh_client, ct, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
 def test_new_solar_are_not_scaled(ssh_client, base_grid, base_solar):
-    ct_zone = get_renewable_change_table_by_zone(base_grid, "solar")
-    ct_id = get_renewable_change_table_by_id(base_grid, "solar")
-    ct_new = get_renewable_change_table_new_plant(base_grid, "solar")
-    ct = {**ct_zone, **ct_id["solar"], **ct_new}
-    # profile of new plants
-    new_profile = are_renewable_added(
-        ssh_client, ct_new, base_grid, base_solar, "solar"
-    )
-    # transformed profile
-    scaled_profile = is_renewable_profile_scaled(
-        ssh_client, ct, base_grid, base_solar, "solar"
-    )
-    # check that the profiles of new plants in the scaled profile are not scaled
-    assert new_profile.equals(scaled_profile[new_profile.columns])
+    _check_new_plants_are_not_scaled(ssh_client, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
 def test_new_wind_are_not_scaled(ssh_client, base_grid, base_wind):
-    ct_zone = get_renewable_change_table_by_zone(base_grid, "wind")
-    ct_id = get_renewable_change_table_by_id(base_grid, "wind")
-    ct_new = get_renewable_change_table_new_plant(base_grid, "wind")
-    ct = {**ct_zone, **ct_id["wind"], **ct_new}
-    # profile of new plants
-    new_profile = are_renewable_added(ssh_client, ct_new, base_grid, base_wind, "wind")
-    # transformed profile
-    scaled_profile = is_renewable_profile_scaled(
-        ssh_client, ct, base_grid, base_wind, "wind"
-    )
-    # check that the profiles of new plants in the scaled profile are not scaled
-    assert new_profile.equals(scaled_profile[new_profile.columns])
+    _check_new_plants_are_not_scaled(ssh_client, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
 def test_new_hydro_are_not_scaled(ssh_client, base_grid, base_hydro):
-    ct_zone = get_renewable_change_table_by_zone(base_grid, "hydro")
-    ct_id = get_renewable_change_table_by_id(base_grid, "hydro")
-    ct_new = get_renewable_change_table_new_plant(base_grid, "hydro")
-    ct = {**ct_zone, **ct_id["hydro"], **ct_new}
-    # profile of new plants
-    new_profile = are_renewable_added(
-        ssh_client, ct_new, base_grid, base_hydro, "hydro"
-    )
-    # transformed profile
-    scaled_profile = is_renewable_profile_scaled(
-        ssh_client, ct, base_grid, base_hydro, "hydro"
-    )
-    # check that the profiles of new plants in the scaled profile are not scaled
-    assert new_profile.equals(scaled_profile[new_profile.columns])
+    _check_new_plants_are_not_scaled(ssh_client, base_grid, base_hydro, "hydro")
