@@ -1,9 +1,8 @@
+from powersimdata.data_access.csv_store import CsvStore
 from powersimdata.utility import server_setup
 
-import pandas as pd
 
-
-class ExecuteListManager:
+class ExecuteListManager(CsvStore):
     """This class is responsible for any modifications to the execute list file.
 
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
@@ -13,21 +12,14 @@ class ExecuteListManager:
         """Constructor
 
         """
-        self.ssh_client = ssh_client
+        super().__init__(ssh_client)
 
     def get_execute_table(self):
-        """Returns execute table from server.
+        """Returns execute table from server if possible, otherwise read local
+        copy. Updates the local copy upon successful server connection.
         :return: (*pandas.DataFrame*) -- execute list as a data frame.
         """
-        sftp = self.ssh_client.open_sftp()
-
-        file_object = sftp.file(server_setup.EXECUTE_LIST, "rb")
-        execute_list = pd.read_csv(file_object)
-        execute_list.fillna("", inplace=True)
-
-        sftp.close()
-
-        return execute_list.astype(str)
+        return self.get_table("ExecuteList.csv", server_setup.EXECUTE_LIST)
 
     def add_entry(self, scenario_info):
         """Adds scenario to the execute list file on server.
@@ -68,16 +60,3 @@ class ExecuteListManager:
             "Failed to delete entry in %s on server" % server_setup.EXECUTE_LIST
         )
         _ = self._execute_and_check_err(command, err_message)
-
-    def _execute_and_check_err(self, command, err_message):
-        """Executes command and checks for error.
-
-        :param str command: command to execute over ssh.
-        :param str err_message: error message to be raised.
-        :raises IOError: if command is not successfully executed.
-        :return: (*str*) -- standard output stream.
-        """
-        stdin, stdout, stderr = self.ssh_client.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError(err_message)
-        return stdout
