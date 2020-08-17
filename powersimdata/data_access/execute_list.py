@@ -1,8 +1,8 @@
-from powersimdata.data_access.csv_list_manager import CsvListManager
+from powersimdata.data_access.csv_store import CsvStore
 from powersimdata.utility import server_setup
 
 
-class ExecuteListManager(CsvListManager):
+class ExecuteListManager(CsvStore):
     """This class is responsible for any modifications to the execute list file.
 
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.

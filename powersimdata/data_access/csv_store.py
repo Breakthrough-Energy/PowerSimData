@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 
-class CsvListManager:
+class CsvStore:
     """Base class for common functionality used to manage scenario and execute
     list stored as csv files on the server
 
