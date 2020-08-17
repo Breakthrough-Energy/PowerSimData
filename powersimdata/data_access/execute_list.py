@@ -1,10 +1,8 @@
+from powersimdata.data_access.csv_list_manager import CsvListManager
 from powersimdata.utility import server_setup
 
-from pathlib import Path
-import pandas as pd
 
-
-class ExecuteListManager:
+class ExecuteListManager(CsvListManager):
     """This class is responsible for any modifications to the execute list file.
 
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
@@ -14,42 +12,14 @@ class ExecuteListManager:
         """Constructor
 
         """
-        self.ssh_client = ssh_client
+        super().__init__(ssh_client)
 
     def get_execute_table(self):
-        """Returns execute table from server.
+        """Returns execute table from server if possible, otherwise read local
+        copy. Updates the local copy upon successful server connection.
         :return: (*pandas.DataFrame*) -- execute list as a data frame.
         """
-        local_path = Path(server_setup.LOCAL_DIR, "ExecuteList.csv")
-
-        try:
-            execute_list = self._get_from_server()
-            execute_list.to_csv(local_path, index=False)
-            return execute_list
-        except:
-            print("Failed to download execute list from server.")
-            print("Falling back to local cache...")
-
-        if local_path.is_file():
-            return self._parse_csv(local_path)
-
-    def _get_from_server(self):
-        """Return execute table from server.
-        :return: (*pandas.DataFrame*) -- execute list as a data frame.
-        """
-        with self.ssh_client.open_sftp() as sftp:
-            file_object = sftp.file(server_setup.EXECUTE_LIST, "rb")
-            return self._parse_csv(file_object)
-
-    def _parse_csv(self, file_object):
-        """Read file from disk into data frame
-        :param str, path object or file-like object file_object: a reference to
-        the csv file
-        :return: (*pandas.DataFrame*) -- execute list as a data frame.
-        """
-        table = pd.read_csv(file_object)
-        table.fillna("", inplace=True)
-        return table.astype(str)
+        return self.get_table("ExecuteList.csv", server_setup.EXECUTE_LIST)
 
     def add_entry(self, scenario_info):
         """Adds scenario to the execute list file on server.
@@ -90,16 +60,3 @@ class ExecuteListManager:
             "Failed to delete entry in %s on server" % server_setup.EXECUTE_LIST
         )
         _ = self._execute_and_check_err(command, err_message)
-
-    def _execute_and_check_err(self, command, err_message):
-        """Executes command and checks for error.
-
-        :param str command: command to execute over ssh.
-        :param str err_message: error message to be raised.
-        :raises IOError: if command is not successfully executed.
-        :return: (*str*) -- standard output stream.
-        """
-        stdin, stdout, stderr = self.ssh_client.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError(err_message)
-        return stdout

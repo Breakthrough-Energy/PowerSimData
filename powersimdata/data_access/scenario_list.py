@@ -1,11 +1,10 @@
+from powersimdata.data_access.csv_list_manager import CsvListManager
 from powersimdata.utility import server_setup
 
-from pathlib import Path
-import pandas as pd
 import posixpath
 
 
-class ScenarioListManager:
+class ScenarioListManager(CsvListManager):
     """This class is responsible for any modifications to the scenario list file.
 
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
@@ -15,7 +14,7 @@ class ScenarioListManager:
         """Constructor
 
         """
-        self.ssh_client = ssh_client
+        super().__init__(ssh_client)
 
     def get_scenario_table(self):
         """Returns scenario table from server if possible, otherwise read local
@@ -23,36 +22,7 @@ class ScenarioListManager:
 
         :return: (*pandas.DataFrame*) -- scenario list as a data frame.
         """
-        local_path = Path(server_setup.LOCAL_DIR, "ScenarioList.csv")
-
-        try:
-            scenario_list = self._get_from_server()
-            scenario_list.to_csv(local_path, index=False)
-            return scenario_list
-        except:
-            print("Failed to download scenario list from server.")
-            print("Falling back to local cache...")
-
-        if local_path.is_file():
-            return self._parse_csv(local_path)
-
-    def _get_from_server(self):
-        """Return scenario table from server.
-        :return: (*pandas.DataFrame*) -- scenario list as a data frame.
-        """
-        with self.ssh_client.open_sftp() as sftp:
-            file_object = sftp.file(server_setup.SCENARIO_LIST, "rb")
-            return self._parse_csv(file_object)
-
-    def _parse_csv(self, file_object):
-        """Read file from disk into data frame
-        :param str, path object or file-like object file_object: a reference to
-        the csv file
-        :return: (*pandas.DataFrame*) -- scenario list as a data frame.
-        """
-        table = pd.read_csv(file_object)
-        table.fillna("", inplace=True)
-        return table.astype(str)
+        return self.get_table("ScenarioList.csv", server_setup.SCENARIO_LIST)
 
     def generate_scenario_id(self):
         """Generates scenario id.
@@ -107,16 +77,3 @@ class ScenarioListManager:
             "Failed to delete entry in %s on server" % server_setup.SCENARIO_LIST
         )
         _ = self._execute_and_check_err(command, err_messsage)
-
-    def _execute_and_check_err(self, command, err_message):
-        """Executes command and checks for error.
-
-        :param str command: command to execute over ssh.
-        :param str err_message: error message to be raised.
-        :raises IOError: if command is not successfully executed.
-        :return: (*str*) -- standard output stream.
-        """
-        stdin, stdout, stderr = self.ssh_client.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError(err_message)
-        return stdout
