@@ -1,53 +1,30 @@
 from powersimdata.data_access.csv_store import CsvStore
+from powersimdata.data_access.sql_store import SqlStore
 from powersimdata.utility import server_setup
-
-import psycopg2
-import sys
-
-
-def get_connection():
-    return "dbname=psd user=postgres password=password1!"
-
-
-class SqlStore:
-    def __init__(self):
-        self.conn = psycopg2.connect(get_connection())
-
-    def __enter__(self):
-        self.conn.__enter__()
-        self.cur = self.conn.cursor()
-        self.cur.__enter__()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type:
-            print(sys.exc_info())
-
-        self.conn.__exit__(exc_type, exc_value, traceback)
-        self.cur.__exit__(exc_type, exc_value, traceback)
-        self.conn.close()
 
 
 class ExecuteTable(SqlStore):
+
+    table = "execute_list"
+    columns = ["id", "status"]
+
     def get_status(self, scenario_id):
-        self.cur.execute(
-            "SELECT status from execute_list WHERE id = %s", (scenario_id,)
-        )
+        query = self.select_where("id")
+        self.cur.execute(query, (scenario_id,))
         result = self.cur.fetchmany()
         return None if not any(result) else result[0]
 
     def get_execute_table(self, limit=None):
-        self.cur.execute("SELECT id, status FROM execute_list")
+        query = self.select_all()
+        self.cur.execute(query)
         if limit is None:
             return self.cur.fetchall()
         return self.cur.fetchmany(limit)
 
     def add_entry(self, scenario_info):
         scenario_id, status = scenario_info["id"], "created"
-        self.cur.execute(
-            "INSERT INTO execute_list (id, status) VALUES (%s, %s)",
-            (scenario_id, status),
-        )
+        sql = self.insert()
+        self.cur.execute(sql, (scenario_id, status,))
 
     def update_execute_list(self, status, scenario_info):
         self.cur.execute(
@@ -56,9 +33,8 @@ class ExecuteTable(SqlStore):
         )
 
     def delete_entry(self, scenario_info):
-        self.cur.execute(
-            "DELETE FROM execute_list WHERE id = %s", (scenario_info["id"],)
-        )
+        sql = self.delete("id")
+        self.cur.execute(sql, (scenario_info["id"],))
 
 
 class ExecuteListManager(CsvStore):

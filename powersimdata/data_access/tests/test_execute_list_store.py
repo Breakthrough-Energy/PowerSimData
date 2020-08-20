@@ -1,4 +1,5 @@
 from powersimdata.data_access.execute_list import ExecuteTable
+from powersimdata.data_access.sql_store import SqlException
 
 import pytest
 from collections import OrderedDict
@@ -18,10 +19,22 @@ class NoEffectSqlStore(ExecuteTable):
         super().__exit__(exc_type, exc_value, traceback)
 
 
+class RaiseErrorSqlStore(ExecuteTable):
+    def add_entry(self, scenario_info):
+        raise Exception("Error while executing sql")
+
+
 @pytest.fixture
 def store():
     with NoEffectSqlStore() as store:
         yield store
+
+
+@pytest.mark.integration
+def test_err_handle():
+    with pytest.raises(SqlException):
+        with RaiseErrorSqlStore() as store:
+            store.add_entry(None)
 
 
 @pytest.mark.integration
@@ -34,8 +47,12 @@ def test_select_no_limit(store):
 
 @pytest.mark.integration
 def test_select_with_limit(store):
-    result = store.get_execute_table(4)
-    assert len(result) == 4
+    n_rows = 6
+    limit = 3
+    for i in range(n_rows):
+        store.add_entry(_get_test_row())
+    result = store.get_execute_table(limit)
+    assert len(result) == limit
 
 
 @pytest.mark.integration
@@ -43,7 +60,7 @@ def test_add_entry(store):
     info = _get_test_row()
     store.add_entry(info)
     status = store.get_status(info["id"])
-    assert status[0] == "created"
+    assert status[1] == "created"
 
 
 @pytest.mark.integration
@@ -52,7 +69,7 @@ def test_update_entry(store):
     store.add_entry(info)
     store.update_execute_list("testing", info)
     status = store.get_status(info["id"])
-    assert status[0] == "testing"
+    assert status[1] == "testing"
 
 
 @pytest.mark.integration

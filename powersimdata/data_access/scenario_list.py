@@ -1,7 +1,53 @@
 from powersimdata.data_access.csv_store import CsvStore
+from powersimdata.data_access.sql_store import SqlStore
 from powersimdata.utility import server_setup
 
+from psycopg2.sql import SQL, Identifier
 import posixpath
+
+
+class ScenarioTable(SqlStore):
+
+    table = "scenario_list"
+    columns = [
+        "id",
+        "plan",
+        "name",
+        "state",
+        "interconnect",
+        "base_demand",
+        "base_hydro",
+        "base_solar",
+        "base_wind",
+        "change_table",
+        "start_date",
+        "end_date",
+        "interval",
+        "engine",
+        "runtime",
+        "infeasibilities",
+    ]
+
+    def get_scenario_by_id(self, scenario_id):
+        query = self.select_where(scenario_id)
+        self.cur.execute(query, (scenario_id,))
+        result = self.cur.fetchmany()
+        return None if not any(result) else result[0]
+
+    def get_scenario_table(self, limit=None):
+        query = self.select_all()
+        self.cur.execute(query)
+        if limit is None:
+            return self.cur.fetchall()
+        return self.cur.fetchmany(limit)
+
+    def add_entry(self, scenario_info):
+        sql = self.insert()
+        self.cur.execute(sql, tuple(scenario_info.values()))
+
+    def delete_entry(self, scenario_info):
+        sql = self.delete("id")
+        self.cur.execute(sql, (scenario_info["id"],))
 
 
 class ScenarioListManager(CsvStore):
