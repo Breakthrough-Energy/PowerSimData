@@ -29,7 +29,7 @@ class ScenarioTable(SqlStore):
     ]
 
     def get_scenario_by_id(self, scenario_id):
-        query = self.select_where(scenario_id)
+        query = self.select_where("id")
         self.cur.execute(query, (scenario_id,))
         result = self.cur.fetchmany()
         return None if not any(result) else result[0]
