@@ -34,9 +34,13 @@ class SqlStore:
             return Identifier(self.table)
         raise ValueError("No table defined")
 
-    def _columns(self):
+    def _columns(self, subset=None):
         if hasattr(self, "columns"):
-            return SQL(",").join([Identifier(col) for col in self.columns])
+            if subset is None:
+                cols = self.columns
+            else:
+                cols = [c for c in self.columns if c in subset]
+            return SQL(",").join([Identifier(col) for col in cols])
         raise ValueError("No columns defined")
 
     def select_all(self):
@@ -48,11 +52,12 @@ class SqlStore:
         where_clause = SQL("WHERE {key} = %s").format(key=Identifier(key))
         return self.select_all() + where_clause
 
-    def insert(self):
+    def insert(self, subset=None):
+        n_values = len(subset) if subset is not None else len(self.columns)
         return SQL("INSERT INTO {table} ({fields}) VALUES ({values})").format(
             table=self._table(),
-            fields=self._columns(),
-            values=SQL(",").join(Placeholder() * len(self.columns)),
+            fields=self._columns(subset),
+            values=SQL(",").join(Placeholder() * n_values),
         )
 
     def delete(self, key):

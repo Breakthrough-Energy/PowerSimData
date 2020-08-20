@@ -42,7 +42,7 @@ class ScenarioTable(SqlStore):
         return self.cur.fetchmany(limit)
 
     def add_entry(self, scenario_info):
-        sql = self.insert()
+        sql = self.insert(subset=scenario_info.keys())
         self.cur.execute(sql, tuple(scenario_info.values()))
 
     def delete_entry(self, scenario_info):

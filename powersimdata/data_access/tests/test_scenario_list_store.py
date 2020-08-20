@@ -74,6 +74,14 @@ def test_add_entry(store):
 
 
 @pytest.mark.integration
+def test_add_entry_missing_required_raises(store):
+    info = _get_test_row()
+    del info["plan"]
+    with pytest.raises(Exception):
+        store.add_entry(info)
+
+
+@pytest.mark.integration
 def test_delete_entry(store):
     info = _get_test_row()
     store.add_entry(info)
