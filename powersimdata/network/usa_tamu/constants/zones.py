@@ -1,4 +1,4 @@
-ZONE_ID_TO_STATE = {
+id2state = {
     1: "ME",
     2: "NH",
     3: "VT",
