@@ -27,6 +27,9 @@ class TransformProfile(object):
             "hydro": {"hydro"},
             "demand": {"demand"},
         }
+        self.n_new_plant = (
+            0 if "new_plant" not in self.ct.keys() else len(self.ct["new_plant"])
+        )
         self.base_plant = Grid(self.grid.interconnect).plant
 
     def _get_renewable_profile(self, resource):
@@ -41,7 +44,7 @@ class TransformProfile(object):
         if not bool(self.ct):
             return power_output
         else:
-            if "new_plant" in self.ct.keys():
+            if self.n_new_plant > 0:
                 power_output = self._add_plant_profile(power_output, resource)
             if resource in self.ct.keys():
                 power_output = self._scale_plant_profile(power_output, resource)
@@ -58,10 +61,9 @@ class TransformProfile(object):
             the change table.
         """
         new_plant_ids, neighbor_ids, scaling = [], [], []
-        transformed_plant = self.grid.plant
         for i, entry in enumerate(self.ct["new_plant"]):
             if entry["type"] in self.scale_keys[resource]:
-                new_plant_id = transformed_plant.index[-len(self.ct["new_plant"]) + i]
+                new_plant_id = self.grid.plant.index[-self.n_new_plant + i]
                 new_plant_ids.append(new_plant_id)
                 neighbor_id = entry["plant_id_neighbor"]
                 neighbor_ids.append(neighbor_id)
@@ -86,7 +88,12 @@ class TransformProfile(object):
         """
         for r in self.scale_keys[resource]:
             if r in self.ct.keys() and "zone_id" in self.ct[r].keys():
-                type_in_zone = self.base_plant.groupby(["zone_id", "type"])
+                if self.n_new_plant > 0:
+                    type_in_zone = self.grid.plant[: -self.n_new_plant].groupby(
+                        ["zone_id", "type"]
+                    )
+                else:
+                    type_in_zone = self.grid.plant.groupby(["zone_id", "type"])
                 for z, f in self.ct[r]["zone_id"].items():
                     plant_id = type_in_zone.get_group((z, r)).index.tolist()
                     profile.loc[:, plant_id] *= f
