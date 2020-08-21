@@ -101,9 +101,7 @@ def _check_plants_are_scaled(
     scaled_plant_id = []
     scaling_factor_plant = []
     if "zone_id" in ct[resource].keys():
-        scaled_zone = list(ct[resource]["zone_id"].keys())
-        scaling_factor_for_zone = list(ct[resource]["zone_id"].values())
-        for z, f in zip(scaled_zone, scaling_factor_for_zone):
+        for z, f in ct[resource]["zone_id"].items():
             plant_id_zone = (
                 base_grid.plant.groupby(["zone_id", "type"])
                 .get_group((z, resource))
