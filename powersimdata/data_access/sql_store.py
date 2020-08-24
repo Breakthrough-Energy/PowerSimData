@@ -1,28 +1,34 @@
 import psycopg2
 import psycopg2.extensions
-import logging
+import psycopg2.extras
 from psycopg2.sql import SQL, Identifier, Placeholder
 import sys
+import os
 
 
 class SqlException(Exception):
     pass
 
 
-class LoggingCursor(psycopg2.extensions.cursor):
+class LoggingCursor(psycopg2.extras.DictCursor):
     def execute(self, sql, args=None):
-        logger = logging.getLogger("sql_debug")
-        logger.info(self.mogrify(sql, args))
+        print(self.mogrify(sql, args))
 
         try:
-            psycopg2.extensions.cursor.execute(self, sql, args)
+            super().execute(sql, args)
         except Exception as exc:
-            logger.error("%s: %s" % (exc.__class__.__name__, exc))
+            print("%s: %s" % (exc.__class__.__name__, exc))
             raise
 
 
 def get_connection():
     return "dbname=psd host=localhost user=postgres password=example"
+
+
+def get_cursor_factory():
+    if os.environ.get("DEBUG_MODE"):
+        return LoggingCursor
+    return psycopg2.extras.DictCursor
 
 
 class SqlStore:
@@ -49,7 +55,7 @@ class SqlStore:
         )
 
     def select_where(self, key):
-        where_clause = SQL("WHERE {key} = %s").format(key=Identifier(key))
+        where_clause = SQL(" WHERE {key} = %s").format(key=Identifier(key))
         return self.select_all() + where_clause
 
     def insert(self, subset=None):
@@ -67,7 +73,7 @@ class SqlStore:
 
     def __enter__(self):
         self.conn.__enter__()
-        self.cur = self.conn.cursor()
+        self.cur = self.conn.cursor(cursor_factory=get_cursor_factory())
         self.cur.__enter__()
         return self
 

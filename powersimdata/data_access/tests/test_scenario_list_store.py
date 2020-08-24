@@ -4,6 +4,10 @@ from powersimdata.data_access.sql_store import SqlException
 import pytest
 from collections import OrderedDict
 
+import os
+
+# uncomment to enable logging queries to stdout
+# os.environ["DEBUG_MODE"] = "1"
 
 row_id = 9000
 
@@ -70,15 +74,17 @@ def test_add_entry(store):
     info = _get_test_row(name="bar")
     store.add_entry(info)
     entry = store.get_scenario_by_id(info["id"])
-    assert entry[2] == "bar"
+    assert entry["name"] == "bar"
 
 
 @pytest.mark.integration
-def test_add_entry_missing_required_raises(store):
+def test_add_entry_missing_required_raises():
     info = _get_test_row()
     del info["plan"]
-    with pytest.raises(Exception):
-        store.add_entry(info)
+    with pytest.raises(SqlException):
+        # create explicitly since yield loses exception context
+        with NoEffectSqlStore() as store:
+            store.add_entry(info)
 
 
 @pytest.mark.integration
