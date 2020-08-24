@@ -4,17 +4,25 @@ from powersimdata.utility import server_setup
 
 
 class ExecuteTable(SqlStore):
+    """Storage abstraction for execute list using sql database.
+    """
 
     table = "execute_list"
     columns = ["id", "status"]
 
     def get_status(self, scenario_id):
+        """Get status of scenario by scenario_id
+        :param str scenario_id: the scenario id
+        :return: (*str*) -- the status
+        """
         query = self.select_where("id")
         self.cur.execute(query, (scenario_id,))
         result = self.cur.fetchmany()
         return None if not any(result) else result[0]
 
     def get_execute_table(self, limit=None):
+        """Return the execute table as a data frame
+        """
         query = self.select_all()
         self.cur.execute(query)
         if limit is None:
@@ -22,23 +30,35 @@ class ExecuteTable(SqlStore):
         return self.cur.fetchmany(limit)
 
     def add_entry(self, scenario_info):
+        """Add entry to execute list
+        :param collections.OrderedDict scenario_info: entry to add
+        """
         scenario_id, status = scenario_info["id"], "created"
         sql = self.insert()
         self.cur.execute(sql, (scenario_id, status,))
 
     def update_execute_list(self, status, scenario_info):
+        """Updates status of scenario in execute list
+
+        :param str status: execution status.
+        :param collections.OrderedDict scenario_info: entry to update
+        """
         self.cur.execute(
             "UPDATE execute_list SET status = %s WHERE id = %s",
             (status, scenario_info["id"]),
         )
 
     def delete_entry(self, scenario_info):
+        """Deletes entry from execute list.
+
+        :param collections.OrderedDict scenario_info: entry to delete
+        """
         sql = self.delete("id")
         self.cur.execute(sql, (scenario_info["id"],))
 
 
 class ExecuteListManager(CsvStore):
-    """This class is responsible for any modifications to the execute list file.
+    """Storage abstraction for execute list using a csv file on the server.
 
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """

@@ -7,6 +7,8 @@ import posixpath
 
 
 class ScenarioTable(SqlStore):
+    """Storage abstraction for scenario list using sql database.
+    """
 
     table = "scenario_list"
     columns = [
@@ -29,12 +31,19 @@ class ScenarioTable(SqlStore):
     ]
 
     def get_scenario_by_id(self, scenario_id):
+        """Get entry from scenario list by id
+        :param str scenario_id: scenario id
+        """
         query = self.select_where("id")
         self.cur.execute(query, (scenario_id,))
         result = self.cur.fetchmany()
         return None if not any(result) else result[0]
 
     def get_scenario_table(self, limit=None):
+        """Returns scenario table from database
+
+        :return: (*pandas.DataFrame*) -- scenario list as a data frame.
+        """
         query = self.select_all()
         self.cur.execute(query)
         if limit is None:
@@ -42,16 +51,24 @@ class ScenarioTable(SqlStore):
         return self.cur.fetchmany(limit)
 
     def add_entry(self, scenario_info):
+        """Adds scenario to the scenario list.
+
+        :param collections.OrderedDict scenario_info: entry to add to scenario list.
+        """
         sql = self.insert(subset=scenario_info.keys())
         self.cur.execute(sql, tuple(scenario_info.values()))
 
     def delete_entry(self, scenario_info):
+        """Deletes entry in scenario list.
+
+        :param collections.OrderedDict scenario_info: entry to delete from scenario list.
+        """
         sql = self.delete("id")
         self.cur.execute(sql, (scenario_info["id"],))
 
 
 class ScenarioListManager(CsvStore):
-    """This class is responsible for any modifications to the scenario list file.
+    """Storage abstraction for scenario list using a csv file on the server.
 
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
