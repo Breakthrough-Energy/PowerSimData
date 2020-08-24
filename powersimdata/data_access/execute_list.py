@@ -1,5 +1,5 @@
 from powersimdata.data_access.csv_store import CsvStore
-from powersimdata.data_access.sql_store import SqlStore
+from powersimdata.data_access.sql_store import SqlStore, to_data_frame
 from powersimdata.utility import server_setup
 
 
@@ -13,21 +13,24 @@ class ExecuteTable(SqlStore):
     def get_status(self, scenario_id):
         """Get status of scenario by scenario_id
         :param str scenario_id: the scenario id
-        :return: (*str*) -- the status
+        :return: (*pandas.DataFrame*) -- results as a data frame.
         """
         query = self.select_where("id")
         self.cur.execute(query, (scenario_id,))
         result = self.cur.fetchmany()
-        return None if not any(result) else result[0]
+        return to_data_frame(result)
 
     def get_execute_table(self, limit=None):
         """Return the execute table as a data frame
+        :return: (*pandas.DataFrame*) -- execute list as a data frame.
         """
         query = self.select_all()
         self.cur.execute(query)
         if limit is None:
-            return self.cur.fetchall()
-        return self.cur.fetchmany(limit)
+            result = self.cur.fetchall()
+        else:
+            result = self.cur.fetchmany(limit)
+        return to_data_frame(result)
 
     def add_entry(self, scenario_info):
         """Add entry to execute list

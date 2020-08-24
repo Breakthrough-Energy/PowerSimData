@@ -56,7 +56,7 @@ def test_select_no_limit(store):
     store.add_entry(_get_test_row())
     store.add_entry(_get_test_row())
     result = store.get_scenario_table()
-    assert len(result) > 1
+    assert result.shape[0] == 2
 
 
 @pytest.mark.integration
@@ -66,7 +66,7 @@ def test_select_with_limit(store):
     for i in range(n_rows):
         store.add_entry(_get_test_row())
     result = store.get_scenario_table(limit)
-    assert len(result) == limit
+    assert result.shape[0] == limit
 
 
 @pytest.mark.integration
@@ -74,7 +74,7 @@ def test_add_entry(store):
     info = _get_test_row(name="bar")
     store.add_entry(info)
     entry = store.get_scenario_by_id(info["id"])
-    assert entry["name"] == "bar"
+    assert entry.loc[0, "name"] == "bar"
 
 
 @pytest.mark.integration
@@ -93,4 +93,4 @@ def test_delete_entry(store):
     store.add_entry(info)
     store.delete_entry(info)
     entry = store.get_scenario_by_id(info["id"])
-    assert entry is None
+    assert entry.shape == (0, 0)

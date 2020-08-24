@@ -2,8 +2,8 @@ import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
 from psycopg2.sql import SQL, Identifier, Placeholder
-import sys
 import os
+import pandas as pd
 
 
 class SqlException(Exception):
@@ -43,6 +43,17 @@ def get_cursor_factory():
     if os.environ.get("DEBUG_MODE"):
         return LoggingCursor
     return psycopg2.extras.DictCursor
+
+
+def to_data_frame(result):
+    """Convert psycopg2 result set to data frame
+    :param list result: list of DictRow containing query results cast to strings
+    :return: (*pd.DataFrame*) -- query results as data frame
+    """
+    row_dicts = [{k: v for (k, v) in row.items()} for row in result]
+    df = pd.DataFrame(row_dicts)
+    df.fillna("", inplace=True)
+    return df.astype(str)
 
 
 class SqlStore:

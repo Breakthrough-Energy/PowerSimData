@@ -1,5 +1,5 @@
 from powersimdata.data_access.csv_store import CsvStore
-from powersimdata.data_access.sql_store import SqlStore
+from powersimdata.data_access.sql_store import SqlStore, to_data_frame
 from powersimdata.utility import server_setup
 
 from psycopg2.sql import SQL, Identifier
@@ -33,11 +33,12 @@ class ScenarioTable(SqlStore):
     def get_scenario_by_id(self, scenario_id):
         """Get entry from scenario list by id
         :param str scenario_id: scenario id
+        :return: (*pandas.DataFrame*) -- results as a data frame.
         """
         query = self.select_where("id")
         self.cur.execute(query, (scenario_id,))
         result = self.cur.fetchmany()
-        return None if not any(result) else result[0]
+        return to_data_frame(result)
 
     def get_scenario_table(self, limit=None):
         """Returns scenario table from database
@@ -47,8 +48,10 @@ class ScenarioTable(SqlStore):
         query = self.select_all()
         self.cur.execute(query)
         if limit is None:
-            return self.cur.fetchall()
-        return self.cur.fetchmany(limit)
+            result = self.cur.fetchall()
+        else:
+            result = self.cur.fetchmany(limit)
+        return to_data_frame(result)
 
     def add_entry(self, scenario_info):
         """Adds scenario to the scenario list.
