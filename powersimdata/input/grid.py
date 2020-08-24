@@ -49,9 +49,6 @@ class Grid(object):
         self.bus = data.bus
         self.branch = data.branch
         self.storage = data.storage
-        self.type2color = get_type2color()
-        self.id2type = get_id2type()
-        self.type2id = {value: key for key, value in self.id2type.items()}
 
     def __eq__(self, other):
         """Used when 'self == other' is evaluated.
@@ -133,9 +130,6 @@ class Grid(object):
             _univ_eq(self.sub, other.sub)
 
             # check grid helper function equality
-            _univ_eq(self.type2color, other.type2color)
-            _univ_eq(self.id2type, other.id2type)
-            _univ_eq(self.type2id, other.type2id)
             _univ_eq(self.zone2id, other.zone2id)
             _univ_eq(self.id2zone, other.id2zone)
             _univ_eq(self.bus2sub, other.bus2sub)
@@ -143,47 +137,3 @@ class Grid(object):
         except:
             return False
         return True
-
-
-def get_type2color():
-    """Defines generator type to generator color mapping. Used for plotting.
-
-    :return: (*dict*) -- generator type to color mapping.
-    """
-    type2color = {
-        "wind": "xkcd:green",
-        "solar": "xkcd:amber",
-        "hydro": "xkcd:light blue",
-        "ng": "xkcd:orchid",
-        "nuclear": "xkcd:silver",
-        "coal": "xkcd:light brown",
-        "geothermal": "xkcd:hot pink",
-        "dfo": "xkcd:royal blue",
-        "biomass": "xkcd:dark green",
-        "other": "xkcd:melon",
-        "storage": "xkcd:orange",
-        "wind_offshore": "xkcd:teal",
-    }
-    return type2color
-
-
-def get_id2type():
-    """Defines generator type to generator id mapping.
-    
-    :return: (*tuple*) -- generator type to generator id mapping.
-    """
-    id2type = {
-        0: "wind",
-        1: "solar",
-        2: "hydro",
-        3: "ng",
-        4: "nuclear",
-        5: "coal",
-        6: "geothermal",
-        7: "dfo",
-        8: "biomass",
-        9: "other",
-        10: "storage",
-        11: "wind_offshore",
-    }
-    return id2type
