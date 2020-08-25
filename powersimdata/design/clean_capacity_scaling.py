@@ -138,7 +138,9 @@ def _get_scenario_length(scenario):
     return num_hours
 
 
-def add_resource_data_to_targets(input_targets, scenario, enforced_area_type=None):
+def add_resource_data_to_targets(
+    input_targets, scenario, enforced_area_type=None, calculate_curtailment=False
+):
     """Add resource data to targets. This data includes: previous capacity,
     previous generation, previous capacity factor (with and without curtailment),
     and previous curtailment.
@@ -168,30 +170,36 @@ def add_resource_data_to_targets(input_targets, scenario, enforced_area_type=Non
     # Generated energy
     pg_groupby = scenario.state.get_pg().sum().groupby(groupby_cols)
     summed_generation = pg_groupby.sum().unstack(fill_value=0)
-    # Calculate: capacity factors, curtailment, no_curtailment_cap_factor
-    # Hydro and solar are straightforward
-    hydro_plant_sum = scenario.state.get_hydro().sum()
-    hydro_plant_targets = plant[plant.type == "hydro"].target_area
-    hydro_potential_by_target = hydro_plant_sum.groupby(hydro_plant_targets).sum()
-    solar_plant_sum = scenario.state.get_solar().sum()
-    solar_plant_targets = plant[plant.type == "solar"].target_area
-    solar_potential_by_target = solar_plant_sum.groupby(solar_plant_targets).sum()
-    # Wind is a little tricker because get_wind() returns 'wind' and 'wind_offshore'
-    onshore_wind_plants = plant[plant.type == "wind"].index
-    onshore_wind_plant_sum = scenario.state.get_wind().sum()[onshore_wind_plants]
-    wind_plant_targets = plant[plant.type == "wind"].target_area
-    wind_potential_by_target = onshore_wind_plant_sum.groupby(wind_plant_targets).sum()
-    potentials_series = [
-        hydro_potential_by_target,
-        solar_potential_by_target,
-        wind_potential_by_target,
-    ]
-    potential = pd.concat(potentials_series, axis=1)
+    # Calculate capacity factors
     possible_energy = scenario_length * capacity_by_target_type[curtailment_types]
     capacity_factor = summed_generation[curtailment_types] / possible_energy
-    curtailment = (potential - summed_generation[curtailment_types]) / possible_energy
-    no_curtailment_cap_factor = potential / possible_energy
-    # Now add these calculations to
+    if calculate_curtailment:
+        # Calculate: curtailment, no_curtailment_cap_factor
+        # Hydro and solar are straightforward
+        hydro_plant_sum = scenario.state.get_hydro().sum()
+        hydro_plant_targets = plant[plant.type == "hydro"].target_area
+        hydro_potential_by_target = hydro_plant_sum.groupby(hydro_plant_targets).sum()
+        solar_plant_sum = scenario.state.get_solar().sum()
+        solar_plant_targets = plant[plant.type == "solar"].target_area
+        solar_potential_by_target = solar_plant_sum.groupby(solar_plant_targets).sum()
+        # Wind is a little tricker because get_wind() returns 'wind' and 'wind_offshore'
+        onshore_wind_plants = plant[plant.type == "wind"].index
+        onshore_wind_plant_sum = scenario.state.get_wind().sum()[onshore_wind_plants]
+        wind_plant_targets = plant[plant.type == "wind"].target_area
+        wind_potential_by_target = onshore_wind_plant_sum.groupby(
+            wind_plant_targets
+        ).sum()
+        potentials_series = [
+            hydro_potential_by_target,
+            solar_potential_by_target,
+            wind_potential_by_target,
+        ]
+        potential = pd.concat(potentials_series, axis=1)
+        curtailment = (
+            potential - summed_generation[curtailment_types]
+        ) / possible_energy
+        no_curtailment_cap_factor = potential / possible_energy
+    # Now add these calculations to the DataFrame
     total_capacity = capacity_by_target_type.sum()
     nonzero_capacity_resources = total_capacity[total_capacity > 0].index.tolist()
     for r in nonzero_capacity_resources:
@@ -199,9 +207,10 @@ def add_resource_data_to_targets(input_targets, scenario, enforced_area_type=Non
         targets[f"{r}.prev_generation"] = summed_generation[r]
         if r in curtailment_types:
             targets[f"{r}.prev_cap_factor"] = capacity_factor[r]
-            targets[f"{r}.no_curtailment_cap_factor"] = no_curtailment_cap_factor[r]
-            targets[f"{r}.curtailment"] = curtailment[r]
             targets[f"{r}.addl_curtailment"] = 0
+            if calculate_curtailment:
+                targets[f"{r}.no_curtailment_cap_factor"] = no_curtailment_cap_factor[r]
+                targets[f"{r}.curtailment"] = curtailment[r]
 
     return targets
 
