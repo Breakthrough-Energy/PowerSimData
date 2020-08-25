@@ -344,108 +344,122 @@ along with their description can be found on [zenodo].
 
 
 ## 3. Capacity Planning Framework
-The capacity planning framework replaces an earlier spreadsheet method with a
-more flexible design backed up by tests. Additionally, scenario specific
-parameters are now automatically imported. More information can be found at
-this Dropbox location:
 
-Dropbox(IVL)/Results/DataAnalysis/RenewablesScalingForScenarios/Clean Energy Capacity Planning Framework.pptx
+The capacity planning framework is intended to estimate the amount of new capacity
+that will be required to meet future clean energy goals.
 
-Importing the framework:
-``` python
-from powersimdata.design.clean_capacity_scaling import (CollaborativeStrategyManager,
-                                                        IndependentStrategyManager,
-                                                        TargetManager,
-                                                        ResourceManager,
-                                                        Resource)
-import pandas as pd
-```
+### A. Required Inputs
 
+At minimum, this framework requires a 'reference' Scenario object--used to specify
+the current capacities and capacity factors of resources which 'count' towards
+state-level clean energy goals (this Scenario instance must be in Analyze state)--
+and a list of target areas (comprised of one or more zones) and their target
+clean energy penetrations. A strategy must also be specified, either
+`'independent'` (each area meets it own goal) or `'collaborative'` (all areas with
+non-zero goals work together to meet a shared goal, resembling REC trading).
 
-### A. Create Strategy Object that will generate next capacities
-Currently two strategies (independent and collaborative) are implemented. The first
-step is create an empty strategy object:
-``` python
-independent_strategy_manager = IndependentStrategyManager()
-collaborative_strategy_manager = CollaborativeStrategyManager()
-```
+The list of targets may be specified in either a CSV file or a pandas DataFrame,
+as long as the required columns are present: `region_name` and `ce_target_fraction`.
+Optional columns are: `allowed_resources` (defaulting to solar & wind),
+`external_ce_addl_historical_amount` (clean energy not modeled in our Grid,
+defaulting to 0), and `solar_percentage` (how much of the new capacity will be solar,
+defaulting to the current solar:wind ratio. This input only applies to the `independent`
+strategy, a shared-goal new solar fraction for `collaborative` planning is specified
+in the function call to `calculate_clean_capacity_scaling()`.
 
+### B. Optional Inputs
 
-### B. Use spreadsheet of external information for bulk creation of region target objects
-Then we need to populate the strategy object with regional target information.
-Currently target information is ingested using a specially formatted csv file.
+Since increasing penetration of renewable capacity is often associated with increased
+curtailment, an expectation of this new curtailment can be passed as the `addl_curtailment`
+parameter. For the `collaborative` method, this must be passed as a dictionary of
+`{resource_name: value}` pairs, for the `independent` method this must be passed as a
+pandas DataFrame or as a two-layer nested dictionary which can be interpreted as a
+DataFrame. For either method, additional curtailment must be a value between 0 and 1,
+representing a percentage, not percentage points. For example, if the previous
+capacity factor was 30%, and additional curtailment of 10% is specified, the expected
+new capacity factor will be 27%, not 20%.
+
+Another Scenario object can be passed as `next_scenario` to specify the magnitude of
+future demand (relevant for energy goals which are expressed as a fraction of total
+consumption); this Scenario may be any state, as long as `Scenario.state.get_demand()`
+can be called successfully, i.e. if the Scenario is in Create state, an interconnection
+must be defined. This allows calculation of new capacity for a Scenario which is being
+designed, using the demand scaling present in the ChangeTable.
+
+Finally, for the `collaborative` method, a `solar_fraction` may be defined, which
+determines Scenario-wide how much of the new capacity should be solar
+(the remainder will be wind).
+
+### C. Example Capacity Planning Function Calls
+
+Basic independent call, using the demand from the reference scenario to
+approximate the future demand:
 ```python
-targets_info_location = 'Eastern Scenario Target Info.csv'
-eastern_targets = pd.read_csv(targets_info_location)
-
-# populate strategy objects with target info
-independent_strategy_manager.targets_from_data_frame(eastern_targets)
-collaborative_strategy_manager.targets_from_data_frame(eastern_targets)
-```
-
-
-### C. Populate region target objects with resource info
-Now that we have regional target information, we need to gather regional resource information from a particular scenario run. The `ScenarioInfo` object is used to
-calculate resource properties that are added to the regional target objects.
-```python
+from powersimdata.design.clean_capacity_scaling import calculate_clean_capacity_scaling
 from powersimdata.scenario.scenario import Scenario
-from powersimdata.design.scenario_info import ScenarioInfo
-# load in relevant scenario
-scenario_string = '394'
-scenario = Scenario(scenario_string)
 
-# create ScenarioInfo object
-scenario_info = ScenarioInfo(scenario)
-
-# define start and end times of the simulation
-start_time = '2016-01-01 00:00:00'
-end_time = '2016-12-31 23:00:00'
-
-# add resource objects to regional targets
-independent_strategy_manager.populate_targets_with_resources(
-    scenario_info, start_time, end_time):
-collaborative_strategy_manager.populate_targets_with_resources(
-    scenario_info, start_time, end_time):
+ref_scenario = Scenario('403')
+targets_and_new_capacities_df = calculate_clean_capacity_scaling(
+    ref_scenario,
+    method='independent',
+    targets_filename='eastern_2030_clean_energy_targets.csv'
+)
 ```
 
-
-### D. Optional step: Set additional curtailment for regional resources
-Additional curtailment is a parameter to iterate from initial anchor scenario results
-(defined as a scenario to manually make adjustments from to account for nonlinearities
-in grid curtailment)
-
-For Independent strategies, the interface to set these values has the form:
+Complex collaborative call, using all optional parameters:
 ```python
-independent_strategy_manager.set_addl_curtailment(
-    {'Alabama':{'solar': 0.2}, 'Maryland': {'wind': 0.1}})
-```
-which sets additional curtailment for a region and particular resource type. In this
-example, the value `0.2` denotes a 20% reduction of solar capacity factor compared to
-the reference scenario.
+from powersimdata.design.clean_capacity_scaling import calculate_clean_capacity_scaling
+from powersimdata.scenario.scenario import Scenario
 
-For Collaborative strategies, the interface to set these values has the form:
+ref_scenario = Scenario('403')
+# Start building a new scenario, to plan capacity for greater demand
+new_scenario = Scenario('')
+new_scenario.state.set_builder(['Eastern'])
+zone_demand_scaling = {'Massachusetts': 1.1, 'New York City': 1.2}
+new_scenario.state.builder.change_table.scale_demand(zone_name=zone_demand_scaling)
+# Define additional expected curtailment
+addl_curtailment = {'solar': 0.1, 'wind': 0.15}
+
+targets_and_new_capacities_df = calculate_clean_capacity_scaling(
+    ref_scenario,
+    method='collaborative',
+    targets_filename='eastern_2030_clean_energy_targets.csv',
+	addl_curtailment=addl_curtailment,
+	next_scenario=new_scenario,
+	solar_fraction=0.55
+)
+```
+
+### D. Creating a Change Table from Capacity Planning Results
+
+The capacity planning framework returns a DataFrame of capacities by resource type
+and target area, but the Scenario creation process ultimately requires scaling
+factors by resource type and zone or plant_id. A function `create_change_table`
+exists to perform this conversion process. Using a reference scenario, a set of
+scaling factors by resource type, zone, and plant_id is calculated. When applied to a
+base `Grid` object, these scaling factors will result in capacities that are nearly
+identical to the reference scenario on a per-plant basis (subject to rounding), with
+the exception of solar and wind generators, which will be scaled up to meet clean
+energy goals.
+
 ```python
-collaborative_strategy_manager.set_collab_addl_curtailment(
-    {'solar': 0.2, 'wind': 0.1})
+from powersimdata.design.clean_capacity_scaling import create_change_table
+
+change_table = create_change_table(targets_and_new_capacities_df, ref_scenario)
+# The change table method only accepts zone names, not zone IDs, so we have to translate
+id2zone = new_scenario.state.get_grid().id2zone
+# Plants can only be scaled one resource at a time, so we need to loop through
+for resource in change_table:
+	new_scenario.state.builder.change_table.scale_plant_capacity(
+		resource=resource,
+		zone_name={
+			id2zone[id]: value
+			for id, value in change_table[resource]["zone_name"].items()
+		},
+		plant_id=change_table[resource]["zone_name"]
+	)
 ```
-which sets additional curtailment for particular resource types in all regions. In this
-example, the value `0.2` denotes a 20% reduction of solar capacity factor compared to
-the reference scenario.
-
-
-### E. Calculate Next Capacities
-Once the regional target information and scenario-specific resource information, we can
-calculate the next capacities.
-```python
-independent_next_capacities = independent_strategy_manager.data_frame_of_next_capacities()
-collaborative_next_capacities = collaborative_strategy_manager.data_frame_of_next_capacities()
-```
-
-
-### F. Future Feature
-Direct output of the new change table.
-
 
 [PreREISE]: https://github.com/intvenlab/PreREISE
 [PostREISE]: https://github.com/intvenlab/PostREISE
-[zenodo]: https://zenodo.org/record/3753177#.XugHbS2z124
+[zenodo]: https://zenodo.org/record/3530898
