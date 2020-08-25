@@ -1,1 +1,1 @@
-__all__ = ["zones"]
+__all__ = ["plants", "zones"]
