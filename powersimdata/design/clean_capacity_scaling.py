@@ -265,6 +265,38 @@ def add_shortfall_to_targets(input_targets):
     return targets
 
 
+def calculate_overall_shortfall(targets, method, normalized=False):
+    """Calculates overall shortfall.
+    :param pandas.DataFrame targets: table of targets.
+    :param str method: shortfall calculation method ("independent" or "collaborative").
+    :param bool normalized: whether to normalize by total demand.
+    :return: (*float*) -- overall shortfall, either in MWh or normalized by
+    total demand.
+    """
+    if not isinstance(targets, pd.DataFrame):
+        raise TypeError("targets must be a pandas DataFrame")
+    if not "ce_shortfall" in targets.columns:
+        raise ValueError("targets missing shortfall, see add_shortfall_to_targets()")
+    if not isinstance(normalized, bool):
+        raise TypeError("normalized must be bool")
+    allowed_methods = {"independent", "collaborative"}
+
+    if method == "collaborative":
+        participating_targets = targets[targets.ce_target > 0]
+        summed_shortfall = participating_targets.ce_shortfall.sum()
+        summed_overgeneration = participating_targets.ce_overgeneration.sum()
+        overall_shortfall = summed_shortfall - summed_overgeneration
+    elif method == "independent":
+        overall_shortfall = targets.ce_shortfall.sum()
+    else:
+        raise ValueError(f"method must be one of: {allowed_methods}")
+
+    if normalized:
+        return overall_shortfall / targets.demand.sum()
+    else:
+        return overall_shortfall
+
+
 def add_new_capacities_independent(
     input_targets, scenario_length, addl_curtailment=None
 ):
@@ -378,9 +410,7 @@ def add_new_capacities_collaborative(
     avg_new_cf = (expected_cf["solar"] * solar_fraction) + (
         expected_cf["wind"] * (1 - solar_fraction)
     )
-    summed_shortfall = participating_targets.ce_shortfall.sum()
-    summed_overgeneration = participating_targets.ce_overgeneration.sum()
-    overall_shortfall = summed_shortfall - summed_overgeneration
+    overall_shortfall = calculate_overall_shortfall(input_targets, "collaborative")
     total_new_capacity = overall_shortfall / (avg_new_cf * scenario_length)
     new_type_capacity = pd.Series(
         {
