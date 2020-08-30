@@ -368,3 +368,5 @@ for k, v in interconnect2state.items():
         continue
     for s in v:
         state2interconnect[s] = k
+
+loadzone = set(loadzone2interconnect.keys())
