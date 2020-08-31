@@ -21,9 +21,7 @@ class Analyze(State):
     allowed = []
 
     def __init__(self, scenario):
-        """Constructor.
-
-        """
+        """Constructor."""
         self._scenario_info = scenario.info
         self._scenario_status = scenario.status
         super().__init__(scenario)
@@ -40,16 +38,12 @@ class Analyze(State):
         self._set_ct_and_grid()
 
     def _set_allowed_state(self):
-        """Sets allowed state.
-
-        """
+        """Sets allowed state."""
         if self._scenario_status == "extracted":
             self.allowed = ["delete", "move"]
 
     def _set_ct_and_grid(self):
-        """Sets change table and grid.
-
-        """
+        """Sets change table and grid."""
         input_data = InputData(self._ssh, data_loc=self.data_loc)
         grid_mat_path = input_data.get_data(self._scenario_info, "grid")
         self.grid = Grid(
@@ -64,9 +58,7 @@ class Analyze(State):
             self.ct = {}
 
     def print_scenario_info(self):
-        """Prints scenario information.
-
-        """
+        """Prints scenario information."""
         print("--------------------")
         print("SCENARIO INFORMATION")
         print("--------------------")
@@ -93,9 +85,7 @@ class Analyze(State):
             return infeasibilities
 
     def print_infeasibilities(self):
-        """Prints infeasibilities.
-
-        """
+        """Prints infeasibilities."""
         infeasibilities = self._parse_infeasibilities()
         if infeasibilities is None:
             print("There are no infeasibilities.")

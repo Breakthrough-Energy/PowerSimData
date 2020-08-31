@@ -5,9 +5,7 @@ from powersimdata.input.grid import Grid
 
 
 class TransformProfile(object):
-    """Transforms profile according to operations listed in change table.
-
-    """
+    """Transforms profile according to operations listed in change table."""
 
     def __init__(self, ssh_client, scenario_info, grid, ct):
         """Constructor

@@ -2,14 +2,10 @@ import pandas as pd
 
 
 class AbstractGrid(object):
-    """Grid Builder.
-
-    """
+    """Grid Builder."""
 
     def __init__(self):
-        """Constructor
-
-        """
+        """Constructor"""
         self.data_loc = None
         self.interconnect = None
         self.zone2id = {}

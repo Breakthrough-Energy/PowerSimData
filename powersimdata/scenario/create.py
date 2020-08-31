@@ -28,9 +28,7 @@ class Create(State):
     allowed = []
 
     def __init__(self, scenario):
-        """Constructor.
-
-        """
+        """Constructor."""
         self.builder = None
         self.grid = None
         self.ct = None
@@ -55,9 +53,7 @@ class Create(State):
         super().__init__(scenario)
 
     def _update_scenario_info(self):
-        """Updates scenario information.
-
-        """
+        """Updates scenario information."""
         if self.builder is not None:
             self._scenario_info["plan"] = self.builder.plan_name
             self._scenario_info["name"] = self.builder.scenario_name
@@ -75,16 +71,14 @@ class Create(State):
                 self._scenario_info["change_table"] = "No"
 
     def _generate_and_set_scenario_id(self):
-        """Generates scenario id.
-
-        """
+        """Generates scenario id."""
         scenario_id = self._scenario_list_manager.generate_scenario_id()
         self._scenario_info["id"] = scenario_id
         self._scenario_info.move_to_end("id", last=False)
 
     def _add_entry_in_execute_list(self):
         """Adds scenario to the execute list file on server and update status
-            information.
+        information.
 
         """
         self._execute_list_manager.add_entry(self._scenario_info)
@@ -92,9 +86,7 @@ class Create(State):
         self.allowed.append("execute")
 
     def _upload_change_table(self):
-        """Uploads change table to server.
-
-        """
+        """Uploads change table to server."""
         print("--> Writing change table on local machine")
         self.builder.change_table.write(self._scenario_info["id"])
         print("--> Uploading change table to server")
@@ -181,9 +173,7 @@ class Create(State):
         return self.get_profile("wind")
 
     def create_scenario(self):
-        """Creates scenario.
-
-        """
+        """Creates scenario."""
         self._update_scenario_info()
         missing = []
         for key, val in self._scenario_info.items():
@@ -224,9 +214,7 @@ class Create(State):
             self.switch(Execute)
 
     def print_scenario_info(self):
-        """Prints scenario information.
-
-        """
+        """Prints scenario information."""
         self._update_scenario_info()
         print("--------------------")
         print("SCENARIO INFORMATION")
@@ -278,9 +266,7 @@ class Create(State):
 
 
 class _Builder(object):
-    """Scenario Builder.
-
-    """
+    """Scenario Builder."""
 
     interconnect = None
     base_grid = None
@@ -300,9 +286,7 @@ class _Builder(object):
     name = "builder"
 
     def __init__(self, interconnect, ssh_client):
-        """Constructor.
-
-        """
+        """Constructor."""
         self.base_grid = Grid(interconnect)
         self.profile = CSV(interconnect, ssh_client)
         self.change_table = ChangeTable(self.base_grid)
@@ -406,9 +390,9 @@ class _Builder(object):
     def load_change_table(self, filename):
         """Uploads change table.
 
-         :param str filename: full path to change table pickle file.
-         :raises FileNotFoundError: if file not found.
-         """
+        :param str filename: full path to change table pickle file.
+        :raises FileNotFoundError: if file not found.
+        """
         try:
             ct = pickle.load(open(filename, "rb"))
             self.change_table.ct = ct
@@ -427,31 +411,23 @@ class _Builder(object):
 
 
 class Eastern(_Builder):
-    """Builder for Eastern interconnect.
-
-    """
+    """Builder for Eastern interconnect."""
 
     name = "Eastern"
 
     def __init__(self, ssh_client):
-        """Constructor.
-
-        """
+        """Constructor."""
         self.interconnect = ["Eastern"]
         super().__init__(self.interconnect, ssh_client)
 
 
 class Texas(_Builder):
-    """Builder for Texas interconnect.
-
-    """
+    """Builder for Texas interconnect."""
 
     name = "Texas"
 
     def __init__(self, ssh_client):
-        """Constructor.
-
-        """
+        """Constructor."""
         self.interconnect = ["Texas"]
         super().__init__(self.interconnect, ssh_client)
 
@@ -465,9 +441,7 @@ class Western(_Builder):
     name = "Western"
 
     def __init__(self, ssh_client):
-        """Constructor.
-
-        """
+        """Constructor."""
         self.interconnect = ["Western"]
         super().__init__(self.interconnect, ssh_client)
 
@@ -481,54 +455,40 @@ class TexasWestern(_Builder):
     name = "Texas_Western"
 
     def __init__(self, ssh_client):
-        """Constructor.
-
-        """
+        """Constructor."""
         self.interconnect = ["Texas", "Western"]
         super().__init__(self.interconnect, ssh_client)
 
 
 class TexasEastern(_Builder):
-    """Builder for Texas + Eastern interconnect.
-
-    """
+    """Builder for Texas + Eastern interconnect."""
 
     name = "Texas_Eastern"
 
     def __init__(self):
-        """Constructor.
-
-        """
+        """Constructor."""
         self.interconnect = ["Texas", "Eastern"]
         super().__init__(self.interconnect, ssh_client)
 
 
 class EasternWestern(_Builder):
-    """Builder for Eastern + Western interconnect.
-
-    """
+    """Builder for Eastern + Western interconnect."""
 
     name = "Eastern_Western"
 
     def __init__(self):
-        """Constructor.
-
-        """
+        """Constructor."""
         self.interconnect = ["Eastern", "Western"]
         super().__init__(self.interconnect, ssh_client)
 
 
 class USA(_Builder):
-    """Builder for USA interconnect.
-
-    """
+    """Builder for USA interconnect."""
 
     name = "USA"
 
     def __init__(self, ssh_client):
-        """Constructor.
-
-        """
+        """Constructor."""
         self.interconnect = ["USA"]
         super().__init__(self.interconnect, ssh_client)
 
@@ -541,9 +501,7 @@ class CSV(object):
     """
 
     def __init__(self, interconnect, ssh_client):
-        """Constructor.
-
-        """
+        """Constructor."""
         self._ssh = ssh_client
         self.interconnect = interconnect
 

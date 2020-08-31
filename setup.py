@@ -8,7 +8,7 @@ install_requires = [
     "paramiko",
     "scipy",
     "tqdm",
-    "psycopg2"
+    "psycopg2",
 ]
 
 setup(

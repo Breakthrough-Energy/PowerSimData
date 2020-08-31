@@ -10,9 +10,7 @@ class CSVReader(object):
     """
 
     def __init__(self, data_loc):
-        """Constructor
-
-        """
+        """Constructor"""
         self.bus = csv_to_data_frame(data_loc, "bus.csv")
         self.plant = csv_to_data_frame(data_loc, "plant.csv")
         self.gencost = csv_to_data_frame(data_loc, "gencost.csv")

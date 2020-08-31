@@ -16,8 +16,7 @@ class LoggingCursor(psycopg2.extras.DictCursor):
     """Cursor that prints queries before execution. Primarily used for debugging"""
 
     def execute(self, sql, args=None):
-        """Print sql query and delegate execution to super.
-        """
+        """Print sql query and delegate execution to super."""
         print(self.mogrify(sql, args))
 
         try:
@@ -28,7 +27,7 @@ class LoggingCursor(psycopg2.extras.DictCursor):
 
 
 def get_connection():
-    """ Temporary connection used for local development
+    """Temporary connection used for local development
     :return: (*str*) -- connection string for postgres db
     """
     return "dbname=psd host=localhost user=postgres password=example"
@@ -60,7 +59,7 @@ class SqlStore:
     """Base class for objects stored in a postgres db. Implements context
     manager for connection handling and methods for generating queries based on
     convention. Derived classes should define table and columns attributes for
-    this to work properly. 
+    this to work properly.
     """
 
     def __init__(self):
@@ -105,7 +104,7 @@ class SqlStore:
         return self.select_all() + where_clause
 
     def insert(self, subset=None):
-        """ Build INSERT statement on current table for all columns, or subset if
+        """Build INSERT statement on current table for all columns, or subset if
         specified.
         :param iterable subset: collection of columns to specify in query
         :return (*psycopg2.sql.SQL*) -- template for insert statement
@@ -118,7 +117,7 @@ class SqlStore:
         )
 
     def delete(self, key):
-        """ Build DELETE .. WHERE statement on current table using key to filter.
+        """Build DELETE .. WHERE statement on current table using key to filter.
         :param str key: column to use in WHERE clause
         :return (*psycopg2.sql.SQL*) -- template for delete statement
         """

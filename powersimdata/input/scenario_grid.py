@@ -12,9 +12,7 @@ from powersimdata.input.helpers import (
 
 
 class ScenarioGrid(AbstractGrid):
-    """File reader for MAT files for scenarios which were run on the server.
-
-    """
+    """File reader for MAT files for scenarios which were run on the server."""
 
     def __init__(self, filename):
         """Constructor.
@@ -120,9 +118,7 @@ class ScenarioGrid(AbstractGrid):
 
 
 class FromREISE(ScenarioGrid):
-    """MATLAB file reader, for MAT files created by REISE/MATPOWER
-
-    """
+    """MATLAB file reader, for MAT files created by REISE/MATPOWER"""
 
     def _build_network(self):
         self._read_network()
@@ -131,9 +127,7 @@ class FromREISE(ScenarioGrid):
 
 
 class FromREISEjl(ScenarioGrid):
-    """MATLAB file reader, for MAT files created (& converted) by REISE.jl
-
-    """
+    """MATLAB file reader, for MAT files created (& converted) by REISE.jl"""
 
     def _build_network(self):
         self._read_network()

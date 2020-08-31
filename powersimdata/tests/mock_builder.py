@@ -5,7 +5,7 @@ from powersimdata.tests.mock_change_table import MockChangeTable
 class MockBuilder:
     def __init__(self, ct=None):
         """Constructor.
-        
+
         :param dict ct: change table dict to be sent to MockChangeTable.
         """
         if ct is None:

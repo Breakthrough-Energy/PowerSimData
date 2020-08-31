@@ -6,9 +6,7 @@ import glob
 
 
 class Delete(State):
-    """Deletes scenario.
-
-    """
+    """Deletes scenario."""
 
     name = "delete"
     allowed = []
@@ -31,9 +29,7 @@ class Delete(State):
             print("Scenario has been deleted")
 
     def delete_scenario(self):
-        """Deletes scenario on server.
-
-        """
+        """Deletes scenario on server."""
 
         # Delete entry in scenario list
         self._scenario_list_manager.delete_entry(self._scenario_info)
@@ -77,8 +73,6 @@ class Delete(State):
         self._clean()
 
     def _clean(self):
-        """Clean after deletion.
-
-        """
+        """Clean after deletion."""
         self._ssh.close()
         self._scenario_info = None
