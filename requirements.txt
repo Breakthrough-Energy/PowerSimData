@@ -1,3 +1,4 @@
+black==20.8b1
 geopy==1.20.0
 jsonpickle==1.2
 numpy==1.18.5
