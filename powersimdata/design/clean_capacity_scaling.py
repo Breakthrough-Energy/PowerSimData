@@ -6,9 +6,10 @@ import pickle
 import numpy as np
 import pandas as pd
 
-from powersimdata.design.scenario_info import ScenarioInfo, area_to_loadzone
+from powersimdata.design.scenario_info import ScenarioInfo
 from powersimdata.design.mimic_grid import mimic_generation_capacity
 from powersimdata.input.grid import Grid
+from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
 from powersimdata.scenario.scenario import Scenario
 
 
