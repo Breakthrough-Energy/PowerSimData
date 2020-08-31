@@ -20,9 +20,7 @@ class Scenario(object):
     """
 
     def __init__(self, descriptor):
-        """Constructor.
-
-        """
+        """Constructor."""
         if not isinstance(descriptor, str):
             raise TypeError("Descriptor must be a string")
 
@@ -108,9 +106,7 @@ class Scenario(object):
             self.status = status.status.values[0]
 
     def print_scenario_info(self):
-        """Prints scenario information.
-
-        """
+        """Prints scenario information."""
         self.state.print_scenario_info()
 
     def change(self, state):

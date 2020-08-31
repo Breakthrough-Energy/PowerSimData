@@ -6,9 +6,7 @@ from powersimdata.utility.distance import haversine
 
 
 class TransformGrid(object):
-    """Transforms grid according to operations listed in change table.
-
-    """
+    """Transforms grid according to operations listed in change table."""
 
     def __init__(self, grid, ct):
         """Constructor
@@ -43,9 +41,7 @@ class TransformGrid(object):
         return self.grid
 
     def _apply_change_table(self):
-        """Apply changes listed in change table to the grid.
-
-        """
+        """Apply changes listed in change table to the grid."""
         for g in self.gen_types:
             if g in self.ct.keys():
                 self._scale_gen(g)
@@ -110,9 +106,7 @@ class TransformGrid(object):
             self.grid.gencost["before"].loc[plant_id, "c2"] /= factor
 
     def _scale_branch(self):
-        """Scales capacity of AC lines.
-
-        """
+        """Scales capacity of AC lines."""
         if "zone_id" in self.ct["branch"].keys():
             for zone_id, factor in self.ct["branch"]["zone_id"].items():
                 branch_id = (
@@ -135,9 +129,7 @@ class TransformGrid(object):
         self.grid.branch.loc[branch_id, "x"] /= factor
 
     def _scale_dcline(self):
-        """Scales capacity of HVDC lines.
-
-        """
+        """Scales capacity of HVDC lines."""
         for dcline_id, factor in self.ct["dcline"]["dcline_id"].items():
             self.grid.dcline.loc[dcline_id, "Pmin"] *= factor
             self.grid.dcline.loc[dcline_id, "Pmax"] *= factor
@@ -145,9 +137,7 @@ class TransformGrid(object):
                 self.grid.dcline.loc[dcline_id, "status"] = 0
 
     def _add_branch(self):
-        """Adds branch(es) to the grid.
-
-        """
+        """Adds branch(es) to the grid."""
         new_branch = {c: 0 for c in self.grid.branch.columns}
         v2x = voltage_to_x_per_distance(self.grid)
         for entry in self.ct["new_branch"]:
@@ -189,9 +179,7 @@ class TransformGrid(object):
             )
 
     def _add_dcline(self):
-        """Adds HVDC line(s) to the grid
-
-        """
+        """Adds HVDC line(s) to the grid"""
         new_dcline = {c: 0 for c in self.grid.dcline.columns}
         for entry in self.ct["new_dcline"]:
             from_bus_id = entry["from_bus_id"]
@@ -213,16 +201,12 @@ class TransformGrid(object):
             )
 
     def _add_gen(self):
-        """Adds generator(s) to the grid.
-
-        """
+        """Adds generator(s) to the grid."""
         self._add_plant()
         self._add_gencost()
 
     def _add_plant(self):
-        """Adds plant to the grid
-
-        """
+        """Adds plant to the grid"""
         new_plant = {c: 0 for c in self.grid.plant.columns}
         for entry in self.ct["new_plant"]:
             bus_id = entry["bus_id"]
@@ -248,9 +232,7 @@ class TransformGrid(object):
             )
 
     def _add_gencost(self):
-        """Adds generation cost curves.
-
-        """
+        """Adds generation cost curves."""
         new_gencost = {c: 0 for c in self.grid.gencost["before"].columns}
         for entry in self.ct["new_plant"]:
             bus_id = entry["bus_id"]
@@ -268,9 +250,7 @@ class TransformGrid(object):
             self.grid.gencost["after"] = self.grid.gencost["before"]
 
     def _add_storage(self):
-        """Adds storage to the grid.
-
-        """
+        """Adds storage to the grid."""
         storage_id = self.grid.plant.shape[0]
         for bus_id, value in self.ct["storage"]["bus_id"].items():
             storage_id += 1
@@ -299,9 +279,7 @@ class TransformGrid(object):
         )
 
     def _add_storage_gencost(self):
-        """Sets generation cost of storage unit.
-
-        """
+        """Sets generation cost of storage unit."""
         gencost = {g: 0 for g in self.grid.storage["gencost"].columns}
         gencost["type"] = 2
         gencost["n"] = 3
@@ -310,9 +288,7 @@ class TransformGrid(object):
         )
 
     def _add_storage_genfuel(self):
-        """Sets fuel type of storage unit.
-
-        """
+        """Sets fuel type of storage unit."""
         self.grid.storage["genfuel"].append("ess")
 
     def _add_storage_data(self, storage_id, value):

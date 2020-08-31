@@ -147,7 +147,7 @@ plant_columns = [
 
 class MockGrid(object):
     def __init__(self, grid_attrs=None):
-        """ Constructor.
+        """Constructor.
 
         :param dict grid_attrs: dictionary of {*field_name*, *data_dict*} pairs
             where *field_name* is the name of the data frame (sub, bus2sub,

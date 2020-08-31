@@ -210,7 +210,11 @@ class TestIdentifyMesh(unittest.TestCase):
 
         # Finally, combine all of this into a MockScenario
         self.mock_scenario = MockScenario(
-            grid_attrs={"branch": mock_branch, "bus": mock_bus, "plant": mock_plant,},
+            grid_attrs={
+                "branch": mock_branch,
+                "bus": mock_bus,
+                "plant": mock_plant,
+            },
             congu=congu,
             congl=congl,
             ct=ct,
@@ -382,7 +386,11 @@ class TestIncrementBranch(unittest.TestCase):
             "wind": {"zone_id": {"E": 1.3, "W": 2.1}},
         }
         self.ref_scenario = MockScenario(
-            grid_attrs={"branch": mock_branch, "bus": mock_bus, "plant": mock_plant,},
+            grid_attrs={
+                "branch": mock_branch,
+                "bus": mock_bus,
+                "plant": mock_plant,
+            },
             ct={
                 "branch": {"branch_id": {101: 1.5, 102: 2.5, 103: 2, 105: 4}},
                 # These shouldn't get used

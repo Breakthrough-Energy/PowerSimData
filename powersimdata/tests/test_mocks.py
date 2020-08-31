@@ -29,7 +29,8 @@ def mock_pg():
     )
 
     pg.set_index(
-        pd.date_range(start="2016-01-01", periods=period_num, freq="H"), inplace=True,
+        pd.date_range(start="2016-01-01", periods=period_num, freq="H"),
+        inplace=True,
     )
     pg.index.name = "UTC"
     return pg

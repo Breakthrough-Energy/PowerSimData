@@ -53,7 +53,7 @@ def test_independent_new_capacity():
             "geo": [0, 0, 0, 0],
             "hydro": [0, 0, 0, 0],
             "solar": [0.4, 0, 0, 0],
-            "wind": [0, 0, 0, 0,],
+            "wind": [0, 0, 0, 0],
         },
         index=area_names,
     )

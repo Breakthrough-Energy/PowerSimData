@@ -28,66 +28,66 @@ _renewable_resource = {"hydro", "solar", "wind", "wind_offshore"}
 
 class ChangeTable(object):
     """Create change table for changes that need to be applied to the original
-        grid as well as to the original demand, hydro, solar and wind profiles.
-        A pickle file enclosing the change table in form of a dictionary can be
-        created and transferred on the server. Keys are *'demand'*, *'branch'*,
-        *'biomass'*, *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*,
-        *'hydro'*, *'solar'*, *'wind'*, *'other'*, *'dcline'*, *'new_dcline'*,
-        and *'storage'*.
-        If a key is missing in the dictionary, then no changes will be applied.
-        The data structure is given below:
+    grid as well as to the original demand, hydro, solar and wind profiles.
+    A pickle file enclosing the change table in form of a dictionary can be
+    created and transferred on the server. Keys are *'demand'*, *'branch'*,
+    *'biomass'*, *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*,
+    *'hydro'*, *'solar'*, *'wind'*, *'other'*, *'dcline'*, *'new_dcline'*,
+    and *'storage'*.
+    If a key is missing in the dictionary, then no changes will be applied.
+    The data structure is given below:
 
-        * *'demand'*:
-            value is a dictionary. The latter has *'zone_id'* as keys and a
-            factor indicating the desired increase/decrease of load in zone
-            (1.2 would correspond to a 20% increase while 0.95 would be a 5%
-            decrease) as value.
-        * *'branch'*:
-            value is a dictionary. The latter has *'branch_id'* and/or
-            *'zone_id'* as keys. The *'branch_id'* dictionary has the branch
-            ids as keys while the *'zone_id'* dictionary has the zone ids as
-            keys. The value of those dictionaries is a factor indicating the
-            desired increase/decrease of capacity of the line or the lines in
-            the zone (1.2 would correspond to a 20% increase while 0.95 would
-            be a 5% decrease).
-        * *'biomass'*, *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*,
-            *'hydro'*, *'solar'*, *'wind'*, *wind_offshore*, and *'other'*:
-            value is a dictionary. The latter has *'plant_id'* and/or
-            *'zone_id'* as keys. The *'plant_id'* dictionary has the plant ids
-            as keys while the *'zone_id'* dictionary has the zone ids as keys.
-            The value of those dictionaries is a factor indicating the desired
-            increase/decrease of capacity of the plant or plants in the zone
-            (1.2 would correspond to a 20% increase while 0.95 would be a 5%
-            decrease).
-        * *'dcline'*:
-            value is a dictionary. The latter has *'dcline_id'* as keys and
-            the and the scaling factor for the increase/decrease in capacity
-            of the line as value.
-        * *'storage'*:
-            value is a dictionary. The latter has *'bus_id'* as keys and the
-            capacity of storage (in MW) to add as value.
-        * *'new_dcline'*:
-            value is a list. Each entry in this list is a dictionary enclosing
-            all the information needed to add a new dcline to the grid. The
-            keys in the dictionary are: *'capacity'*, *'from_bus_id'* and
-            *'to_bus_id'* with values giving the capacity of the HVDC line and
-            the bus id at each end of the line.
-        * *'new_branch'*:
-            value is a list. Each entry in this list is a dictionary enclosing
-            all the information needed to add a new branch to the grid. The
-            keys in the dictionary are: *'capacity'*, *'from_bus_id'* and
-            *'to_bus_id'* with values giving the capacity of the line and
-            the bus id at each end of the line.
-        * *'new_plant':
-            value is a list. Each entry in this list is a dictionary enclosing
-            all the information needed to add a new generator to the grid. The
-            keys in the dictionary are *'type'*, *'bus_id'*, *'Pmax'* for
-            renewable generators and *'type'*, *'bus_id'*, *'Pmax'*, *'c0'*,
-            *'c1'*, *'c2'* for thermal generators. An optional *'Pmin'* can be
-            passed for both renewable and thermal generators. The values give
-            the fuel type, the identification number of the bus, the maximum
-            capacity of the generator, the coefficients of the cost curve
-            (polynomials) and optionally the minimum capacity of the generator.
+    * *'demand'*:
+        value is a dictionary. The latter has *'zone_id'* as keys and a
+        factor indicating the desired increase/decrease of load in zone
+        (1.2 would correspond to a 20% increase while 0.95 would be a 5%
+        decrease) as value.
+    * *'branch'*:
+        value is a dictionary. The latter has *'branch_id'* and/or
+        *'zone_id'* as keys. The *'branch_id'* dictionary has the branch
+        ids as keys while the *'zone_id'* dictionary has the zone ids as
+        keys. The value of those dictionaries is a factor indicating the
+        desired increase/decrease of capacity of the line or the lines in
+        the zone (1.2 would correspond to a 20% increase while 0.95 would
+        be a 5% decrease).
+    * *'biomass'*, *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*,
+        *'hydro'*, *'solar'*, *'wind'*, *wind_offshore*, and *'other'*:
+        value is a dictionary. The latter has *'plant_id'* and/or
+        *'zone_id'* as keys. The *'plant_id'* dictionary has the plant ids
+        as keys while the *'zone_id'* dictionary has the zone ids as keys.
+        The value of those dictionaries is a factor indicating the desired
+        increase/decrease of capacity of the plant or plants in the zone
+        (1.2 would correspond to a 20% increase while 0.95 would be a 5%
+        decrease).
+    * *'dcline'*:
+        value is a dictionary. The latter has *'dcline_id'* as keys and
+        the and the scaling factor for the increase/decrease in capacity
+        of the line as value.
+    * *'storage'*:
+        value is a dictionary. The latter has *'bus_id'* as keys and the
+        capacity of storage (in MW) to add as value.
+    * *'new_dcline'*:
+        value is a list. Each entry in this list is a dictionary enclosing
+        all the information needed to add a new dcline to the grid. The
+        keys in the dictionary are: *'capacity'*, *'from_bus_id'* and
+        *'to_bus_id'* with values giving the capacity of the HVDC line and
+        the bus id at each end of the line.
+    * *'new_branch'*:
+        value is a list. Each entry in this list is a dictionary enclosing
+        all the information needed to add a new branch to the grid. The
+        keys in the dictionary are: *'capacity'*, *'from_bus_id'* and
+        *'to_bus_id'* with values giving the capacity of the line and
+        the bus id at each end of the line.
+    * *'new_plant':
+        value is a list. Each entry in this list is a dictionary enclosing
+        all the information needed to add a new generator to the grid. The
+        keys in the dictionary are *'type'*, *'bus_id'*, *'Pmax'* for
+        renewable generators and *'type'*, *'bus_id'*, *'Pmax'*, *'c0'*,
+        *'c1'*, *'c2'* for thermal generators. An optional *'Pmin'* can be
+        passed for both renewable and thermal generators. The values give
+        the fuel type, the identification number of the bus, the maximum
+        capacity of the generator, the coefficients of the cost curve
+        (polynomials) and optionally the minimum capacity of the generator.
     """
 
     def __init__(self, grid):

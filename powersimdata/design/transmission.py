@@ -201,7 +201,7 @@ def scale_congested_mesh_branches(
 ):
     """Use a reference scenario as a baseline for branch scaling, and further
     increment branch scaling based on observed congestion duals.
-    
+
     :param powersimdata.input.change_table.ChangeTable change_table: the
         change table instance we are operating on.
     :param powersimdata.scenario.scenario.Scenario ref_scenario: the reference
@@ -367,7 +367,7 @@ def _construct_composite_allow_list(valid_branches, allow_list, deny_list):
 def _increment_branch_scaling(change_table, branch_ids, ref_scenario, value=1):
     """Modify the ct dict of a ChangeTable object based on branch scaling from
     both a reference scenario and a set of branches to increment by a value.
-    
+
     :param powersimdata.input.change_table.ChangeTable change_table: the
         change table instance we are operating on.
     :param [list/set/tuple] branch_ids: an iterable of branch indices.

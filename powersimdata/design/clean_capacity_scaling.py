@@ -702,9 +702,7 @@ class AbstractStrategyManager:
 
 
 class IndependentStrategyManager(AbstractStrategyManager):
-    """Calculates the next capacities using individual target shortfalls.
-
-    """
+    """Calculates the next capacities using individual target shortfalls."""
 
     def __init__(self):
         AbstractStrategyManager.__init__(self)
@@ -793,8 +791,7 @@ class IndependentStrategyManager(AbstractStrategyManager):
 
 
 class AbstractCollaborativeStrategyManager(AbstractStrategyManager):
-    """Base class for Collaborative strategy objects, contains common functions.
-    """
+    """Base class for Collaborative strategy objects, contains common functions."""
 
     def __init__(self):
         raise NotImplementedError("Only child classes should be instantiated")
@@ -913,8 +910,7 @@ class AbstractCollaborativeStrategyManager(AbstractStrategyManager):
 
 
 class CollaborativeStrategyManager(AbstractCollaborativeStrategyManager):
-    """Calculates the next capacities using total target shortfalls.
-    """
+    """Calculates the next capacities using total target shortfalls."""
 
     def __init__(self):
         self.addl_curtailment = {"solar": 0, "wind": 0}
@@ -934,8 +930,7 @@ class CollaborativeStrategyManager(AbstractCollaborativeStrategyManager):
         return total_ce_shortfall
 
     def calculate_participating_capacity(self, category):
-        """Calculates capacity for a resource, in participating states.
-        """
+        """Calculates capacity for a resource, in participating states."""
         participating_capacity = sum(
             [
                 self.targets[tar].resources[category].prev_capacity
@@ -1352,9 +1347,7 @@ class TargetManager:
         self.allowed_resources = allowed_resources
 
     def save_target_as_json(self):
-        """Saves target object as indented JSON file named by region name.
-
-        """
+        """Saves target object as indented JSON file named by region name."""
         print(os.getcwd())
         json_file = open(
             os.path.join(
@@ -1373,9 +1366,7 @@ class TargetManager:
         json_file.close()
 
     def save_target_as_pickle(self):
-        """Saves target object as pickle file named by region name.
-
-        """
+        """Saves target object as pickle file named by region name."""
         print(os.getcwd())
         json_file = open(
             os.path.join(
@@ -1403,14 +1394,10 @@ class TargetManager:
 
 
 class ResourceManager:
-    """Manages the creation of resource objects from scenario information.
-
-    """
+    """Manages the creation of resource objects from scenario information."""
 
     def __init__(self):
-        """Creates an empty dictionary to hold resource objects.
-
-        """
+        """Creates an empty dictionary to hold resource objects."""
         self.resources = {}
 
     def __getitem__(self, key):

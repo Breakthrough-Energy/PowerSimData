@@ -26,9 +26,7 @@ class Execute(State):
     allowed = []
 
     def __init__(self, scenario):
-        """Constructor.
-
-        """
+        """Constructor."""
         self._scenario_info = scenario.info
         self._scenario_status = scenario.status
         super().__init__(scenario)
@@ -43,9 +41,7 @@ class Execute(State):
         self._set_ct_and_grid()
 
     def _set_ct_and_grid(self):
-        """Sets change table and grid.
-
-        """
+        """Sets change table and grid."""
         base_grid = Grid(self._scenario_info["interconnect"].split("_"))
         if self._scenario_info["change_table"] == "Yes":
             input_data = InputData(self._ssh)
@@ -70,9 +66,7 @@ class Execute(State):
         return copy.deepcopy(self.grid)
 
     def _update_scenario_status(self):
-        """Updates scenario status.
-
-        """
+        """Updates scenario status."""
         execute_table = self._execute_list_manager.get_execute_table()
         scenario_id = self._scenario_info["id"]
         self._scenario_status = execute_table[
@@ -80,9 +74,7 @@ class Execute(State):
         ].status.values[0]
 
     def _update_scenario_info(self):
-        """Updates scenario information.
-
-        """
+        """Updates scenario information."""
         scenario_table = self._scenario_list_manager.get_scenario_table()
         scenario_id = self._scenario_info["id"]
         scenario = scenario_table[scenario_table.id == scenario_id]
@@ -125,9 +117,7 @@ class Execute(State):
         return process
 
     def print_scenario_info(self):
-        """Prints scenario information.
-
-        """
+        """Prints scenario information."""
         print("--------------------")
         print("SCENARIO INFORMATION")
         print("--------------------")
@@ -136,9 +126,7 @@ class Execute(State):
             print("%s: %s" % (key, val))
 
     def print_scenario_status(self):
-        """Prints scenario status.
-
-        """
+        """Prints scenario status."""
         print("---------------")
         print("SCENARIO STATUS")
         print("---------------")
@@ -146,9 +134,7 @@ class Execute(State):
         print(self._scenario_status)
 
     def prepare_simulation_input(self):
-        """Prepares scenario for execution
-
-        """
+        """Prepares scenario for execution"""
         self._update_scenario_status()
         if self._scenario_status == "created":
             print("---------------------------")
@@ -218,9 +204,7 @@ class SimulationInput(object):
     """
 
     def __init__(self, ssh_client, scenario_info, grid, ct):
-        """Constructor.
-
-        """
+        """Constructor."""
         self._ssh = ssh_client
         self._scenario_info = scenario_info
         self.grid = grid
@@ -242,9 +226,7 @@ class SimulationInput(object):
             raise IOError("Failed to create %s on server" % self.TMP_DIR)
 
     def prepare_mpc_file(self):
-        """Creates MATPOWER case file.
-
-        """
+        """Creates MATPOWER case file."""
         print("--> Preparing MPC file")
         print("Scaling grid")
         grid = copy.deepcopy(self.grid)

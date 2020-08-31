@@ -4,8 +4,7 @@ from powersimdata.utility import server_setup
 
 
 class ExecuteTable(SqlStore):
-    """Storage abstraction for execute list using sql database.
-    """
+    """Storage abstraction for execute list using sql database."""
 
     table = "execute_list"
     columns = ["id", "status"]
@@ -38,7 +37,13 @@ class ExecuteTable(SqlStore):
         """
         scenario_id, status = scenario_info["id"], "created"
         sql = self.insert()
-        self.cur.execute(sql, (scenario_id, status,))
+        self.cur.execute(
+            sql,
+            (
+                scenario_id,
+                status,
+            ),
+        )
 
     def update_execute_list(self, status, scenario_info):
         """Updates status of scenario in execute list
@@ -67,9 +72,7 @@ class ExecuteListManager(CsvStore):
     """
 
     def __init__(self, ssh_client):
-        """Constructor
-
-        """
+        """Constructor"""
         super().__init__(ssh_client)
 
     def get_execute_table(self):

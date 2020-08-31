@@ -6,8 +6,7 @@ import posixpath
 
 
 class ScenarioTable(SqlStore):
-    """Storage abstraction for scenario list using sql database.
-    """
+    """Storage abstraction for scenario list using sql database."""
 
     table = "scenario_list"
     columns = [
@@ -76,9 +75,7 @@ class ScenarioListManager(CsvStore):
     """
 
     def __init__(self, ssh_client):
-        """Constructor
-
-        """
+        """Constructor"""
         super().__init__(ssh_client)
 
     def get_scenario_table(self):
@@ -95,16 +92,13 @@ class ScenarioListManager(CsvStore):
         :return: (*str*) -- new scenario id.
         """
         print("--> Generating scenario id")
-        command = (
-            "(flock -e 200; \
+        command = "(flock -e 200; \
                    id=$(awk -F',' 'END{print $1+1}' %s); \
                    echo $id, >> %s; \
-                   echo $id) 200>%s"
-            % (
-                server_setup.SCENARIO_LIST,
-                server_setup.SCENARIO_LIST,
-                posixpath.join(server_setup.DATA_ROOT_DIR, "scenario.lockfile"),
-            )
+                   echo $id) 200>%s" % (
+            server_setup.SCENARIO_LIST,
+            server_setup.SCENARIO_LIST,
+            posixpath.join(server_setup.DATA_ROOT_DIR, "scenario.lockfile"),
         )
 
         err_message = "Failed to generate id for new scenario"
@@ -123,7 +117,10 @@ class ScenarioListManager(CsvStore):
         # AWK parses the file line-by-line. When the entry of the first column is
         # equal to the scenario identification number, the entire line is replaced
         # by the scenaario information.
-        program = "'{if($1==%s) $0=\"%s\"};1'" % (scenario_info["id"], entry,)
+        program = "'{if($1==%s) $0=\"%s\"};1'" % (
+            scenario_info["id"],
+            entry,
+        )
         command = "awk %s %s %s" % (options, program, server_setup.SCENARIO_LIST)
 
         err_message = "Failed to add entry in %s on server" % server_setup.SCENARIO_LIST

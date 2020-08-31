@@ -15,15 +15,11 @@ class Move(State):
     allowed = []
 
     def __init__(self, scenario):
-        """Constructor
-
-        """
+        """Constructor"""
         super().__init__(scenario)
 
     def print_scenario_info(self):
-        """Prints scenario information.
-
-        """
+        """Prints scenario information."""
         print("--------------------")
         print("SCENARIO INFORMATION")
         print("--------------------")
@@ -54,9 +50,7 @@ class Move(State):
         self._clean()
 
     def _clean(self):
-        """Clean after deletion.
-
-        """
+        """Clean after deletion."""
         self._ssh.close()
 
 
@@ -68,16 +62,12 @@ class BackUpDisk(object):
     """
 
     def __init__(self, ssh_client, scenario_info):
-        """Constructor.
-
-        """
+        """Constructor."""
         self._ssh = ssh_client
         self._scenario_info = scenario_info
 
     def move_input_data(self):
-        """Moves input data.
-
-        """
+        """Moves input data."""
         print("--> Moving scenario input data to backup disk")
         source = posixpath.join(
             server_setup.INPUT_DIR, self._scenario_info["id"] + "_*"
@@ -87,9 +77,7 @@ class BackUpDisk(object):
         stdin, stdout, stderr = self._ssh.exec_command(command)
 
     def copy_base_profile(self):
-        """Copies base profile
-
-        """
+        """Copies base profile"""
         print("--> Copying base profiles to backup disk")
         for kind in ["demand", "hydro", "solar", "wind"]:
             interconnect = interconnect2name(
@@ -107,9 +95,7 @@ class BackUpDisk(object):
             print(stderr.readlines())
 
     def move_output_data(self):
-        """Moves output data
-
-        """
+        """Moves output data"""
         print("--> Moving scenario output data to backup disk")
         source = posixpath.join(
             server_setup.OUTPUT_DIR, self._scenario_info["id"] + "_*"
@@ -119,9 +105,7 @@ class BackUpDisk(object):
         stdin, stdout, stderr = self._ssh.exec_command(command)
 
     def move_temporary_folder(self):
-        """Moves temporary folder.
-
-        """
+        """Moves temporary folder."""
         print("--> Moving temporary folder to backup disk")
         source = posixpath.join(
             server_setup.EXECUTE_DIR, "scenario_" + self._scenario_info["id"]

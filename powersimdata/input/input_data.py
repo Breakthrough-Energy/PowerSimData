@@ -14,9 +14,7 @@ class InputData(object):
     """
 
     def __init__(self, ssh_client, data_loc=None):
-        """Constructor.
-
-        """
+        """Constructor."""
         if not os.path.exists(server_setup.LOCAL_DIR):
             os.makedirs(server_setup.LOCAL_DIR)
 

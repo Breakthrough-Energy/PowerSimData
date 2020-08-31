@@ -16,9 +16,7 @@ class TAMU(AbstractGrid):
     """
 
     def __init__(self, interconnect):
-        """Constructor.
-
-        """
+        """Constructor."""
         super().__init__()
         self._set_data_loc()
 
@@ -39,9 +37,7 @@ class TAMU(AbstractGrid):
             self.data_loc = data_loc
 
     def _set_storage(self):
-        """Sets storage properties.
-
-        """
+        """Sets storage properties."""
         self.storage["duration"] = 4
         self.storage["min_stor"] = 0.05
         self.storage["max_stor"] = 0.95
@@ -50,9 +46,7 @@ class TAMU(AbstractGrid):
         self.storage["energy_price"] = 20
 
     def _build_network(self):
-        """Build network.
-
-        """
+        """Build network."""
         reader = CSVReader(self.data_loc)
         self.bus = reader.bus
         self.plant = reader.plant
@@ -69,7 +63,7 @@ class TAMU(AbstractGrid):
 
     def _drop_interconnect(self):
         """Trim data frames to only keep information pertaining to the user
-            defined interconnect(s).
+        defined interconnect(s).
 
         """
         for key, value in self.__dict__.items():

@@ -15,9 +15,7 @@ class Grid(object):
     """
 
     def __init__(self, interconnect, source="usa_tamu", engine="REISE"):
-        """Constructor.
-
-        """
+        """Constructor."""
         if not isinstance(source, str):
             raise TypeError("source must be a string")
         if not isinstance(engine, str):

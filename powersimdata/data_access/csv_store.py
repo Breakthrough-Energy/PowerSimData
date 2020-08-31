@@ -12,9 +12,7 @@ class CsvStore:
     """
 
     def __init__(self, ssh_client):
-        """Constructor
-
-        """
+        """Constructor"""
         self.ssh_client = ssh_client
 
     def get_table(self, filename, path_on_server):

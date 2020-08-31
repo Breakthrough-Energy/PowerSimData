@@ -3,25 +3,17 @@ import sys
 
 
 class PrintManager(object):
-    """Manages print messages.
-
-    """
+    """Manages print messages."""
 
     def __init__(self):
-        """Constructor
-
-        """
+        """Constructor"""
         self.stdout = sys.stdout
 
     @staticmethod
     def block_print():
-        """Suppresses print
-
-        """
+        """Suppresses print"""
         sys.stdout = open(os.devnull, "w")
 
     def enable_print(self):
-        """Enables print
-
-        """
+        """Enables print"""
         sys.stdout = self.stdout

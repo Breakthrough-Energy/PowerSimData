@@ -13,8 +13,7 @@ class State(object):
     allowed = []
 
     def __init__(self, scenario):
-        """Constructor.
-        """
+        """Constructor."""
         if type(self) == State:
             raise TypeError("Only subclasses of 'State' can be instantiated directly")
 
@@ -46,9 +45,7 @@ class State(object):
         return self.name
 
     def _leave(self):
-        """Cleans when leaving state.
-
-        """
+        """Cleans when leaving state."""
         if self.name == "create":
             del self.builder
         elif self.name == "analyze":
@@ -56,7 +53,5 @@ class State(object):
             del self.ct
 
     def _enter(self):
-        """Initializes when entering state.
-
-        """
+        """Initializes when entering state."""
         pass
