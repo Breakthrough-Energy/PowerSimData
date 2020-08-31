@@ -31,6 +31,7 @@ def store():
 
 
 @pytest.mark.integration
+@pytest.mark.db
 def test_err_handle():
     with pytest.raises(SqlException):
         with RaiseErrorSqlStore() as store:
@@ -38,6 +39,7 @@ def test_err_handle():
 
 
 @pytest.mark.integration
+@pytest.mark.db
 def test_select_no_limit(store):
     store.add_entry(_get_test_row())
     store.add_entry(_get_test_row())
@@ -46,6 +48,7 @@ def test_select_no_limit(store):
 
 
 @pytest.mark.integration
+@pytest.mark.db
 def test_select_with_limit(store):
     n_rows = 6
     limit = 3
@@ -56,6 +59,7 @@ def test_select_with_limit(store):
 
 
 @pytest.mark.integration
+@pytest.mark.db
 def test_add_entry(store):
     info = _get_test_row()
     store.add_entry(info)
@@ -64,6 +68,7 @@ def test_add_entry(store):
 
 
 @pytest.mark.integration
+@pytest.mark.db
 def test_update_entry(store):
     info = _get_test_row()
     store.add_entry(info)
@@ -73,6 +78,7 @@ def test_update_entry(store):
 
 
 @pytest.mark.integration
+@pytest.mark.db
 def test_delete_entry(store):
     info = _get_test_row()
     store.add_entry(info)

@@ -15,6 +15,7 @@ def store():
 
 
 @pytest.mark.integration
+@pytest.mark.db
 def test_select_where(store):
     query = store.select_where("id")
     sql_str = query.as_string(store.conn)
@@ -23,6 +24,7 @@ def test_select_where(store):
 
 
 @pytest.mark.integration
+@pytest.mark.db
 def test_select_all(store):
     query = store.select_all()
     sql_str = query.as_string(store.conn)
@@ -31,6 +33,7 @@ def test_select_all(store):
 
 
 @pytest.mark.integration
+@pytest.mark.db
 def test_insert(store):
     query = store.insert()
     sql_str = query.as_string(store.conn)
@@ -39,6 +42,7 @@ def test_insert(store):
 
 
 @pytest.mark.integration
+@pytest.mark.db
 def test_delete(store):
     query = store.delete(key="id")
     sql_str = query.as_string(store.conn)
