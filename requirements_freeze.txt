@@ -13,7 +13,7 @@ mypy-extensions==0.4.3
 numpy==1.18.5
 packaging==20.4
 pandas==1.0.4
-paramiko==2.7.1
+paramiko==2.7.2
 pathspec==0.8.0
 pluggy==0.13.1
 psycopg2==2.8.5

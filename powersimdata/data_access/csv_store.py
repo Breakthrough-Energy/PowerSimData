@@ -2,6 +2,7 @@ from powersimdata.utility import server_setup
 
 from pathlib import Path
 import pandas as pd
+import os
 
 
 class CsvStore:
@@ -14,6 +15,8 @@ class CsvStore:
     def __init__(self, ssh_client):
         """Constructor"""
         self.ssh_client = ssh_client
+        if not os.path.exists(server_setup.LOCAL_DIR):
+            os.makedirs(server_setup.LOCAL_DIR)
 
     def get_table(self, filename, path_on_server):
         """Read the given file from the server, falling back to local copy if
@@ -31,6 +34,8 @@ class CsvStore:
 
         if local_path.is_file():
             return self._parse_csv(local_path)
+        else:
+            raise FileNotFoundError(f"{filename} does not exist locally.")
 
     def _get_from_server(self, path_on_server):
         """Return csv table from server.
