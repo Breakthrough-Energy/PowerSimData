@@ -1,3 +1,4 @@
+# Map load zone id to state abbreviations
 id2state = {
     1: "ME",
     2: "NH",
@@ -131,7 +132,10 @@ abv2state = {
     "WY": "Wyoming",
 }
 
-# Map state to loadzone
+# Map state name to state abbreviations
+state2abv = {value: key for key, value in abv2state.items()}
+
+# Map state to load zone name
 state2loadzone = {
     "Washington": {"Washington"},
     "Oregon": {"Oregon"},
@@ -201,7 +205,12 @@ state2loadzone = {
     "North Dakota": {"North Dakota"},
 }
 
-# Map loadzone to state
+# Map state abbreviations to load zone name
+abv2loadzone = {
+    state2abv[state]: loadzone for state, loadzone in state2loadzone.items()
+}
+
+# Map load zone name to state
 loadzone2state = {}
 for state, zone_set in state2loadzone.items():
     loadzone2state.update({zone: state for zone in zone_set})
@@ -291,7 +300,7 @@ interconnect2loadzone = {
     },
 }
 
-# Map loadzone to interconnect
+# Map loadzone name to interconnect
 loadzone2interconnect = {}
 for interconnect, zone_set in interconnect2loadzone.items():
     loadzone2interconnect.update({zone: interconnect for zone in zone_set})
@@ -359,3 +368,5 @@ for k, v in interconnect2state.items():
         continue
     for s in v:
         state2interconnect[s] = k
+
+loadzone = set(loadzone2interconnect.keys())
