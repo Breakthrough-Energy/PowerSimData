@@ -29,17 +29,20 @@ def execute_table(ssh_client):
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_setup_server_connection(ssh_client):
     _, stdout, _ = ssh_client.exec_command("whoami")
     assert stdout.read().decode("utf-8").strip() == get_server_user()
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_get_scenario_file_from_server_type(ssh_client, scenario_table):
     assert isinstance(scenario_table, pd.DataFrame)
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_get_scenario_file_from_server_header(ssh_client, scenario_table):
     header = [
         "id",
@@ -63,6 +66,7 @@ def test_get_scenario_file_from_server_header(ssh_client, scenario_table):
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_get_scenario_file_local(ssh_client, scenario_table):
     scm = ScenarioListManager(None)
     from_local = scm.get_scenario_table()
@@ -70,6 +74,7 @@ def test_get_scenario_file_local(ssh_client, scenario_table):
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_get_execute_file_local(ssh_client, execute_table):
     ecm = ExecuteListManager(None)
     from_local = ecm.get_execute_table()
@@ -77,11 +82,13 @@ def test_get_execute_file_local(ssh_client, execute_table):
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_get_execute_file_from_server_type(ssh_client, execute_table):
     assert isinstance(execute_table, pd.DataFrame)
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_get_execute_file_from_server_header(ssh_client, execute_table):
     header = ["id", "status"]
     assert_array_equal(execute_table.columns, header)
