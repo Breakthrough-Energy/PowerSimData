@@ -1,5 +1,5 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-![Pytest](https://github.com/intvenlab/PowerSimData/workflows/Run%20pytest/badge.svg)
+![Pytest](https://github.com/Breakthrough-Energy/PowerSimData/workflows/Run%20pytest/badge.svg)
 
 # PowerSimData
 This package has been written in order to carry out power flow study in the
@@ -18,7 +18,7 @@ from producers to load buses and consisting of:
   generated ($/MWh). These are determined by fuel cost and generator efficiency.
 * the **time series** for renewable generators and demand. These profiles
   are calculated in the [PreREISE] package and the list of profiles generated can be
-  consulted [here](https://github.com/intvenlab/PreREISE/tree/develop/docs):
+  consulted [here](https://github.com/Breakthrough-Energy/PreREISE/tree/develop/docs):
   - the profile for the renewable generators consists of hourly power output.
   - the load profile gives the hourly demand (MW) in various load zones, which are
   geographic entities such as a state or a portion of a state.
@@ -460,6 +460,6 @@ for resource in change_table:
 	)
 ```
 
-[PreREISE]: https://github.com/intvenlab/PreREISE
-[PostREISE]: https://github.com/intvenlab/PostREISE
+[PreREISE]: https://github.com/Breakthrough-Energy/PreREISE
+[PostREISE]: https://github.com/Breakthrough-Energy/PostREISE
 [zenodo]: https://zenodo.org/record/3530898
