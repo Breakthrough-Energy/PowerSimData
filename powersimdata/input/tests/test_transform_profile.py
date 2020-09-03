@@ -249,6 +249,7 @@ def base_demand(ssh_client):
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_demand_is_scaled(ssh_client, base_grid, base_demand):
     n_zone = param["_".join(interconnect)]["n_zone_to_scale"]
     profile_info = base_demand[0]
@@ -282,18 +283,21 @@ def test_demand_is_scaled(ssh_client, base_grid, base_demand):
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_solar_is_scaled_by_zone(ssh_client, base_grid, base_solar):
     ct = get_change_table_for_zone_scaling(base_grid, "solar")
     _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_solar_is_scaled_by_id(ssh_client, base_grid, base_solar):
     ct = get_change_table_for_id_scaling(base_grid, "solar")
     _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_solar_is_scaled_by_zone_and_id(ssh_client, base_grid, base_solar):
     ct_zone = get_change_table_for_zone_scaling(base_grid, "solar")
     ct_id = get_change_table_for_id_scaling(base_grid, "solar")
@@ -302,18 +306,21 @@ def test_solar_is_scaled_by_zone_and_id(ssh_client, base_grid, base_solar):
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_wind_is_scaled_by_zone(ssh_client, base_grid, base_wind):
     ct = get_change_table_for_zone_scaling(base_grid, "wind")
     _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_wind_is_scaled_by_id(ssh_client, base_grid, base_wind):
     ct = get_change_table_for_id_scaling(base_grid, "wind")
     _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_wind_is_scaled_by_zone_and_id(ssh_client, base_grid, base_wind):
     ct_zone = get_change_table_for_zone_scaling(base_grid, "wind")
     ct_id = get_change_table_for_id_scaling(base_grid, "wind")
@@ -322,18 +329,21 @@ def test_wind_is_scaled_by_zone_and_id(ssh_client, base_grid, base_wind):
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_hydro_is_scaled_by_zone(ssh_client, base_grid, base_hydro):
     ct = get_change_table_for_zone_scaling(base_grid, "hydro")
     _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_hydro_is_scaled_by_id(ssh_client, base_grid, base_hydro):
     ct = get_change_table_for_id_scaling(base_grid, "hydro")
     _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_hydro_is_scaled_by_zone_and_id(ssh_client, base_grid, base_hydro):
     ct_zone = get_change_table_for_zone_scaling(base_grid, "hydro")
     ct_id = get_change_table_for_id_scaling(base_grid, "hydro")
@@ -342,48 +352,57 @@ def test_hydro_is_scaled_by_zone_and_id(ssh_client, base_grid, base_hydro):
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_new_solar_are_added(ssh_client, base_grid, base_solar):
     ct = get_change_table_for_new_plant_addition(base_grid, "solar")
     _ = _check_new_plants_are_added(ssh_client, ct, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_new_wind_are_added(ssh_client, base_grid, base_wind):
     ct = get_change_table_for_new_plant_addition(base_grid, "wind")
     _ = _check_new_plants_are_added(ssh_client, ct, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_new_hydro_added(ssh_client, base_grid, base_hydro):
     ct = get_change_table_for_new_plant_addition(base_grid, "hydro")
     _ = _check_new_plants_are_added(ssh_client, ct, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_new_solar_are_not_scaled(ssh_client, base_grid, base_solar):
     _check_new_plants_are_not_scaled(ssh_client, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_new_wind_are_not_scaled(ssh_client, base_grid, base_wind):
     _check_new_plants_are_not_scaled(ssh_client, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_new_hydro_are_not_scaled(ssh_client, base_grid, base_hydro):
     _check_new_plants_are_not_scaled(ssh_client, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_new_solar_profile(base_grid, base_solar):
     _check_profile_of_new_plants_are_produced_correctly(base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_new_wind_profile(base_grid, base_wind):
     _check_profile_of_new_plants_are_produced_correctly(base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
+@pytest.mark.ssh
 def test_new_hydro_profile(base_grid, base_hydro):
     _check_profile_of_new_plants_are_produced_correctly(base_grid, base_hydro, "hydro")
