@@ -105,6 +105,8 @@ def _make_zonename2target(grid, targets, enforced_area_type=None):
     :param str/None enforced_area_type: if provided, specify to area_to_loadzone()
         that the area type must be this. If None, area_to_loadzone() proceeds in order.
     :return: (*dict*) -- a dictionary of {zone_name: target_name} pairs.
+    :raises ValueError: if a zone is not present in any target areas, or
+        if a zone is present in more than one target area.
     """
     target_zones = {
         target_name: area_to_loadzone(grid, target_name, area_type=enforced_area_type)
@@ -114,7 +116,12 @@ def _make_zonename2target(grid, targets, enforced_area_type=None):
     for target_name, zone_set in target_zones.items():
         # Filter out parts of states not in this interconnect
         filtered_zone_set = zone_set & set(grid.zone2id.keys())
-        zonename2target.update({zone: target_name for zone in filtered_zone_set})
+        for zone in filtered_zone_set:
+            if zone in zonename2target:
+                targets = {zonename2target[zone], target_name}
+                raise ValueError(f"zone in two target areas!: {zone} in {targets}")
+            else:
+                zonename2target[zone] = target_name
     untargetted_zones = set(grid.zone2id.keys()) - set(zonename2target.keys())
     if len(untargetted_zones) > 0:
         err_msg = f"Targets do not cover all load zones. Missing: {untargetted_zones}"
