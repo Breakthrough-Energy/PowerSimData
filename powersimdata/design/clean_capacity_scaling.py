@@ -69,6 +69,7 @@ def load_targets_from_csv(filename, drop_ignored=True):
         "allowed_resources": "solar, wind",
         "external_ce_addl_historical_amount": 0,
         "solar_percentage": np.nan,
+        "area_type": np.nan,
     }
 
     # Validate input
@@ -97,20 +98,20 @@ def load_targets_from_csv(filename, drop_ignored=True):
     return raw_targets
 
 
-def _make_zonename2target(grid, targets, enforced_area_type=None):
+def _make_zonename2target(grid, targets):
     """Creates a dictionary of {zone_name: target_name} pairs.
 
     :param powersimdata.input.grid.Grid grid: Grid instance defining the set of zones.
-    :param iterable targets: a collection of strings, used to look up constituent zones.
-    :param str/None enforced_area_type: if provided, specify to area_to_loadzone()
-        that the area type must be this. If None, area_to_loadzone() proceeds in order.
+    :param pandas.DataFrame targets: a dataframe used to look up constituent zones.
     :return: (*dict*) -- a dictionary of {zone_name: target_name} pairs.
     :raises ValueError: if a zone is not present in any target areas, or
         if a zone is present in more than one target area.
     """
     target_zones = {
-        target_name: area_to_loadzone(grid, target_name, area_type=enforced_area_type)
-        for target_name in targets
+        target_name: area_to_loadzone(grid, target_name)
+        if pd.isnull(targets.loc[target_name, "area_type"])
+        else area_to_loadzone(grid, target_name, targets.loc[target_name, "area_type"])
+        for target_name in targets.index.tolist()
     }
     zonename2target = {}
     for target_name, zone_set in target_zones.items():
@@ -119,7 +120,7 @@ def _make_zonename2target(grid, targets, enforced_area_type=None):
         for zone in filtered_zone_set:
             if zone in zonename2target:
                 targets = {zonename2target[zone], target_name}
-                raise ValueError(f"zone in two target areas!: {zone} in {targets}")
+                raise ValueError(f"zone in two target areas: {zone} in {targets}")
             else:
                 zonename2target[zone] = target_name
     untargetted_zones = set(grid.zone2id.keys()) - set(zonename2target.keys())
@@ -146,17 +147,13 @@ def _get_scenario_length(scenario):
     return num_hours
 
 
-def add_resource_data_to_targets(
-    input_targets, scenario, enforced_area_type=None, calculate_curtailment=False
-):
+def add_resource_data_to_targets(input_targets, scenario, calculate_curtailment=False):
     """Add resource data to targets. This data includes: previous capacity,
     previous generation, previous capacity factor (with and without curtailment),
     and previous curtailment.
     :param pandas.DataFrame input_targets: table includeing target names, used to
         summarize resource data.
     :param powersimdata.scenario.scenario.Scenario scenario: A Scenario instance.
-    :param str/None enforced_area_type: if provided, specify to area_to_loadzone()
-        that the area type must be this. If None, area_to_loadzone() proceeds in order.
     :return: (*pandas.DataFrame*) -- DataFrame of targets including resource data.
     """
     targets = input_targets.copy()
@@ -166,8 +163,7 @@ def add_resource_data_to_targets(
     scenario_length = _get_scenario_length(scenario)
 
     # Map each zone in the grid to a target
-    targets_list = input_targets.index.tolist()
-    zonename2target = _make_zonename2target(grid, targets_list, enforced_area_type)
+    zonename2target = _make_zonename2target(grid, targets)
     plant["target_area"] = [zonename2target[z] for z in plant["zone_name"]]
 
     # Summarize important values by target area & type
@@ -223,19 +219,17 @@ def add_resource_data_to_targets(
     return targets
 
 
-def add_demand_to_targets(input_targets, scenario, enforced_area_type=None):
+def add_demand_to_targets(input_targets, scenario):
     """Add demand data to targets.
     :param pandas.DataFrame input_targets: table including target names, used to
         summarize demand.
     :param powersimdata.scenario.scenario.Scenario scenario: A Scenario instance.
-    :param str/None enforced_area_type: if provided, specify to area_to_loadzone()
-        that the area type must be this. If None, area_to_loadzone() proceeds in order.
     :return: (*pandas.DataFrame*) -- DataFrame of targets including demand data.
     """
     grid = scenario.state.get_grid()
     targets = input_targets.copy()
 
-    zonename2target = _make_zonename2target(grid, targets.index, enforced_area_type)
+    zonename2target = _make_zonename2target(grid, targets)
     zoneid2target = {grid.zone2id[z]: target for z, target in zonename2target.items()}
     summed_demand = scenario.state.get_demand().sum().to_frame()
     summed_demand["target"] = [zoneid2target[id] for id in summed_demand.index]
