@@ -113,16 +113,22 @@ def _make_zonename2target(grid, targets):
         else area_to_loadzone(grid, target_name, targets.loc[target_name, "area_type"])
         for target_name in targets.index.tolist()
     }
+    # Check for any collisions
+    zone_sets = target_zones.values()
+    if len(set.union(*zone_sets)) != sum([len(t) for t in zone_sets]):
+        zone_sets_list = [zone for _set in zone_sets for zone in _set]
+        duplicates = {zone for zone in zone_sets_list if zone_sets_list.count(zone) > 1}
+        error_areas = {
+            zone: {area for area, zone_set in target_zones.items() if zone in zone_set}
+            for zone in duplicates
+        }
+        error_msgs = [f"{k} within: {', '.join(v)}" for k, v in error_areas.items()]
+        raise ValueError(f"Zone(s) within multiple area! {'; '.join(error_msgs)}")
     zonename2target = {}
     for target_name, zone_set in target_zones.items():
-        # Filter out parts of states not in this interconnect
+        # Filter out parts of states not in the interconnect(s) in this Grid
         filtered_zone_set = zone_set & set(grid.zone2id.keys())
-        for zone in filtered_zone_set:
-            if zone in zonename2target:
-                targets = {zonename2target[zone], target_name}
-                raise ValueError(f"zone in two target areas: {zone} in {targets}")
-            else:
-                zonename2target[zone] = target_name
+        zonename2target.update({zone: target_name for zone in filtered_zone_set})
     untargetted_zones = set(grid.zone2id.keys()) - set(zonename2target.keys())
     if len(untargetted_zones) > 0:
         err_msg = f"Targets do not cover all load zones. Missing: {untargetted_zones}"
