@@ -11,6 +11,7 @@ class ExecuteTable(SqlStore):
 
     def get_status(self, scenario_id):
         """Get status of scenario by scenario_id
+
         :param str scenario_id: the scenario id
         :return: (*pandas.DataFrame*) -- results as a data frame.
         """
@@ -21,6 +22,7 @@ class ExecuteTable(SqlStore):
 
     def get_execute_table(self, limit=None):
         """Return the execute table as a data frame
+
         :return: (*pandas.DataFrame*) -- execute list as a data frame.
         """
         query = self.select_all()
@@ -33,6 +35,7 @@ class ExecuteTable(SqlStore):
 
     def add_entry(self, scenario_info):
         """Add entry to execute list
+
         :param collections.OrderedDict scenario_info: entry to add
         """
         scenario_id, status = scenario_info["id"], "created"
@@ -78,6 +81,7 @@ class ExecuteListManager(CsvStore):
     def get_execute_table(self):
         """Returns execute table from server if possible, otherwise read local
         copy. Updates the local copy upon successful server connection.
+
         :return: (*pandas.DataFrame*) -- execute list as a data frame.
         """
         return self.get_table("ExecuteList.csv", server_setup.EXECUTE_LIST)

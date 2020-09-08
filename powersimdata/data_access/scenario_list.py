@@ -30,6 +30,7 @@ class ScenarioTable(SqlStore):
 
     def get_scenario_by_id(self, scenario_id):
         """Get entry from scenario list by id
+
         :param str scenario_id: scenario id
         :return: (*pandas.DataFrame*) -- results as a data frame.
         """
