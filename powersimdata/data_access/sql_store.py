@@ -28,6 +28,7 @@ class LoggingCursor(psycopg2.extras.DictCursor):
 
 def get_connection():
     """Temporary connection used for local development
+
     :return: (*str*) -- connection string for postgres db
     """
     return "dbname=psd host=localhost user=postgres password=example"
@@ -36,6 +37,7 @@ def get_connection():
 def get_cursor_factory():
     """Return cursor class to be passed to connection for executing sql.
     Default to DictCursor unless DEBUG_MODE is set.
+
     :returns: a cursor class callable for use by psycopg2 connection
     :rtype: psycopg2.extras.DictCursor or powersimdata.data_access.sql_store.LoggingCursor
     """
@@ -46,6 +48,7 @@ def get_cursor_factory():
 
 def to_data_frame(result):
     """Convert psycopg2 result set to data frame
+
     :param list result: list of DictRow containing query results cast to strings
     :return: (*pd.DataFrame*) -- query results as data frame
     """
@@ -67,6 +70,7 @@ class SqlStore:
 
     def _table(self):
         """Get table object for use in query generation.
+
         :return: (*psycopg2.sql.Identifier*) -- Identifier instance
         :raises ValueError: if :attr:`table` has not been defined.
         """
@@ -76,6 +80,7 @@ class SqlStore:
 
     def _columns(self, subset=None):
         """Get column list object for use in query generation.
+
         :return: (*psycopg2.sql.SQL*) -- SQL instance
         :raises ValueError: if :attr:`columns` has not been defined.
         """
@@ -89,7 +94,8 @@ class SqlStore:
 
     def select_all(self):
         """Build SELECT query.
-        :return (*psycopg2.sql.SQL*) -- query representation
+
+        :return: (*psycopg2.sql.SQL*) -- query representation
         """
         return SQL("SELECT {fields} FROM {table}").format(
             fields=self._columns(), table=self._table()
@@ -97,8 +103,9 @@ class SqlStore:
 
     def select_where(self, key):
         """Build SELECT .. WHERE query filtered by key
+
         :param str key: column to use in WHERE clause
-        :return (*psycopg2.sql.SQL*) -- query representation
+        :return: (*psycopg2.sql.SQL*) -- query representation
         """
         where_clause = SQL(" WHERE {key} = %s").format(key=Identifier(key))
         return self.select_all() + where_clause
@@ -106,8 +113,9 @@ class SqlStore:
     def insert(self, subset=None):
         """Build INSERT statement on current table for all columns, or subset if
         specified.
+
         :param iterable subset: collection of columns to specify in query
-        :return (*psycopg2.sql.SQL*) -- template for insert statement
+        :return: (*psycopg2.sql.SQL*) -- template for insert statement
         """
         n_values = len(subset) if subset is not None else len(self.columns)
         return SQL("INSERT INTO {table} ({fields}) VALUES ({values})").format(
@@ -118,8 +126,9 @@ class SqlStore:
 
     def delete(self, key):
         """Build DELETE .. WHERE statement on current table using key to filter.
+
         :param str key: column to use in WHERE clause
-        :return (*psycopg2.sql.SQL*) -- template for delete statement
+        :return: (*psycopg2.sql.SQL*) -- template for delete statement
         """
         return SQL("DELETE FROM {table} WHERE {key} = %s").format(
             table=self._table(), key=Identifier(key)
@@ -127,6 +136,7 @@ class SqlStore:
 
     def __enter__(self):
         """Context manager entrypoint.
+
         :return: the current instance
         """
         self.conn.__enter__()
@@ -137,6 +147,7 @@ class SqlStore:
     def __exit__(self, exc_type, exc_value, traceback):
         """Context manager teardown. Either commit or rollback transaction and
         close the connection. Reraise exception if applicable.
+
         :raises SqlException: If any exception occurred. Sets the original
         exception as the cause of the new one.
         """

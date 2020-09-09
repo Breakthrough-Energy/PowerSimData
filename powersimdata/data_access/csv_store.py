@@ -21,6 +21,7 @@ class CsvStore:
     def get_table(self, filename, path_on_server):
         """Read the given file from the server, falling back to local copy if
         unable to connect.
+
         :return: (*pandas.DataFrame*) -- the specified table as a data frame.
         """
         local_path = Path(server_setup.LOCAL_DIR, filename)
@@ -39,6 +40,7 @@ class CsvStore:
 
     def _get_from_server(self, path_on_server):
         """Return csv table from server.
+
         :return: (*pandas.DataFrame*) -- the specified file as a data frame.
         """
         with self.ssh_client.open_sftp() as sftp:
@@ -47,6 +49,7 @@ class CsvStore:
 
     def _parse_csv(self, file_object):
         """Read file from disk into data frame
+
         :param str, path object or file-like object file_object: a reference to
         the csv file
         :return: (*pandas.DataFrame*) -- the specified file as a data frame.

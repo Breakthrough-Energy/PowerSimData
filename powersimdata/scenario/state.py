@@ -5,6 +5,7 @@ from powersimdata.data_access.execute_list import ExecuteListManager
 class State(object):
     """Defines an interface for encapsulating the behavior associated with a
         particular state of the Scenario object.
+
     :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
     :raise TypeError: if not instantiated through a derived class
     """

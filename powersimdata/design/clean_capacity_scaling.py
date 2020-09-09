@@ -138,6 +138,7 @@ def _make_zonename2target(grid, targets):
 
 def _get_scenario_length(scenario):
     """Get the number of hours in a scenario.
+
     :param powersimdata.scenario.scenario.Scenario scenario: A Scenario instance.
     :return: (*int*) -- the number of hours in the scenario.
     """
@@ -157,6 +158,7 @@ def add_resource_data_to_targets(input_targets, scenario, calculate_curtailment=
     """Add resource data to targets. This data includes: previous capacity,
     previous generation, previous capacity factor (with and without curtailment),
     and previous curtailment.
+
     :param pandas.DataFrame input_targets: table includeing target names, used to
         summarize resource data.
     :param powersimdata.scenario.scenario.Scenario scenario: A Scenario instance.
@@ -227,6 +229,7 @@ def add_resource_data_to_targets(input_targets, scenario, calculate_curtailment=
 
 def add_demand_to_targets(input_targets, scenario):
     """Add demand data to targets.
+
     :param pandas.DataFrame input_targets: table including target names, used to
         summarize demand.
     :param powersimdata.scenario.scenario.Scenario scenario: A Scenario instance.
@@ -245,6 +248,7 @@ def add_demand_to_targets(input_targets, scenario):
 
 def add_shortfall_to_targets(input_targets):
     """Add shortfall data to targets.
+
     :param pandas.DataFrame input_targets: table with demand, prev_generation,
         and ce_target_fraction.
     :return: (*pandas.DataFrame*) -- DataFrame of targets including shortfall data.
@@ -275,6 +279,7 @@ def add_shortfall_to_targets(input_targets):
 
 def calculate_overall_shortfall(targets, method, normalized=False):
     """Calculates overall shortfall.
+
     :param pandas.DataFrame targets: table of targets.
     :param str method: shortfall calculation method ("independent" or "collaborative").
     :param bool normalized: whether to normalize by total demand.
@@ -309,6 +314,7 @@ def add_new_capacities_independent(
     input_targets, scenario_length, addl_curtailment=None
 ):
     """Calculates new capacities based on an Independent strategy.
+
     :param pandas.DataFrame input_targets: table of targets.
     :param int scenario_length: number of hours in new scenario.
     :param pandas.DataFrame/None addl_curtailment: additional expected curtailment
@@ -372,6 +378,7 @@ def add_new_capacities_collaborative(
     input_targets, scenario_length, solar_fraction=None, addl_curtailment=None
 ):
     """Calculates new capacities based on a Collaborative strategy.
+
     :param pandas.DataFrame input_targets: table of targets.
     :param int scenario_length: number of hours in new scenario.
     :param float/None solar_fraction: how much new capacity should be solar.
@@ -488,6 +495,7 @@ def calculate_clean_capacity_scaling(
     """Given a reference scenario (to get 'baseline' values), a method, and a set
     of targets (either via a dataframe or a filename to load a dataframe),
     calculate capacities for a new scenario to meet the calculated shortfall.
+
     :param powersimdata.scenario.scenario.Scenario ref_scenario: Scenario instance
         to get baseline capacities and capacity factors from.
     :param str method: which capacity scaling method to use.

@@ -78,7 +78,7 @@ class ChangeTable(object):
         keys in the dictionary are: *'capacity'*, *'from_bus_id'* and
         *'to_bus_id'* with values giving the capacity of the line and
         the bus id at each end of the line.
-    * *'new_plant':
+    * *'new_plant'*:
         value is a list. Each entry in this list is a dictionary enclosing
         all the information needed to add a new generator to the grid. The
         keys in the dictionary are *'type'*, *'bus_id'*, *'Pmax'* for
@@ -341,6 +341,7 @@ class ChangeTable(object):
 
     def scale_congested_mesh_branches(self, ref_scenario, **kwargs):
         """Scales congested branches based on previous scenario results.
+
         :param powersimdata.scenario.scenario.Scenario ref_scenario: the
             reference scenario to be used in determining branch scaling.
 
