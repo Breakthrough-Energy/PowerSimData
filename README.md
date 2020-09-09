@@ -305,9 +305,6 @@ The object has various attributes. These are listed below and a short
 description is given:
 * **zone2id (id2zone)**: `dict` -- load zone name (load zone id) to load zone id
 (load zone name).
-* **type2id** (**id2type**): `dict` -- generator type (id) to generator id
-(type).
-* **type2color**: `dict` -- generator type to generator color as used in plots.
 * **interconnect**: `str` --  interconnection name.
 * **bus**: `pandas.DataFrame` -- bus id as index and bus characteristics as
 columns.
