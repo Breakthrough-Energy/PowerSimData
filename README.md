@@ -392,7 +392,7 @@ determines Scenario-wide how much of the new capacity should be solar
 Basic independent call, using the demand from the reference scenario to
 approximate the future demand:
 ```python
-from powersimdata.design.clean_capacity_scaling import calculate_clean_capacity_scaling
+from powersimdata.design.generation.clean_capacity_scaling import calculate_clean_capacity_scaling
 from powersimdata.scenario.scenario import Scenario
 
 ref_scenario = Scenario('403')
@@ -405,7 +405,7 @@ targets_and_new_capacities_df = calculate_clean_capacity_scaling(
 
 Complex collaborative call, using all optional parameters:
 ```python
-from powersimdata.design.clean_capacity_scaling import calculate_clean_capacity_scaling
+from powersimdata.design.generation.clean_capacity_scaling import calculate_clean_capacity_scaling
 from powersimdata.scenario.scenario import Scenario
 
 ref_scenario = Scenario('403')
@@ -440,7 +440,7 @@ the exception of solar and wind generators, which will be scaled up to meet clea
 energy goals.
 
 ```python
-from powersimdata.design.clean_capacity_scaling import create_change_table
+from powersimdata.design.generation.clean_capacity_scaling import create_change_table
 
 change_table = create_change_table(targets_and_new_capacities_df, ref_scenario)
 # The change table method only accepts zone names, not zone IDs, so we have to translate

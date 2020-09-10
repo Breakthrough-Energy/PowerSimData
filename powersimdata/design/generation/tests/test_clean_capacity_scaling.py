@@ -4,7 +4,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 from powersimdata.tests.mock_scenario import MockScenario
-from powersimdata.design.clean_capacity_scaling import (
+from powersimdata.design.generation.clean_capacity_scaling import (
     add_resource_data_to_targets,
     add_demand_to_targets,
     add_shortfall_to_targets,

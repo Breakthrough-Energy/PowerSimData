@@ -1,5 +1,5 @@
 __all__ = [
-    "clean_capacity_scaling",
+    "generation",
     "mimic_grid",
     "scenario_info",
     "tests",
