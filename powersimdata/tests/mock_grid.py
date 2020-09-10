@@ -182,8 +182,6 @@ class MockGrid(object):
         self.interconnect = None
         self.zone2id = {"zone1": 1, "zone2": 2}
         self.id2zone = {1: "zone1", 2: "zone2"}
-        self.type2id = {}
-        self.id2type = {}
         self.type2color = {}
 
         # Loop through names for grid data frames, add (maybe empty) data
