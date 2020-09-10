@@ -392,7 +392,7 @@ determines Scenario-wide how much of the new capacity should be solar
 Basic independent call, using the demand from the reference scenario to
 approximate the future demand:
 ```python
-from powersimdata.design.clean_capacity_scaling import calculate_clean_capacity_scaling
+from powersimdata.design.generation.clean_capacity_scaling import calculate_clean_capacity_scaling
 from powersimdata.scenario.scenario import Scenario
 
 ref_scenario = Scenario('403')
@@ -405,7 +405,7 @@ targets_and_new_capacities_df = calculate_clean_capacity_scaling(
 
 Complex collaborative call, using all optional parameters:
 ```python
-from powersimdata.design.clean_capacity_scaling import calculate_clean_capacity_scaling
+from powersimdata.design.generation.clean_capacity_scaling import calculate_clean_capacity_scaling
 from powersimdata.scenario.scenario import Scenario
 
 ref_scenario = Scenario('403')
@@ -440,7 +440,7 @@ the exception of solar and wind generators, which will be scaled up to meet clea
 energy goals.
 
 ```python
-from powersimdata.design.clean_capacity_scaling import create_change_table
+from powersimdata.design.generation.clean_capacity_scaling import create_change_table
 
 change_table = create_change_table(targets_and_new_capacities_df, ref_scenario)
 # The change table method only accepts zone names, not zone IDs, so we have to translate
@@ -456,6 +456,28 @@ for resource in change_table:
 		plant_id=change_table[resource]["zone_name"]
 	)
 ```
+
+## 4. Analyzing Scenario Designs
+
+### A. Analysis of Transmission Upgrades
+
+#### I. Cumulative Upgrade Quantity
+Using the change table of a scenario, the number of upgrades lines/transformers
+and their cumulative upgraded capacity (for transformers) and cumulative
+upgraded megawatt-miles (for lines) can be calculated with:
+```
+powersimdata.design.transmission.mwmiles.calculate_mw_miles(scenario)
+```
+where `scenario` is a Scenario instance.
+
+#### II. Classify Upgrades
+The upgraded branches can also be classified into either interstate or
+intrastate branches by calling:
+
+```
+powersimdata.design.transmission.statelines.classify_interstate_intrastate(scenario)
+```
+where `scenario` is a Scenario instance.
 
 [PreREISE]: https://github.com/Breakthrough-Energy/PreREISE
 [PostREISE]: https://github.com/Breakthrough-Energy/PostREISE
