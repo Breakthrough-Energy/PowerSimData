@@ -1,5 +1,5 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-![Pytest](https://github.com/Breakthrough-Energy/PowerSimData/workflows/Run%20pytest/badge.svg)
+![CI](https://github.com/Breakthrough-Energy/PowerSimData/workflows/Run%20tox/badge.svg)
 
 # PowerSimData
 This package has been written in order to carry out power flow study in the
