@@ -457,6 +457,28 @@ for resource in change_table:
 	)
 ```
 
+## 4. Analyzing Scenario Designs
+
+### A. Analysis of Transmission Upgrades
+
+#### I. Cumulative Upgrade Quantity
+Using the change table of a scenario, the number of upgrades lines/transformers
+and their cumulative upgraded capacity (for transformers) and cumulative
+upgraded megawatt-miles (for lines) can be calculated with:
+```
+powersimdata.design.transmission.mwmiles.calculate_mw_miles(scenario)
+```
+where `scenario` is a Scenario instance.
+
+#### II. Classify Upgrades
+The upgraded branches can also be classified into either interstate or
+intrastate branches by calling:
+
+```
+powersimdata.design.transmission.statelines.classify_interstate_intrastate(scenario)
+```
+where `scenario` is a Scenario instance.
+
 [PreREISE]: https://github.com/Breakthrough-Energy/PreREISE
 [PostREISE]: https://github.com/Breakthrough-Energy/PostREISE
 [zenodo]: https://zenodo.org/record/3530898
