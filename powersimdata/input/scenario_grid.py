@@ -1,4 +1,5 @@
 import os
+
 import numpy as np
 import pandas as pd
 from scipy.io import loadmat
@@ -6,8 +7,8 @@ from scipy.io import loadmat
 from powersimdata.input.abstract_grid import AbstractGrid
 from powersimdata.input.helpers import (
     add_coord_to_grid_data_frames,
-    add_zone_to_grid_data_frames,
     add_interconnect_to_grid_data_frames,
+    add_zone_to_grid_data_frames,
 )
 
 

@@ -1,12 +1,16 @@
+import copy
+
 import numpy as np
 import pandas as pd
 import pytest
-import copy
 
-from powersimdata.network.usa_tamu.usa_tamu_model import TAMU, check_interconnect
+from powersimdata.input.grid import Grid
 from powersimdata.input.helpers import add_column_to_data_frame
 from powersimdata.input.scenario_grid import format_gencost, link
-from powersimdata.input.grid import Grid
+from powersimdata.network.usa_tamu.usa_tamu_model import (
+    TAMU,
+    check_interconnect,
+)
 
 
 def test_interconnect_type():

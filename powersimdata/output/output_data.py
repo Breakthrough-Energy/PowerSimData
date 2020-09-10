@@ -1,11 +1,12 @@
-from powersimdata.input.input_data import get_bus_demand
-from powersimdata.utility.transfer_data import download
-from powersimdata.utility import server_setup, backup
+import os
 
 import numpy as np
-import os
 import pandas as pd
 from scipy.sparse import coo_matrix
+
+from powersimdata.input.input_data import get_bus_demand
+from powersimdata.utility import backup, server_setup
+from powersimdata.utility.transfer_data import download
 
 
 class OutputData(object):

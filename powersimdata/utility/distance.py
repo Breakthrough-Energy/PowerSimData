@@ -1,4 +1,5 @@
-from math import degrees, radians, cos, sin, acos, asin, sqrt
+from math import acos, asin, cos, degrees, radians, sin, sqrt
+
 import geopy.distance
 
 

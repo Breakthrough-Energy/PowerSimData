@@ -1,12 +1,12 @@
-from powersimdata.data_access.scenario_list import ScenarioListManager
-from powersimdata.data_access.execute_list import ExecuteListManager
-from powersimdata.utility.server_setup import get_server_user
-from powersimdata.utility.transfer_data import setup_server_connection
-
-from numpy.testing import assert_array_equal
-from pandas.testing import assert_frame_equal
 import pandas as pd
 import pytest
+from numpy.testing import assert_array_equal
+from pandas.testing import assert_frame_equal
+
+from powersimdata.data_access.execute_list import ExecuteListManager
+from powersimdata.data_access.scenario_list import ScenarioListManager
+from powersimdata.utility.server_setup import get_server_user
+from powersimdata.utility.transfer_data import setup_server_connection
 
 
 @pytest.fixture

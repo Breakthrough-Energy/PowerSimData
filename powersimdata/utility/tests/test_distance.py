@@ -1,8 +1,13 @@
-import numpy as np
 from math import sqrt
-from numpy.testing import assert_array_almost_equal, assert_almost_equal
 
-from powersimdata.utility.distance import ll2uv, angular_distance, find_closest_neighbor
+import numpy as np
+from numpy.testing import assert_almost_equal, assert_array_almost_equal
+
+from powersimdata.utility.distance import (
+    angular_distance,
+    find_closest_neighbor,
+    ll2uv,
+)
 
 
 def test_ll2uv():

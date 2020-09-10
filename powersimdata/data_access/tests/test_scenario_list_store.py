@@ -1,10 +1,10 @@
-from powersimdata.data_access.scenario_list import ScenarioTable
-from powersimdata.data_access.sql_store import SqlException
-
-import pytest
+import os
 from collections import OrderedDict
 
-import os
+import pytest
+
+from powersimdata.data_access.scenario_list import ScenarioTable
+from powersimdata.data_access.sql_store import SqlException
 
 # uncomment to enable logging queries to stdout
 # os.environ["DEBUG_MODE"] = "1"

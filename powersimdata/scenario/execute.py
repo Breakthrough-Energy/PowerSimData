@@ -1,19 +1,20 @@
-from powersimdata.utility import server_setup
-from powersimdata.utility.transfer_data import upload
-from powersimdata.scenario.helpers import interconnect2name
-from powersimdata.input.input_data import InputData
-from powersimdata.input.grid import Grid
-from powersimdata.input.transform_grid import TransformGrid
-from powersimdata.input.transform_profile import TransformProfile
-from powersimdata.scenario.state import State
-
-from collections import OrderedDict
 import copy
-import numpy as np
 import os
 import posixpath
-from scipy.io import savemat
+from collections import OrderedDict
 from subprocess import Popen
+
+import numpy as np
+from scipy.io import savemat
+
+from powersimdata.input.grid import Grid
+from powersimdata.input.input_data import InputData
+from powersimdata.input.transform_grid import TransformGrid
+from powersimdata.input.transform_profile import TransformProfile
+from powersimdata.scenario.helpers import interconnect2name
+from powersimdata.scenario.state import State
+from powersimdata.utility import server_setup
+from powersimdata.utility.transfer_data import upload
 
 
 class Execute(State):

@@ -1,6 +1,6 @@
-from powersimdata.utility.helpers import PrintManager
-
 import pytest
+
+from powersimdata.utility.helpers import PrintManager
 
 
 def test_print_is_disabled(capsys):

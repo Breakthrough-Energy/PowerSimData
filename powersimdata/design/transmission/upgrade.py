@@ -1,7 +1,7 @@
 import pandas as pd
 
-from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
 from powersimdata.input.grid import Grid
+from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
 from powersimdata.utility.distance import haversine
 
 

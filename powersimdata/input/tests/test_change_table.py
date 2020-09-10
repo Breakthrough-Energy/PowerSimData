@@ -1,8 +1,7 @@
 import pytest
 
-from powersimdata.input.grid import Grid
 from powersimdata.input.change_table import ChangeTable
-
+from powersimdata.input.grid import Grid
 
 grid = Grid(["USA"])
 ct = ChangeTable(grid)
