@@ -1,20 +1,3 @@
-id2type = {
-    0: "wind",
-    1: "solar",
-    2: "hydro",
-    3: "ng",
-    4: "nuclear",
-    5: "coal",
-    6: "geothermal",
-    7: "dfo",
-    8: "biomass",
-    9: "other",
-    10: "storage",
-    11: "wind_offshore",
-}
-
-type2id = {value: key for key, value in id2type.items()}
-
 type2color = {
     "wind": "xkcd:green",
     "solar": "xkcd:amber",
