@@ -6,8 +6,7 @@ from powersimdata.design.transmission.upgrade import (
     scale_renewable_stubs,
 )
 from powersimdata.utility import server_setup
-from powersimdata.utility.distance import haversine, find_closest_neighbor
-
+from powersimdata.utility.distance import find_closest_neighbor, haversine
 
 _resources = (
     "coal",

@@ -1,7 +1,7 @@
 import os
 
-from powersimdata.network.usa_tamu.usa_tamu_model import TAMU
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
+from powersimdata.network.usa_tamu.usa_tamu_model import TAMU
 
 
 class Grid(object):

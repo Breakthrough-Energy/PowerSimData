@@ -1,12 +1,12 @@
 import numpy as np
 import pytest
 
-from powersimdata.input.input_data import InputData
-from powersimdata.utility.transfer_data import setup_server_connection
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.grid import Grid
+from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
+from powersimdata.utility.transfer_data import setup_server_connection
 
 interconnect = ["Western"]
 param = {

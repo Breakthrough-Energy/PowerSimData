@@ -1,9 +1,10 @@
-from powersimdata.utility import server_setup, backup
-from powersimdata.utility.transfer_data import download
-from powersimdata.scenario.helpers import interconnect2name
-
 import os
+
 import pandas as pd
+
+from powersimdata.scenario.helpers import interconnect2name
+from powersimdata.utility import backup, server_setup
+from powersimdata.utility.transfer_data import download
 
 
 class InputData(object):

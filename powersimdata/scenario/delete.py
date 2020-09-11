@@ -1,8 +1,8 @@
-from powersimdata.utility import server_setup
-from powersimdata.scenario.state import State
-
-import os
 import glob
+import os
+
+from powersimdata.scenario.state import State
+from powersimdata.utility import server_setup
 
 
 class Delete(State):

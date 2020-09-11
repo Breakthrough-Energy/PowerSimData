@@ -1,8 +1,8 @@
-from powersimdata.scenario.state import State
-from powersimdata.utility import server_setup, backup
-from powersimdata.scenario.helpers import interconnect2name
-
 import posixpath
+
+from powersimdata.scenario.helpers import interconnect2name
+from powersimdata.scenario.state import State
+from powersimdata.utility import backup, server_setup
 
 
 class Move(State):

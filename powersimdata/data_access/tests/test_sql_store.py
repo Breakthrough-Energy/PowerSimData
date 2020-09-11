@@ -1,6 +1,6 @@
-from powersimdata.data_access.sql_store import SqlStore
-
 import pytest
+
+from powersimdata.data_access.sql_store import SqlStore
 
 
 class DummySqlStore(SqlStore):

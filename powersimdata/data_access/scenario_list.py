@@ -1,8 +1,8 @@
+import posixpath
+
 from powersimdata.data_access.csv_store import CsvStore
 from powersimdata.data_access.sql_store import SqlStore, to_data_frame
 from powersimdata.utility import server_setup
-
-import posixpath
 
 
 class ScenarioTable(SqlStore):

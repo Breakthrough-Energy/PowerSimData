@@ -3,20 +3,20 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from powersimdata.tests.mock_grid import MockGrid
-from powersimdata.tests.mock_scenario import MockScenario
-from powersimdata.tests.mock_change_table import MockChangeTable
 from powersimdata.design.transmission.upgrade import (
+    _construct_composite_allow_list,
     _find_branches_connected_to_bus,
+    _find_capacity_at_bus,
     _find_first_degree_branches,
     _find_stub_degree,
-    _find_capacity_at_bus,
-    scale_renewable_stubs,
-    get_branches_by_area,
     _identify_mesh_branch_upgrades,
-    _construct_composite_allow_list,
     _increment_branch_scaling,
+    get_branches_by_area,
+    scale_renewable_stubs,
 )
+from powersimdata.tests.mock_change_table import MockChangeTable
+from powersimdata.tests.mock_grid import MockGrid
+from powersimdata.tests.mock_scenario import MockScenario
 
 """
 This test network is a ring, with several spurs coming off of it. The central

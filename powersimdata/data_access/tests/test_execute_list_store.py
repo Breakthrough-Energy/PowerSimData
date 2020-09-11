@@ -1,8 +1,9 @@
-from powersimdata.data_access.execute_list import ExecuteTable
-from powersimdata.data_access.sql_store import SqlException
+from collections import OrderedDict
 
 import pytest
-from collections import OrderedDict
+
+from powersimdata.data_access.execute_list import ExecuteTable
+from powersimdata.data_access.sql_store import SqlException
 
 row_id = 9000
 

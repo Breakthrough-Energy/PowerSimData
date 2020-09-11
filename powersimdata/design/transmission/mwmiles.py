@@ -1,5 +1,5 @@
-from powersimdata.utility.distance import haversine
 from powersimdata.input.grid import Grid
+from powersimdata.utility.distance import haversine
 
 
 def calculate_mw_miles(scenario, exclude_branches=None):

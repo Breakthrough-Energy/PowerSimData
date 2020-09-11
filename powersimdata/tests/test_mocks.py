@@ -1,9 +1,9 @@
-import pytest
 import pandas as pd
+import pytest
 
+from powersimdata.tests.mock_grid import MockGrid
 from powersimdata.tests.mock_scenario import MockScenario
 from powersimdata.tests.mock_scenario_info import MockScenarioInfo
-from powersimdata.tests.mock_grid import MockGrid
 
 period_num = 4
 

@@ -1,4 +1,5 @@
 import unittest
+
 import pandas as pd
 
 from powersimdata.design.scenario_info import ScenarioInfo

@@ -1,9 +1,10 @@
+import os
+
+import pandas as pd
 import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
 from psycopg2.sql import SQL, Identifier, Placeholder
-import os
-import pandas as pd
 
 
 class SqlException(Exception):

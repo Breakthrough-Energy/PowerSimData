@@ -1,5 +1,5 @@
-from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.data_access.execute_list import ExecuteListManager
+from powersimdata.data_access.scenario_list import ScenarioListManager
 
 
 class State(object):
