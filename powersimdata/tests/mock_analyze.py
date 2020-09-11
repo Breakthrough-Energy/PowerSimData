@@ -1,5 +1,25 @@
+import pandas as pd
+
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.tests.mock_grid import MockGrid
+
+
+def _ensure_ts_index(df):
+    """If a dataframe is provided and the index is not a time series, add a time series
+    index. If the input is None, return it as is.
+
+    :param pandas.DataFrame/None df: data frame, or None.
+    :return: (*pandas.DataFrame/None*) -- input, with time series index if possible.
+    """
+    if df is None:
+        return df
+    if not isinstance(df.index, pd.DatetimeIndex):
+        df.set_index(
+            pd.date_range(start="2016-01-01", periods=len(df), freq="H"),
+            inplace=True,
+        )
+        df.index.name = "UTC"
+    return df
 
 
 class MockAnalyze:
@@ -30,15 +50,15 @@ class MockAnalyze:
         :param pandas.DataFrame hydro: dummy hydro
         """
         self.grid = MockGrid(grid_attrs)
-        self.congl = congl
-        self.congu = congu
+        self.congl = _ensure_ts_index(congl)
+        self.congu = _ensure_ts_index(congu)
         self.ct = ct if ct is not None else {}
-        self.demand = demand
-        self.lmp = lmp
-        self.pg = pg
-        self.solar = solar
-        self.wind = wind
-        self.hydro = hydro
+        self.demand = _ensure_ts_index(demand)
+        self.lmp = _ensure_ts_index(lmp)
+        self.pg = _ensure_ts_index(pg)
+        self.solar = _ensure_ts_index(solar)
+        self.wind = _ensure_ts_index(wind)
+        self.hydro = _ensure_ts_index(hydro)
         self.name = "analyze"
 
     def get_congl(self):
