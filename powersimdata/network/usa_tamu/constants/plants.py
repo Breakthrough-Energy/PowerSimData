@@ -36,7 +36,7 @@ clean_resources = renewable_resources | {"geothermal", "hydro", "nuclear"}
 all_resources = carbon_resources | {"other"} | clean_resources
 
 
-# MWh to metric tons of CO2
+# MWh to kilograms of CO2
 # Source: IPCC Special Report on Renewable Energy Sources and Climate Change
 # Mitigation (2011), Annex II: Methodology, Table A.II.4, 50th percentile
 # http://www.ipcc-wg3.de/report/IPCC_SRREN_Annex_II.pdf
@@ -46,11 +46,29 @@ carbon_per_mwh = {
     "ng": 469,
 }
 
-# MMBTu of fuel per hour to metric tons of CO2 per hour
+# MMBTu of fuel per hour to kilograms of CO2 per hour
 # Source: https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references
-# = (Heat rate MMBTu/h) * (kg C/mmbtu) * (mass ratio CO2/C) / (kg to tonnes)
+# = (Heat rate MMBTu/h) * (kg C/mmbtu) * (mass ratio CO2/C)
 carbon_per_mmbtu = {
     "coal": 26.05,
     "dfo": 20.31,
     "ng": 14.46,
+}
+
+# MWh to kilograms of NOx
+# Source: EPA eGrid 2018, tab 'US18' (U.S. summary), columns AN to AP
+# https://www.epa.gov/egrid/egrid-questions-and-answers
+nox_per_mwh = {
+    "coal": 0.658,
+    "dfo": 1.537,
+    "ng": 0.179,
+}
+
+# MWh to kilograms of SO2
+# Source: EPA eGrid 2018, tab 'US18' (U.S. summary), columns AV to AX
+# https://www.epa.gov/egrid/egrid-questions-and-answers
+so2_per_mwh = {
+    "coal": 0.965,
+    "dfo": 2.189,
+    "ng": 0.010,
 }
