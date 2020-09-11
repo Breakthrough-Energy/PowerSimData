@@ -9,7 +9,7 @@ jobs:
     strategy:
         fail-fast: false
         matrix:
-            toxenv: ['pytest', 'checkformatting']
+            toxenv: ['pytest-ci', 'checkformatting']
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python 3.x
@@ -21,7 +21,7 @@ jobs:
           python -m pip install --upgrade pip tox
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Start postgres container
-        if: ${{ matrix.toxenv == 'pytest' }}
+        if: ${{ matrix.toxenv == 'pytest-ci' }}
         run: |
           docker-compose -f stack.yml up -d
           while ! nc -z localhost 5432; do sleep 1; done;
