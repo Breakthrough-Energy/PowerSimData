@@ -27,12 +27,6 @@ def mock_pg():
             for i, plant_id in enumerate(mock_plant["plant_id"])
         }
     )
-
-    pg.set_index(
-        pd.date_range(start="2016-01-01", periods=period_num, freq="H"),
-        inplace=True,
-    )
-    pg.index.name = "UTC"
     return pg
 
 
