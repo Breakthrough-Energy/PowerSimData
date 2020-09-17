@@ -3,173 +3,13 @@ import os
 import pandas as pd
 import numpy as np
 
-from shapely.geometry import *
-import geopandas as gpd
-#import osmnx as ox
 
 from powersimdata.utility.distance import haversine
 from powersimdata.input.grid import Grid
-
-def sjoin_nearest(left_df, right_df, op='intersects', search_dist=0.06, report_dist=False,
-                  lsuffix='left', rsuffix='right'):
-    """
-    Perform a spatial join between two input layers.
-    If a geometry in left_df falls outside (all) geometries in right_df, the data from nearest Polygon will be used as a result.
-    To make queries faster, "search_dist" -parameter (specified in map units) can be used to limit the search area for geometries around source points.
-    If report_dist == True, the distance for closest geometry will be reported in a column called `dist`. If geometries intersect, the distance will be 0.
-
-    """
-
-    # Explode possible MultiGeometries
-    right_df = right_df.explode()
-    right_df = right_df.reset_index(drop=True)
-
-    if 'index_left' in left_df.columns:
-        left_df = left_df.drop('index_left', axis=1)
-
-    if 'index_right' in left_df.columns:
-        left_df = left_df.drop('index_right', axis=1)
-
-    if report_dist:
-        if 'dist' in left_df.columns:
-            raise ValueError("'dist' column exists in the left DataFrame. Remove it, or set 'report_dist' to False.")
-
-    # Get geometries that intersect or do not intersect polygons
-    mask = left_df.intersects(right_df.unary_union)
-    geoms_intersecting_polygons = left_df.loc[mask]
-    geoms_outside_polygons = left_df.loc[~mask]
-
-    # Make spatial join between points that fall inside the Polygons
-    if geoms_intersecting_polygons.shape[0] > 0:
-        pip_join = gpd.sjoin(left_df=geoms_intersecting_polygons, right_df=right_df, op=op)
-
-        if report_dist:
-            pip_join['dist'] = 0
-
-    else:
-        pip_join = gpd.GeoDataFrame()
-
-    # Get nearest geometries
-    closest_geometries = gpd.GeoDataFrame()
-
-    # A tiny snap distance buffer is needed in some cases
-    snap_dist = 0.00000005
-
-    # Closest points from source-points to polygons
-    for idx, geom in geoms_outside_polygons.iterrows():
-        # Get geometries within search distance
-        candidates = right_df.loc[right_df.intersects(geom[left_df.geometry.name].buffer(search_dist))]
-
-        if len(candidates) == 0:
-            continue
-        unary = candidates.unary_union
-
-        if unary.geom_type == 'Polygon':
-
-            # Get exterior of the Polygon
-            exterior = unary.exterior
-
-            # Find a point from Polygons that is closest to the source point
-            closest_geom = exterior.interpolate(exterior.project(geom[left_df.geometry.name]))
-
-            if report_dist:
-                distance = closest_geom.distance(geom[left_df.geometry.name])
-
-            # Select the Polygon
-            closest_poly = right_df.loc[right_df.intersects(closest_geom.buffer(snap_dist))]
-
-        elif unary.geom_type == 'MultiPolygon':
-            # Keep track of distance for closest polygon
-            distance = 9999999999
-            closest_geom = None
-
-            for idx, poly in enumerate(unary):
-                # Get exterior of the Polygon
-                exterior = poly.exterior
-
-                # Find a point from Polygons that is closest to the source point
-                closest_candidate = exterior.interpolate(exterior.project(geom[left_df.geometry.name]))
-
-                # Calculate distance between origin point and the closest point in Polygon
-                dist = geom[left_df.geometry.name].distance(closest_candidate)
-
-                # If the point is closer to given polygon update the info
-                if dist < distance:
-                    distance = dist
-                    closest_geom = closest_candidate
-
-            # Select the Polygon that was closest
-            closest_poly = right_df.loc[right_df.intersects(closest_geom.buffer(snap_dist))]
-        else:
-            print("Incorrect input geometry type. Skipping ..")
-
-        # Reset index
-        geom = geom.to_frame().T.reset_index(drop=True)
-
-        # Drop geometry from closest polygon
-        closest_poly = closest_poly.drop(right_df.geometry.name, axis=1)
-        closest_poly = closest_poly.reset_index(drop=True)
-
-        # Join values
-        join = geom.join(closest_poly, lsuffix='_%s' % lsuffix, rsuffix='_%s' % rsuffix)
-
-        # Add information about distance to closest geometry if requested
-        if report_dist:
-            if 'dist' in join.columns:
-                raise ValueError("'dist' column exists in the DataFrame. Remove it, or set 'report_dist' to False.")
-            join['dist'] = distance
-
-        closest_geometries = closest_geometries.append(join, ignore_index=True, sort=False)
-
-    # Merge everything together
-    result = pip_join.append(closest_geometries, ignore_index=True, sort=False)
-    return result
-
-
-def points_to_ReEDS(df, name, DIR):
-    # load polygons for ReEDS BAs
-    # warning that these polygons are rough and not very detailed - meant for illustrative purposes. Might be worth it later to revisit and try to fine-tune this
-    # but since the multipliers aren't super strict by region, it's fine for now.
-    polys = gpd.read_file(os.path.join(DIR, 'rs.shp'))
-    polys.crs = "EPSG:4326"
-
-    # load buses into Points geodataframe
-    pts = gpd.GeoDataFrame(pd.DataFrame({name + '_id': df.index}),
-                           geometry=gpd.points_from_xy(df.lon, df.lat), crs='epsg:4326')
-
-    # find which ReEDS region the points belong to
-    # (within the region or as close as possible, if in the ocean or something)
-    pts_poly = sjoin_nearest(left_df=pts, right_df=polys, search_dist=0.2, report_dist=True)
-
-    # load in rs to rb region mapping file
-    region_map = pd.read_csv(os.path.join(DIR, 'region_map.csv'))
-
-    # map rs (wind region) to rb (ba region)
-    pts_poly = pts_poly.merge(region_map, left_on='id', right_on='rs', how='left').drop(["id", "index_right", 'dist'],
-                                                                                        axis=1)
-    return pts_poly
-
-def points_to_NEEM(df, name, DIR):
-    '''
-    Warning, this function takes ~24 hours to run. Should only need to run once for all buses.
-    '''
-    # load polygons for ReEDS BAs
-    # warning that these polygons are rough and not very detailed - meant for illustrative purposes. Might be worth it later to revisit and try to fine-tune this
-    # but since the multipliers aren't super strict by region, it's fine for now.
-
-    polys = gpd.read_file(os.path.join(DIR,'land_neem_regions/ez_gis.land_neem_regions.shp'))
-    polys = polys.to_crs("EPSG:4326")
-
-    # load buses into Points geodataframe
-
-    pts = gpd.GeoDataFrame(pd.DataFrame({name + '_id': df.index}),
-                           geometry=gpd.points_from_xy(df.lon, df.lat), crs='epsg:4326')
-
-    # find which ReEDS region the points belong to
-    # (within the region or as close as possible, if in the ocean or something)
-    pts_poly = sjoin_nearest(left_df=pts, right_df=polys, search_dist=0.2, report_dist=True)
-
-    return pts_poly
+from powersimdata.design.investment.create_mapping_files import (
+    plant_to_ReEDS_reg,
+    bus_to_NEEM_reg,
+    )
 
 
 def calculate_ac_inv_costs(scenario, year):
@@ -222,6 +62,9 @@ def _calculate_ac_inv_costs(grid_new, year):
 
     def select_MW(x, cost_df):
         tmp = cost_df[cost_df['kV_cost'] == x.kV_cost]
+        #get rid of NaN values in this kV table
+        tmp = tmp[~tmp['MW'].isna()]
+        #find closest MW & corresponding cost
         return tmp.iloc[np.argmin(np.abs(tmp['MW'] - x.rateA))][['MW', 'costMWmi']]
 
     if isinstance(year, (int, str)):
@@ -239,7 +82,7 @@ def _calculate_ac_inv_costs(grid_new, year):
     ac_reg_mult = pd.read_csv(os.path.join(DIR, "LineRegMult.csv"))#.astype('float64')
     xfmr_cost = pd.read_csv(os.path.join(DIR, "Transformers.csv"))#.astype('float64')
 
-    # map kV
+    # map line kV
     bus = grid_new.bus
     branch = grid_new.branch
     branch.loc[:, "kV"] = branch.apply(
@@ -303,7 +146,7 @@ def _calculate_ac_inv_costs(grid_new, year):
     lines.loc[:, 'MWmi'] = lines['lengthMi'] * lines['rateA']
 
     # calculate cost of each line
-    lines.loc[:, 'Cost'] = lines['MWmi'] * lines['costMWmi']  # * lines['mult']
+    lines.loc[:, 'Cost'] = lines['MWmi'] * lines['costMWmi']  * lines['mult']
 
     # sum of all line costs
     lines_sum = float(lines.Cost.sum())
@@ -316,10 +159,7 @@ def _calculate_ac_inv_costs(grid_new, year):
     transformers_sum = float(transformers.Cost.sum())
 
     dict1 = {"line_cost": lines_sum,"transformer_cost": transformers_sum}
-
     return dict1
-
-
 
 
 # DC lines
@@ -350,12 +190,21 @@ def calculate_dc_inv_costs(scenario, year):
     return costs
 
 def _calculate_dc_inv_costs(grid_new, year):
-    DIR = "./Data"
+    """Given a grid, calculate the total cost of that grid's dc line investment.
+    This function is separate from calculate_dc_inv_costs() for testing purposes.
+    Currently ignores financials, but all values are in 2015 $-year.
+
+    :param powersimdata.input.grid.Grid grid_new: grid instance.
+    :param int/str year: year of builds (used in financials).
+    :raises ValueError: if year not 2020 - 2050.
+    :raises TypeError: if year gets the wrong type.
+    :return: (*dict*) -- Total costs (line costs, transformer costs).
+    """
+    DIR = os.path.join(os.path.dirname(__file__), "Data")
 
     # import data
-    dc_cost = pd.read_excel(os.path.join(DIR, "TransCosts_real.xlsx"), sheet_name="HVDC").astype('float64')
-    dc_term_cost = pd.read_excel(os.path.join(DIR, "TransCosts_real.xlsx"), sheet_name="HVDCTerminal").astype(
-        'float64')
+    dc_cost = pd.read_csv(os.path.join(DIR,"HVDC.csv"))#.astype('float64')
+    dc_term_cost = pd.read_csv(os.path.join(DIR, "HVDCTerminal.csv"))#.astype('float64')
 
     bus = grid_new.bus
     dcline = grid_new.dcline
@@ -384,10 +233,22 @@ def _calculate_dc_inv_costs(grid_new, year):
         dcline['Cost'] += dc_term_cost['costTerm'][0]
 
         costs = dcline['Cost'].sum()
+    else:
+        costs = 0
 
     return costs
 
 def calculate_gen_inv_costs(scenario,year,cost_case):
+    """Given a Scenario object, calculate the total cost of building that scenario's upgrades of
+    lines and transformers.
+    Currently ignores TransformerWinding.
+    Currently uses ReEDS regions to find regional multipliers.
+    Currently ignores financials, but all values are in 2010 $-year.
+
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
+    :param int/str year: the year of the transmission upgrades.
+    :return: (*dict*) -- Total costs (line costs, transformer costs).
+    """
     base_grid = Grid(scenario.info["interconnect"].split("_"))
     grid = scenario.state.get_grid()
 
@@ -403,29 +264,23 @@ def calculate_gen_inv_costs(scenario,year,cost_case):
     return costs
 
 def _calculate_gen_inv_costs(grid_new, year,cost_case):
-    DIR = "./Data"
+    """Given a grid, calculate the total cost of building that generation investment.
+    This function is separate from calculate_gen_inv_costs() for testing purposes.
+    Currently only uses one (arbutrary) sub-technology. Drops the rest of the costs. Will want to fix for wind/solar (based on resource supply curves).
+    Currently uses ReEDS regions to find regional multipliers.
+    Currently ignores financials, but all values are in 2018 $-year.
 
-    plants =grid_new.plant
-
-    #merge in regions
-    pts_plant = pd.DataFrame(points_to_ReEDS(plants,name="plant")).drop("geometry",axis=1)
-    plants= plants.merge(pts_plant,on='plant_id',how='inner')
-
-    #keep region 'r' as wind region 'rs' if tech is wind, 'rb' ba region is tech is solar or battery
-    plants.loc[:,'r'] = ''
-
-    #wind regions
-    rs_tech = ['wind','OfWind','csp']
-    plants.loc[plants['type'].isin(rs_tech),'r'] = plants.loc[plants['type'].isin(rs_tech),'rs']
-    #grid_new.plant[grid_new.plant['type'].isin(['wind','OfWind'])] = grid_tmp
-
-    #BA regions
-    rb_tech =['solar','storage','nuclear','coal','ng','hydro','geothermal','dfo','other']
-    plants.loc[plants['type'].isin(rb_tech),'r'] = plants.loc[plants['type'].isin(rb_tech),'rb']
-
-    plants.drop(['rs','rb'],axis=1,inplace=True)
+    :param powersimdata.input.grid.Grid grid_new: grid instance.
+    :param int/str year: year of builds (used in financials).
+    :raises ValueError: if year not 2020 - 2050.
+    :raises TypeError: if year gets the wrong type.
+    :return: (*pandas.DataFrame*) -- Total investment cost summed by technology.
+    """
 
     def load_cost(file_name,year,cost_case,DIR):
+        '''
+
+        '''
         pre = "2020-ATB-Summary"
         if file_name != "":
             pre = pre + "_"
@@ -434,12 +289,12 @@ def _calculate_gen_inv_costs(grid_new, year,cost_case):
 
         #drop non-useful columns
         cols_drop = cost.columns[~cost.columns.isin(
-                [str(x) for x in cost.columns[0:6]]+ ["Metric",str(year)])] 
+                [str(x) for x in cost.columns[0:6]]+ ["Metric",str(year)])]
         cost.drop(cols_drop,axis=1,inplace=True)
 
         #rename year of interest column
-        cost.rename(columns = {str(year): "value"},  
-              inplace = True) 
+        cost.rename(columns = {str(year): "value"},
+              inplace = True)
 
         #get rid of #refs
         cost.drop(cost[cost['value'] == '#REF!'].index,inplace=True)
@@ -452,8 +307,8 @@ def _calculate_gen_inv_costs(grid_new, year,cost_case):
         if file_name in ['CAPEX','FOM']:
             cost['value'] = 1000 * cost['value']
 
-        cost.rename(columns = {'value': file_name},  
-              inplace = True) 
+        cost.rename(columns = {'value': file_name},
+              inplace = True)
 
         #select scenario of interest
         cost = cost[cost['CostCase']==cost_case]
@@ -461,24 +316,48 @@ def _calculate_gen_inv_costs(grid_new, year,cost_case):
 
         return cost
 
+    DIR = os.path.join(os.path.dirname(__file__), "Data")
 
+    plants = grid_new.plant
+    plants = plants[~plants.type.isin(['dfo', 'other'])]  # drop these technologies
+
+    #merge in regions
+    pts_plant = plant_to_ReEDS_reg(plants,DIR)
+    plants = plants.merge(pts_plant,on='plant_id',how='left')
+
+    #keep region 'r' as wind region 'rs' if tech is wind, 'rb' ba region is tech is solar or battery
+    plants.loc[:,'r'] = ''
+
+    #wind regions (rs) (apply to wind and csp)
+    rs_tech = ['wind','OfWind','csp']
+    plants.loc[plants['type'].isin(rs_tech),'r'] = plants.loc[plants['type'].isin(rs_tech),'rs']
+
+    #BA regions (rb) (apply to rest of techs)
+    rb_tech =['solar','storage','nuclear','coal','ng','hydro','geothermal','dfo','other']
+    plants.loc[plants['type'].isin(rb_tech),'r'] = plants.loc[plants['type'].isin(rb_tech),'rb']
+
+    plants.drop(['rs','rb'],axis=1,inplace=True)
+
+    #load in costs, keep only certain (arbutrary) subclasses for now
     gen_costs = load_cost("CAPEX",year, cost_case, DIR)
     gen_costs = gen_costs[ gen_costs['TechDetail'].isin(['HydroFlash','NPD1','newAvgCF','Class1' ,'CCAvgCF','OTRG1','LTRG1','4Hr Battery Storage','Seattle'])] #only keep HydroFlash for geothermal
-    gen_costs.replace(['OffShoreWind','LandbasedWind','UtilityPV','Battery','CSP','NaturalGas','Hydropower','Nuclear','Biopower','Geothermal','Coal'], ['OfWind','wind','solar','storage','csp','ng','hydro','nuclear','bio','geothermal','coal'],inplace=True)
+    #rename techs to match grid object
+    gen_costs.replace(['OffShoreWind','LandbasedWind','UtilityPV','Battery','CSP','NaturalGas','Hydropower','Nuclear','Biopower','Geothermal','Coal'], ['wind_offshore','wind','solar','storage','csp','ng','hydro','nuclear','bio','geothermal','coal'],inplace=True)
     gen_costs.drop(['Key','FinancialCase','CRPYears'],axis=1,inplace=True)
-    plants = plants[~plants.type.isin(['dfo','other'])]
-
+    #ATB technology costs merge
     plants = plants.merge(gen_costs,right_on='Technology',left_on='type',how='left')
 
     #regional multiplier merge
     region_multiplier = pd.read_csv("in/reg_cap_cost_mult_default.csv")
     region_multiplier = region_multiplier[ region_multiplier['i'].isin(['wind-ofs_1','wind-ons_1','upv_1','battery','coal-new','Gas-CC','Hydro','Nuclear','geothermal']) ]
-    region_multiplier.replace(['wind-ofs_1','wind-ons_1','upv_1','battery','Gas-CC','Nuclear','Hydro','coal-new','csp-ns'],['OfWind','wind','solar','storage','ng','nuclear','hydro','coal','csp'],inplace=True)
+    region_multiplier.replace(['wind-ofs_1','wind-ons_1','upv_1','battery','Gas-CC','Nuclear','Hydro','coal-new','csp-ns'],['wind_offshore','wind','solar','storage','ng','nuclear','hydro','coal','csp'],inplace=True)
     plants = plants.merge(region_multiplier,left_on=['r','Technology'],right_on=['r','i'],how='left')
 
+    #multiply all together to get summed CAPEX ($)
     plants.loc[:,'CAPEX_total'] = plants['CAPEX']* plants['Pmax'] * plants['reg_cap_cost_mult']
-    tech_sum = plants.groupby(['Technology'])['CAPEX_total'].sum()
 
+    #sum cost by technology
+    tech_sum = plants.groupby(['Technology'])['CAPEX_total'].sum()
     return tech_sum
 
 
