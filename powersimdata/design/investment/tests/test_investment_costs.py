@@ -13,9 +13,8 @@ from powersimdata.design.investment.investment_costs import (
 from powersimdata.tests.mock_scenario import MockScenario
 from powersimdata.tests.mock_grid import MockGrid
 
-# branch 11 from Seattle to San Francisco (~679 miles)
-# branch 12 from Seattle to Spokane (~229 miles)
-# branch 13-15 are transformers (0 miles)
+# branch 10-12 from Seattle (s3, p1, NWPP Coal) to San Francisco (s25, p9, NP15) (~679 miles)
+# branch 13-14 are transformers (0 miles)
 mock_branch = {
     "branch_id": [10, 11, 12, 13, 14],
     "rateA": [0, 10, 1100, 30, 40],
@@ -24,14 +23,15 @@ mock_branch = {
     "to_lat": [37.78, 37.78, 37.78, 47.61, 47.61],
     "to_lon": [-122.42, -122.42, -122.42, -122.33, -122.33],
     "from_bus_id": [1, 1, 3, 3, 4],
+    "to_bus_id": [2, 2, 2, 3, 4],
     "branch_device_type": 3 * ["Line"] + 2 * ["Transformer"],
 }
 
 # bus_id is the index
 mock_bus = {
     "bus_id": [1, 2, 3, 4],
-    "lat": [47.6, 37.8, 37.8, 40.7],
-    "lon": [122.3, 122.4, 122.4, 74],
+    "lat": [47.61, 37.78, 47.61, 47.61],
+    "lon": [-122.33, -122.42, -122.42, -122.42],
     "baseKV": [100, 346, 230, 800],
 }
 
@@ -43,10 +43,14 @@ mock_plant = {
 }
 
 mock_dcline = {
-    "dcline_id": []
+    "dcline_id": [5],
+    'Pmax': [10],
+    "from_bus_id": [1],
+    "to_bus_id": [2],
 }
 
 grid_attrs = {"plant": mock_plant, "bus": mock_bus, "branch": mock_branch, "dcline": mock_dcline}
+
 
 
 class TestCalculateACInvCosts(unittest.TestCase):
@@ -73,11 +77,18 @@ class TestCalculateACInvCosts(unittest.TestCase):
 
     def test_calculate_ac_inv_costs(self):
         expected_ac_cost = {
-                            "line_cost": 0 + 3666.67 * 10 * 679.2035515226485 + 1100 * 1500 * 679.2035515226485,
-                            "transformer_cost": 5500000 + 42500000,
+                            "line_cost": (679.2035515226485 * (1 + 2.25)/2.0) * (0 + 3666.67 * 10 + 1500 * 1100), # (miles * (reg_mult1 + reg_cost2)/2 ) * (basecost * rateA)
+                            "transformer_cost": 5500000 + 42500000, #(HVDCTerminalcost + HVDCcost)
                             }
         ac_cost = _calculate_ac_inv_costs(self.grid, "2025")
         self._check_expected_values(ac_cost, expected_ac_cost)
 
+class TestCalculateDCInvCosts(unittest.TestCase):
+    def setUp(self):
+        self.grid = MockGrid(grid_attrs)
+        #self.expected_keys = {"line_cost", "transformer_cost"}
 
-# def test_investment_costs():
+    def test_calculate_dc_inv_costs(self):
+        expected_dc_cost = 10 * 679.2035515226485 * 457.1428571 + 550000000
+        dc_cost = _calculate_dc_inv_costs(self.grid, "2025")
+        self.assertAlmostEqual(dc_cost, expected_dc_cost, places=2, msg="Did not get expected value for dc_cost.")
