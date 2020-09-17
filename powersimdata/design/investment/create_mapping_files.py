@@ -148,6 +148,7 @@ def points_to_polys(df, name, DIR, shpfile, crs="EPSG:4326",search_dist=0.04):
     :param str shpfile: name of shapefile containing a collection Polygon/Multipolygon shapes with region IDs.
     :param str crs: coordinate reference system
     :param float/int search_dist: distance to search from point for nearest polygon.
+    :raises ValueError: if some points are dropped because too far away from polys.
     :return: (*geopandas.GeoDataFrame*) --  columns: index id, (point) geometry, [region, other properties of region]
     '''
     polys = gpd.read_file(os.path.join(DIR, shpfile))
@@ -159,13 +160,19 @@ def points_to_polys(df, name, DIR, shpfile, crs="EPSG:4326",search_dist=0.04):
         polys = polys.to_crs(crs)
 
     # load buses into Points geodataframe
-    pts = gpd.GeoDataFrame(pd.DataFrame({name + '_id': df.index}),
+    id_name = name + '_id'
+    pts = gpd.GeoDataFrame(pd.DataFrame({id_name: df.index}),
                            geometry=gpd.points_from_xy(df.lon, df.lat), crs=crs)
 
     # find which ReEDS region the points belong to
     # (within the region or as close as possible, if in the ocean or something)
     pts_poly = sjoin_nearest(left_df=pts, right_df=polys, search_dist=search_dist)
     pts_poly = pts_poly.drop("index_right", axis=1)
+
+    if len(pts) > len(pts_poly):
+        dropped = pts[~pts[id_name].isin(pts_poly[id_name])][id_name].to_list()
+        raise ValueError("Some points dropped because could not be mapped to regions. Check your lat/lon values to be sure it's in the US. Or increase search_dist if close. Problem ids: " + str(dropped))
+
     return pts_poly
 
 def plant_to_ReEDS_reg(df, DIR):
@@ -190,6 +197,7 @@ def plant_to_ReEDS_reg(df, DIR):
     # map rs (wind region) to rb (ba region)
     pts_poly = pts_poly.merge(region_map, left_on='id', right_on='rs', how='left')
     pts_poly = pd.DataFrame(pts_poly).drop(["geometry","id"], axis=1)
+    pts_poly.set_index("plant_id", inplace=True)
 
     return pts_poly
 
@@ -215,6 +223,7 @@ def bus_to_NEEM_reg(df, DIR):
 
     pts_poly = pd.DataFrame(pts_poly).drop(["geometry","name", "shape_area", "shape_leng"],
                                            axis=1)
+    pts_poly.set_index("bus_id",inplace=True)
     return pts_poly
 
 
