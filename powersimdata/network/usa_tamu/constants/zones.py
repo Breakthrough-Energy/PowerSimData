@@ -370,3 +370,13 @@ for k, v in interconnect2state.items():
         state2interconnect[s] = k
 
 loadzone = set(loadzone2interconnect.keys())
+
+interconnect2timezone = {
+    "USA": "ETC/GMT+6",
+    "Eastern": "ETC/GMT+5",
+    "Texas": "ETC/GMT+6",
+    "Western": "ETC/GMT+8",
+    "Texas_Western": "ETC/GMT+7",
+    "Texas_Eastern": "ETC/GMT+5",
+    "Eastern_Western": "ETC/GMT+6",
+}
