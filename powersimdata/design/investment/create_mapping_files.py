@@ -7,16 +7,17 @@ import geopandas as gpd
 
 from powersimdata.input.grid import Grid
 
-def sjoin_nearest(left_df, right_df, op='intersects', search_dist=0.06, report_dist=False,
+def sjoin_nearest(left_df, right_df, search_dist=0.06, report_dist=False,
                   lsuffix='left', rsuffix='right'):
     """
     Perform a spatial join between two input layers.
     If a geometry in left_df falls outside (all) geometries in right_df, the data from nearest Polygon will be used as a result.
-    To make queries faster, "search_dist" -parameter (specified in map units) can be used to limit the search area for geometries around source points.
-    If report_dist == True, the distance for closest geometry will be reported in a column called `dist`. If geometries intersect, the distance will be 0.
+    To make queries faster, change "search_dist."
     :param geopandas.GeoDataFrame left_df: A dataframe of Points.
     :param geopandas.GeoDataFrame right_df: A dataframe of Polygons/Multipolygons
-    :return: geopandas.GeoDataFrame result -- A dataframe of Points mapped to each polygon in right_df
+    :param float/int search_dist: parameter (specified in map units) can be used to limit the search area for geometries around source points. Can make query faster.
+    :param boolean report_dist: if True, the distance for closest geometry will be reported in a column called `dist`. If geometries intersect, the distance will be 0.
+    :return: (*geopandas.GeoDataFrame*) -- A dataframe of Points mapped to each polygon in right_df.
     """
 
     # Explode possible MultiGeometries
@@ -40,7 +41,7 @@ def sjoin_nearest(left_df, right_df, op='intersects', search_dist=0.06, report_d
 
     # Make spatial join between points that fall inside the Polygons
     if geoms_intersecting_polygons.shape[0] > 0:
-        pip_join = gpd.sjoin(left_df=geoms_intersecting_polygons, right_df=right_df, op=op)
+        pip_join = gpd.sjoin(left_df=geoms_intersecting_polygons, right_df=right_df, op='intersects')
 
         if report_dist:
             pip_join['dist'] = 0
@@ -127,20 +128,27 @@ def sjoin_nearest(left_df, right_df, op='intersects', search_dist=0.06, report_d
 
 def make_dir(filename):
     '''
-    check if directory already exists where trying to write file,
-    if no, create it.
+    Check if directory already exists where trying to write file, if no, create it.
+    :param str filename: filename to create base directory for.
     '''
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
 
-def points_to_polys(df, name, DIR, shpfile, crs="EPSG:4326",search_dist=0.04):
-    '''
 
+def points_to_polys(df, name, data_dir, shpfile, crs="EPSG:4326", search_dist=0.04):
+    '''Given a dataframe which includes 'lat' and 'lon' columns, and a shapefile of Polygons/Multipolygon regions, map df.index to closest regions.
+
+    :param pandas.DataFrame df: includes an index, and 'lat' and 'lon' columns.
+    :param str name: what to name the id (bus, plant, substation, etc)
+    :param str data_dir: Data directory
+    :param str shpfile: name of shapefile containing a collection Polygon/Multipolygon shapes with region IDs.
+    :param str crs: coordinate reference system
+    :param float/int search_dist: distance to search from point for nearest polygon.
+    :return: (*geopandas.GeoDataFrame*) --  columns: index id, (point) geometry, [region, other properties of region]
     '''
     polys = gpd.read_file(os.path.join(DIR, shpfile))
 
     # If no assigned crs, assign it. If it has another crs assigned, convert it.
-    crs = "EPSG:4326"
     if polys.crs is None:
         polys.crs = crs
     elif polys.crs != crs:
@@ -163,8 +171,14 @@ def points_to_polys(df, name, DIR, shpfile, crs="EPSG:4326",search_dist=0.04):
     return pts_poly
 
 def plant_to_ReEDS_reg(df, DIR):
-    """
+    """Given a dataframe of plants, return a dataframe of plant_id's with associated ReEDS regions (wind resource regions (rs) and BA regions (rb)).
+    Used to map regional generation investment cost multipliers.
+    region_map.csv is from: "/bokehpivot/in/reeds2/region_map.csv".
+    rs/rs.shp is created with :py:func:`write_poly_shapefile`.
 
+    :param pandas.DataFrame df: grid.plant instance.
+    :param str DIR: Data directory
+    :return: (*pandas.DataFrame*) -- plant_id map. columns: plant_id, rs, rb
     """
     # load polygons for ReEDS BAs
     # warning that these polygons are rough and not very detailed - meant for illustrative purposes. Might be worth it later to revisit and try to fine-tune this
@@ -173,7 +187,7 @@ def plant_to_ReEDS_reg(df, DIR):
     pts_poly = points_to_polys(df, "plant", DIR, shpfile='rs/rs.shp', search_dist=0.2)
 
     # load in rs to rb region mapping file
-    region_map = pd.read_csv(os.path.join(DIR, 'region_map.csv'))
+    region_map = pd.read_csv(os.path.join(DIR, 'mapping/region_map.csv'))
 
     # map rs (wind region) to rb (ba region)
     pts_poly = pts_poly.merge(region_map, left_on='id', right_on='rs', how='left')
@@ -183,10 +197,18 @@ def plant_to_ReEDS_reg(df, DIR):
     return pts_poly
 
 def bus_to_NEEM_reg(df, DIR):
-    '''
-    Warning, this function takes several hours to run. I've cut down time from the original NEEM shapefile by simplifying the shapes using 1 km distance (Douglas-Peucker) method in QGIS.
-    Should only need to run once for all buses.
-    '''
+    """Given a dataframe of buses, return a dataframe of bus_id's with associated NEEM region, lat, and lon of bus.
+    Used to map regional transmission investment cost multipliers.
+    Shapefile used to map is 'NEEM/NEEMregions.shp' which is pulled from Energy Zones Mapping Tool at http://ezmt.anl.gov. This map is overly \
+    detailed, so I simplified the shapes using 1 km distance (Douglas-Peucker) method in QGIS.
+
+
+    :param pandas.DataFrame df: grid.bus instance.
+    :param str DIR: Data directory
+    :return: (*pandas.DataFrame*) -- bus_id map. columns: bus_id, lat, lon, name_abbr (NEEM region)
+
+    Note: mapping may take a while, especially for many points.
+    """
 
     pts_poly = points_to_polys(df, "bus", DIR, shpfile='NEEM/NEEMregions.shp')
 
@@ -203,10 +225,12 @@ def bus_to_NEEM_reg(df, DIR):
 def write_bus_NEEM_map():
     '''
     Maps the bus locations from the base USA grid to NEEM regions.
-    Writes out csv with bus numbers, associated NEEM region
-    shapefile used to map is 'NEEM/NEEMregions.shp' which is pulled from 
+    Writes out csv with bus numbers, associated NEEM region, and lat/lon of bus (to check if consistent with bus location in _calculate_ac_inv_costs).
+    Shapefile used to map is 'NEEM/NEEMregions.shp' which is pulled from Energy Zones Mapping Tool at http://ezmt.anl.gov. This map is overly \
+    detailed, so I simplified the shapes using 1 km distance (Douglas-Peucker) method in QGIS.
 
-    Note: This code takes a few hours to run.
+    Note: This code takes a few hours to run. Should only need to run once for all buses. If there are only a few changed buses, the regional \
+    multiplier code can handle it.
     '''
     DIR = os.path.join(os.path.dirname(__file__), "Data")
     outpath = os.path.join(DIR,"buses_NEEMregion.csv")
@@ -214,7 +238,6 @@ def write_bus_NEEM_map():
     make_dir(outpath)
 
     base_grid = Grid(['USA'])
-
     df_pts_bus = bus_to_NEEM_reg(base_grid.bus, DIR)
     df_pts_bus.to_csv(outpath)
 
