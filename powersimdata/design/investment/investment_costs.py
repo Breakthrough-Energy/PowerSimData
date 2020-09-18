@@ -32,7 +32,6 @@ def calculate_ac_inv_costs(scenario, year):
     # find upgraded AC lines
     grid_new = cp.deepcopy(grid)
     grid_new.branch.rateA = grid.branch.rateA - base_grid.branch.rateA
-    grid_new.branch.x = base_grid.branch.x - grid.branch.x
     grid_new.branch = grid_new.branch[grid_new.branch.rateA != 0.0]
 
     costs = _calculate_ac_inv_costs(grid_new, year)
@@ -98,12 +97,9 @@ def _calculate_ac_inv_costs(grid_new, year):
     )
 
     # separate transformers and lines
-    transformers = branch[
-        branch["branch_device_type"].isin(["Transformer", "TransformerWinding"])
-    ].copy()
-    lines = branch[
-        ~branch["branch_device_type"].isin(["Transformer", "TransformerWinding"])
-    ].copy()
+    t_mask = branch["branch_device_type"].isin(["Transformer", "TransformerWinding"])
+    transformers = branch[t_mask].copy()
+    lines = branch[~t_mask].copy()
 
     lines.loc[:, "kV_cost"] = lines.apply(lambda x: select_kv(x, ac_cost), axis=1)
     lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
@@ -280,7 +276,6 @@ def calculate_gen_inv_costs(scenario, year, cost_case):
 
     # Find change in generation capacity
     grid_new = cp.deepcopy(grid.plant)
-    grid_new.plant.Pmin = grid.plant.Pmin - base_grid.plant.Pmin
     grid_new.plant.Pmax = grid.plant.Pmax - base_grid.plant.Pmax
 
     # Drop small changes
