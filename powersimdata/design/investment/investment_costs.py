@@ -108,7 +108,7 @@ def _calculate_ac_inv_costs(grid_new, year):
     lines.loc[:, "kV_cost"] = lines.apply(lambda x: select_kv(x, ac_cost), axis=1)
     lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
 
-    # multiply by regional multiplier, add in when script finishes running.
+    # multiply by regional multiplier
     bus_reg = pd.read_csv(
         os.path.join(data_dir, "buses_NEEMregion.csv"), index_col="bus_id"
     )
@@ -221,7 +221,7 @@ def _calculate_dc_inv_costs(grid_new, year):
     dc_cost = pd.read_csv(os.path.join(data_dir, "HVDC.csv"))  # .astype('float64')
     dc_term_cost = pd.read_csv(
         os.path.join(data_dir, "HVDCTerminal.csv")
-    )  # .astype('float64')
+    )
 
     bus = grid_new.bus
     dcline = grid_new.dcline

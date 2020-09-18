@@ -25,7 +25,7 @@ def sjoin_nearest(
     :param geopandas.GeoDataFrame right_df: A dataframe of Polygons/Multipolygons
     :param float/int search_dist: parameter (specified in map units) can be used to limit the search area for geometries around source points. Can make query faster.
     :param boolean report_dist: if True, the distance for closest geometry will be reported in a column called `dist`. If geometries intersect, the distance will be 0.
-    :return: *geopandas.GeoDataFrame* result -- A dataframe of Points mapped to each polygon in right_df.
+    :return: (*geopandas.GeoDataFrame*) result -- A dataframe of Points mapped to each polygon in right_df.
     """
 
     # Explode possible MultiGeometries
