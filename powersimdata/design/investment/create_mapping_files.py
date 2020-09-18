@@ -1,4 +1,3 @@
-import errno
 import os
 
 import fiona
@@ -158,12 +157,7 @@ def make_dir(filename):
     :param str filename: filename to create base directory for.
     """
     if not os.path.exists(os.path.dirname(filename)):
-        try:
             os.makedirs(os.path.dirname(filename))
-        except OSError as exc:  # Guard against race condition
-            if exc.errno != errno.EEXIST:
-                raise
-
 
 def points_to_polys(df, name, data_dir, shpfile, crs="EPSG:4326", search_dist=0.04):
     """Given a dataframe which includes 'lat' and 'lon' columns, and a shapefile of Polygons/Multipolygon regions, map df.index to closest regions.
