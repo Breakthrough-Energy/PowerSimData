@@ -42,7 +42,7 @@ def _calculate_ac_inv_costs(grid_new, year):
     """Given a grid, calculate the total cost of building that grid's
     lines and transformers.
     This function is separate from calculate_ac_inv_costs() for testing purposes.
-    Currently ignores TransformerWinding.
+    Currently counts Transformer and TransformerWinding as transformers.
     Currently uses NEEM regions to find regional multipliers.
     Currently ignores financials, but all values are in 2010 $-year.
 

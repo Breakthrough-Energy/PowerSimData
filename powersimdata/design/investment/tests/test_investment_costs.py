@@ -85,8 +85,8 @@ class TestCalculateACInvCosts(unittest.TestCase):
             "line_cost": (679.2035515226485 * (1 + 2.25) / 2.0)
             * (
                 0 + 3666.67 * 10 + 1500 * 1100
-            ),  # (miles * (reg_mult1 + reg_cost2)/2 ) * (basecost * rateA)
-            "transformer_cost": 5500000 + 42500000,  # (HVDCTerminalcost + HVDCcost)
+            ),  # (miles * (reg_mult1 + reg_mult2)/2 ) * (basecost * rateA)
+            "transformer_cost": 5500000 + 42500000,
         }
         ac_cost = _calculate_ac_inv_costs(self.grid, "2025")
         self._check_expected_values(ac_cost, expected_ac_cost)
@@ -95,7 +95,6 @@ class TestCalculateACInvCosts(unittest.TestCase):
 class TestCalculateDCInvCosts(unittest.TestCase):
     def setUp(self):
         self.grid = MockGrid(grid_attrs)
-        # self.expected_keys = {"line_cost", "transformer_cost"}
 
     def test_calculate_dc_inv_costs(self):
         expected_dc_cost = 10 * 679.2035515226485 * 457.1428571 + 550000000
