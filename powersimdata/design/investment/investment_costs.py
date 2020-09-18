@@ -68,7 +68,7 @@ def _calculate_ac_inv_costs(grid_new, year):
         :return: (*pandas.core.series.Series*) -- series of ['MW', 'costMWmi'] to be assigned to given branch
         """
 
-        # select corresponding cost table of delected kV
+        # select corresponding cost table of selected kV
         tmp = cost_df[cost_df["kV_cost"] == x.kV_cost]
         # get rid of NaN values in this kV table
         tmp = tmp[~tmp["MW"].isna()]
@@ -173,7 +173,6 @@ def _calculate_ac_inv_costs(grid_new, year):
 
 def calculate_dc_inv_costs(scenario, year):
     """Given a Scenario object, calculate the total cost of that grid's dc line investment.
-    This function is separate from calculate_dc_inv_costs() for testing purposes.
     Currently ignores financials, but all values are in 2015 $-year.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.

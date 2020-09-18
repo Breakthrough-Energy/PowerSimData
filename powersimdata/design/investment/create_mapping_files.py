@@ -166,10 +166,10 @@ def make_dir(filename):
 
 
 def points_to_polys(df, name, data_dir, shpfile, crs="EPSG:4326", search_dist=0.04):
-    """Given a dataframe of lat/lon's, and a shapefile of Polygons/Multipolygon regions, map df.index to closest regions.
+    """Given a dataframe which includes 'lat' and 'lon' columns, and a shapefile of Polygons/Multipolygon regions, map df.index to closest regions.
 
-    :param pandas.DataFrame df: grid.plant instance.
-    :param str name: what to name the id (bus or plant here)
+    :param pandas.DataFrame df: includes an index, and 'lat' and 'lon' columns.
+    :param str name: what to name the id (bus, plant, substation, etc)
     :param str data_dir: Data directory
     :param str shpfile: name of shapefile containing a collection Polygon/Multipolygon shapes with region IDs.
     :param str crs: coordinate reference system
