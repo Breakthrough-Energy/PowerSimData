@@ -1,1 +1,1 @@
-__all__ = ["test_clean_capacity_scaling"]
+__all__ = ["test_clean_capacity_scaling", "test_cost_curves"]
