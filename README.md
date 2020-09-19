@@ -507,12 +507,12 @@ By default, the above function plots the created supply curve (plotting can be s
 including `plot=False` in `build_supply_curve`). `P` and `F`, the supply curve capacity and 
 bid quantities, respecitively, are also returned.
 
-#### II. Comparing Supply Curve
+#### II. Comparing Supply Curves
 
 When updating generator cost curve information, it can be useful to see the corresponding 
 effect on the supply curve for a particular area and fuel type pair. Instead of only 
 performing a visual inspection between the original and new supply curves, the maximum 
-price difference between the two supply curve can be calculated. This metric, which is 
+price difference between the two supply curves can be calculated. This metric, which is 
 similar to the Kolmogorov-Smirnov test, serves as a goodness-of-fit test between the two 
 supply curves, where a lower score is desired. This metric can be calculated as follows:
 
@@ -521,31 +521,34 @@ max_diff = powersimdata.design.generation.cost_curves.KS_test(P1, F1, P2, F2)
 ```
 where `P1` and `P2` are lists containing supply curve capacity data and `F1` and `F2` are 
 lists containing corresponding supply curve price data. These lists can be created using 
-`build_supply_curve` or can be created manually. It should be noted that the two supply 
-curves must offer the same amount of capacity (*e.g.*, `max(P1) = max(P2)`). By default, the 
-above function plots the two supply curves overlaid on a single plot (plotting can be 
-suppressed by including `plot=False` in `KS_test`).
+`build_supply_curve` or can be created manually. 
+
+It should be noted that the two supply curves must offer the same amount of capacity 
+*e.g.*, `max(P1) = max(P2)`). By default, the above function plots the two supply curves 
+overlaid on a single plot (plotting can be suppressed by including `plot=False` in `KS_test`).
 
 #### III. Comparing Cost Curve Parameters
 
 When designing generator cost curves, it can be instructive to visually compare the quadratic 
-cost curve parameters for generators in a particular area and fuel type pair. The c2 and c1 
-parameters for a given area and fuel type can be compared in a plot as follows:
+cost curve parameters for generators in a particular area and fuel type pair. The c1 and c2 
+parameters for a given area and fuel type can be compared in a plot using the following:
 
 ```
 powersimdata.design.generation.cost_curves.plot_c1_vs_c2(supply_df, area, type)
 ```
 where `supply_df` is the DataFrame output from `get_supply_data`, `area` is a string 
 describing an appropriate interconnect or load zone, and `type` is a string describing an 
-appropriate fuel type. This function also has a zoom capability (enabled by including 
-`zoom=True` in `plot_c1_vs_c2`) that filters out c2 outliers to enable better visualization.
+appropriate fuel type. 
+
+This function also has a zoom capability (enabled by including `zoom=True` in `plot_c1_vs_c2`) 
+that filters out c2 outliers to enable better visualization.
 
 #### IV. Comparing Generator Capacity and Price
 
 When designing generator cost curves, it can be useful to visually compare the capacity and 
 price parameters for each generator in a specified area and fuel type pair. The generator 
-capacity and price parameters for a given area and fuel type can be compared in a plot as 
-follows:
+capacity and price parameters for a given area and fuel type can be compared in a plot using 
+the following:
 
 ```
 powersimdata.design.generation.cost_curves.plot_capacity_vs_price(supply_df, area, type)
