@@ -11,4 +11,4 @@ tqdm==4.29.1
 geopandas~=0.8.1
 fiona~=1.8.14
 psycopg2~=2.8.5
-
+pygeos==0.8
