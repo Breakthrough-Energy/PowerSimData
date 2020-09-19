@@ -8,8 +8,7 @@ pytest==5.4.3
 scipy==1.4.1
 shapely==1.7.1
 tqdm==4.29.1
-setuptools~=46.4.0
 geopandas~=0.8.1
 fiona~=1.8.14
 psycopg2~=2.8.5
-
+pygeos==0.8
