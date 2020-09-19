@@ -1,9 +1,9 @@
 import os
 
-import fiona
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Polygon, mapping
+import fiona
 
 from powersimdata.input.grid import Grid
 
