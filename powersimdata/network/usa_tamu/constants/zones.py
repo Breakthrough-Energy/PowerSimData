@@ -1,5 +1,9 @@
+# Define combinations of interconnects
+interconnect_combinations = {"USA", "Texas_Western"}
+
+
 # Map load zone id to state abbreviations
-id2state = {
+id2abv = {
     1: "ME",
     2: "NH",
     3: "VT",
@@ -78,7 +82,8 @@ id2state = {
     308: "TX",
 }
 
-# Map state abbreviations to state
+
+# Map state abbreviations to state name
 abv2state = {
     "AK": "Alaska",
     "AL": "Alabama",
@@ -132,10 +137,12 @@ abv2state = {
     "WY": "Wyoming",
 }
 
+
 # Map state name to state abbreviations
 state2abv = {value: key for key, value in abv2state.items()}
 
-# Map state to load zone name
+
+# Map state name to load zone name
 state2loadzone = {
     "Washington": {"Washington"},
     "Oregon": {"Oregon"},
@@ -210,11 +217,14 @@ abv2loadzone = {
     state2abv[state]: loadzone for state, loadzone in state2loadzone.items()
 }
 
-# Map load zone name to state
+
+# Map load zone name to state name
 loadzone2state = {}
 for state, zone_set in state2loadzone.items():
     loadzone2state.update({zone: state for zone in zone_set})
 
+
+# Map interconnect name to load zone name
 interconnect2loadzone = {
     "Texas": {
         "Far West",
@@ -299,20 +309,28 @@ interconnect2loadzone = {
         "Montana Eastern",
     },
 }
-
-# Map loadzone name to interconnect
-loadzone2interconnect = {}
-for interconnect, zone_set in interconnect2loadzone.items():
-    loadzone2interconnect.update({zone: interconnect for zone in zone_set})
-
+interconnect2loadzone["Texas_Western"] = (
+    interconnect2loadzone["Texas"] | interconnect2loadzone["Western"]
+)
 interconnect2loadzone["USA"] = (
     interconnect2loadzone["Eastern"]
     | interconnect2loadzone["Western"]
     | interconnect2loadzone["Texas"]
 )
 
-interconnect2state = {
-    "Eastern": [
+
+# Map load zone name to interconnect name
+loadzone2interconnect = {
+    zone: interconnect
+    for interconnect, zone_set in interconnect2loadzone.items()
+    for zone in zone_set
+    if interconnect not in interconnect_combinations
+}
+
+
+# Map interconnect name to state abbreviations
+interconnect2abv = {
+    "Eastern": {
         "ME",
         "NH",
         "VT",
@@ -349,28 +367,44 @@ interconnect2state = {
         "NE",
         "SD",
         "ND",
-    ],
-    "Texas": ["TX"],
-    "Western": ["WA", "OR", "CA", "NV", "AZ", "UT", "NM", "CO", "WY", "ID", "MT"],
+    },
+    "Texas": {"TX"},
+    "Western": {"WA", "OR", "CA", "NV", "AZ", "UT", "NM", "CO", "WY", "ID", "MT"},
 }
-interconnect2state["USA"] = (
-    interconnect2state["Eastern"]
-    + interconnect2state["Western"]
-    + interconnect2state["Texas"]
+interconnect2abv["USA"] = (
+    interconnect2abv["Eastern"]
+    | interconnect2abv["Western"]
+    | interconnect2abv["Texas"]
 )
-interconnect2state["Texas_Western"] = (
-    interconnect2state["Texas"] + interconnect2state["Western"]
+interconnect2abv["Texas_Western"] = (
+    interconnect2abv["Texas"] | interconnect2abv["Western"]
 )
 
-state2interconnect = {}
-for k, v in interconnect2state.items():
-    if k in ("USA", "Texas_Western"):
+
+# Map state abbreviations to interconnect name
+abv2interconnect = {}
+for k, v in interconnect2abv.items():
+    if k in interconnect_combinations:
         continue
     for s in v:
-        state2interconnect[s] = k
+        abv2interconnect[s] = k
 
+# List of interconnect name
+interconnect = set(interconnect2abv.keys())
+
+
+# List of state name
+state = set(state2abv.keys())
+
+
+# List of state abbreviations
+abv = set(abv2state.keys())
+
+
+# List of load zone name
 loadzone = set(loadzone2interconnect.keys())
 
+# Map interconnect name to time zone
 interconnect2timezone = {
     "USA": "ETC/GMT+6",
     "Eastern": "ETC/GMT+5",
