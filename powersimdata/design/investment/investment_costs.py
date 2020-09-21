@@ -214,9 +214,7 @@ def _calculate_dc_inv_costs(grid_new, year):
 
     # import data
     dc_cost = pd.read_csv(os.path.join(data_dir, "HVDC.csv"))  # .astype('float64')
-    dc_term_cost = pd.read_csv(
-        os.path.join(data_dir, "HVDCTerminal.csv")
-    )
+    dc_term_cost = pd.read_csv(os.path.join(data_dir, "HVDCTerminal.csv"))
 
     bus = grid_new.bus
     dcline = grid_new.dcline
