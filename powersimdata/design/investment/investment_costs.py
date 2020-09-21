@@ -4,6 +4,12 @@ import os
 import numpy as np
 import pandas as pd
 
+from powersimdata.design.investment.const import (
+    ac_line_cost,
+    hvdc_line_cost,
+    hvdc_terminal_cost,
+    transformer_cost,
+)
 from powersimdata.design.investment.create_mapping_files import (
     bus_to_neem_reg,
     plant_to_reeds_reg,
@@ -61,7 +67,7 @@ def _calculate_ac_inv_costs(grid_new, year):
         :param pandas.core.frame.DataFrame cost_df: DataFrame with kV, MW, cost columns.
         :return: (*numpy.int64*) -- kV_cost (closest kV) to be assigned to given branch.
         """
-        return cost_df.loc[np.argmin(np.abs(cost_df["kV_cost"] - x.kV)), "kV_cost"]
+        return cost_df.loc[np.argmin(np.abs(cost_df["kV"] - x.kV)), "kV"]
 
     def select_mw(x, cost_df):
         """Given a single branch, determine the closest kV/MW combination and return
@@ -74,7 +80,7 @@ def _calculate_ac_inv_costs(grid_new, year):
         """
 
         # select corresponding cost table of selected kV
-        tmp = cost_df[cost_df["kV_cost"] == x.kV_cost]
+        tmp = cost_df[cost_df["kV"] == x.kV]
         # get rid of NaN values in this kV table
         tmp = tmp[~tmp["MW"].isna()]
         # find closest MW & corresponding cost
@@ -90,9 +96,9 @@ def _calculate_ac_inv_costs(grid_new, year):
     data_dir = os.path.join(os.path.dirname(__file__), "Data")
 
     # import data
-    ac_cost = pd.read_csv(os.path.join(data_dir, "LineBase.csv"))
+    ac_cost = pd.DataFrame(ac_line_cost)
     ac_reg_mult = pd.read_csv(os.path.join(data_dir, "LineRegMult.csv"))
-    xfmr_cost = pd.read_csv(os.path.join(data_dir, "Transformers.csv"))
+    xfmr_cost = pd.DataFrame(transformer_cost)
 
     # map line kV
     bus = grid_new.bus
@@ -106,7 +112,7 @@ def _calculate_ac_inv_costs(grid_new, year):
     transformers = branch[t_mask].copy()
     lines = branch[~t_mask].copy()
 
-    lines.loc[:, "kV_cost"] = lines.apply(lambda x: select_kv(x, ac_cost), axis=1)
+    lines.loc[:, "kV"] = lines.apply(lambda x: select_kv(x, ac_cost), axis=1)
     lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
 
     # multiply by regional multiplier
@@ -139,15 +145,15 @@ def _calculate_ac_inv_costs(grid_new, year):
 
     # map region multipliers onto lines
     ac_reg_mult = ac_reg_mult.melt(
-        id_vars=["kV_cost", "MW"], var_name="name_abbr", value_name="mult"
+        id_vars=["kV", "MW"], var_name="name_abbr", value_name="mult"
     )
 
     lines = lines.merge(bus_reg, left_on="to_bus_id", right_on="bus_id", how="inner")
-    lines = lines.merge(ac_reg_mult, on=["name_abbr", "kV_cost", "MW"], how="left")
+    lines = lines.merge(ac_reg_mult, on=["name_abbr", "kV", "MW"], how="left")
     lines.rename(columns={"name_abbr": "reg_to", "mult": "mult_to"}, inplace=True)
 
     lines = lines.merge(bus_reg, left_on="from_bus_id", right_on="bus_id", how="inner")
-    lines = lines.merge(ac_reg_mult, on=["name_abbr", "kV_cost", "MW"], how="left")
+    lines = lines.merge(ac_reg_mult, on=["name_abbr", "kV", "MW"], how="left")
     lines.rename(columns={"name_abbr": "reg_from", "mult": "mult_from"}, inplace=True)
 
     # take average between 2 buses' region multipliers
@@ -166,10 +172,10 @@ def _calculate_ac_inv_costs(grid_new, year):
     lines_sum = float(lines.Cost.sum())
 
     # calculate transformer costs
-    transformers.loc[:, "kV_cost"] = transformers.apply(
+    transformers.loc[:, "kV"] = transformers.apply(
         lambda x: select_kv(x, xfmr_cost), axis=1
     )
-    transformers = transformers.merge(xfmr_cost, on="kV_cost", how="left")
+    transformers = transformers.merge(xfmr_cost, on="kV", how="left")
 
     # sum of all transformer costs
     transformers_sum = float(transformers.Cost.sum())
@@ -219,12 +225,6 @@ def _calculate_dc_inv_costs(grid_new, year):
     else:
         raise TypeError("year must be int or str.")
 
-    data_dir = os.path.join(os.path.dirname(__file__), "Data")
-
-    # import data
-    dc_cost = pd.read_csv(os.path.join(data_dir, "HVDC.csv"))  # .astype('float64')
-    dc_term_cost = pd.read_csv(os.path.join(data_dir, "HVDCTerminal.csv"))
-
     bus = grid_new.bus
     dcline = grid_new.dcline
 
@@ -250,13 +250,13 @@ def _calculate_dc_inv_costs(grid_new, year):
         dcline["MWmi"] = dcline["lengthMi"] * dcline["Pmax"]
 
         # Find $/MW-mi cost
-        dcline.loc[:, "costMWmi"] = dc_cost["costMWmi"][0]
+        dcline.loc[:, "costMWmi"] = hvdc_line_cost["costMWmi"]
 
         # Find base cost (excluding terminal cost)
         dcline["Cost"] = dcline["MWmi"] * dcline["costMWmi"]
 
         # Add extra terminal cost for dc
-        dcline["Cost"] += dc_term_cost["costTerm"][0]
+        dcline["Cost"] += hvdc_terminal_cost
         # Find sum of costs over all dclines
         costs = dcline["Cost"].sum()
     else:
