@@ -1,11 +1,13 @@
 import copy as cp
-import os
 
 import numpy as np
 import pandas as pd
 
 from powersimdata.design.investment.const import (
     ac_line_cost,
+    ac_reg_mult_path,
+    bus_regions_path,
+    gen_inv_cost_path,
     hvdc_line_cost,
     hvdc_terminal_cost,
     transformer_cost,
@@ -92,11 +94,9 @@ def _calculate_ac_inv_costs(grid_new, year):
     else:
         raise TypeError("year must be int or str.")
 
-    data_dir = os.path.join(os.path.dirname(__file__), "Data")
-
     # import data
     ac_cost = pd.DataFrame(ac_line_cost)
-    ac_reg_mult = pd.read_csv(os.path.join(data_dir, "LineRegMult.csv"))
+    ac_reg_mult = pd.read_csv(ac_reg_mult_path)
     xfmr_cost = pd.DataFrame(transformer_cost)
 
     # map line kV
@@ -115,9 +115,7 @@ def _calculate_ac_inv_costs(grid_new, year):
     lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
 
     # multiply by regional multiplier
-    bus_reg = pd.read_csv(
-        os.path.join(data_dir, "buses_NEEMregion.csv"), index_col="bus_id"
-    )
+    bus_reg = pd.read_csv(bus_regions_path, index_col="bus_id")
 
     # check that all buses included in this file and lat/long values match,
     #   otherwise re-run mapping script on mis-matching buses.
@@ -135,7 +133,7 @@ def _calculate_ac_inv_costs(grid_new, year):
     ].index
     bus_fix_index_all = bus_fix_index.tolist() + bus_fix_index2.tolist()
     bus_fix = bus[bus.index.isin(bus_fix_index_all)]
-    bus_fix = bus_to_neem_reg(bus_fix, data_dir)  # converts index to bus_id instead
+    bus_fix = bus_to_neem_reg(bus_fix)  # converts index to bus_id instead
 
     bus_reg.loc[
         bus_reg.index.isin(bus_fix.index), ["name_abbr", "lat", "lon"]
@@ -316,7 +314,7 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
     :return: (*pandas.DataFrame*) -- Total generation investment cost summed by technology (in $2018).
     """
 
-    def load_cost(file_name, year, cost_case, data_dir):
+    def load_cost(year, cost_case):
         """
         Load in base costs from NREL's 2020 ATB for generation technologies (CAPEX).
             Can be adapted in the future for FOM, VOM, & CAPEX.
@@ -324,19 +322,14 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
         Therefore, currently uses default financials, but will want to create custom
             financial functions in the future.
 
-        :param str file_name: name of file with ATB data to read in
         :param int/str year: year of cost projections.
         :param str cost_case: the ATB cost case of data:
             'Moderate': mid cost case,
             'Conservative': generally higher costs,
             'Advanced': generally lower costs
-        :param str data_dir: the Data directory.
         :return: (*pandas.DataFrame*) -- Cost by technology/subtype (in $2018).
         """
-        pre = "2020-ATB-Summary"
-        if file_name != "":
-            pre = pre + "_"
-        cost = pd.read_csv(os.path.join(data_dir, pre + file_name + ".csv"))
+        cost = pd.read_csv(gen_inv_cost_path)
         cost = cost.dropna(axis=0, how="all")
 
         # drop non-useful columns
@@ -382,8 +375,6 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
     else:
         raise TypeError("cost_case must be str.")
 
-    data_dir = os.path.join(os.path.dirname(__file__), "Data")
-
     plants = grid_new.plant
     plants = plants[
         ~plants.type.isin(["dfo", "other"])
@@ -392,7 +383,7 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
     # BASE TECHNOLOGY COST
 
     # load in investment costs $/MW
-    gen_costs = load_cost("CAPEX", year, cost_case, data_dir)
+    gen_costs = load_cost(year, cost_case)
     # keep only certain (arbutrary) subclasses for now
     gen_costs = gen_costs[
         gen_costs["TechDetail"].isin(
@@ -446,7 +437,7 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
     # REGIONAL COST MULTIPLIER
 
     # Find ReEDS regions of plants (for regional cost multipliers)
-    pts_plant = plant_to_reeds_reg(plants, data_dir)
+    pts_plant = plant_to_reeds_reg(plants)
     plants = plants.merge(pts_plant, left_index=True, right_on="plant_id", how="left")
 
     # keep region 'r' as wind region 'rs' if tech is wind, 'rb' ba region is tech is solar or battery
