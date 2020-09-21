@@ -30,7 +30,7 @@ transformer_cost = {
     "Cost": [5.5e6, 8.5e6, 22.75e6, 42.5e6],
 }
 
-data_dir = os.path.join(os.path.dirname(__file__), "Data")
+data_dir = os.path.join(os.path.dirname(__file__), "data")
 ac_reg_mult_path = os.path.join(data_dir, "LineRegMult.csv")
 bus_regions_path = os.path.join(data_dir, "buses_NEEMregion.csv")
 gen_inv_cost_path = os.path.join(data_dir, "2020-ATB-Summary_CAPEX.csv")
