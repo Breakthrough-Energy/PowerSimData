@@ -1,4 +1,4 @@
-from powersimdata.network.usa_tamu.constants.zones import id2state
+from powersimdata.network.usa_tamu.constants.zones import id2abv
 
 
 def classify_interstate_intrastate(scenario):
@@ -41,13 +41,13 @@ def _classify_interstate_intrastate(ct, grid):
         except KeyError:
             raise ValueError(f"ct entry not found in branch: {b}")
         try:
-            from_state = id2state[from_zone]
+            from_state = id2abv[from_zone]
         except KeyError:
-            raise ValueError(f"zone not found in id2state: {from_zone}")
+            raise ValueError(f"zone not found in id2abv: {from_zone}")
         try:
-            to_state = id2state[to_zone]
+            to_state = id2abv[to_zone]
         except KeyError:
-            raise ValueError(f"zone not found in id2state: {to_zone}")
+            raise ValueError(f"zone not found in id2abv: {to_zone}")
         if from_state == to_state:
             upgraded_branches["intrastate"].append(b)
         else:
