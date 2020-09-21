@@ -5,6 +5,14 @@ import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Polygon, mapping
 
+from powersimdata.design.investment.const import (
+    bus_regions_path,
+    neem_shapefile_path,
+    reeds_mapping_hierarchy_path,
+    reeds_wind_csv_path,
+    reeds_wind_shapefile_path,
+    reeds_wind_to_ba_path,
+)
 from powersimdata.input.grid import Grid
 
 
@@ -160,19 +168,18 @@ def make_dir(filename):
         os.makedirs(os.path.dirname(filename))
 
 
-def points_to_polys(df, name, data_dir, shpfile, crs="EPSG:4326", search_dist=0.04):
+def points_to_polys(df, name, shpfile, crs="EPSG:4326", search_dist=0.04):
     """Given a dataframe which includes 'lat' and 'lon' columns, and a shapefile of Polygons/Multipolygon regions, map df.index to closest regions.
 
     :param pandas.DataFrame df: includes an index, and 'lat' and 'lon' columns.
     :param str name: what to name the id (bus, plant, substation, etc)
-    :param str data_dir: Data directory
     :param str shpfile: name of shapefile containing a collection Polygon/Multipolygon shapes with region IDs.
     :param str crs: coordinate reference system
     :param float/int search_dist: distance to search from point for nearest polygon.
     :raises ValueError: if some points are dropped because too far away from polys.
     :return: (*geopandas.GeoDataFrame*) --  columns: index id, (point) geometry, [region, other properties of region]
     """
-    polys = gpd.read_file(os.path.join(data_dir, shpfile))
+    polys = gpd.read_file(shpfile)
 
     # If no assigned crs, assign it. If it has another crs assigned, convert it.
     if polys.crs == None:
@@ -203,26 +210,23 @@ def points_to_polys(df, name, data_dir, shpfile, crs="EPSG:4326", search_dist=0.
     return pts_poly
 
 
-def plant_to_reeds_reg(df, data_dir):
+def plant_to_reeds_reg(df):
     """Given a dataframe of plants, return a dataframe of plant_id's with associated ReEDS regions (wind resource regions (rs) and BA regions (rb)).
     Used to map regional generation investment cost multipliers.
     region_map.csv is from: "/bokehpivot/in/reeds2/region_map.csv".
     rs/rs.shp is created with write_poly_shapefile().
 
     :param pandas.DataFrame df: grid.plant instance.
-    :param str data_dir: Data directory
     :return: (*pandas.DataFrame*) -- plant_id map. columns: plant_id, rs, rb
     """
     # load polygons for ReEDS BAs
     # warning that these polygons are rough and not very detailed - meant for illustrative purposes. Might be worth it later to revisit and try to fine-tune this
     # but since the multipliers aren't super strict by region, it's fine for now.
 
-    pts_poly = points_to_polys(
-        df, "plant", data_dir, shpfile="rs/rs.shp", search_dist=0.2
-    )
+    pts_poly = points_to_polys(df, "plant", reeds_wind_shapefile_path, search_dist=0.2)
 
     # load in rs to rb region mapping file
-    region_map = pd.read_csv(os.path.join(data_dir, "mapping/region_map.csv"))
+    region_map = pd.read_csv(reeds_wind_to_ba_path)
 
     # map rs (wind region) to rb (ba region)
     pts_poly = pts_poly.merge(region_map, left_on="id", right_on="rs", how="left")
@@ -232,7 +236,7 @@ def plant_to_reeds_reg(df, data_dir):
     return pts_poly
 
 
-def bus_to_neem_reg(df, data_dir):
+def bus_to_neem_reg(df):
     """Given a dataframe of buses, return a dataframe of bus_id's with associated NEEM region, lat, and lon of bus.
     Used to map regional transmission investment cost multipliers.
     Shapefile used to map is 'NEEM/NEEMregions.shp' which is pulled from Energy Zones Mapping Tool at http://ezmt.anl.gov. This map is overly \
@@ -240,13 +244,12 @@ def bus_to_neem_reg(df, data_dir):
 
 
     :param pandas.DataFrame df: grid.bus instance.
-    :param str data_dir: Data directory
     :return: (*pandas.DataFrame*) -- bus_id map. columns: bus_id, lat, lon, name_abbr (NEEM region)
 
     Note: mapping may take a while, especially for many points.
     """
 
-    pts_poly = points_to_polys(df, "bus", data_dir, shpfile="NEEM/NEEMregions.shp")
+    pts_poly = points_to_polys(df, "bus", neem_shapefile_path)
 
     # save lat/lon for consistency check later in _calculate_ac_inv_costs
     pts_poly["lon"] = pts_poly.geometry.x
@@ -269,14 +272,11 @@ def write_bus_neem_map():
     Note: This code takes a few hours to run. Should only need to run once for all buses. If there are only a few changed buses, the regional \
     multiplier code can handle it.
     """
-    data_dir = os.path.join(os.path.dirname(__file__), "Data")
-    outpath = os.path.join(data_dir, "buses_NEEMregion.csv")
-
-    make_dir(outpath)
+    make_dir(bus_regions_path)
 
     base_grid = Grid(["USA"])
-    df_pts_bus = bus_to_neem_reg(base_grid.bus, data_dir)
-    df_pts_bus.to_csv(outpath)
+    df_pts_bus = bus_to_neem_reg(base_grid.bus)
+    df_pts_bus.to_csv(bus_regions_path)
 
 
 def write_poly_shapefile():
@@ -290,14 +290,13 @@ def write_poly_shapefile():
     Note: These ReEDS wind resource region shapes are approximate. Thus, there are probably some mistakes, but this is \
     currently only used for mapping plant regional multipliers, which are approximate anyway, so it should be fine.
     """
-    data_dir = os.path.join(os.path.dirname(__file__), "Data")
-    filepath = os.path.join(data_dir, "mapping/gis_rs.csv")
-    outpath = os.path.join(data_dir, "rs/rs.shp")
-
+    outpath = reeds_wind_shapefile_path
     make_dir(outpath)
 
-    polys = pd.read_csv(filepath, sep=",", dtype={"id": object, "group": object})
-    hierarchy = pd.read_csv(os.path.join(data_dir, "mapping/hierarchy.csv"))
+    polys = pd.read_csv(
+        reeds_wind_csv_path, sep=",", dtype={"id": object, "group": object}
+    )
+    hierarchy = pd.read_csv(reeds_mapping_hierarchy_path)
     polys = polys.merge(hierarchy, left_on="id", right_on="rs", how="left")
     polys = polys[polys["country"] == "usa"]
 
