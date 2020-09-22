@@ -1,86 +1,9 @@
+import os
+
+import pandas as pd
+
 # Define combinations of interconnects
 interconnect_combinations = {"USA", "Texas_Western"}
-
-
-# Map load zone id to state abbreviations
-id2abv = {
-    1: "ME",
-    2: "NH",
-    3: "VT",
-    4: "MA",
-    5: "RI",
-    6: "CT",
-    7: "NY",
-    8: "NY",
-    9: "NJ",
-    10: "PA",
-    11: "PA",
-    12: "DE",
-    13: "MD",
-    14: "VA",
-    15: "VA",
-    16: "NC",
-    17: "NC",
-    18: "SC",
-    19: "GA",
-    20: "GA",
-    21: "FL",
-    22: "FL",
-    23: "FL",
-    24: "AL",
-    25: "MS",
-    26: "TN",
-    27: "KY",
-    28: "WV",
-    29: "OH",
-    30: "OH",
-    31: "MI",
-    32: "MI",
-    33: "IN",
-    34: "IL",
-    35: "IL",
-    36: "WI",
-    37: "MN",
-    38: "MN",
-    39: "IA",
-    40: "MO",
-    41: "MO",
-    42: "AR",
-    43: "LA",
-    44: "TX",
-    45: "TX",
-    46: "NM",
-    47: "OK",
-    48: "KS",
-    49: "NE",
-    50: "SD",
-    51: "ND",
-    52: "MT",
-    201: "WA",
-    202: "OR",
-    203: "CA",
-    204: "CA",
-    205: "CA",
-    206: "CA",
-    207: "CA",
-    208: "NV",
-    209: "AZ",
-    210: "UT",
-    211: "NM",
-    212: "CO",
-    213: "WY",
-    214: "ID",
-    215: "MT",
-    216: "TX",
-    301: "TX",
-    302: "TX",
-    303: "TX",
-    304: "TX",
-    305: "TX",
-    306: "TX",
-    307: "TX",
-    308: "TX",
-}
 
 
 # Map state abbreviations to state name
@@ -142,75 +65,31 @@ abv2state = {
 state2abv = {value: key for key, value in abv2state.items()}
 
 
+# Map zones to higher-level aggregations using the information in zone.csv
+zone_csv_path = os.path.join(os.path.dirname(__file__), "..", "data", "zone.csv")
+zone_df = pd.read_csv(zone_csv_path, index_col=0)
 # Map state name to load zone name
 state2loadzone = {
-    "Washington": {"Washington"},
-    "Oregon": {"Oregon"},
-    "California": {
-        "Bay Area",
-        "Central California",
-        "Northern California",
-        "Southeast California",
-        "Southwest California",
-    },
-    "Nevada": {"Nevada"},
-    "Arizona": {"Arizona"},
-    "Utah": {"Utah"},
-    "New Mexico": {"New Mexico Eastern", "New Mexico Western"},
-    "Colorado": {"Colorado"},
-    "Wyoming": {"Wyoming"},
-    "Idaho": {"Idaho"},
-    "Montana": {"Montana Eastern", "Montana Western"},
-    "Maine": {"Maine"},
-    "New Hampshire": {"New Hampshire"},
-    "Vermont": {"Vermont"},
-    "Massachusetts": {"Massachusetts"},
-    "Rhode Island": {"Rhode Island"},
-    "Connecticut": {"Connecticut"},
-    "New York": {"New York City", "Upstate New York"},
-    "New Jersey": {"New Jersey"},
-    "Pennsylvania": {"Pennsylvania Eastern", "Pennsylvania Western"},
-    "Delaware": {"Delaware"},
-    "Maryland": {"Maryland"},
-    "Virginia": {"Virginia Mountains", "Virginia Tidewater"},
-    "North Carolina": {"North Carolina", "Western North Carolina"},
-    "South Carolina": {"South Carolina"},
-    "Georgia": {"Georgia North", "Georgia South"},
-    "Florida": {"Florida North", "Florida Panhandle", "Florida South"},
-    "Alabama": {"Alabama"},
-    "Mississippi": {"Mississippi"},
-    "Tennessee": {"Tennessee"},
-    "Kentucky": {"Kentucky"},
-    "West Virginia": {"West Virginia"},
-    "Ohio": {"Ohio Lake Erie", "Ohio River"},
-    "Michigan": {"Michigan Northern", "Michigan Southern"},
-    "Indiana": {"Indiana"},
-    "Illinois": {"Chicago North Illinois", "Illinois Downstate"},
-    "Wisconsin": {"Wisconsin"},
-    "Minnesota": {"Minnesota Northern", "Minnesota Southern"},
-    "Iowa": {"Iowa"},
-    "Missouri": {"Missouri East", "Missouri West"},
-    "Arkansas": {"Arkansas"},
-    "Louisiana": {"Louisiana"},
-    "Texas": {
-        "Coast",
-        "East",
-        "East Texas",
-        "El Paso",
-        "Far West",
-        "North",
-        "North Central",
-        "South",
-        "South Central",
-        "Texas Panhandle",
-        "West",
-    },
-    "Oklahoma": {"Oklahoma"},
-    "Kansas": {"Kansas"},
-    "Nebraska": {"Nebraska"},
-    "South Dakota": {"South Dakota"},
-    "North Dakota": {"North Dakota"},
+    k: set(v) for k, v in zone_df.groupby("state").zone_name.unique().to_dict().items()
 }
+# Map interconnect name to load zone name
+interconnect2loadzone = {
+    k: set(v)
+    for k, v in zone_df.groupby("interconnect").zone_name.unique().to_dict().items()
+}
+interconnect2loadzone["Texas_Western"] = (
+    interconnect2loadzone["Texas"] | interconnect2loadzone["Western"]
+)
+interconnect2loadzone["USA"] = (
+    interconnect2loadzone["Eastern"]
+    | interconnect2loadzone["Western"]
+    | interconnect2loadzone["Texas"]
+)
+
+
+# Map load zone id to state abbreviations
+id2abv = {k: state2abv[v] for k, v in zone_df.state.to_dict().items()}
+
 
 # Map state abbreviations to load zone name
 abv2loadzone = {
@@ -224,101 +103,6 @@ for state, zone_set in state2loadzone.items():
     loadzone2state.update({zone: state for zone in zone_set})
 
 
-# Map interconnect name to load zone name
-interconnect2loadzone = {
-    "Texas": {
-        "Far West",
-        "North",
-        "West",
-        "South",
-        "North Central",
-        "South Central",
-        "Coast",
-        "East",
-    },
-    "Western": {
-        "Washington",
-        "Oregon",
-        "Northern California",
-        "Bay Area",
-        "Central California",
-        "Southwest California",
-        "Southeast California",
-        "Nevada",
-        "Arizona",
-        "Utah",
-        "New Mexico Western",
-        "Colorado",
-        "Wyoming",
-        "Idaho",
-        "Montana Western",
-        "El Paso",
-    },
-    "Eastern": {
-        "Maine",
-        "New Hampshire",
-        "Vermont",
-        "Massachusetts",
-        "Rhode Island",
-        "Connecticut",
-        "New York City",
-        "Upstate New York",
-        "New Jersey",
-        "Pennsylvania Eastern",
-        "Pennsylvania Western",
-        "Delaware",
-        "Maryland",
-        "Virginia Mountains",
-        "Virginia Tidewater",
-        "North Carolina",
-        "Western North Carolina",
-        "South Carolina",
-        "Georgia North",
-        "Georgia South",
-        "Florida Panhandle",
-        "Florida North",
-        "Florida South",
-        "Alabama",
-        "Mississippi",
-        "Tennessee",
-        "Kentucky",
-        "West Virginia",
-        "Ohio River",
-        "Ohio Lake Erie",
-        "Michigan Northern",
-        "Michigan Southern",
-        "Indiana",
-        "Chicago North Illinois",
-        "Illinois Downstate",
-        "Wisconsin",
-        "Minnesota Northern",
-        "Minnesota Southern",
-        "Iowa",
-        "Missouri East",
-        "Missouri West",
-        "Arkansas",
-        "Louisiana",
-        "East Texas",
-        "Texas Panhandle",
-        "New Mexico Eastern",
-        "Oklahoma",
-        "Kansas",
-        "Nebraska",
-        "South Dakota",
-        "North Dakota",
-        "Montana Eastern",
-    },
-}
-interconnect2loadzone["Texas_Western"] = (
-    interconnect2loadzone["Texas"] | interconnect2loadzone["Western"]
-)
-interconnect2loadzone["USA"] = (
-    interconnect2loadzone["Eastern"]
-    | interconnect2loadzone["Western"]
-    | interconnect2loadzone["Texas"]
-)
-
-
 # Map load zone name to interconnect name
 loadzone2interconnect = {
     zone: interconnect
@@ -329,6 +113,7 @@ loadzone2interconnect = {
 
 
 # Map interconnect name to state abbreviations
+# Note: states which span interconnects are assigned to the one they're 'most' in.
 interconnect2abv = {
     "Eastern": {
         "ME",
