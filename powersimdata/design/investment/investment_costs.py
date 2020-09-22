@@ -134,11 +134,12 @@ def _calculate_ac_inv_costs(grid_new, year):
     ].index
     bus_fix_index_all = bus_fix_index.tolist() + bus_fix_index2.tolist()
     bus_fix = bus[bus.index.isin(bus_fix_index_all)]
-    bus_fix = bus_to_neem_reg(bus_fix)  # converts index to bus_id instead
+    if len(bus_fix_index_all) > 0:
+        bus_fix = bus_to_neem_reg(bus_fix)  # converts index to bus_id instead
+        bus_reg.loc[
+            bus_reg.index.isin(bus_fix.index), ["name_abbr", "lat", "lon"]
+        ] = bus_fix[["name_abbr", "lat", "lon"]]
 
-    bus_reg.loc[
-        bus_reg.index.isin(bus_fix.index), ["name_abbr", "lat", "lon"]
-    ] = bus_fix[["name_abbr", "lat", "lon"]]
     bus_reg.drop(["lat", "lon"], axis=1, inplace=True)
 
     # map region multipliers onto lines
