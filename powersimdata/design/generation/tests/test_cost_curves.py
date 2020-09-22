@@ -177,6 +177,8 @@ mock_gencost = {
 grid_attrs = {"plant": mock_plant, "gencost_after": mock_gencost}
 
 grid = MockGrid(grid_attrs)
+grid.interconnect = "D"
+grid.zone2id = {"A": 0, "B": 1, "C": 2}
 
 
 def test_get_supply_data():
@@ -213,7 +215,9 @@ def test_get_supply_data():
 
 def test_build_supply_curve():
     supply_df = get_supply_data(grid)
-    Ptest, Ftest = build_supply_curve(supply_df, "B", "ng", plot=False)
+    Ptest, Ftest = build_supply_curve(
+        grid, supply_df, "B", "ng", "loadzone", plot=False
+    )
     Pexp = [0, 10, 10, 30, 30, 50, 50, 100, 100, 200]
     Fexp = [25.10, 25.10, 30.40, 30.40, 30.40, 30.40, 31.25, 31.25, 40.00, 40.00]
     assert all([Ptest[i] == Pexp[i] for i in range(len(Ptest))])
@@ -222,7 +226,7 @@ def test_build_supply_curve():
 
 def test_KS_test():
     supply_df = get_supply_data(grid)
-    P1, F1 = build_supply_curve(supply_df, "C", "coal", plot=False)
+    P1, F1 = build_supply_curve(grid, supply_df, "C", "coal", "loadzone", plot=False)
     P2 = [0, 15, 15, 40, 40, 75, 75, 130, 130, 190, 190, 225, 225, max(P1)]
     F2 = [
         23.00,

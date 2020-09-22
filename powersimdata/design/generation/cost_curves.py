@@ -3,15 +3,17 @@ import numpy as np
 import pandas as pd
 
 from powersimdata.input.grid import Grid
+from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
 
 
-def get_supply_data(grid, save=False):
-    """Accesses the generator cost and plant information data from a specified scenario object.
+def get_supply_data(grid, save=None):
+    """Accesses the generator cost and plant information data from a specified Grid object.
 
     :param powersimdata.input.grid.Grid grid: Grid object.
-    :param bool save: If True, saves a .csv file of the supply data. If False, does not save the data.
+    :param str save: Saves a .csv if a valid str is provided. The default is None, which doesn't save anything.
     :return: (*pandas.DataFrame*) -- Supply information needed to analyze cost and supply curves.
-    :raises TypeError: if a powersimdata.input.grid.Grid object is not input.
+    :raises TypeError: if a powersimdata.input.grid.Grid object is not input, or
+        if the save parameter is not input as a str.
     """
 
     # Check that a Grid object is input
@@ -24,20 +26,18 @@ def get_supply_data(grid, save=False):
 
     # Check to see if linearized cost curve has already been created and create the linear parameters if not already present
     if pd.Series(["p1", "p2", "f1", "f2"]).isin(gencost_df.columns).all() == False:
-        gencost_df["p1"] = [plant_df["Pmin"][i] for i in plant_df.index]
-        gencost_df["f1"] = [
-            gencost_df["c2"][i] * gencost_df["p1"][i] ** 2
-            + gencost_df["c1"][i] * gencost_df["p1"][i]
-            + gencost_df["c0"][i]
-            for i in plant_df.index
-        ]
-        gencost_df["p2"] = [plant_df["Pmax"][i] for i in plant_df.index]
-        gencost_df["f2"] = [
-            gencost_df["c2"][i] * gencost_df["p2"][i] ** 2
-            + gencost_df["c1"][i] * gencost_df["p2"][i]
-            + gencost_df["c0"][i]
-            for i in plant_df.index
-        ]
+        gencost_df["p1"] = plant_df["Pmin"]
+        gencost_df["f1"] = (
+            gencost_df["c2"] * gencost_df["p1"] ** 2
+            + gencost_df["c1"] * gencost_df["p1"]
+            + gencost_df["c0"]
+        )
+        gencost_df["p2"] = plant_df["Pmax"]
+        gencost_df["f2"] = (
+            gencost_df["c2"] * gencost_df["p2"] ** 2
+            + gencost_df["c1"] * gencost_df["p2"]
+            + gencost_df["c0"]
+        )
 
     # Create a new DataFrame with the desired columns
     supply_df = pd.concat(
@@ -47,17 +47,15 @@ def get_supply_data(grid, save=False):
         ],
         axis=1,
     )
-    supply_df["p_diff"] = [
-        supply_df["p2"][i] - supply_df["p1"][i] for i in supply_df.index
-    ]
-    supply_df["slope"] = [
-        (supply_df["f2"][i] - supply_df["f1"][i]) / supply_df["p_diff"][i]
-        for i in supply_df.index
-    ]
+    supply_df["p_diff"] = supply_df["p2"] - supply_df["p1"]
+    supply_df["slope"] = (supply_df["f2"] - supply_df["f1"]) / supply_df["p_diff"]
 
     # Save the supply data to a .csv file if desired
-    if save:
-        supply_df.to_csv("supply_data.csv")
+    if save is not None:
+        if not isinstance(save, str):
+            raise TypeError("The file path must be input as a str.")
+        else:
+            supply_df.to_csv(save + "supply_data.csv")
 
     # Return the necessary supply information
     return supply_df
@@ -100,12 +98,14 @@ def check_supply_data(data):
         )
 
 
-def build_supply_curve(data, area, gen_type, plot=True):
+def build_supply_curve(grid, data, area, gen_type, area_type=None, plot=True):
     """Builds a supply curve for a specified area and generation type.
 
+    :param powersimdata.input.grid.Grid grid: Grid object.
     :param pandas.DataFrame data: DataFrame containing the supply curve information. This input should be the DataFrame returned from get_supply_data().
     :param str area: Either the interconnection or load zone.
     :param str gen_type: Generation type.
+    :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*, *'interconnect'*.
     :param bool plot: If True, the supply curve plot is shown. If False, the plot is not shown.
     :return: (*tuple*) -- Tuple containing:
         P (*list*) -- List of capacity (MW) amounts needed to create supply curve (floats).
@@ -113,32 +113,31 @@ def build_supply_curve(data, area, gen_type, plot=True):
     :raises ValueError: if the specified area or generator type is not applicable.
     """
 
+    # Check that a Grid object is input
+    if not isinstance(grid, Grid):
+        raise TypeError("A Grid object must be input.")
+
     # Check the input supply data
     check_supply_data(data)
-
-    # Determine whether the area is describing an interconnection or a load zone
-    if area in data["interconnect"].unique():
-        zone_type = "interconnect"
-    elif area in data["zone_name"].unique():
-        zone_type = "zone_name"
-    else:
-        raise ValueError(f"{area} is neither a valid internconnection nor load zone.")
 
     # Check to make sure the generator type is valid
     if gen_type not in data["type"].unique():
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
+    # Identify the load zones that correspond to the specified area and area_type
+    returned_zones = area_to_loadzone(grid, area, area_type)
+
     # Trim the DataFrame to only be of the desired area and generation type
-    data = data.loc[data[zone_type] == area]
+    data = data.loc[data.zone_name.isin(returned_zones)]
     data = data.loc[data["type"] == gen_type]
 
-    # Check if the area contains generators of the specified type
-    if len(data) == 0:
-        return None, None
+    # Remove generators that have no capacity, and hence a slope of NaN (e.g., Maine coal generators)
+    if data["slope"].isnull().values.any():
+        data.dropna(subset=["slope"], inplace=True)
 
-    # Check for areas that have generators of a certain type, but no capacity (e.g., Maine coal generators)
-    if np.isnan(data["slope"].min()):
-        return None, None
+    # Check if the area contains generators of the specified type
+    if data.empty:
+        return [], []
 
     # Sort the trimmed DataFrame by slope
     data = data.sort_values(by="slope")
@@ -263,12 +262,24 @@ def KS_test(P1, F1, P2, F2, area=None, gen_type=None, plot=True):
     return max_diff
 
 
-def plot_c1_vs_c2(data, area, gen_type, plot=True, zoom=False, num_sd=3, alpha=0.1):
+def plot_c1_vs_c2(
+    grid,
+    data,
+    area,
+    gen_type,
+    area_type=None,
+    plot=True,
+    zoom=False,
+    num_sd=3,
+    alpha=0.1,
+):
     """Compares the c1 and c2 parameters from the quadratic generator cost curves.
 
+    :param powersimdata.input.grid.Grid grid: Grid object.
     :param pandas.DataFrame data: DataFrame containing the supply curve information. This input should be the DataFrame returned from get_supply_data().
     :param str area: Either the interconnection or load zone.
     :param str gen_type: Generation type.
+    :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*, *'interconnect'*.
     :param bool plot: If True, the c1 vs. c2 plot is shown. If False, the plot is not shown.
     :param bool zoom: If True, filters out c2 outliers to enable better visualization. If False, there is no filtering.
     :param float/int num_sd: The number of standard deviations used to filter out c2 outliers.
@@ -277,32 +288,31 @@ def plot_c1_vs_c2(data, area, gen_type, plot=True, zoom=False, num_sd=3, alpha=0
     :raises ValueError: if the specified area or generator type is not applicable.
     """
 
+    # Check that a Grid object is input
+    if not isinstance(grid, Grid):
+        raise TypeError("A Grid object must be input.")
+
     # Check the input supply data
     check_supply_data(data)
-
-    # Determine whether the area is describing an interconnection or a load zone
-    if area in data["interconnect"].unique():
-        zone_type = "interconnect"
-    elif area in data["zone_name"].unique():
-        zone_type = "zone_name"
-    else:
-        raise ValueError(f"{area} is neither a valid internconnection nor load zone.")
 
     # Check to make sure the generator type is valid
     if gen_type not in data["type"].unique():
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
+    # Identify the load zones that correspond to the specified area and area_type
+    returned_zones = area_to_loadzone(grid, area, area_type)
+
     # Trim the DataFrame to only be of the desired area and generation type
-    data = data.loc[data[zone_type] == area]
+    data = data.loc[data.zone_name.isin(returned_zones)]
     data = data.loc[data["type"] == gen_type]
 
-    # Check if the area contains generators of the specified type
-    if len(data) == 0:
-        return None
+    # Remove generators that have no capacity, and hence a slope of NaN (e.g., Maine coal generators)
+    if data["slope"].isnull().values.any():
+        data.dropna(subset=["slope"], inplace=True)
 
-    # Check for areas that have generators of a certain type, but no capacity (e.g., Maine coal generators)
-    if np.isnan(data["slope"].min()):
-        return None
+    # Check if the area contains generators of the specified type
+    if data.empty:
+        return
 
     # Filters out large c2 outlier values so the overall trend can be better visualized
     zoom_name = ""
@@ -348,43 +358,44 @@ def plot_c1_vs_c2(data, area, gen_type, plot=True, zoom=False, num_sd=3, alpha=0
         plt.show()
 
 
-def plot_capacity_vs_price(data, area, gen_type, plot=True):
+def plot_capacity_vs_price(grid, data, area, gen_type, area_type=None, plot=True):
     """Plots the generator capacity vs. the generator price for a specified area and generation type.
 
+    :param powersimdata.input.grid.Grid grid: Grid object.
     :param pandas.DataFrame data: DataFrame containing the supply curve information. This input should be the DataFrame returned from get_supply_data().
     :param str area: Either the interconnection or load zone.
     :param str gen_type: Generation type.
+    :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*, *'interconnect'*.
     :param bool plot: If True, the supply curve plot is shown. If False, the plot is not shown.
     :return: (*None*) -- The capacity vs. price plot is displayed according to the user.
     :raises ValueError: if the specified area or generator type is not applicable.
     """
 
+    # Check that a Grid object is input
+    if not isinstance(grid, Grid):
+        raise TypeError("A Grid object must be input.")
+
     # Check the input supply data
     check_supply_data(data)
-
-    # Determine whether the area is describing an interconnection or a load zone
-    if area in data["interconnect"].unique():
-        zone_type = "interconnect"
-    elif area in data["zone_name"].unique():
-        zone_type = "zone_name"
-    else:
-        raise ValueError(f"{area} is neither a valid internconnection nor load zone.")
 
     # Check to make sure the generator type is valid
     if gen_type not in data["type"].unique():
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
+    # Identify the load zones that correspond to the specified area and area_type
+    returned_zones = area_to_loadzone(grid, area, area_type)
+
     # Trim the DataFrame to only be of the desired area and generation type
-    data = data.loc[data[zone_type] == area]
+    data = data.loc[data.zone_name.isin(returned_zones)]
     data = data.loc[data["type"] == gen_type]
 
-    # Check if the area contains generators of the specified type
-    if len(data) == 0:
-        return None
+    # Remove generators that have no capacity, and hence a slope of NaN (e.g., Maine coal generators)
+    if data["slope"].isnull().values.any():
+        data.dropna(subset=["slope"], inplace=True)
 
-    # Check for areas that have generators of a certain type, but no capacity (e.g., Maine coal generators)
-    if np.isnan(data["slope"].min()):
-        return None
+    # Check if the area contains generators of the specified type
+    if data.empty:
+        return
 
     # Determine the average
     total_cap = data["p2"].sum()
