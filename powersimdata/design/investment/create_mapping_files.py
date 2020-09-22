@@ -4,6 +4,7 @@ import fiona
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Polygon, mapping
+from shapely.ops import nearest_points
 
 from powersimdata.design.investment import const
 from powersimdata.input.grid import Grid
@@ -13,24 +14,59 @@ def sjoin_nearest(
     left_df,
     right_df,
     search_dist=0.06,
-    report_dist=False,
     lsuffix="left",
     rsuffix="right",
 ):
     """
     Perform a spatial join between two input layers.
-    If a geometry in left_df falls outside (all) geometries in right_df, the data from nearest Polygon will be used as a result.
+    If a geometry in left_df falls outside (all) geometries in right_df, the data from
+        nearest Polygon will be used as a result.
     To make queries faster, change "search_dist."
     :param geopandas.GeoDataFrame left_df: A dataframe of Points.
     :param geopandas.GeoDataFrame right_df: A dataframe of Polygons/Multipolygons
-    :param float/int search_dist: parameter (specified in map units) can be used to limit the search area for geometries around source points. Can make query faster.
-    :param boolean report_dist: if True, the distance for closest geometry will be reported in a column called `dist`. If geometries intersect, the distance will be 0.
-    :return: (*geopandas.GeoDataFrame*) -- A dataframe of Points mapped to each polygon in right_df.
+    :param float/int search_dist: parameter (specified in map units) is used to limit
+        the search area for geometries around source points. Smaller -> faster runtime.
+    :return: (*geopandas.GeoDataFrame*) -- A dataframe of Points mapped to each polygon
+        in right_df.
     """
 
-    # Explode possible MultiGeometries
-    right_df = right_df.explode()
-    right_df = right_df.reset_index(drop=True)
+    def _find_nearest(series, polygons, search_dist):
+        """Given a row with a bus id and a Point, find the closest polygon.
+
+        :param pandas.Series series: point to map.
+        :param geopandas.geodataframe.GeoDataFrame polygons: polygons to select from.
+        :param float search_dist: radius around point to detect polygons in.
+        """
+        geom = series[left_df.geometry.name]
+        # Get geometries within search distance
+        candidates = polygons.loc[polygons.intersects(geom.buffer(search_dist))]
+
+        if len(candidates) == 0:
+            raise ValueError(f"No polygons found within {search_dist} of {series.name}")
+
+        # Select the closest Polygon
+        distances = candidates.apply(
+            lambda x: geom.distance(x[candidates.geometry.name].exterior), axis=1
+        )
+        closest_poly = polygons.loc[distances.idxmin].to_frame().T
+
+        # Reset index
+        series = series.to_frame().T.reset_index(drop=True)
+
+        # Drop geometry from closest polygon
+        closest_poly = closest_poly.drop(polygons.geometry.name, axis=1)
+        closest_poly = closest_poly.reset_index(drop=True)
+
+        # Join values
+        join = series.join(closest_poly, lsuffix=f"_{lsuffix}", rsuffix=f"_{rsuffix}")
+
+        # Add information about distance to closest geometry if requested
+        join["dist"] = distances.min()
+
+        return join.squeeze()
+
+    if "dist" in (set(left_df.columns) | set(right_df.columns)):
+        raise ValueError("neither series nor polygons can contain a 'dist' column")
 
     if "index_left" in left_df.columns:
         left_df = left_df.drop("index_left", axis=1)
@@ -38,117 +74,24 @@ def sjoin_nearest(
     if "index_right" in left_df.columns:
         left_df = left_df.drop("index_right", axis=1)
 
-    if report_dist:
-        if "dist" in left_df.columns:
-            raise ValueError(
-                "'dist' column exists in the left DataFrame. Remove it, or set 'report_dist' to False."
-            )
-
-    # Get geometries that intersect or do not intersect polygons
-    mask = left_df.intersects(right_df.unary_union)
-    geoms_intersecting_polygons = left_df.loc[mask]
-    geoms_outside_polygons = left_df.loc[~mask]
+    # Explode possible MultiGeometries. This is a major speedup!
+    right_df = right_df.explode()
+    right_df = right_df.reset_index(drop=True)
 
     # Make spatial join between points that fall inside the Polygons
-    if geoms_intersecting_polygons.shape[0] > 0:
-        pip_join = gpd.sjoin(
-            left_df=geoms_intersecting_polygons, right_df=right_df, op="intersects"
-        )
+    points_in_regions = gpd.sjoin(left_df=left_df, right_df=right_df, op="intersects")
+    points_in_regions["dist"] = 0
 
-        if report_dist:
-            pip_join["dist"] = 0
-
-    else:
-        pip_join = gpd.GeoDataFrame()
-
-    # Get nearest geometries
-    closest_geometries = gpd.GeoDataFrame()
-
-    # A tiny snap distance buffer is needed in some cases
-    snap_dist = 0.00000005
-
-    # Closest points from source-points to polygons
-    for idx, geom in geoms_outside_polygons.iterrows():
-        # Get geometries within search distance
-        candidates = right_df.loc[
-            right_df.intersects(geom[left_df.geometry.name].buffer(search_dist))
-        ]
-
-        if len(candidates) == 0:
-            continue
-        unary = candidates.unary_union
-
-        if unary.geom_type == "Polygon":
-
-            # Get exterior of the Polygon
-            exterior = unary.exterior
-
-            # Find a point from Polygons that is closest to the source point
-            closest_geom = exterior.interpolate(
-                exterior.project(geom[left_df.geometry.name])
-            )
-
-            if report_dist:
-                distance = closest_geom.distance(geom[left_df.geometry.name])
-
-            # Select the Polygon
-            closest_poly = right_df.loc[
-                right_df.intersects(closest_geom.buffer(snap_dist))
-            ]
-
-        elif unary.geom_type == "MultiPolygon":
-            # Keep track of distance for closest polygon
-            distance = 9999999999
-            closest_geom = None
-
-            for idx, poly in enumerate(unary):
-                # Get exterior of the Polygon
-                exterior = poly.exterior
-
-                # Find a point from Polygons that is closest to the source point
-                closest_candidate = exterior.interpolate(
-                    exterior.project(geom[left_df.geometry.name])
-                )
-
-                # Calculate distance between origin point and the closest point in Polygon
-                dist = geom[left_df.geometry.name].distance(closest_candidate)
-
-                # If the point is closer to given polygon update the info
-                if dist < distance:
-                    distance = dist
-                    closest_geom = closest_candidate
-
-            # Select the Polygon that was closest
-            closest_poly = right_df.loc[
-                right_df.intersects(closest_geom.buffer(snap_dist))
-            ]
-        else:
-            print("Incorrect input geometry type. Skipping ..")
-
-        # Reset index
-        geom = geom.to_frame().T.reset_index(drop=True)
-
-        # Drop geometry from closest polygon
-        closest_poly = closest_poly.drop(right_df.geometry.name, axis=1)
-        closest_poly = closest_poly.reset_index(drop=True)
-
-        # Join values
-        join = geom.join(closest_poly, lsuffix="_%s" % lsuffix, rsuffix="_%s" % rsuffix)
-
-        # Add information about distance to closest geometry if requested
-        if report_dist:
-            if "dist" in join.columns:
-                raise ValueError(
-                    "'dist' column exists in the DataFrame. Remove it, or set 'report_dist' to False."
-                )
-            join["dist"] = distance
-
-        closest_geometries = closest_geometries.append(
-            join, ignore_index=True, sort=False
-        )
+    # Find closest Polygons, for points that don't fall within any
+    missing_indices = set(left_df.index) - set(points_in_regions.index)
+    points_not_in_regions = left_df.loc[missing_indices]
+    closest_geometries = points_not_in_regions.apply(
+        _find_nearest, args=(right_df, search_dist), axis=1
+    )
 
     # Merge everything together
-    result = pip_join.append(closest_geometries, ignore_index=True, sort=False)
+    closest_geometries = gpd.GeoDataFrame(closest_geometries)
+    result = points_in_regions.append(closest_geometries, ignore_index=True, sort=False)
     return result
 
 
