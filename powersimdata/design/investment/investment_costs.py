@@ -207,6 +207,19 @@ def _calculate_dc_inv_costs(grid_new, year):
     :return: (*float*) -- Total dc line costs (in $2015).
     """
 
+    def _calculate_single_line_cost(line, bus):
+        # Calculate distance
+        from_lat = bus.loc[line.from_bus_id, "lat"]
+        from_lon = bus.loc[line.from_bus_id, "lon"]
+        to_lat = bus.loc[line.to_bus_id, "lat"]
+        to_lon = bus.loc[line.to_bus_id, "lon"]
+        miles = haversine((from_lat, from_lon), (to_lat, to_lon))
+        # Calculate cost
+        mw_miles = miles * line.Pmax
+        line_cost = mw_miles * hvdc_line_cost["costMWmi"]
+        total_cost = line_cost + hvdc_terminal_cost
+        return total_cost
+
     if isinstance(year, (int, str)):
         year = int(year)
         if year not in range(2020, 2051):
@@ -219,39 +232,9 @@ def _calculate_dc_inv_costs(grid_new, year):
 
     # if any dclines, do calculations, otherwise, return 0 costs.
     if len(dcline != 0):
-        # Find line length
-        dcline["from_lat"] = dcline.apply(
-            lambda x: bus.loc[x.from_bus_id, "lat"], axis=1
-        )
-        dcline["from_lon"] = dcline.apply(
-            lambda x: bus.loc[x.from_bus_id, "lon"], axis=1
-        )
-
-        dcline["to_lat"] = dcline.apply(lambda x: bus.loc[x.to_bus_id, "lat"], axis=1)
-        dcline["to_lon"] = dcline.apply(lambda x: bus.loc[x.to_bus_id, "lon"], axis=1)
-
-        dcline["lengthMi"] = dcline.apply(
-            lambda x: haversine((x.from_lat, x.from_lon), (x.to_lat, x.to_lon)), axis=1
-        )
-        dcline = dcline[dcline["lengthMi"] != 0]
-
-        # Calculate MWmi value
-        dcline["MWmi"] = dcline["lengthMi"] * dcline["Pmax"]
-
-        # Find $/MW-mi cost
-        dcline.loc[:, "costMWmi"] = hvdc_line_cost["costMWmi"]
-
-        # Find base cost (excluding terminal cost)
-        dcline["Cost"] = dcline["MWmi"] * dcline["costMWmi"]
-
-        # Add extra terminal cost for dc
-        dcline["Cost"] += hvdc_terminal_cost
-        # Find sum of costs over all dclines
-        costs = dcline["Cost"].sum()
+        return dcline.apply(_calculate_single_line_cost, args=(bus,), axis=1).sum()
     else:
-        costs = 0
-
-    return costs
+        return 0
 
 
 def calculate_gen_inv_costs(scenario, year, cost_case):
