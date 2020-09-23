@@ -2,6 +2,13 @@ import os
 
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
 from powersimdata.network.usa_tamu.usa_tamu_model import TAMU
+from powersimdata.utility.helpers import MemoryCache
+
+_cache = MemoryCache()
+
+
+def cache_key(interconnect, source, engine):
+    return "-".join(("-".join(interconnect), source, engine))
 
 
 class Grid(object):
@@ -18,20 +25,21 @@ class Grid(object):
         """Constructor."""
         if not isinstance(source, str):
             raise TypeError("source must be a string")
-        if not isinstance(engine, str):
-            got_type = type(engine).__name__
-            raise TypeError("engine must be a str, instead got %s" % got_type)
+        supported_engines = {"REISE", "REISE.jl"}
+        if engine not in supported_engines:
+            raise ValueError(f"Engine must be one of {','.join(supported_engines)}")
 
-        if source == "usa_tamu":
+        key = cache_key(interconnect, source, engine)
+        cached = _cache.get(key)
+        if cached is not None:
+            data = cached
+        elif source == "usa_tamu":
             data = TAMU(interconnect)
         elif os.path.splitext(source)[1] == ".mat":
             if engine == "REISE":
                 data = FromREISE(source)
             elif engine == "REISE.jl":
                 data = FromREISEjl(source)
-            else:
-                raise ValueError("Unknown engine %s!" % engine)
-
         else:
             raise ValueError("%s not implemented" % source)
 
@@ -47,6 +55,8 @@ class Grid(object):
         self.bus = data.bus
         self.branch = data.branch
         self.storage = data.storage
+
+        _cache.put(key, self)
 
     def __eq__(self, other):
         """Used when 'self == other' is evaluated.
