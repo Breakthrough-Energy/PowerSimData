@@ -25,7 +25,7 @@ class Grid(object):
         if engine not in supported_engines:
             raise ValueError(f"Engine must be one of {','.join(supported_engines)}")
 
-        key = cache_key(interconnect, source, engine)
+        key = cache_key(interconnect, source)
         cached = _cache.get(key)
         if cached is not None:
             data = cached
