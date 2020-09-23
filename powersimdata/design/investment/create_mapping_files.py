@@ -5,14 +5,7 @@ import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Polygon, mapping
 
-from powersimdata.design.investment.const import (
-    bus_regions_path,
-    neem_shapefile_path,
-    reeds_mapping_hierarchy_path,
-    reeds_wind_csv_path,
-    reeds_wind_shapefile_path,
-    reeds_wind_to_ba_path,
-)
+from powersimdata.design.investment import const
 from powersimdata.input.grid import Grid
 
 
@@ -222,10 +215,12 @@ def plant_to_reeds_reg(df):
     # warning that these polygons are rough and not very detailed - meant for illustrative purposes. Might be worth it later to revisit and try to fine-tune this
     # but since the multipliers aren't super strict by region, it's fine for now.
 
-    pts_poly = points_to_polys(df, "plant", reeds_wind_shapefile_path, search_dist=0.2)
+    pts_poly = points_to_polys(
+        df, "plant", const.reeds_wind_shapefile_path, search_dist=0.2
+    )
 
     # load in rs to rb region mapping file
-    region_map = pd.read_csv(reeds_wind_to_ba_path)
+    region_map = pd.read_csv(const.reeds_wind_to_ba_path)
 
     # map rs (wind region) to rb (ba region)
     pts_poly = pts_poly.merge(region_map, left_on="id", right_on="rs", how="left")
@@ -248,7 +243,7 @@ def bus_to_neem_reg(df):
     Note: mapping may take a while, especially for many points.
     """
 
-    pts_poly = points_to_polys(df, "bus", neem_shapefile_path)
+    pts_poly = points_to_polys(df, "bus", const.neem_shapefile_path, search_dist=1)
 
     # save lat/lon for consistency check later in _calculate_ac_inv_costs
     pts_poly["lat"] = pts_poly.geometry.y
@@ -271,11 +266,11 @@ def write_bus_neem_map():
     Note: This code takes a few hours to run. Should only need to run once for all buses. If there are only a few changed buses, the regional \
     multiplier code can handle it.
     """
-    make_dir(bus_regions_path)
+    make_dir(const.bus_regions_path)
 
     base_grid = Grid(["USA"])
     df_pts_bus = bus_to_neem_reg(base_grid.bus)
-    df_pts_bus.to_csv(bus_regions_path)
+    df_pts_bus.to_csv(const.bus_regions_path)
 
 
 def write_poly_shapefile():
@@ -289,13 +284,13 @@ def write_poly_shapefile():
     Note: These ReEDS wind resource region shapes are approximate. Thus, there are probably some mistakes, but this is \
     currently only used for mapping plant regional multipliers, which are approximate anyway, so it should be fine.
     """
-    outpath = reeds_wind_shapefile_path
+    outpath = const.reeds_wind_shapefile_path
     make_dir(outpath)
 
     polys = pd.read_csv(
-        reeds_wind_csv_path, sep=",", dtype={"id": object, "group": object}
+        const.reeds_wind_csv_path, sep=",", dtype={"id": object, "group": object}
     )
-    hierarchy = pd.read_csv(reeds_mapping_hierarchy_path)
+    hierarchy = pd.read_csv(const.reeds_mapping_hierarchy_path)
     polys = polys.merge(hierarchy, left_on="id", right_on="rs", how="left")
     polys = polys[polys["country"] == "usa"]
 
