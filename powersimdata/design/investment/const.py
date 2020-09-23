@@ -39,3 +39,49 @@ reeds_mapping_hierarchy_path = os.path.join(data_dir, "mapping", "hierarchy.csv"
 reeds_wind_csv_path = os.path.join(data_dir, "mapping", "gis_rs.csv")
 reeds_wind_shapefile_path = os.path.join(data_dir, "rs", "rs.shp")
 reeds_wind_to_ba_path = os.path.join(data_dir, "mapping", "region_map.csv")
+regional_multiplier_path = os.path.join(data_dir, "reg_cap_cost_mult_default.csv")
+
+gen_inv_cost_translation = {
+    "OffShoreWind": "wind_offshore",
+    "LandbasedWind": "wind",
+    "UtilityPV": "solar",
+    "Battery": "storage",
+    "NaturalGas": "ng",
+    "Hydropower": "hydro",
+    "Nuclear": "nuclear",
+    "Geothermal": "geothermal",
+    "Coal": "coal",
+}
+
+gen_inv_cost_techdetails_to_keep = {
+    "HydroFlash",  # Single tech for geothermal
+    "NPD1",  # Single tech for hydro
+    "newAvgCF",  # Single tech for coal
+    "CCAvgCF",  # Single tech for ng
+    "OTRG1",  # Single tech for wind_offshore
+    "LTRG1",  # Single tech for wind
+    "4Hr Battery Storage",  # Single tech for storage
+    "Seattle",  # Single tech for solar
+}
+
+regional_multiplier_gen_translation = {
+    "wind-ofs_1": "wind_offshore",
+    "wind-ons_1": "wind",
+    "upv_1": "solar",
+    "battery": "storage",
+    "Gas-CC": "ng",
+    "Nuclear": "nuclear",
+    "Hydro": "hydro",
+    "coal-new": "coal",
+}
+
+regional_multiplier_wind_region_types = {"wind", "wind_offshore", "csp"}
+regional_multiplier_ba_region_types = {
+    "solar",
+    "storage",
+    "nuclear",
+    "coal",
+    "ng",
+    "hydro",
+    "geothermal",
+}

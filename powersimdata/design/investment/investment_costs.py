@@ -3,15 +3,7 @@ import copy as cp
 import numpy as np
 import pandas as pd
 
-from powersimdata.design.investment.const import (
-    ac_line_cost,
-    ac_reg_mult_path,
-    bus_regions_path,
-    gen_inv_cost_path,
-    hvdc_line_cost,
-    hvdc_terminal_cost,
-    transformer_cost,
-)
+from powersimdata.design.investment import const
 from powersimdata.design.investment.create_mapping_files import (
     bus_to_neem_reg,
     plant_to_reeds_reg,
@@ -91,9 +83,9 @@ def _calculate_ac_inv_costs(grid_new, year):
         raise TypeError("year must be int or str.")
 
     # import data
-    ac_cost = pd.DataFrame(ac_line_cost)
-    ac_reg_mult = pd.read_csv(ac_reg_mult_path)
-    xfmr_cost = pd.DataFrame(transformer_cost)
+    ac_cost = pd.DataFrame(const.ac_line_cost)
+    ac_reg_mult = pd.read_csv(const.ac_reg_mult_path)
+    xfmr_cost = pd.DataFrame(const.transformer_cost)
 
     # map line kV
     bus = grid_new.bus
@@ -111,7 +103,7 @@ def _calculate_ac_inv_costs(grid_new, year):
     lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
 
     # multiply by regional multiplier
-    bus_reg = pd.read_csv(bus_regions_path, index_col="bus_id")
+    bus_reg = pd.read_csv(const.bus_regions_path, index_col="bus_id")
 
     # check that all buses included in this file and lat/long values match, otherwise re-run mapping script on mis-matching buses.
 
@@ -217,8 +209,8 @@ def _calculate_dc_inv_costs(grid_new, year):
         miles = haversine((from_lat, from_lon), (to_lat, to_lon))
         # Calculate cost
         mw_miles = miles * line.Pmax
-        line_cost = mw_miles * hvdc_line_cost["costMWmi"]
-        total_cost = line_cost + hvdc_terminal_cost
+        line_cost = mw_miles * const.hvdc_line_cost["costMWmi"]
+        total_cost = line_cost + const.hvdc_terminal_cost
         return total_cost
 
     if isinstance(year, (int, str)):
@@ -292,7 +284,7 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
         :param str cost_case: the ATB cost case of data ['Moderate': mid cost case,'Conservative': generally higher costs,'Advanced': generally lower costs]
         :return: (*pandas.DataFrame*) -- Cost by technology/subtype (in $2018).
         """
-        cost = pd.read_csv(gen_inv_cost_path)
+        cost = pd.read_csv(const.gen_inv_cost_path)
         cost = cost.dropna(axis=0, how="all")
 
         # drop non-useful columns
@@ -347,52 +339,12 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
 
     # load in investment costs $/MW
     gen_costs = load_cost(year, cost_case)
-    # keep only certain (arbutrary) subclasses for now
+    # keep only certain (arbitrary) subclasses for now
     gen_costs = gen_costs[
-        gen_costs["TechDetail"].isin(
-            [
-                "HydroFlash",
-                "NPD1",
-                "newAvgCF",
-                "Class1",
-                "CCAvgCF",
-                "OTRG1",
-                "LTRG1",
-                "4Hr Battery Storage",
-                "Seattle",
-            ]
-        )
-    ]  # only keep HydroFlash for geothermal
+        gen_costs["TechDetail"].isin(const.gen_inv_cost_techdetails_to_keep)
+    ]
     # rename techs to match grid object
-    gen_costs.replace(
-        [
-            "OffShoreWind",
-            "LandbasedWind",
-            "UtilityPV",
-            "Battery",
-            "CSP",
-            "NaturalGas",
-            "Hydropower",
-            "Nuclear",
-            "Biopower",
-            "Geothermal",
-            "Coal",
-        ],
-        [
-            "wind_offshore",
-            "wind",
-            "solar",
-            "storage",
-            "csp",
-            "ng",
-            "hydro",
-            "nuclear",
-            "bio",
-            "geothermal",
-            "coal",
-        ],
-        inplace=True,
-    )
+    gen_costs.replace(const.gen_inv_cost_translation, inplace=True)
     gen_costs.drop(["Key", "FinancialCase", "CRPYears"], axis=1, inplace=True)
     # ATB technology costs merge
     plants = plants.merge(gen_costs, right_on="Technology", left_on="type", how="left")
@@ -403,72 +355,19 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
     pts_plant = plant_to_reeds_reg(plants)
     plants = plants.merge(pts_plant, on="plant_id", how="left")
 
-    # keep region 'r' as wind region 'rs' if tech is wind, 'rb' ba region is tech is solar or battery
+    # Determine one region 'r' for each plant, based on one of two mappings
     plants.loc[:, "r"] = ""
-    rs_tech = [
-        "wind",
-        "wind_offshore",
-        "csp",
-    ]  # wind regions (rs) (apply to wind and csp)
-    plants.loc[plants["type"].isin(rs_tech), "r"] = plants.loc[
-        plants["type"].isin(rs_tech), "rs"
-    ]
-    rb_tech = [
-        "solar",
-        "storage",
-        "nuclear",
-        "coal",
-        "ng",
-        "hydro",
-        "geothermal",
-    ]  # BA regions (rb) (apply to rest of techs)
-    plants.loc[plants["type"].isin(rb_tech), "r"] = plants.loc[
-        plants["type"].isin(rb_tech), "rb"
-    ]
+    # Some types get regional multipliers via 'wind regions' ('rs')
+    wind_region_mask = plants["type"].isin(const.regional_multiplier_wind_region_types)
+    plants.loc[wind_region_mask, "r"] = plants.loc[wind_region_mask, "rs"]
+    # Other types get regional multipliers via 'BA regions' ('rb')
+    ba_region_mask = plants["type"].isin(const.regional_multiplier_ba_region_types)
+    plants.loc[ba_region_mask, "r"] = plants.loc[ba_region_mask, "rb"]
     plants.drop(["rs", "rb"], axis=1, inplace=True)
 
     # merge regional multipliers with plants
-    region_multiplier = pd.read_csv("in/reg_cap_cost_mult_default.csv")
-    region_multiplier = region_multiplier[
-        region_multiplier["i"].isin(
-            [
-                "wind-ofs_1",
-                "wind-ons_1",
-                "upv_1",
-                "battery",
-                "coal-new",
-                "Gas-CC",
-                "Hydro",
-                "Nuclear",
-                "geothermal",
-            ]
-        )
-    ]
-    region_multiplier.replace(
-        [
-            "wind-ofs_1",
-            "wind-ons_1",
-            "upv_1",
-            "battery",
-            "Gas-CC",
-            "Nuclear",
-            "Hydro",
-            "coal-new",
-            "csp-ns",
-        ],
-        [
-            "wind_offshore",
-            "wind",
-            "solar",
-            "storage",
-            "ng",
-            "nuclear",
-            "hydro",
-            "coal",
-            "csp",
-        ],
-        inplace=True,
-    )
+    region_multiplier = pd.read_csv(const.regional_multiplier_path)
+    region_multiplier.replace(const.regional_multiplier_gen_translation, inplace=True)
     plants = plants.merge(
         region_multiplier, left_on=["r", "Technology"], right_on=["r", "i"], how="left"
     )
