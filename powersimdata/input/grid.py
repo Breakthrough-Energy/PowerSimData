@@ -2,13 +2,9 @@ import os
 
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
 from powersimdata.network.usa_tamu.usa_tamu_model import TAMU
-from powersimdata.utility.helpers import MemoryCache
+from powersimdata.utility.helpers import MemoryCache, cache_key
 
 _cache = MemoryCache()
-
-
-def cache_key(interconnect, source, engine):
-    return "-".join(("-".join(interconnect), source, engine))
 
 
 class Grid(object):
