@@ -3,9 +3,10 @@ import pytest
 from pandas.testing import assert_series_equal
 
 from powersimdata.design.generation.cost_curves import (
-    KS_test,
     build_supply_curve,
     get_supply_data,
+    ks_test,
+    linearize_gencost,
     lower_bound_index,
 )
 from powersimdata.input.grid import Grid
@@ -106,6 +107,10 @@ mock_plant = {
 
 mock_gencost = {
     "plant_id": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+    "type": [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+    "startup": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "shutdown": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "n": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
     "c2": [
         0.025,
         0.010,
@@ -172,9 +177,31 @@ mock_gencost = {
         1200,
         1900,
     ],
+    "interconnect": [
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+    ],
 }
 
-grid_attrs = {"plant": mock_plant, "gencost_after": mock_gencost}
+grid_attrs = {"plant": mock_plant, "gencost_before": mock_gencost}
 
 grid = MockGrid(grid_attrs)
 grid.interconnect = "D"
@@ -182,8 +209,8 @@ grid.zone2id = {"A": 0, "B": 1, "C": 2}
 
 
 def test_get_supply_data():
-    supply_df = get_supply_data(grid)
-    test_slope = supply_df["slope"]
+    supply_df = get_supply_data(grid, 1)
+    test_slope = supply_df["slope1"]
     exp_slope = pd.Series(
         [
             31.25,
@@ -208,15 +235,15 @@ def test_get_supply_data():
             40.00,
         ],
         index=supply_df.index,
-        name="slope",
+        name="slope1",
     )
     assert_series_equal(test_slope, exp_slope)
 
 
 def test_build_supply_curve():
-    supply_df = get_supply_data(grid)
+    supply_df = get_supply_data(grid, 1)
     Ptest, Ftest = build_supply_curve(
-        grid, supply_df, "B", "ng", "loadzone", plot=False
+        grid, supply_df, 1, "B", "ng", "loadzone", plot=False
     )
     Pexp = [0, 10, 10, 30, 30, 50, 50, 100, 100, 200]
     Fexp = [25.10, 25.10, 30.40, 30.40, 30.40, 30.40, 31.25, 31.25, 40.00, 40.00]
@@ -224,9 +251,9 @@ def test_build_supply_curve():
     assert all([Ftest[i] == Fexp[i] for i in range(len(Ptest))])
 
 
-def test_KS_test():
-    supply_df = get_supply_data(grid)
-    P1, F1 = build_supply_curve(grid, supply_df, "C", "coal", "loadzone", plot=False)
+def test_ks_test():
+    supply_df = get_supply_data(grid, 1)
+    P1, F1 = build_supply_curve(grid, supply_df, 1, "C", "coal", "loadzone", plot=False)
     P2 = [0, 15, 15, 40, 40, 75, 75, 130, 130, 190, 190, 225, 225, max(P1)]
     F2 = [
         23.00,
@@ -244,7 +271,7 @@ def test_KS_test():
         38.00,
         38.00,
     ]
-    test_diff = KS_test(P1, F1, P2, F2, plot=False)
+    test_diff = ks_test(P1, F1, P2, F2, plot=False)
     exp_diff = 4.5
     assert test_diff == exp_diff
 
