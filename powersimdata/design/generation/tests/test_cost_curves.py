@@ -17,7 +17,7 @@ mock_plant = {
     "type": [
         "coal",
         "coal",
-        "ng",
+        "coal",
         "ng",
         "coal",
         "ng",
@@ -240,20 +240,37 @@ def test_get_supply_data():
     assert_series_equal(test_slope, exp_slope)
 
 
-def test_build_supply_curve():
-    supply_df = get_supply_data(grid, 1)
-    Ptest, Ftest = build_supply_curve(
-        grid, supply_df, 1, "B", "ng", "loadzone", plot=False
-    )
+def test_build_supply_curve_1seg():
+    Ptest, Ftest = build_supply_curve(grid, 1, "B", "ng", "loadzone", plot=False)
     Pexp = [0, 10, 10, 30, 30, 50, 50, 100, 100, 200]
     Fexp = [25.10, 25.10, 30.40, 30.40, 30.40, 30.40, 31.25, 31.25, 40.00, 40.00]
     assert all([Ptest[i] == Pexp[i] for i in range(len(Ptest))])
     assert all([Ftest[i] == Fexp[i] for i in range(len(Ptest))])
 
 
+def test_build_supply_curve_2seg():
+    Ptest, Ftest = build_supply_curve(grid, 2, "A", "coal", "loadzone", plot=False)
+    Pexp = [0, 10, 10, 20, 20, 45, 45, 70, 70, 120, 120, 170]
+    Fexp = [
+        30.100,
+        30.100,
+        30.300,
+        30.300,
+        30.625,
+        30.625,
+        31.875,
+        31.875,
+        37.500,
+        37.500,
+        42.500,
+        42.500,
+    ]
+    assert all([Ptest[i] == Pexp[i] for i in range(len(Ptest))])
+    assert all([Ftest[i] == Fexp[i] for i in range(len(Ptest))])
+
+
 def test_ks_test():
-    supply_df = get_supply_data(grid, 1)
-    P1, F1 = build_supply_curve(grid, supply_df, 1, "C", "coal", "loadzone", plot=False)
+    P1, F1 = build_supply_curve(grid, 1, "C", "coal", "loadzone", plot=False)
     P2 = [0, 15, 15, 40, 40, 75, 75, 130, 130, 190, 190, 225, 225, max(P1)]
     F2 = [
         23.00,
