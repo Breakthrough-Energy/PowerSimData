@@ -57,12 +57,20 @@ mock_dcline = {
     "to_bus_id": [2021106],
 }
 
+mock_storage_gen = {
+    "Pmax": [100, 200],
+    "bus_id": [2010228, 2021106],
+    "type": ["storage"] * 2,
+}
+
 grid_attrs = {
     "plant": mock_plant,
     "bus": mock_bus,
     "branch": mock_branch,
     "dcline": mock_dcline,
+    "storage_gen": mock_storage_gen,
 }
+
 
 @pytest.fixture
 def mock_grid():
@@ -101,6 +109,7 @@ def test_calculate_gen_inv_costs_2030(mock_grid):
         "coal": 30e3 * 1.05221 * 4049.047403,
         "wind": 10e3 * 1.16979 * 1297.964758 + 15e3 * 1.04348 * 1297.964758,
         "ng": 20e3 * 1.050755 * 983.2351768,
+        "storage": 100e3 * 1.012360 * 817 + 200e3 * 1.043730 * 817,
     }
     assert gen_inv_cost.keys() == expected_gen_inv_cost.keys()
     for k in gen_inv_cost.keys():
