@@ -273,6 +273,7 @@ def calculate_gen_inv_costs(scenario, year, cost_case):
     grid_new.storage["gen"].Pmax = (
         grid.storage["gen"].Pmax - base_grid.storage["gen"].Pmax
     )
+    grid_new.storage["gen"]["type"] = "storage"
 
     # Drop small changes
     grid_new.plant = grid_new.plant[grid_new.plant.Pmax > 0.01]
