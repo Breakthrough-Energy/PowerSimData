@@ -17,7 +17,15 @@ setup(
     author="Kaspar Mueller",
     author_email="kaspar.mueller@breakthroughenergy.org",
     packages=find_packages(),
-    package_data={"powersimdata": ["network/*/data/*.csv"]},
+    package_data={
+        "powersimdata": [
+            "network/*/data/*.csv",
+            "design/investment/data/*.csv",
+            "design/investment/data/rs/*",
+            "design/investment/data/NEEM/*",
+            "design/investment/data/mapping/*",
+        ]
+    },
     zip_safe=False,
     install_requires=install_requires,
 )
