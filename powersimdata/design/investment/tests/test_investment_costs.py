@@ -44,6 +44,12 @@ mock_plant = {
     "type": ["solar", "coal", "wind", "solar", "solar", "ng", "wind"],
     "Pmax": [15, 30, 10, 12, 8, 20, 15],
 }
+mock_plant["lat"] = [
+    mock_bus["lat"][mock_bus["bus_id"].index(bus)] for bus in mock_plant["bus_id"]
+]
+mock_plant["lon"] = [
+    mock_bus["lon"][mock_bus["bus_id"].index(bus)] for bus in mock_plant["bus_id"]
+]
 
 mock_dcline = {
     "dcline_id": [5],
@@ -81,3 +87,22 @@ def test_calculate_dc_inv_costs(mock_grid):
     expected_dc_cost = 10 * 679.1799258421203 * 457.1428571 + 550000000
     dc_cost = _calculate_dc_inv_costs(mock_grid, "2025")
     assert dc_cost == pytest.approx(expected_dc_cost)
+
+
+def test_calculate_gen_inv_costs_2030(mock_grid):
+    gen_inv_cost = _calculate_gen_inv_costs(mock_grid, 2030, "Moderate").to_dict()
+    expected_gen_inv_cost = {
+        "solar": sum(
+            [
+                15e3 * 1.01701 * 836.3842785,
+                12e3 * 1.01701 * 836.3842785,
+                8e3 * 1.01701 * 836.3842785,
+            ]
+        ),
+        "coal": 30e3 * 1.05221 * 4049.047403,
+        "wind": 10e3 * 1.16979 * 1297.964758 + 15e3 * 1.04348 * 1297.964758,
+        "ng": 20e3 * 1.050755 * 983.2351768,
+    }
+    assert gen_inv_cost.keys() == expected_gen_inv_cost.keys()
+    for k in gen_inv_cost.keys():
+        assert gen_inv_cost[k] == pytest.approx(expected_gen_inv_cost[k])
