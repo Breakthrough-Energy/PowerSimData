@@ -105,14 +105,18 @@ def make_dir(filename):
 
 
 def points_to_polys(df, name, shpfile, crs="EPSG:4326", search_dist=0.04):
-    """Given a dataframe which includes 'lat' and 'lon' columns, and a shapefile of Polygons/Multipolygon regions, map df.index to closest regions.
+    """Given a dataframe which includes 'lat' and 'lon' columns, and a shapefile of
+        Polygons/Multipolygon regions, map df.index to closest regions.
 
     :param pandas.DataFrame df: includes an index, and 'lat' and 'lon' columns.
     :param str name: what to name the id (bus, plant, substation, etc)
-    :param str shpfile: name of shapefile containing a collection Polygon/Multipolygon shapes with region IDs.
+    :param str shpfile: name of shapefile containing a collection Polygon/Multipolygon
+        shapes with region IDs.
     :param str crs: coordinate reference system
     :param float/int search_dist: distance to search from point for nearest polygon.
-    :return: (*geopandas.GeoDataFrame*) --  columns: index id, (point) geometry, [region, other properties of region]
+    :raises ValueError: if some points are dropped because too far away from polys.
+    :return: (*geopandas.GeoDataFrame*) --
+        columns: index id, (point) geometry, [region, other properties of region]
     """
     polys = gpd.read_file(shpfile)
 
@@ -137,16 +141,19 @@ def points_to_polys(df, name, shpfile, crs="EPSG:4326", search_dist=0.04):
 
     if len(pts) > len(pts_poly):
         dropped = pts[~pts[id_name].isin(pts_poly[id_name])][id_name].to_list()
-        raise ValueError(
-            "Some points dropped because could not be mapped to regions. Check your lat/lon values to be sure it's in the US. Or increase search_dist if close. Problem ids: "
-            + str(dropped)
+        err_msg = (
+            "Some points dropped because could not be mapped to regions. "
+            "Check your lat/lon values to be sure it's in the US. "
+            f"Or increase search_dist if close. Problem ids: {dropped}"
         )
+        raise ValueError(err_msg)
 
     return pts_poly
 
 
 def plant_to_reeds_reg(df):
-    """Given a dataframe of plants, return a dataframe of plant_id's with associated ReEDS regions (wind resource regions (rs) and BA regions (rb)).
+    """Given a dataframe of plants, return a dataframe of plant_id's with associated
+        ReEDS regions (wind resource regions (rs) and BA regions (rb)).
     Used to map regional generation investment cost multipliers.
     region_map.csv is from: "/bokehpivot/in/reeds2/region_map.csv".
     rs/rs.shp is created with write_poly_shapefile().
@@ -155,8 +162,9 @@ def plant_to_reeds_reg(df):
     :return: (*pandas.DataFrame*) -- plant_id map. columns: plant_id, rs, rb
     """
     # load polygons for ReEDS BAs
-    # warning that these polygons are rough and not very detailed - meant for illustrative purposes. Might be worth it later to revisit and try to fine-tune this
-    # but since the multipliers aren't super strict by region, it's fine for now.
+    # warning that these polygons are rough and not very detailed, meant for
+    #  illustrative purposes. Might be worth it later to revisit and try to fine-tune
+    #  this but since the multipliers aren't super strict by region, it's fine for now.
 
     pts_poly = points_to_polys(
         df, "plant", const.reeds_wind_shapefile_path, search_dist=0.2
@@ -174,14 +182,17 @@ def plant_to_reeds_reg(df):
 
 
 def bus_to_neem_reg(df):
-    """Given a dataframe of buses, return a dataframe of bus_id's with associated NEEM region, lat, and lon of bus.
+    """Given a dataframe of buses, return a dataframe of bus_id's with associated
+        NEEM region, lat, and lon of bus.
     Used to map regional transmission investment cost multipliers.
-    Shapefile used to map is 'NEEM/NEEMregions.shp' which is pulled from Energy Zones Mapping Tool at http://ezmt.anl.gov. This map is overly \
-    detailed, so I simplified the shapes using 1 km distance (Douglas-Peucker) method in QGIS.
+    Shapefile used to map is 'NEEM/NEEMregions.shp' which is pulled from Energy Zones
+        Mapping Tool at http://ezmt.anl.gov. This map is overly detailed, so I
+        simplified the shapes using 1 km distance (Douglas-Peucker) method in QGIS.
 
 
     :param pandas.DataFrame df: grid.bus instance.
-    :return: (*pandas.DataFrame*) -- bus_id map. columns: bus_id, lat, lon, name_abbr (NEEM region)
+    :return: (*pandas.DataFrame*) -- bus_id map.
+        columns: bus_id, lat, lon, name_abbr (NEEM region)
 
     Note: mapping may take a while, especially for many points.
     """
@@ -202,12 +213,8 @@ def bus_to_neem_reg(df):
 def write_bus_neem_map():
     """
     Maps the bus locations from the base USA grid to NEEM regions.
-    Writes out csv with bus numbers, associated NEEM region, and lat/lon of bus (to check if consistent with bus location in _calculate_ac_inv_costs).
-    Shapefile used to map is 'NEEM/NEEMregions.shp' which is pulled from Energy Zones Mapping Tool at http://ezmt.anl.gov. This map is overly \
-    detailed, so I simplified the shapes using 1 km distance (Douglas-Peucker) method in QGIS.
-
-    Note: This code takes a few hours to run. Should only need to run once for all buses. If there are only a few changed buses, the regional \
-    multiplier code can handle it.
+    Writes out csv with bus numbers, associated NEEM region, and lat/lon of bus
+        (to check if consistent with bus location in _calculate_ac_inv_costs).
     """
     make_dir(const.bus_regions_path)
 
@@ -218,14 +225,16 @@ def write_bus_neem_map():
 
 def write_poly_shapefile():
     """
-    Converts a ReEDS csv-format file to a shapefile. Shouldn't need to run again unless new source data.
+    Converts a ReEDS csv-format file to a shapefile. Shouldn't need to run again
+        unless new source data.
     Right now, hard-coded read ReEDS wind resource regions (labelled rs).
     gis_rs.csv is from ReEDS open-source: "/bokehpivot/in/gis_rs.csv"
     hierarchy.csv is from: "/bokehpivot/in/reeds2/hierarchy.csv"
     writes out the shapefile in "rs/rs.shp"
 
-    Note: These ReEDS wind resource region shapes are approximate. Thus, there are probably some mistakes, but this is \
-    currently only used for mapping plant regional multipliers, which are approximate anyway, so it should be fine.
+    Note: These ReEDS wind resource region shapes are approximate. Thus, there are
+        probably some mistakes, but this is currently only used for mapping plant
+        regional multipliers, which are approximate anyway, so it should be fine.
     """
     outpath = const.reeds_wind_shapefile_path
     make_dir(outpath)
