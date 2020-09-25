@@ -13,7 +13,10 @@ indices = {
 }
 
 gencost_names = {"gencost_before": "before", "gencost_after": "after"}
-acceptable_keys = set(indices.keys()) | set(gencost_names.keys())
+storage_names = {"storage_gen": "gen"}
+acceptable_keys = (
+    set(indices.keys()) | set(gencost_names.keys()) | set(storage_names.keys())
+)
 
 # The column names of each data frame attribute
 sub_columns = ["name", "interconnect_sub_id", "lat", "lon", "interconnect"]
@@ -144,6 +147,11 @@ plant_columns = [
     "lon",
 ]
 
+storage_columns = {
+    # The first 21 columns of plant are all that's necessary
+    "gen": plant_columns[:21],
+}
+
 
 class MockGrid(object):
     def __init__(self, grid_attrs=None):
@@ -204,6 +212,18 @@ class MockGrid(object):
             df.set_index("plant_id", inplace=True)
             gencost[gc_name] = df
         self.gencost = gencost
+
+        # Storage is special because there are multiple dataframes in a dict
+        storage = {}
+        for storage_attr_name, storage_name in storage_names.items():
+            if storage_attr_name in grid_attrs:
+                df = pd.DataFrame(grid_attrs[storage_attr_name])
+            else:
+                df = pd.DataFrame(
+                    columns=(["plant_id"] + storage_columns[storage_name])
+                )
+            storage[storage_name] = df
+        self.storage = storage
 
     @property
     def __class__(self):
