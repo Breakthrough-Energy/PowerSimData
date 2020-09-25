@@ -265,6 +265,14 @@ def calculate_gen_inv_costs(scenario, year, cost_case):
     # Reindex so that we don't get NaN when calculating upgrades for new generators
     base_grid.plant = base_grid.plant.reindex(grid_new.plant.index).fillna(0)
     grid_new.plant.Pmax = grid.plant.Pmax - base_grid.plant.Pmax
+    # Find change in storage capacity
+    # Reindex so that we don't get NaN when calculating upgrades for new storage
+    base_grid.storage["gen"] = base_grid.storage["gen"].reindex(
+        grid_new.storage["gen"].index, fill_value=0
+    )
+    grid_new.storage["gen"].Pmax = (
+        grid.storage["gen"].Pmax - base_grid.storage["gen"].Pmax
+    )
 
     # Drop small changes
     grid_new.plant = grid_new.plant[grid_new.plant.Pmax > 0.01]
@@ -350,7 +358,7 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
     else:
         raise TypeError("cost_case must be str.")
 
-    plants = grid_new.plant
+    plants = grid_new.plant.append(grid_new.storage["gen"])
     plants = plants[
         ~plants.type.isin(["dfo", "other"])
     ]  # drop these technologies, no cost data
