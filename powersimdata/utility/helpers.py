@@ -73,7 +73,7 @@ class CacheKeyBuilder:
         if arg is None:
             return "null"
         if isinstance(arg, (str, int, bool)):
-            return str(arg)
+            return arg
         if isinstance(arg, (list, set, tuple)):
             return tuple(self._build(a) for a in arg)
         raise ValueError(f"unsupported type for cache key = {type(arg)}")

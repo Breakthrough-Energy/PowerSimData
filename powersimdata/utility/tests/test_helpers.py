@@ -16,15 +16,15 @@ def test_print_is_disabled(capsys):
     assert captured.out == "printout are enabled\n"
 
 
-def test_cache_key_types():
+def test_cache_key_valid_types():
     key1 = cache_key(["foo", "bar"], 4, "other")
-    assert (("foo", "bar"), "4", "other") == key1
+    assert (("foo", "bar"), 4, "other") == key1
 
     key2 = cache_key(True)
-    assert ("True",) == key2
+    assert (True,) == key2
 
     key3 = cache_key({1, 2, 2, 3})
-    assert (("1", "2", "3"),) == key3
+    assert ((1, 2, 3),) == key3
 
     key4 = cache_key(None)
     assert ("null",) == key4
@@ -43,9 +43,21 @@ def test_cache_key_unsupported_type():
         cache_key(object())
 
 
+def test_cache_key_distinct_types():
+    assert cache_key(4) != cache_key("4")
+
+
 def test_mem_cache_put_dict():
     cache = MemoryCache()
-    first = cache_key(["foo", "bar"], 4, "other")
+    key = cache_key(["foo", "bar"], 4, "other")
     obj = {"key1": 42}
-    cache.put(first, obj)
-    assert cache.get(first) == obj
+    cache.put(key, obj)
+    assert cache.get(key) == obj
+
+
+def test_mem_cache_get_returns_copy():
+    cache = MemoryCache()
+    key = cache_key("foo", 4)
+    obj = {"key1": 42}
+    cache.put(key, obj)
+    assert id(cache.get(key)) != id(obj)
