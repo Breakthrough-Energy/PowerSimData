@@ -18,18 +18,29 @@ def test_print_is_disabled(capsys):
 
 def test_cache_key_types():
     key1 = cache_key(["foo", "bar"], 4, "other")
-    assert ("foo-bar", "4", "other") == key1
+    assert (("foo", "bar"), "4", "other") == key1
 
     key2 = cache_key(True)
     assert ("True",) == key2
 
     key3 = cache_key({1, 2, 2, 3})
-    assert ("1-2-3",) == key3
+    assert (("1", "2", "3"),) == key3
+
+    key4 = cache_key(None)
+    assert ("null",) == key4
+
+
+def test_no_collision():
+    key1 = cache_key([["foo"], ["bar"]])
+    key2 = cache_key([[["foo"], ["bar"]]])
+    key3 = cache_key([["foo"], "bar"])
+    keys = [key1, key2, key3]
+    assert len(keys) == len(set(keys))
 
 
 def test_cache_key_unsupported_type():
     with pytest.raises(ValueError):
-        cache_key(object)
+        cache_key(object())
 
 
 def test_mem_cache_put_dict():

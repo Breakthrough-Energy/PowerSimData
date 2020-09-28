@@ -33,10 +33,12 @@ class CacheKeyBuilder:
         return tuple(self._build(a) for a in self.args)
 
     def _build(self, arg):
+        if arg is None:
+            return "null"
         if isinstance(arg, (str, int, bool)):
             return str(arg)
         if isinstance(arg, (list, set, tuple)):
-            return "-".join(self._build(a) for a in arg)
+            return tuple(self._build(a) for a in arg)
         raise ValueError(f"unsupported type for cache key = {type(arg)}")
 
 
