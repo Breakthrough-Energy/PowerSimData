@@ -9,13 +9,16 @@ from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
 
 
 def linearize_gencost(input_grid, num_segments=1):
-    """Updates the generator cost information to include piecewise linear cost curve information. Allows the user to
-    specify the number of piecewise segments into which the cost curve should be split.
+    """Updates the generator cost information to include piecewise linear cost curve
+    information. Allows the user to specify the number of piecewise segments into which
+    the cost curve should be split.
 
     :param powersimdata.inout.grid.Grid input_grid: Grid object.
-    :param int num_segments: The number of segments into which the piecewise linear cost curve will be split.
-    :return: (*pandas.DataFrame*) -- An updated DataFrame containing the piecewise linear cost curve parameters.
-    :raises TypeError: if the generator cost curve is not of a form that can be handled.
+    :param int num_segments: The number of segments into which the piecewise linear
+        cost curve will be split.
+    :return: (*pandas.DataFrame*) -- An updated DataFrame containing the piecewise
+        linear cost curve parameters.
+    :raises ValueError: if the generator cost curve is not of an acceptable form.
     """
 
     # Access the generator cost and plant information components
@@ -78,12 +81,16 @@ def linearize_gencost(input_grid, num_segments=1):
 
 
 def get_supply_data(grid, num_segments=1, save=None):
-    """Accesses the generator cost and plant information data from a specified Grid object.
+    """Accesses the generator cost and plant information data from a specified Grid
+    object.
 
     :param powersimdata.input.grid.Grid grid: Grid object.
-    :param int num_segments: The number of segments into which the piecewise linear cost curve will be split.
-    :param str save: Saves a .csv if a str representing a valid file path and file name is provided. If None, nothing is saved.
-    :return: (*pandas.DataFrame*) -- Supply information needed to analyze cost and supply curves.
+    :param int num_segments: The number of segments into which the piecewise linear
+        cost curve will be split.
+    :param str save: Saves a .csv if a str representing a valid file path and file
+        name is provided. If None, nothing is saved.
+    :return: (*pandas.DataFrame*) -- Supply information needed to analyze cost and
+        supply curves.
     :raises TypeError: if a powersimdata.input.grid.Grid object is not input, or
         if the save parameter is not input as a str.
     """
@@ -132,14 +139,17 @@ def get_supply_data(grid, num_segments=1, save=None):
     return supply_df
 
 
-def check_supply_data(data, num_segments):
-    """Checks to make sure that the input supply data is a DataFrame and has the correct columns. This is especially needed for checking
-    instances where the input supply data is not the DataFrame returned from get_supply_data().
+def check_supply_data(data, num_segments=1):
+    """Checks to make sure that the input supply data is a DataFrame and has the
+    correct columns. This is especially needed for checking instances where the input
+    supply data is not the DataFrame returned from get_supply_data().
 
     :param pandas.DataFrame data: DataFrame containing the supply curve information.
-    :param int num_segments: The number of segments into which the piecewise linear cost curve will be split.
+    :param int num_segments: The number of segments into which the piecewise linear
+        cost curve will be split.
     :raises TypeError: if the input supply data is not a pandas.DataFrame.
-    :raises ValueError: if one of the mandatory columns is missing from the input supply data.
+    :raises ValueError: if one of the mandatory columns is missing from the input
+        supply data.
     """
 
     # Check that the data is input as a DataFrame
@@ -166,22 +176,26 @@ def check_supply_data(data, num_segments):
     # Make sure all of the mandatory columns are contained in the input DataFrame
     miss_cols = mand_cols - set(data.columns)
     if len(miss_cols) > 0:
-        raise ValueError(
-            f'Not all required columns are included. Missing columns: {", ".join(miss_cols)}'
-        )
+        raise ValueError(f'Missing columns: {", ".join(miss_cols)}')
 
 
 def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=True):
     """Builds a supply curve for a specified area and generation type.
 
     :param powersimdata.input.grid.Grid grid: Grid object.
-    :param int num_segments: The number of segments into which the piecewise linear cost curve is split.
-    :param str area: Either the interconnection or load zone.
+    :param int num_segments: The number of segments into which the piecewise linear
+        cost curve is split.
+    :param str area: Either the load zone, state name, state abbreviation, or
+        interconnect.
     :param str gen_type: Generation type.
-    :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*, *'interconnect'*.
-    :param bool plot: If True, the supply curve plot is shown. If False, the plot is not shown.
+    :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*. Defaults to None, which allows area_to_loadzone() to infer
+        the type.
+    :param bool plot: If True, the supply curve plot is shown. If False, the plot is
+        not shown.
     :return: (*tuple*) -- Tuple containing:
-        P (*list*) -- List of capacity (MW) amounts needed to create supply curve (floats).
+        P (*list*) -- List of capacity (MW) amounts needed to create supply curve
+            (floats).
         F (*list*) -- List of bids ($/MW) in the supply curve (floats).
     :raises TypeError: if a powersimdata.input.grid.Grid object is not input.
     :raises ValueError: if the specified area or generator type is not applicable.
@@ -194,7 +208,7 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
     # Check that the desired number of linearized cost curve segments is an int
     if not isinstance(num_segments, int):
         raise TypeError(
-            "The desired number of linearized cost curve segments must be input as an int."
+            "The number of linearized cost curve segments must be input as an int."
         )
 
     # Obtain the desired generator cost and plant information data
@@ -214,7 +228,7 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
     data = data.loc[data.zone_name.isin(returned_zones)]
     data = data.loc[data["type"] == gen_type]
 
-    # Remove generators that have no capacity, and hence a slope of NaN (e.g., Maine coal generators)
+    # Remove generators that have no capacity (e.g., Maine coal generators)
     if data["slope1"].isnull().values.any():
         data.dropna(subset=["slope1"], inplace=True)
 
@@ -263,37 +277,42 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
 
 
 def lower_bound_index(x, l):
-    """Determines the index of the lower capacity value that defines a price segment. Useful for accessing the prices
-    associated with capacity values that aren't explicitly stated in the capacity lists that are generated by the
+    """Determines the index of the lower capacity value that defines a price segment.
+    Useful for accessing the prices associated with capacity values that aren't
+    explicitly stated in the capacity lists that are generated by the
     build_supply_curve() function. Needed for ks_test().
 
-    :param float/int x: Capacity value for which you want to determine the index of the lowest capacity value in a price segment.
+    :param float/int x: Capacity value for which you want to determine the index of the
+        lowest capacity value in a price segment.
     :param list l: List of capacity values used to generate a supply curve.
     :return: (*int*) -- Index of a price segment's capacity lower bound.
     """
 
-    # Check that the list is not empty and that the provided capacity value can fall within the list range
+    # Check that the list is not empty and that the capacity falls within the list range
     if not l or l[0] > x:
         return None
 
-    # Find the index of the capacity value that is equal to or immediately lower than the provided capacity value
+    # Get the index of the value that is immediately less than the provided capacity
     for i, j in enumerate(l):
         if j > x:
             return i - 1
 
 
 def ks_test(P1, F1, P2, F2, area=None, gen_type=None, plot=True):
-    """Runs a test that is similar to the Kolmogorov-Smirnov test. This function takes two supply curves as inputs
-    and returns the greatest difference in price between the two supply curves. This function requires that the
-    supply curves offer the same amount of capacity.
+    """Runs a test that is similar to the Kolmogorov-Smirnov test. This function takes
+    two supply curves as inputs and returns the greatest difference in price between
+    the two supply curves. This function requires that the supply curves offer the same
+    amount of capacity.
 
     :param list P1: List of capacity values for the first supply curve.
     :param list F1: List of price values for the first supply curve.
     :param list P2: List of capacity values for the second supply curve.
     :param list F2: List of price values for the second supply curve.
-    :param str area: Either the interconnection or load zone. Defaults to None because it's not essential.
+    :param str area: Either the load zone, state name, state abbreviation, or
+        interconnect. Defaults to None because it's not essential.
     :param str gen_type: Generation type. Defaults to None because it's not essential.
-    :param bool plot: If True, the supply curve plot is shown. If False, the plot is not shown.
+    :param bool plot: If True, the supply curve plot is shown. If False, the plot is
+        not shown.
     :return: (*float*) -- The maximum price difference between the two supply curves.
     :raises TypeError: if the capacity and price inputs are not provided as lists.
     :raises ValueError: if the supply curves do not offer the same amount of capacity.
@@ -309,7 +328,7 @@ def ks_test(P1, F1, P2, F2, area=None, gen_type=None, plot=True):
             "The two supply curves do not offer the same amount of capacity (MW)."
         )
 
-    # Create a list that captures every capacity value in which either supply curve steps up
+    # Create a list that has every capacity value in which either supply curve steps up
     P_all = list(set(P1) | set(P2))
     P_all.sort()
 
@@ -361,7 +380,6 @@ def ks_test(P1, F1, P2, F2, area=None, gen_type=None, plot=True):
 
 def plot_c1_vs_c2(
     grid,
-    num_segments,
     area,
     gen_type,
     area_type=None,
@@ -373,14 +391,20 @@ def plot_c1_vs_c2(
     """Compares the c1 and c2 parameters from the quadratic generator cost curves.
 
     :param powersimdata.input.grid.Grid grid: Grid object.
-    :param int num_segments: The number of segments into which the piecewise linear cost curve is split.
-    :param str area: Either the interconnection or load zone.
+    :param str area: Either the load zone, state name, state abbreviation, or
+        interconnect.
     :param str gen_type: Generation type.
-    :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*, *'interconnect'*.
-    :param bool plot: If True, the c1 vs. c2 plot is shown. If False, the plot is not shown.
-    :param bool zoom: If True, filters out c2 outliers to enable better visualization. If False, there is no filtering.
-    :param float/int num_sd: The number of standard deviations used to filter out c2 outliers.
-    :param float alpha: The alpha blending value for the scatter plot; takes values between 0 (transparent) and 1 (opaque).
+    :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*. Defaults to None, which allows area_to_loadzone() to infer
+        the type.
+    :param bool plot: If True, the c1 vs. c2 plot is shown. If False, the plot is not
+        shown.
+    :param bool zoom: If True, filters out c2 outliers to enable better visualization.
+        If False, there is no filtering.
+    :param float/int num_sd: The number of standard deviations used to filter out c2
+        outliers.
+    :param float alpha: The alpha blending value for the scatter plot; takes values
+        between 0 (transparent) and 1 (opaque).
     :return: (*None*) -- The c1 vs. c2 plot is displayed according to the user.
     :raises TypeError: if a powersimdata.input.grid.Grid object is not input.
     :raises ValueError: if the specified area or generator type is not applicable.
@@ -390,17 +414,25 @@ def plot_c1_vs_c2(
     if not isinstance(grid, Grid):
         raise TypeError("A Grid object must be input.")
 
-    # Check that the desired number of linearized cost curve segments is an int
-    if not isinstance(num_segments, int):
-        raise TypeError(
-            "The desired number of linearized cost curve segments must be input as an int."
-        )
+    # Obtain a copy of the Grid object
+    grid = copy.deepcopy(grid)
 
-    # Obtain the desired generator cost and plant information data
-    data = get_supply_data(grid, num_segments)
+    # Access the generator cost and plant information data
+    gencost_df = grid.gencost["before"]
+    plant_df = grid.plant
 
-    # Check the input supply data
-    check_supply_data(data, num_segments)
+    # Create a new DataFrame with the desired columns
+    data = pd.concat(
+        [
+            plant_df[["type", "interconnect", "zone_name", "Pmin", "Pmax"]],
+            gencost_df[
+                gencost_df.columns.difference(
+                    ["type", "startup", "shutdown", "n", "interconnect"], sort=False
+                )
+            ],
+        ],
+        axis=1,
+    )
 
     # Check to make sure the generator type is valid
     if gen_type not in data["type"].unique():
@@ -413,9 +445,8 @@ def plot_c1_vs_c2(
     data = data.loc[data.zone_name.isin(returned_zones)]
     data = data.loc[data["type"] == gen_type]
 
-    # Remove generators that have no capacity, and hence a slope of NaN (e.g., Maine coal generators)
-    if data["slope1"].isnull().values.any():
-        data.dropna(subset=["slope1"], inplace=True)
+    # Remove generators that have no capacity (e.g., Maine coal generators)
+    data = data[data["Pmin"] != data["Pmax"]]
 
     # Check if the area contains generators of the specified type
     if data.empty:
@@ -446,9 +477,9 @@ def plot_c1_vs_c2(
         ax = plt.scatter(
             data["c1"],
             data["c2"],
-            s=np.sqrt(data["p" + str(num_segments + 1)]) * 10,
+            s=np.sqrt(data["Pmax"]) * 10,
             alpha=alpha,
-            c=data["p" + str(num_segments + 1)],
+            c=data["Pmax"],
             cmap="plasma",
         )
         plt.grid()
@@ -471,14 +502,20 @@ def plot_c1_vs_c2(
 def plot_capacity_vs_price(
     grid, num_segments, area, gen_type, area_type=None, plot=True
 ):
-    """Plots the generator capacity vs. the generator price for a specified area and generation type.
+    """Plots the generator capacity vs. the generator price for a specified area
+        and generation type.
 
     :param powersimdata.input.grid.Grid grid: Grid object.
-    :param int num_segments: The number of segments into which the piecewise linear cost curve is split.
-    :param str area: Either the interconnection or load zone.
+    :param int num_segments: The number of segments into which the piecewise linear
+        cost curve is split.
+    :param str area: Either the load zone, state name, state abbreviation, or
+        interconnect.
     :param str gen_type: Generation type.
-    :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*, *'interconnect'*.
-    :param bool plot: If True, the supply curve plot is shown. If False, the plot is not shown.
+    :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*. Defaults to None, which allows area_to_loadzone() to infer
+        the type.
+    :param bool plot: If True, the supply curve plot is shown. If False, the plot is
+        not shown.
     :return: (*None*) -- The capacity vs. price plot is displayed according to the user.
     :raises TypeError: if a powersimdata.input.grid.Grid object is not input.
     :raises ValueError: if the specified area or generator type is not applicable.
@@ -491,7 +528,7 @@ def plot_capacity_vs_price(
     # Check that the desired number of linearized cost curve segments is an int
     if not isinstance(num_segments, int):
         raise TypeError(
-            "The desired number of linearized cost curve segments must be input as an int."
+            "The number of linearized cost curve segments must be input as an int."
         )
 
     # Obtain the desired generator cost and plant information data
@@ -511,7 +548,7 @@ def plot_capacity_vs_price(
     data = data.loc[data.zone_name.isin(returned_zones)]
     data = data.loc[data["type"] == gen_type]
 
-    # Remove generators that have no capacity, and hence a slope of NaN (e.g., Maine coal generators)
+    # Remove generators that have no capacity (e.g., Maine coal generators)
     if data["slope1"].isnull().values.any():
         data.dropna(subset=["slope1"], inplace=True)
 
