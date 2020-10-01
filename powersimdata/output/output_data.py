@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -41,6 +42,9 @@ class OutputData(object):
         try:
             data = _read_data(file_name)
             return data
+        except pickle.UnpicklingError:
+            err_msg = f"Unable to unpickle {file_name}, possibly corrupted in download."
+            raise ValueError(err_msg)
         except FileNotFoundError:
             print(
                 "%s not found in %s on local machine"
