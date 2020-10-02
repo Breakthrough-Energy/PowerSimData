@@ -1,4 +1,5 @@
 import copy
+import importlib
 import os
 import sys
 
@@ -94,3 +95,15 @@ class PrintManager(object):
     def enable_print(self):
         """Enables print"""
         sys.stdout = self.stdout
+
+
+def _check_import(package_name):
+    """Import a package, or give a useful error message if it's not there."""
+    try:
+        return importlib.import_module(package_name)
+    except ImportError:
+        err_msg = (
+            f"{package_name} is not installed. "
+            "It may be an optional powersimdata requirement."
+        )
+        raise ImportError(err_msg)

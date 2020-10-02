@@ -1,11 +1,11 @@
 import copy
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 from powersimdata.input.grid import Grid
 from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
+from powersimdata.utility.helpers import _check_import
 
 
 def linearize_gencost(input_grid, num_segments=1):
@@ -263,6 +263,7 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
 
     # Plot the curve
     if plot:
+        plt = _check_import("matplotlib.pyplot")
         plt.figure(figsize=[20, 10])
         plt.plot(P, F)
         plt.title(f"Supply curve for {gen_type} generators in {area}", fontsize=20)
@@ -358,6 +359,7 @@ def ks_test(P1, F1, P2, F2, area=None, gen_type=None, plot=True):
 
     # Plot the two supply curves overlaid
     if plot:
+        plt = _check_import("matplotlib.pyplot")
         plt.figure(figsize=[20, 10])
         plt.plot(P1, F1)
         plt.plot(P2, F2)
@@ -409,6 +411,8 @@ def plot_c1_vs_c2(
     :raises TypeError: if a powersimdata.input.grid.Grid object is not input.
     :raises ValueError: if the specified area or generator type is not applicable.
     """
+
+    plt = _check_import("matplotlib.pyplot")
 
     # Check that a Grid object is input
     if not isinstance(grid, Grid):
@@ -520,6 +524,8 @@ def plot_capacity_vs_price(
     :raises TypeError: if a powersimdata.input.grid.Grid object is not input.
     :raises ValueError: if the specified area or generator type is not applicable.
     """
+
+    plt = _check_import("matplotlib.pyplot")
 
     # Check that a Grid object is input
     if not isinstance(grid, Grid):
