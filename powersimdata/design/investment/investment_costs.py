@@ -12,7 +12,7 @@ from powersimdata.input.grid import Grid
 from powersimdata.utility.distance import haversine
 
 
-def calculate_ac_inv_costs(scenario, year):
+def calculate_ac_inv_costs(scenario):
     """Given a Scenario object, calculate the total cost of building that scenario's
     upgrades of lines and transformers.
     Currently uses NEEM regions to find regional multipliers.
@@ -21,7 +21,6 @@ def calculate_ac_inv_costs(scenario, year):
     (some empty parts of table)
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param int/str year: the year of the transmission upgrades.
     :return: (*dict*) -- Total costs (line costs, transformer costs) (in $2010).
     """
 
@@ -35,11 +34,11 @@ def calculate_ac_inv_costs(scenario, year):
     grid_new.branch.rateA = grid.branch.rateA - base_grid.branch.rateA
     grid_new.branch = grid_new.branch[grid_new.branch.rateA != 0.0]
 
-    costs = _calculate_ac_inv_costs(grid_new, year)
+    costs = _calculate_ac_inv_costs(grid_new)
     return costs
 
 
-def _calculate_ac_inv_costs(grid_new, year):
+def _calculate_ac_inv_costs(grid_new):
     """Given a grid, calculate the total cost of building that grid's
     lines and transformers.
     This function is separate from calculate_ac_inv_costs() for testing purposes.
@@ -48,9 +47,6 @@ def _calculate_ac_inv_costs(grid_new, year):
     Currently ignores financials, but all values are in 2010 $-year.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :param int/str year: year of builds (used in financials).
-    :raises ValueError: if year not 2020 - 2050.
-    :raises TypeError: if year gets the wrong type.
     :return: (*dict*) -- Total costs (line costs, transformer costs) (in $2010).
     """
 
@@ -78,13 +74,6 @@ def _calculate_ac_inv_costs(grid_new, year):
         tmp = tmp[~tmp["MW"].isna()]
         # find closest MW & corresponding cost
         return tmp.iloc[np.argmin(np.abs(tmp["MW"] - x.rateA))][["MW", "costMWmi"]]
-
-    if isinstance(year, (int, str)):
-        year = int(year)
-        if year not in range(2020, 2051):
-            raise ValueError("year not in range.")
-    else:
-        raise TypeError("year must be int or str.")
 
     # import data
     ac_cost = pd.DataFrame(const.ac_line_cost)
@@ -174,12 +163,11 @@ def _calculate_ac_inv_costs(grid_new, year):
     return dict1
 
 
-def calculate_dc_inv_costs(scenario, year):
+def calculate_dc_inv_costs(scenario):
     """Given a Scenario object, calculate the total cost of that grid's dc line
         investment. Currently ignores financials, but all values are in 2015 $-year.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param int/str year: the year of the upgrade to calculate costs
     :return: (*float*) -- Total dc line costs (in $2015).
     """
     base_grid = Grid(scenario.info["interconnect"].split("_"))
@@ -192,19 +180,16 @@ def calculate_dc_inv_costs(scenario, year):
     grid_new.dcline.Pmax = grid.dcline.Pmax - base_grid.dcline.Pmax
     grid_new.dcline = grid_new.dcline[grid_new.dcline.Pmax != 0.0]
 
-    costs = _calculate_dc_inv_costs(grid_new, year)
+    costs = _calculate_dc_inv_costs(grid_new)
     return costs
 
 
-def _calculate_dc_inv_costs(grid_new, year):
+def _calculate_dc_inv_costs(grid_new):
     """Given a grid, calculate the total cost of that grid's dc line investment.
     This function is separate from calculate_dc_inv_costs() for testing purposes.
     Currently ignores financials, but all values are in 2015 $-year.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :param int/str year: year of builds (used in financials).
-    :raises ValueError: if year not 2020 - 2050.
-    :raises TypeError: if year gets the wrong type.
     :return: (*float*) -- Total dc line costs (in $2015).
     """
 
@@ -228,13 +213,6 @@ def _calculate_dc_inv_costs(grid_new, year):
         line_cost = mw_miles * const.hvdc_line_cost["costMWmi"]
         total_cost = line_cost + const.hvdc_terminal_cost
         return total_cost
-
-    if isinstance(year, (int, str)):
-        year = int(year)
-        if year not in range(2020, 2051):
-            raise ValueError("year not in range.")
-    else:
-        raise TypeError("year must be int or str.")
 
     bus = grid_new.bus
     dcline = grid_new.dcline
