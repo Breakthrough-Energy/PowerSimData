@@ -151,23 +151,18 @@ def points_to_polys(df, name, shpfile, crs="EPSG:4326", search_dist=0.04):
     return pts_poly
 
 
-def plant_to_reeds_reg(df):
-    """Given a dataframe of plants, return a dataframe of plant_id's with associated
+def bus_to_reeds_reg(df):
+    """Given a dataframe of buses, return a dataframe of bus_id's with associated
         ReEDS regions (wind resource regions (rs) and BA regions (rb)).
     Used to map regional generation investment cost multipliers.
     region_map.csv is from: "/bokehpivot/in/reeds2/region_map.csv".
     rs/rs.shp is created with :py:func:`write_poly_shapefile`.
 
-    :param pandas.DataFrame df: grid.plant instance.
-    :return: (*pandas.DataFrame*) -- plant_id map. columns: plant_id, rs, rb
+    :param pandas.DataFrame df: grid bus dataframe.
+    :return: (*pandas.DataFrame*) -- bus_id map. columns: bus_id, rs, rb
     """
-    # load polygons for ReEDS BAs
-    # warning that these polygons are rough and not very detailed, meant for
-    #  illustrative purposes. Might be worth it later to revisit and try to fine-tune
-    #  this but since the multipliers aren't super strict by region, it's fine for now.
-
     pts_poly = points_to_polys(
-        df, "plant", const.reeds_wind_shapefile_path, search_dist=0.2
+        df, "bus", const.reeds_wind_shapefile_path, search_dist=2
     )
 
     # load in rs to rb region mapping file
@@ -176,7 +171,7 @@ def plant_to_reeds_reg(df):
     # map rs (wind region) to rb (ba region)
     pts_poly = pts_poly.merge(region_map, left_on="id", right_on="rs", how="left")
     pts_poly = pd.DataFrame(pts_poly).drop(["geometry", "id"], axis=1)
-    pts_poly.set_index("plant_id", inplace=True)
+    pts_poly.set_index("bus_id", inplace=True)
 
     return pts_poly
 
@@ -215,11 +210,11 @@ def write_bus_neem_map():
     Writes out csv with bus numbers, associated NEEM region, and lat/lon of bus
         (to check if consistent with bus location in _calculate_ac_inv_costs).
     """
-    make_dir(const.bus_regions_path)
+    make_dir(const.bus_neem_regions_path)
 
     base_grid = Grid(["USA"])
     df_pts_bus = bus_to_neem_reg(base_grid.bus)
-    df_pts_bus.to_csv(const.bus_regions_path)
+    df_pts_bus.to_csv(const.bus_neem_regions_path)
 
 
 def write_poly_shapefile():

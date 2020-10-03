@@ -6,7 +6,7 @@ import pandas as pd
 from powersimdata.design.investment import const
 from powersimdata.design.investment.create_mapping_files import (
     bus_to_neem_reg,
-    plant_to_reeds_reg,
+    bus_to_reeds_reg,
 )
 from powersimdata.input.grid import Grid
 from powersimdata.utility.distance import haversine
@@ -107,7 +107,7 @@ def _calculate_ac_inv_costs(grid_new, year):
     lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
 
     # multiply by regional multiplier
-    bus_reg = pd.read_csv(const.bus_regions_path, index_col="bus_id")
+    bus_reg = pd.read_csv(const.bus_neem_regions_path, index_col="bus_id")
 
     # check that all buses included in this file and lat/long values match,
     #   otherwise re-run mapping script on mis-matching buses.
@@ -388,8 +388,17 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
     # REGIONAL COST MULTIPLIER
 
     # Find ReEDS regions of plants (for regional cost multipliers)
-    pts_plant = plant_to_reeds_reg(plants)
-    plants = plants.merge(pts_plant, left_index=True, right_on="plant_id", how="left")
+    plant_buses = plants.bus_id.unique()
+    try:
+        bus_reg = pd.read_csv(const.bus_reeds_regions_path, index_col="bus_id")
+        if not set(plant_buses) <= set(bus_reg.index):
+            missing_buses = set(plant_buses) - set(bus_reg.index)
+            bus_reg = bus_reg.append(bus_to_reeds_reg(grid_new.bus.loc[missing_buses]))
+            bus_reg.sort_index().to_csv(const.bus_reeds_regions_path)
+    except FileNotFoundError:
+        bus_reg = bus_to_reeds_reg(grid_new.bus.loc[plant_buses])
+        bus_reg.sort_index().to_csv(const.bus_reeds_regions_path)
+    plants = plants.merge(bus_reg, left_on="bus_id", right_index=True, how="left")
 
     # Determine one region 'r' for each plant, based on one of two mappings
     plants.loc[:, "r"] = ""

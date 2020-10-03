@@ -32,7 +32,8 @@ transformer_cost = {
 
 data_dir = os.path.join(os.path.dirname(__file__), "data")
 ac_reg_mult_path = os.path.join(data_dir, "LineRegMult.csv")
-bus_regions_path = os.path.join(data_dir, "buses_NEEMregion.csv")
+bus_neem_regions_path = os.path.join(data_dir, "buses_NEEMregion.csv")
+bus_reeds_regions_path = os.path.join(data_dir, "buses_ReEDS_region.csv")
 gen_inv_cost_path = os.path.join(data_dir, "2020-ATB-Summary_CAPEX.csv")
 neem_shapefile_path = os.path.join(data_dir, "NEEM", "NEEMregions.shp")
 reeds_mapping_hierarchy_path = os.path.join(data_dir, "mapping", "hierarchy.csv")
