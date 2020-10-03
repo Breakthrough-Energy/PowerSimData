@@ -1,13 +1,10 @@
 import os
 
-import fiona
-import geopandas as gpd
 import pandas as pd
-from shapely.geometry import Polygon, mapping
-from shapely.ops import nearest_points
 
 from powersimdata.design.investment import const
 from powersimdata.input.grid import Grid
+from powersimdata.utility.helpers import _check_import
 
 
 def sjoin_nearest(
@@ -65,6 +62,8 @@ def sjoin_nearest(
 
         return join.squeeze()
 
+    gpd = _check_import("geopandas")
+
     if "dist" in (set(left_df.columns) | set(right_df.columns)):
         raise ValueError("neither series nor polygons can contain a 'dist' column")
 
@@ -118,6 +117,7 @@ def points_to_polys(df, name, shpfile, crs="EPSG:4326", search_dist=0.04):
     :return: (*geopandas.GeoDataFrame*) --
         columns: index id, (point) geometry, [region, other properties of region]
     """
+    gpd = _check_import("geopandas")
     polys = gpd.read_file(shpfile)
 
     # If no assigned crs, assign it. If it has another crs assigned, convert it.
@@ -231,6 +231,11 @@ def write_poly_shapefile():
         probably some mistakes, but this is currently only used for mapping plant
         regional multipliers, which are approximate anyway, so it should be fine.
     """
+    fiona = _check_import("fiona")
+    shapely_geometry = _check_import("shapely.geometry")
+    Polygon = shapely_geometry.Polygon
+    mapping = shapely_geometry.mapping
+
     outpath = const.reeds_wind_shapefile_path
     make_dir(outpath)
 
