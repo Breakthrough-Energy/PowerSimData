@@ -150,7 +150,7 @@ def bus_to_reeds_reg(df):
         ReEDS regions (wind resource regions (rs) and BA regions (rb)).
     Used to map regional generation investment cost multipliers.
     region_map.csv is from: "/bokehpivot/in/reeds2/region_map.csv".
-    rs/rs.shp is created with write_poly_shapefile().
+    rs/rs.shp is created with :py:func:`write_poly_shapefile`.
 
     :param pandas.DataFrame df: grid bus dataframe.
     :return: (*pandas.DataFrame*) -- bus_id map. columns: bus_id, rs, rb
