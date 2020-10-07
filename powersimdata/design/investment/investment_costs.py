@@ -298,10 +298,8 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
             financial functions in the future.
 
         :param int/str year: year of cost projections.
-        :param str cost_case: the ATB cost case of data:
-            'Moderate': mid cost case,
-            'Conservative': generally higher costs,
-            'Advanced': generally lower costs
+        :param str cost_case: the ATB cost case of data
+            (see :py:func:`write_poly_shapefile` for details).
         :return: (*pandas.DataFrame*) -- Cost by technology/subtype (in $2018).
         """
         cost = pd.read_csv(const.gen_inv_cost_path)
