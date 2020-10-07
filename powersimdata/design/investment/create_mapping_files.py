@@ -174,10 +174,9 @@ def bus_to_neem_reg(df):
     """Given a dataframe of buses, return a dataframe of bus_id's with associated
         NEEM region, lat, and lon of bus.
     Used to map regional transmission investment cost multipliers.
-    Shapefile used to map is 'NEEM/NEEMregions.shp' which is pulled from Energy Zones
-        Mapping Tool at http://ezmt.anl.gov. This map is overly detailed, so I
+    Shapefile used to map is 'data/NEEM/NEEMregions.shp' which is pulled from Energy
+        Zones Mapping Tool at http://ezmt.anl.gov. This map is overly detailed, so I
         simplified the shapes using 1 km distance (Douglas-Peucker) method in QGIS.
-
 
     :param pandas.DataFrame df: grid.bus instance.
     :return: (*pandas.DataFrame*) -- bus_id map.
