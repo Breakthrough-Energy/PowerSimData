@@ -21,9 +21,7 @@ setup(
         "powersimdata": [
             "network/*/data/*.csv",
             "design/investment/data/*.csv",
-            "design/investment/data/rs/*",
-            "design/investment/data/NEEM/*",
-            "design/investment/data/mapping/*",
+            "design/investment/data/*/*",
         ]
     },
     zip_safe=False,
