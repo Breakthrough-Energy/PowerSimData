@@ -195,6 +195,14 @@ def _calculate_dc_inv_costs(grid_new):
     """
 
     def _calculate_single_line_cost(line, bus):
+        """Given a series representing a DC line upgrade/addition, and a dataframe of
+        bus locations, calculate this line's upgrade cost.
+
+        :param pandas.Series line: DC line series featuring:
+            {"from_bus_id", "to_bus_id", "Pmax"}.
+        :param pandas.Dataframe bus: Bus data frame featuring {"lat", "lon"}.
+        :return: (*float*) -- DC line upgrade cost (in $2015).
+        """
         # Calculate distance
         from_lat = bus.loc[line.from_bus_id, "lat"]
         from_lon = bus.loc[line.from_bus_id, "lon"]
