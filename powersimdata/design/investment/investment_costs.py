@@ -262,20 +262,24 @@ def calculate_gen_inv_costs(scenario, year, cost_case):
 
 def _calculate_gen_inv_costs(grid_new, year, cost_case):
     """Given a grid, calculate the total cost of building that generation investment.
-    Computes total capital cost as CAPEX_total = CAPEX ($/MW) * Pmax (MW) * reg_cap_cost_mult [regional cost multiplier]
+    Computes total capital cost as CAPEX_total =
+        CAPEX ($/MW) * Pmax (MW) * reg_cap_cost_mult (regional cost multiplier)
     This function is separate from calculate_gen_inv_costs() for testing purposes.
-    Currently only uses one (arbutrary) sub-technology. Drops the rest of the costs. Will want to fix for wind/solar (based on resource supply curves).
+    Currently only uses one (arbutrary) sub-technology. Drops the rest of the costs.
+        Will want to fix for wind/solar (based on resource supply curves).
     Currently uses ReEDS regions to find regional multipliers.
     Currently ignores financials, but all values are in 2018 $-year.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
     :param int/str year: year of builds (used in financials).
-    :param str cost_case: the ATB cost case of data ['Moderate': mid cost case,'Conservative': generally higher costs,'Advanced': generally lower costs]
-    :raises ValueError: if year not 2020 - 2050.
-    :raises TypeError: if year gets the wrong type.
-    :raises TypeError: if cost_case is not str.
-    :raises ValueError: if cost_case is not in ['Moderate','Conservative','Advanced']
-    :return: (*pandas.DataFrame*) -- Total generation investment cost summed by technology (in $2018).
+    :param str cost_case: the ATB cost case of data:
+        'Moderate': mid cost case
+        'Conservative': generally higher costs
+        'Advanced': generally lower costs
+    :raises ValueError: if year not 2020 - 2050, or cost case not an allowed option.
+    :raises TypeError: if year gets the wrong type, or if cost_case is not str.
+    :return: (*pandas.Series*) -- Total generation investment cost,
+        summed by technology (in $2018).
     """
 
     def load_cost(year, cost_case):
