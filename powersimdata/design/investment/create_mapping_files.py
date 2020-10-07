@@ -103,7 +103,7 @@ def make_dir(filename):
         os.makedirs(os.path.dirname(filename))
 
 
-def points_to_polys(df, name, shpfile, crs="EPSG:4326", search_dist=0.04):
+def points_to_polys(df, name, shpfile, search_dist=0.04):
     """Given a dataframe which includes 'lat' and 'lon' columns, and a shapefile of
         Polygons/Multipolygon regions, map df.index to closest regions.
 
@@ -111,7 +111,6 @@ def points_to_polys(df, name, shpfile, crs="EPSG:4326", search_dist=0.04):
     :param str name: what to name the id (bus, plant, substation, etc)
     :param str shpfile: name of shapefile containing a collection Polygon/Multipolygon
         shapes with region IDs.
-    :param str crs: coordinate reference system
     :param float/int search_dist: distance to search from point for nearest polygon.
     :raises ValueError: if some points are dropped because too far away from polys.
     :return: (*geopandas.GeoDataFrame*) --
@@ -121,6 +120,7 @@ def points_to_polys(df, name, shpfile, crs="EPSG:4326", search_dist=0.04):
     polys = gpd.read_file(shpfile)
 
     # If no assigned crs, assign it. If it has another crs assigned, convert it.
+    crs = "EPSG:4326"
     if polys.crs is None:
         polys.crs = crs
     elif polys.crs != crs:
