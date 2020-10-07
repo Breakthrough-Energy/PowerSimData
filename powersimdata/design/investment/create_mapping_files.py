@@ -7,13 +7,7 @@ from powersimdata.input.grid import Grid
 from powersimdata.utility.helpers import _check_import
 
 
-def sjoin_nearest(
-    left_df,
-    right_df,
-    search_dist=0.06,
-    lsuffix="left",
-    rsuffix="right",
-):
+def sjoin_nearest(left_df, right_df, search_dist=0.06):
     """
     Perform a spatial join between two input layers.
     If a geometry in left_df falls outside (all) geometries in right_df, the data from
@@ -55,7 +49,7 @@ def sjoin_nearest(
         closest_poly = closest_poly.reset_index(drop=True)
 
         # Join values
-        join = series.join(closest_poly, lsuffix=f"_{lsuffix}", rsuffix=f"_{rsuffix}")
+        join = series.join(closest_poly, lsuffix="_left", rsuffix="_right")
 
         # Add information about distance to closest geometry if requested
         join["dist"] = distances.min()
