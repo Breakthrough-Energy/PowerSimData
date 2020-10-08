@@ -8,6 +8,7 @@ from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.output.output_data import OutputData, construct_load_shed
+from powersimdata.scenario.helpers import calculate_bus_demand
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
 
@@ -242,7 +243,7 @@ class Analyze(State):
 
         :param bool original: should the original demand profile or the
             potentially modified one be returned.
-        :return: (*pandas.DataFrame*) -- data frame of demand.
+        :return: (*pandas.DataFrame*) -- data frame of demand (hour, zone).
         """
         profile = TransformProfile(
             self._ssh, self._scenario_info, self.get_grid(), self.get_ct()
@@ -271,6 +272,18 @@ class Analyze(State):
                     )
                     demand[start:end] *= 1.0 - value / 100.0
                 return demand
+
+    def get_bus_demand(self):
+        """Returns demand profiles, by bus.
+
+        :return: (*pandas.DataFrame*) -- data frame of demand (hour, bus).
+        """
+        profile = TransformProfile(
+            self._ssh, self._scenario_info, self.get_grid(), self.get_ct()
+        )
+        demand = profile.get_profile("demand")
+        grid = self.get_grid()
+        return calculate_bus_demand(grid.bus, demand)
 
     def get_hydro(self):
         """Returns hydro profile
