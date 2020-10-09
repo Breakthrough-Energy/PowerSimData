@@ -91,7 +91,7 @@ def test_calculate_ac_inv_costs(mock_grid):
 
 
 def test_calculate_dc_inv_costs(mock_grid):
-    expected_dc_cost = 10 * 679.1799258421203 * 457.1428571 + 550000000
+    expected_dc_cost = 10 * 679.1799258421203 * 457.1428571 + 135e3 * 10 * 2
     dc_cost = _calculate_dc_inv_costs(mock_grid)
     assert dc_cost == pytest.approx(expected_dc_cost)
 
