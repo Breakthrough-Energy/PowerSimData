@@ -6,7 +6,8 @@ hvdc_line_cost = {
     "costMWmi": (3200 / 7),
 }
 
-hvdc_terminal_cost = 550e6
+# 2020 USD, from MISO cost estimations
+hvdc_terminal_cost_per_MW = 135e3
 
 ac_line_cost = {
     "kV": [229, 230, 230, 230, 345, 345, 345, 345, 500, 765],

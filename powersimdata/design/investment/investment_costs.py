@@ -212,7 +212,7 @@ def _calculate_dc_inv_costs(grid_new):
         # Calculate cost
         mw_miles = miles * line.Pmax
         line_cost = mw_miles * const.hvdc_line_cost["costMWmi"]
-        total_cost = line_cost + const.hvdc_terminal_cost
+        total_cost = line_cost + const.hvdc_terminal_cost_per_MW * line.Pmax
         return total_cost
 
     bus = grid_new.bus
