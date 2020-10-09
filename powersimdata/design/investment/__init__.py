@@ -1,1 +1,1 @@
-__all__ = ["const", "create_mapping_files", "investment_costs"]
+__all__ = ["const", "create_mapping_files", "inflation", "investment_costs"]
