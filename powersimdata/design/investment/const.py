@@ -56,6 +56,7 @@ reeds_wind_csv_path = os.path.join(data_dir, "mapping", "gis_rs.csv")
 reeds_wind_shapefile_path = os.path.join(data_dir, "rs", "rs.shp")
 reeds_wind_to_ba_path = os.path.join(data_dir, "mapping", "region_map.csv")
 regional_multiplier_path = os.path.join(data_dir, "reg_cap_cost_mult_default.csv")
+transformer_cost_path = os.path.join(data_dir, "transformer_cost.csv")
 
 gen_inv_cost_translation = {
     "OffShoreWind": "wind_offshore",
