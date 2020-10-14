@@ -86,7 +86,7 @@ def test_calculate_ac_inv_costs(mock_grid):
             * (3666.67 * 10 * 679.179925842 + 1500 * 1100 * 680.986501516)
             * calculate_inflation(2010)
         ),
-        "transformer_cost": (5500000 + 42500000) * calculate_inflation(2010),
+        "transformer_cost": (30 + 40) * 7670 * calculate_inflation(2020),
     }
     ac_cost = _calculate_ac_inv_costs(mock_grid)
     assert ac_cost.keys() == expected_ac_cost.keys()

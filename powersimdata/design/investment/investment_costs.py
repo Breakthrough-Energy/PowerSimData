@@ -50,14 +50,6 @@ def _calculate_ac_inv_costs(grid_new):
     :return: (*dict*) -- Total costs (line costs, transformer costs).
     """
 
-    def select_kv(x, cost_df):
-        """Given a single branch, determine the closest kV category for cost purposes.
-        :param pandas.core.series.Series x: data for a single branch.
-        :param pandas.core.frame.DataFrame cost_df: DataFrame with kV, MW, cost columns.
-        :return: (*numpy.int64*) -- kV_cost (closest kV) to be assigned to given branch.
-        """
-        return cost_df.loc[np.argmin(np.abs(cost_df["kV"] - x.kV)), "kV"]
-
     def select_mw(x, cost_df):
         """Given a single branch, determine the closest kV/MW combination and return
         the corresponding cost $/MW-mi.
@@ -78,7 +70,10 @@ def _calculate_ac_inv_costs(grid_new):
     # import data
     ac_cost = pd.DataFrame(const.ac_line_cost)
     ac_reg_mult = pd.read_csv(const.ac_reg_mult_path)
-    xfmr_cost = pd.DataFrame(const.transformer_cost)
+    xfmr_cost = pd.read_csv(const.transformer_cost_path, index_col=0).fillna(0)
+    xfmr_cost.columns = [int(c) for c in xfmr_cost.columns]
+    # Mirror across diagonal
+    xfmr_cost += xfmr_cost.to_numpy().T - np.diag(np.diag(xfmr_cost.to_numpy()))
 
     # map line kV
     bus = grid_new.bus
@@ -91,8 +86,11 @@ def _calculate_ac_inv_costs(grid_new):
     t_mask = branch["branch_device_type"].isin(["Transformer", "TransformerWinding"])
     transformers = branch[t_mask].copy()
     lines = branch[~t_mask].copy()
-
-    lines.loc[:, "kV"] = lines.apply(lambda x: select_kv(x, ac_cost), axis=1)
+    # Find closest kV rating
+    lines.loc[:, "kV"] = lines.apply(
+        lambda x: ac_cost.loc[(ac_cost["kV"] - x.kV).abs().idxmin(), "kV"],
+        axis=1,
+    )
     lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
 
     # multiply by regional multiplier
@@ -148,14 +146,18 @@ def _calculate_ac_inv_costs(grid_new):
     lines.loc[:, "Cost"] = lines["MWmi"] * lines["costMWmi"] * lines["mult"]
 
     # calculate transformer costs
-    transformers.loc[:, "kV"] = transformers.apply(
-        lambda x: select_kv(x, xfmr_cost), axis=1
+    transformers["per_MW_cost"] = transformers.apply(
+        lambda x: xfmr_cost.iloc[
+            xfmr_cost.index.get_loc(bus.loc[x.from_bus_id, "baseKV"], method="nearest"),
+            xfmr_cost.columns.get_loc(bus.loc[x.to_bus_id, "baseKV"], method="nearest"),
+        ],
+        axis=1,
     )
-    transformers = transformers.merge(xfmr_cost, on="kV", how="left")
+    transformers["Cost"] = transformers["rateA"] * transformers["per_MW_cost"]
 
     results = {
         "line_cost": lines.Cost.sum() * calculate_inflation(2010),
-        "transformer_cost": transformers.Cost.sum() * calculate_inflation(2010),
+        "transformer_cost": transformers.Cost.sum() * calculate_inflation(2020),
     }
     return results
 
