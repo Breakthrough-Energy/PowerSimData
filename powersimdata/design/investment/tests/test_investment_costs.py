@@ -21,8 +21,8 @@ mock_bus = {
 mock_branch = {
     "branch_id": [10, 11, 12, 13, 14],
     "rateA": [0, 10, 1100, 30, 40],
-    "from_bus_id": [2010228, 2010228, 2010319, 2010319, 2010320],
-    "to_bus_id": [2021106, 2021106, 2021106, 2010320, 2010319],
+    "from_bus_id": [2010228, 2010228, 2010319, 2010319, 2021106],
+    "to_bus_id": [2021106, 2021106, 2021106, 2010320, 2021106],
     "branch_device_type": 3 * ["Line"] + 2 * ["Transformer"],
 }
 mock_branch["from_lat"] = [
@@ -86,7 +86,9 @@ def test_calculate_ac_inv_costs(mock_grid):
             * (3666.67 * 10 * 679.179925842 + 1500 * 1100 * 680.986501516)
             * calculate_inflation(2010)
         ),
-        "transformer_cost": (30 + 40) * 7670 * calculate_inflation(2020),
+        # for each: rateA * basecost * regional multiplier
+        "transformer_cost": ((30 * 7670 * 1) + (40 * 8880 * 2.25))
+        * calculate_inflation(2020),
     }
     ac_cost = _calculate_ac_inv_costs(mock_grid)
     assert ac_cost.keys() == expected_ac_cost.keys()

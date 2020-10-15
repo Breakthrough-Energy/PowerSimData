@@ -67,6 +67,37 @@ def _calculate_ac_inv_costs(grid_new):
         # find closest MW & corresponding cost
         return tmp.iloc[np.argmin(np.abs(tmp["MW"] - x.rateA))][["MW", "costMWmi"]]
 
+    def get_transformer_mult(x, bus_reg, ac_reg_mult, xfmr_lookup_alerted=set()):
+        """Determine the regional multiplier based on kV and power (closest).
+
+        :param pandas.core.series.Series x: data for a single transformer.
+        :param pandas.core.frame.DataFrame bus_reg: data frame with bus regions
+        :param pandas.core.frame.DataFrame ac_reg_mult: data frame with regional mults.
+        :param set xfmr_lookup_alerted: set of (voltage, region) tuples for which
+            a message has already been printed that this lookup was not found.
+        :return: (*float*) -- regional multiplier.
+        """
+        max_kV = bus.loc[[x.from_bus_id, x.to_bus_id], "baseKV"].max()
+        region = bus_reg.loc[x.from_bus_id, "name_abbr"]
+        region_mults = ac_reg_mult.loc[ac_reg_mult.name_abbr == region]
+
+        mult_lookup_kV = region_mults.loc[(region_mults.kV - max_kV).abs().idxmin()].kV
+        region_kV_mults = region_mults[region_mults.kV == mult_lookup_kV]
+        region_kV_mults = region_kV_mults.loc[~region_kV_mults.mult.isnull()]
+        if len(region_kV_mults) == 0:
+            mult = 1
+            if (mult_lookup_kV, region) not in xfmr_lookup_alerted:
+                print(f"No multiplier for voltage {mult_lookup_kV} in {region}")
+                xfmr_lookup_alerted.add((mult_lookup_kV, region))
+        else:
+            mult_lookup_MW = region_kV_mults.loc[
+                (region_kV_mults.MW - x.rateA).abs().idxmin(), "MW"
+            ]
+            mult = (
+                region_kV_mults.loc[region_kV_mults.MW == mult_lookup_MW].squeeze().mult
+            )
+        return mult
+
     # import data
     ac_cost = pd.DataFrame(const.ac_line_cost)
     ac_reg_mult = pd.read_csv(const.ac_reg_mult_path)
@@ -148,7 +179,13 @@ def _calculate_ac_inv_costs(grid_new):
         ],
         axis=1,
     )
-    transformers["Cost"] = transformers["rateA"] * transformers["per_MW_cost"]
+    transformers["mult"] = transformers.apply(
+        lambda x: get_transformer_mult(x, bus_reg, ac_reg_mult), axis=1
+    )
+
+    transformers["Cost"] = (
+        transformers["rateA"] * transformers["per_MW_cost"] * transformers["mult"]
+    )
 
     results = {
         "line_cost": lines.Cost.sum() * calculate_inflation(2010),
