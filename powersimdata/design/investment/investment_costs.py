@@ -70,6 +70,7 @@ def _calculate_ac_inv_costs(grid_new):
     # import data
     ac_cost = pd.DataFrame(const.ac_line_cost)
     ac_reg_mult = pd.read_csv(const.ac_reg_mult_path)
+    bus_reg = pd.read_csv(const.bus_neem_regions_path, index_col="bus_id")
     xfmr_cost = pd.read_csv(const.transformer_cost_path, index_col=0).fillna(0)
     xfmr_cost.columns = [int(c) for c in xfmr_cost.columns]
     # Mirror across diagonal
@@ -93,17 +94,12 @@ def _calculate_ac_inv_costs(grid_new):
     )
     lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
 
-    # multiply by regional multiplier
-    bus_reg = pd.read_csv(const.bus_neem_regions_path, index_col="bus_id")
-
     # check that all buses included in this file and lat/long values match,
     #   otherwise re-run mapping script on mis-matching buses.
-
     # these buses are missing in region file
     bus_fix_index = bus[~bus.index.isin(bus_reg.index)].index
     bus_mask = bus[~bus.index.isin(bus_fix_index)]
     bus_mask = bus_mask.merge(bus_reg, how="left", on="bus_id")
-
     # these buses have incorrect lat/lon values in the region mapping file.
     #   re-running the region mapping script on those buses only.
     bus_fix_index2 = bus_mask[
@@ -111,12 +107,11 @@ def _calculate_ac_inv_costs(grid_new):
         | ~np.isclose(bus_mask.lon_x, bus_mask.lon_y)
     ].index
     bus_fix_index_all = bus_fix_index.tolist() + bus_fix_index2.tolist()
-    bus_fix = bus[bus.index.isin(bus_fix_index_all)]
+    # fix the identified buses, if necessary
     if len(bus_fix_index_all) > 0:
-        bus_fix = bus_to_neem_reg(bus_fix)  # converts index to bus_id instead
-        bus_reg.loc[
-            bus_reg.index.isin(bus_fix.index), ["name_abbr", "lat", "lon"]
-        ] = bus_fix[["name_abbr", "lat", "lon"]]
+        bus_fix = bus_to_neem_reg(bus[bus.index.isin(bus_fix_index_all)])
+        fix_cols = ["name_abbr", "lat", "lon"]
+        bus_reg.loc[bus_reg.index.isin(bus_fix.index), fix_cols] = bus_fix[fix_cols]
 
     bus_reg.drop(["lat", "lon"], axis=1, inplace=True)
 
