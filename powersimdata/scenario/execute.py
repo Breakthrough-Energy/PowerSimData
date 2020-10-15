@@ -390,13 +390,13 @@ class SimulationInput(object):
             else:
                 self._create_link_to_base_profile(kind)
         else:
-            copy_from_TMP_DIR = posixpath.join(
+            from_dir = posixpath.join(
                 server_setup.EXECUTE_DIR, f"scenario_{profiles_as}"
             )
-            copy_to_TMP_DIR = posixpath.join(
+            to_dir = posixpath.join(
                 server_setup.EXECUTE_DIR, f"scenario_{self._scenario_info['id']}"
             )
-            command = f"cp {copy_from_TMP_DIR}/{p}.csv {copy_to_TMP_DIR}"
+            command = f"cp {from_dir}/{p}.csv {to_dir}"
             stdin, stdout, stderr = self._ssh.exec_command(command)
             if len(stderr.readlines()) != 0:
                 raise IOError(f"Failed to copy {p}.csv on server")
