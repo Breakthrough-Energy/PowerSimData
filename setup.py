@@ -2,7 +2,6 @@ from setuptools import find_packages, setup
 
 install_requires = [
     "geopy",
-    "jsonpickle",
     "numpy",
     "pandas",
     "paramiko",
@@ -15,9 +14,9 @@ setup(
     name="powersimdata",
     version="0.3",
     description="Power Simulation Data",
-    url="https://github.com/intvenlab/powersimdata",
+    url="https://github.com/Breakthrough-Energy/powersimdata",
     author="Kaspar Mueller",
-    author_email="kmueller@intven.com",
+    author_email="kaspar.mueller@breakthroughenergy.org",
     packages=find_packages(),
     package_data={"powersimdata": ["network/*/data/*.csv"]},
     zip_safe=False,
