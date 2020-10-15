@@ -134,8 +134,15 @@ class Execute(State):
         self._update_scenario_status()
         print(self._scenario_status)
 
-    def prepare_simulation_input(self):
-        """Prepares scenario for execution"""
+    def prepare_simulation_input(self, profiles_as=None):
+        """Prepares scenario for execution
+
+        :param int/str/None profiles_as: if given, copy profiles from this scenario.
+        :raises TypeError: if profiles_as parameter not a str or int.
+        """
+        if profiles_as is not None and not isinstance(profiles_as, (str, int)):
+            raise TypeError("profiles_as must be None, str, or int.")
+
         self._update_scenario_status()
         if self._scenario_status == "created":
             print("---------------------------")
@@ -145,7 +152,7 @@ class Execute(State):
             si = SimulationInput(self._ssh, self._scenario_info, self.grid, self.ct)
             si.create_folder()
             for p in ["demand", "hydro", "solar", "wind"]:
-                si.prepare_profile(p)
+                si.prepare_profile(p, profiles_as)
 
             si.prepare_mpc_file()
 
@@ -368,16 +375,31 @@ class SimulationInput(object):
         print("Deleting %s on local machine" % file_name)
         os.remove(os.path.join(server_setup.LOCAL_DIR, file_name))
 
-    def prepare_profile(self, kind):
+    def prepare_profile(self, kind, profile_as=None):
         """Prepares profile for simulation.
 
         :param kind: one of *demand*, *'hydro'*, *'solar'* or *'wind'*.
+        :param int/str/None profile_as: if given, copy profile from this scenario.
         """
-        profile = TransformProfile(self._ssh, self._scenario_info, self.grid, self.ct)
-        if bool(profile.scale_keys[kind] & set(self.ct.keys())):
-            self._prepare_scaled_profile(kind, profile)
+        if profile_as is None:
+            profile = TransformProfile(
+                self._ssh, self._scenario_info, self.grid, self.ct
+            )
+            if bool(profile.scale_keys[kind] & set(self.ct.keys())):
+                self._prepare_scaled_profile(kind, profile)
+            else:
+                self._create_link_to_base_profile(kind)
         else:
-            self._create_link_to_base_profile(kind)
+            from_dir = posixpath.join(
+                server_setup.EXECUTE_DIR, f"scenario_{profiles_as}"
+            )
+            to_dir = posixpath.join(
+                server_setup.EXECUTE_DIR, f"scenario_{self._scenario_info['id']}"
+            )
+            command = f"cp {from_dir}/{p}.csv {to_dir}"
+            stdin, stdout, stderr = self._ssh.exec_command(command)
+            if len(stderr.readlines()) != 0:
+                raise IOError(f"Failed to copy {p}.csv on server")
 
     def _create_link_to_base_profile(self, kind):
         """Creates link to base profile in temporary directory on server.
