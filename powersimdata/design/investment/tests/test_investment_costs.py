@@ -1,5 +1,6 @@
 import pytest
 
+from powersimdata.design.investment.inflation import calculate_inflation
 from powersimdata.design.investment.investment_costs import (
     _calculate_ac_inv_costs,
     _calculate_dc_inv_costs,
@@ -80,9 +81,12 @@ def mock_grid():
 def test_calculate_ac_inv_costs(mock_grid):
     expected_ac_cost = {
         # ((reg_mult1 + reg_mult2) / 2) * sum(basecost * rateA * miles)
-        "line_cost": ((1 + 2.25) / 2)
-        * (3666.67 * 10 * 679.179925842 + 1500 * 1100 * 680.986501516),
-        "transformer_cost": 5500000 + 42500000,
+        "line_cost": (
+            ((1 + 2.25) / 2)
+            * (3666.67 * 10 * 679.179925842 + 1500 * 1100 * 680.986501516)
+            * calculate_inflation(2010)
+        ),
+        "transformer_cost": (5500000 + 42500000) * calculate_inflation(2010),
     }
     ac_cost = _calculate_ac_inv_costs(mock_grid)
     assert ac_cost.keys() == expected_ac_cost.keys()
@@ -91,7 +95,11 @@ def test_calculate_ac_inv_costs(mock_grid):
 
 
 def test_calculate_dc_inv_costs(mock_grid):
-    expected_dc_cost = 10 * 679.1799258421203 * 457.1428571 + 135e3 * 10 * 2
+    expected_dc_cost = 10 * 679.1799258421203 * 457.1428571 * calculate_inflation(
+        2015
+    ) + 135e3 * 10 * 2 * calculate_inflation(  # lines
+        2020
+    )  # terminals
     dc_cost = _calculate_dc_inv_costs(mock_grid)
     assert dc_cost == pytest.approx(expected_dc_cost)
 
@@ -111,6 +119,8 @@ def test_calculate_gen_inv_costs_2030(mock_grid):
         "ng": 20e3 * 1.050755 * 983.2351768,
         "storage": 100e3 * 1.012360 * 817 + 200e3 * 1.043730 * 817,
     }
+    inflation = calculate_inflation(2018)
+    expected_gen_inv_cost = {k: v * inflation for k, v in expected_gen_inv_cost.items()}
     assert gen_inv_cost.keys() == expected_gen_inv_cost.keys()
     for k in gen_inv_cost.keys():
         assert gen_inv_cost[k] == pytest.approx(expected_gen_inv_cost[k])
