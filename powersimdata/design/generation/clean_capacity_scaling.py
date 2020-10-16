@@ -282,7 +282,7 @@ def calculate_overall_shortfall(targets, method, normalized=False):
     :param str method: shortfall calculation method ("independent" or "collaborative").
     :param bool normalized: whether to normalize by total demand.
     :return: (*float*) -- overall shortfall, either in MWh or normalized by
-    total demand.
+        total demand.
     """
     if not isinstance(targets, pd.DataFrame):
         raise TypeError("targets must be a pandas DataFrame")

@@ -193,10 +193,9 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
         the type.
     :param bool plot: If True, the supply curve plot is shown. If False, the plot is
         not shown.
-    :return: (*tuple*) -- Tuple containing:
-        P (*list*) -- List of capacity (MW) amounts needed to create supply curve
-            (floats).
-        F (*list*) -- List of bids ($/MW) in the supply curve (floats).
+    :return: (*tuple*) -- First element is a list of capacity (MW) amounts needed
+        to create supply curve. Second element is a list of bids ($/MW) in the supply
+        curve.
     :raises TypeError: if a powersimdata.input.grid.Grid object is not input.
     :raises ValueError: if the specified area or generator type is not applicable.
     """

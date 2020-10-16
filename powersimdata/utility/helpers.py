@@ -5,8 +5,7 @@ import sys
 
 
 class MemoryCache:
-    """
-    Wrapper around a dict object that exposes a cache interface. Users should
+    """Wrapper around a dict object that exposes a cache interface. Users should
     create a separate instance for each distinct use case.
     """
 
@@ -47,7 +46,7 @@ def cache_key(*args):
 
     :param args: variable length argument list
     :return: (*tuple*) -- a tuple containing the input in heirarchical
-    structure
+        structure
     """
     kb = CacheKeyBuilder(*args)
     return kb.build()

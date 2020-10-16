@@ -233,7 +233,7 @@ class ScenarioInfo:
             *'state_abbr'*, *'interconnect'*
         :return: (*float*) -- capacity factor based on the specified parameters
         :raise ZeroDivisionError: if no generator of gentype is found in the
-        area
+            area
         """
         start_i, end_i = self._check_time_range(start_time, end_time)
         total_hours = end_i - start_i + 1
