@@ -1,7 +1,6 @@
 from setuptools import find_packages, setup
 
 install_requires = [
-    "geopy",
     "numpy",
     "pandas",
     "paramiko",

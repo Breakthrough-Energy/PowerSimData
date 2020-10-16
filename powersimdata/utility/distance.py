@@ -1,7 +1,5 @@
 from math import acos, asin, cos, degrees, radians, sin, sqrt
 
-import geopy.distance
-
 
 def haversine(point1, point2):
     """Given two lat/long pairs, return distance in miles.
@@ -38,9 +36,8 @@ def great_circle_distance(x):
     :param pandas.dataFrame x: start and end point coordinates of branches.
     :return: (*float*) -- length of branch (in km.).
     """
-    site_coords = (x.from_lat, x.from_lon)
-    place2_coords = (x.to_lat, x.to_lon)
-    return geopy.distance.vincenty(site_coords, place2_coords).km
+    mi_to_km = 1.60934
+    return haversine((x.from_lat, x.from_lon), (x.to_lat, x.to_lon)) * mi_to_km
 
 
 def ll2uv(lon, lat):
