@@ -391,15 +391,15 @@ class SimulationInput(object):
                 self._create_link_to_base_profile(kind)
         else:
             from_dir = posixpath.join(
-                server_setup.EXECUTE_DIR, f"scenario_{profiles_as}"
+                server_setup.EXECUTE_DIR, f"scenario_{profile_as}"
             )
             to_dir = posixpath.join(
                 server_setup.EXECUTE_DIR, f"scenario_{self._scenario_info['id']}"
             )
-            command = f"cp {from_dir}/{p}.csv {to_dir}"
+            command = f"cp {from_dir}/{kind}.csv {to_dir}"
             stdin, stdout, stderr = self._ssh.exec_command(command)
             if len(stderr.readlines()) != 0:
-                raise IOError(f"Failed to copy {p}.csv on server")
+                raise IOError(f"Failed to copy {kind}.csv on server")
 
     def _create_link_to_base_profile(self, kind):
         """Creates link to base profile in temporary directory on server.
