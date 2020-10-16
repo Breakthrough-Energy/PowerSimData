@@ -8,6 +8,7 @@ from powersimdata.design.investment.create_mapping_files import (
     bus_to_neem_reg,
     bus_to_reeds_reg,
 )
+from powersimdata.design.investment.inflation import calculate_inflation
 from powersimdata.input.grid import Grid
 from powersimdata.scenario.scenario import Scenario
 from powersimdata.utility.distance import haversine
@@ -45,10 +46,9 @@ def _calculate_ac_inv_costs(grid_new):
     This function is separate from calculate_ac_inv_costs() for testing purposes.
     Currently counts Transformer and TransformerWinding as transformers.
     Currently uses NEEM regions to find regional multipliers.
-    Currently ignores financials, but all values are in 2010 $-year.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :return: (*dict*) -- Total costs (line costs, transformer costs) (in $2010).
+    :return: (*dict*) -- Total costs (line costs, transformer costs).
     """
 
     def select_kv(x, cost_df):
@@ -148,20 +148,17 @@ def _calculate_ac_inv_costs(grid_new):
     # calculate cost of each line
     lines.loc[:, "Cost"] = lines["MWmi"] * lines["costMWmi"] * lines["mult"]
 
-    # sum of all line costs
-    lines_sum = float(lines.Cost.sum())
-
     # calculate transformer costs
     transformers.loc[:, "kV"] = transformers.apply(
         lambda x: select_kv(x, xfmr_cost), axis=1
     )
     transformers = transformers.merge(xfmr_cost, on="kV", how="left")
 
-    # sum of all transformer costs
-    transformers_sum = float(transformers.Cost.sum())
-
-    dict1 = {"line_cost": lines_sum, "transformer_cost": transformers_sum}
-    return dict1
+    results = {
+        "line_cost": lines.Cost.sum() * calculate_inflation(2010),
+        "transformer_cost": transformers.Cost.sum() * calculate_inflation(2010),
+    }
+    return results
 
 
 def calculate_dc_inv_costs(scenario):
@@ -210,9 +207,10 @@ def _calculate_dc_inv_costs(grid_new):
         to_lon = bus.loc[line.to_bus_id, "lon"]
         miles = haversine((from_lat, from_lon), (to_lat, to_lon))
         # Calculate cost
-        mw_miles = miles * line.Pmax
-        line_cost = mw_miles * const.hvdc_line_cost["costMWmi"]
-        total_cost = line_cost + 2 * const.hvdc_terminal_cost_per_MW * line.Pmax
+        total_cost = line.Pmax * (
+            miles * const.hvdc_line_cost["costMWmi"] * calculate_inflation(2015)
+            + 2 * const.hvdc_terminal_cost_per_MW * calculate_inflation(2020)
+        )
         return total_cost
 
     bus = grid_new.bus
