@@ -8,6 +8,7 @@ from powersimdata.design.investment.create_mapping_files import (
     bus_to_neem_reg,
     bus_to_reeds_reg,
 )
+from powersimdata.design.investment.inflation import calculate_inflation
 from powersimdata.input.grid import Grid
 from powersimdata.utility.distance import haversine
 
@@ -44,10 +45,9 @@ def _calculate_ac_inv_costs(grid_new):
     This function is separate from calculate_ac_inv_costs() for testing purposes.
     Currently counts Transformer and TransformerWinding as transformers.
     Currently uses NEEM regions to find regional multipliers.
-    Currently ignores financials, but all values are in 2010 $-year.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :return: (*dict*) -- Total costs (line costs, transformer costs) (in $2010).
+    :return: (*dict*) -- Total costs (line costs, transformer costs).
     """
 
     def select_kv(x, cost_df):
@@ -147,20 +147,17 @@ def _calculate_ac_inv_costs(grid_new):
     # calculate cost of each line
     lines.loc[:, "Cost"] = lines["MWmi"] * lines["costMWmi"] * lines["mult"]
 
-    # sum of all line costs
-    lines_sum = float(lines.Cost.sum())
-
     # calculate transformer costs
     transformers.loc[:, "kV"] = transformers.apply(
         lambda x: select_kv(x, xfmr_cost), axis=1
     )
     transformers = transformers.merge(xfmr_cost, on="kV", how="left")
 
-    # sum of all transformer costs
-    transformers_sum = float(transformers.Cost.sum())
-
-    dict1 = {"line_cost": lines_sum, "transformer_cost": transformers_sum}
-    return dict1
+    results = {
+        "line_cost": lines.Cost.sum() * calculate_inflation(2010),
+        "transformer_cost": transformers.Cost.sum() * calculate_inflation(2010),
+    }
+    return results
 
 
 def calculate_dc_inv_costs(scenario):
@@ -187,10 +184,9 @@ def calculate_dc_inv_costs(scenario):
 def _calculate_dc_inv_costs(grid_new):
     """Given a grid, calculate the total cost of that grid's dc line investment.
     This function is separate from calculate_dc_inv_costs() for testing purposes.
-    Currently ignores financials, but all values are in 2015 $-year.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :return: (*float*) -- Total dc line costs (in $2015).
+    :return: (*float*) -- Total dc line costs.
     """
 
     def _calculate_single_line_cost(line, bus):
@@ -209,9 +205,10 @@ def _calculate_dc_inv_costs(grid_new):
         to_lon = bus.loc[line.to_bus_id, "lon"]
         miles = haversine((from_lat, from_lon), (to_lat, to_lon))
         # Calculate cost
-        mw_miles = miles * line.Pmax
-        line_cost = mw_miles * const.hvdc_line_cost["costMWmi"]
-        total_cost = line_cost + 2 * const.hvdc_terminal_cost_per_MW * line.Pmax
+        total_cost = line.Pmax * (
+            miles * const.hvdc_line_cost["costMWmi"] * calculate_inflation(2015)
+            + 2 * const.hvdc_terminal_cost_per_MW * calculate_inflation(2020)
+        )
         return total_cost
 
     bus = grid_new.bus
@@ -221,7 +218,7 @@ def _calculate_dc_inv_costs(grid_new):
     if len(dcline != 0):
         return dcline.apply(_calculate_single_line_cost, args=(bus,), axis=1).sum()
     else:
-        return 0
+        return 0.0
 
 
 def calculate_gen_inv_costs(scenario, year, cost_case):
@@ -230,7 +227,6 @@ def calculate_gen_inv_costs(scenario, year, cost_case):
     Currently only uses one (arbutrary) sub-technology. Drops the rest of the costs.
         Will want to fix for wind/solar (based on resource supply curves).
     Currently uses ReEDS regions to find regional multipliers.
-    Currently ignores financials, but all values are in 2018 $-year.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param int/str year: year of builds.
@@ -239,7 +235,7 @@ def calculate_gen_inv_costs(scenario, year, cost_case):
         'Conservative': generally higher costs,
         'Advanced': generally lower costs
     :return: (*pandas.DataFrame*) -- Total generation investment cost summed by
-        technology (in $2018).
+        technology.
     """
 
     base_grid = Grid(scenario.info["interconnect"].split("_"))
@@ -275,7 +271,6 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
     Currently only uses one (arbutrary) sub-technology. Drops the rest of the costs.
         Will want to fix for wind/solar (based on resource supply curves).
     Currently uses ReEDS regions to find regional multipliers.
-    Currently ignores financials, but all values are in 2018 $-year.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
     :param int/str year: year of builds (used in financials).
@@ -286,7 +281,7 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
     :raises ValueError: if year not 2020 - 2050, or cost case not an allowed option.
     :raises TypeError: if year gets the wrong type, or if cost_case is not str.
     :return: (*pandas.Series*) -- Total generation investment cost,
-        summed by technology (in $2018).
+        summed by technology.
     """
 
     def load_cost(year, cost_case):
@@ -404,4 +399,4 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
 
     # sum cost by technology
     tech_sum = plants.groupby(["Technology"])["CAPEX_total"].sum()
-    return tech_sum
+    return tech_sum * calculate_inflation(2018)
