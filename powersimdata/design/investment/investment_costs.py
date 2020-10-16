@@ -228,7 +228,6 @@ def calculate_gen_inv_costs(scenario, year, cost_case):
     Currently only uses one (arbutrary) sub-technology. Drops the rest of the costs.
         Will want to fix for wind/solar (based on resource supply curves).
     Currently uses ReEDS regions to find regional multipliers.
-    Currently ignores financials, but all values are in 2018 $-year.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param int/str year: year of builds.
@@ -237,7 +236,7 @@ def calculate_gen_inv_costs(scenario, year, cost_case):
         'Conservative': generally higher costs,
         'Advanced': generally lower costs
     :return: (*pandas.DataFrame*) -- Total generation investment cost summed by
-        technology (in $2018).
+        technology.
     """
 
     base_grid = Grid(scenario.info["interconnect"].split("_"))
@@ -273,7 +272,6 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
     Currently only uses one (arbutrary) sub-technology. Drops the rest of the costs.
         Will want to fix for wind/solar (based on resource supply curves).
     Currently uses ReEDS regions to find regional multipliers.
-    Currently ignores financials, but all values are in 2018 $-year.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
     :param int/str year: year of builds (used in financials).
@@ -284,7 +282,7 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
     :raises ValueError: if year not 2020 - 2050, or cost case not an allowed option.
     :raises TypeError: if year gets the wrong type, or if cost_case is not str.
     :return: (*pandas.Series*) -- Total generation investment cost,
-        summed by technology (in $2018).
+        summed by technology.
     """
 
     def load_cost(year, cost_case):
@@ -402,4 +400,4 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
 
     # sum cost by technology
     tech_sum = plants.groupby(["Technology"])["CAPEX_total"].sum()
-    return tech_sum
+    return tech_sum * calculate_inflation(2018)
