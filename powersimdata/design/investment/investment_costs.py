@@ -185,10 +185,9 @@ def calculate_dc_inv_costs(scenario):
 def _calculate_dc_inv_costs(grid_new):
     """Given a grid, calculate the total cost of that grid's dc line investment.
     This function is separate from calculate_dc_inv_costs() for testing purposes.
-    Currently ignores financials, but all values are in 2015 $-year.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :return: (*float*) -- Total dc line costs (in $2015).
+    :return: (*float*) -- Total dc line costs.
     """
 
     def _calculate_single_line_cost(line, bus):
@@ -220,7 +219,7 @@ def _calculate_dc_inv_costs(grid_new):
     if len(dcline != 0):
         return dcline.apply(_calculate_single_line_cost, args=(bus,), axis=1).sum()
     else:
-        return 0
+        return 0.0
 
 
 def calculate_gen_inv_costs(scenario, year, cost_case):
