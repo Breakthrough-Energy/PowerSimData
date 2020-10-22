@@ -4,8 +4,8 @@
 * Name: USATestSystem
 * Author: Y. Xu et al.
 * Description: High spatial and temporal resolution test system on the footprint of continental United States.
-* Source: https://zenodo.org/record/3905429#.X48kt9tlCCM
-* Exact source location: https://zenodo.org/record/3905429/files/USATestSystem.zip?download=1
+* DOI: 10.5281/zenodo.3530898
+* Source: https://zenodo.org/record/3530898
 
 ##### Destination
 * Modifications to source files(s): None
