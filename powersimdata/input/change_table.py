@@ -29,10 +29,11 @@ class ChangeTable(object):
     """Create change table for changes that need to be applied to the original
     grid as well as to the original demand, hydro, solar and wind profiles.
     A pickle file enclosing the change table in form of a dictionary can be
-    created and transferred on the server. Keys are *'demand'*, *'branch'*,
-    *'biomass'*, *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*,
-    *'hydro'*, *'solar'*, *'wind'*, *'other'*, *'dcline'*, *'new_dcline'*,
-    and *'storage'*.
+    created and transferred on the server. Keys are *'demand'*, *'branch'*, *'dcline'*,
+    '*new_branch*', *'new_dcline'*, *'new_plant'*, *'[resource]'*, *'[resource]_cost'*,
+    and *'storage'*; where 'resource' is one of: {*'biomass'*, *'coal'*, *'dfo'*,
+    *'geothermal'*, *'ng'*, *'nuclear'*, *'hydro'*, *'solar'*, *'wind'*,
+    *'wind_offshore'*, *'other'*}.
     If a key is missing in the dictionary, then no changes will be applied.
     The data structure is given below:
 
@@ -49,15 +50,22 @@ class ChangeTable(object):
         desired increase/decrease of capacity of the line or the lines in
         the zone (1.2 would correspond to a 20% increase while 0.95 would
         be a 5% decrease).
-    * *'biomass'*, *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*,
-        *'hydro'*, *'solar'*, *'wind'*, *wind_offshore*, and *'other'*:
+    * *'[resource]'*:
         value is a dictionary. The latter has *'plant_id'* and/or
         *'zone_id'* as keys. The *'plant_id'* dictionary has the plant ids
         as keys while the *'zone_id'* dictionary has the zone ids as keys.
         The value of those dictionaries is a factor indicating the desired
-        increase/decrease of capacity of the plant or plants in the zone
-        (1.2 would correspond to a 20% increase while 0.95 would be a 5%
-        decrease).
+        increase/decrease of capacity of the plant or plants in the zone fueled by
+        *'[resource]'* (1.2 would correspond to a 20% increase while 0.95 would be
+        a 5% decrease).
+    * *'[resource]_cost'*:
+        value is a dictionary. The latter has *'plant_id'* and/or
+        *'zone_id'* as keys. The *'plant_id'* dictionary has the plant ids
+        as keys while the *'zone_id'* dictionary has the zone ids as keys.
+        The value of those dictionaries is a factor indicating the desired
+        increase/decrease of cost of the plant or plants in the zone fueled by
+        *'[resource]'* (1.2 would correspond to a 20% increase while 0.95 would be
+        a 5% decrease).
     * *'dcline'*:
         value is a dictionary. The latter has *'dcline_id'* as keys and
         the and the scaling factor for the increase/decrease in capacity
@@ -173,6 +181,59 @@ class ChangeTable(object):
                 if r in self.ct:
                     del self.ct[r]
 
+    def _add_plant_entries(self, resource, ct_key, zone_name=None, plant_id=None):
+        """Sets plant entries in change table.
+
+        :param str resource: type of generator to consider.
+        :param str ct_key: top-level key to add to the change table.
+        :param dict zone_name: load zones. The key(s) is (are) the name of the
+            load zone(s).
+        :param dict plant_id: identification numbers of plants. The key(s) is
+            (are) the id of the plant(s).
+        :raise ValueError: if any values within zone_name or plant_id are negative.
+        """
+        self._check_resource(resource)
+        if bool(zone_name) or bool(plant_id) is True:
+            if ct_key not in self.ct:
+                self.ct[ct_key] = {}
+            if zone_name is not None:
+                try:
+                    self._check_zone(list(zone_name.keys()))
+                except ValueError:
+                    self.ct.pop(ct_key)
+                    raise
+                if not all([v >= 0 for v in zone_name.values()]):
+                    raise ValueError(f"All entries for {ct_key} must be non-negative")
+                if "zone_id" not in self.ct[ct_key]:
+                    self.ct[ct_key]["zone_id"] = {}
+                for z in zone_name.keys():
+                    if len(self._get_plant_id(z, resource)) == 0:
+                        print("No %s plants in %s." % (resource, z))
+                    else:
+                        zone_id = self.grid.zone2id[z]
+                        self.ct[ct_key]["zone_id"][zone_id] = zone_name[z]
+                if len(self.ct[ct_key]["zone_id"]) == 0:
+                    self.ct.pop(ct_key)
+            if plant_id is not None:
+                plant_id_interconnect = set(
+                    self.grid.plant.groupby("type").get_group(resource).index
+                )
+                diff = set(plant_id.keys()).difference(plant_id_interconnect)
+                if len(diff) != 0:
+                    err_msg = f"No {resource} plant(s) with the following id: "
+                    err_msg += ", ".join(sorted([str(d) for d in diff]))
+                    self.ct.pop(ct_key)
+                    raise ValueError(err_msg)
+                if not all([v >= 0 for v in plant_id.values()]):
+                    raise ValueError(f"All entries for {ct_key} must be non-negative")
+                if "plant_id" not in self.ct[ct_key]:
+                    self.ct[ct_key]["plant_id"] = {}
+                for i in plant_id.keys():
+                    self.ct[ct_key]["plant_id"][i] = plant_id[i]
+        else:
+            print("<zone> and/or <plant_id> must be set.")
+            raise
+
     def scale_plant_capacity(self, resource, zone_name=None, plant_id=None):
         """Sets plant capacity scaling factor in change table.
 
@@ -186,46 +247,22 @@ class ChangeTable(object):
             scaling factor for the increase/decrease in capacity of the
             generator.
         """
-        self._check_resource(resource)
-        if bool(zone_name) or bool(plant_id) is True:
-            if resource not in self.ct:
-                self.ct[resource] = {}
-            if zone_name is not None:
-                try:
-                    self._check_zone(list(zone_name.keys()))
-                except ValueError:
-                    self.ct.pop(resource)
-                    return
-                if "zone_id" not in self.ct[resource]:
-                    self.ct[resource]["zone_id"] = {}
-                for z in zone_name.keys():
-                    if len(self._get_plant_id(z, resource)) == 0:
-                        print("No %s plants in %s." % (resource, z))
-                    else:
-                        self.ct[resource]["zone_id"][self.grid.zone2id[z]] = zone_name[
-                            z
-                        ]
-                if len(self.ct[resource]["zone_id"]) == 0:
-                    self.ct.pop(resource)
-            if plant_id is not None:
-                plant_id_interconnect = set(
-                    self.grid.plant.groupby("type").get_group(resource).index
-                )
-                diff = set(plant_id.keys()).difference(plant_id_interconnect)
-                if len(diff) != 0:
-                    print("No %s plant(s) with the following id:" % resource)
-                    for i in list(diff):
-                        print(i)
-                    self.ct.pop(resource)
-                    return
-                else:
-                    if "plant_id" not in self.ct[resource]:
-                        self.ct[resource]["plant_id"] = {}
-                    for i in plant_id.keys():
-                        self.ct[resource]["plant_id"][i] = plant_id[i]
-        else:
-            print("<zone> and/or <plant_id> must be set. Return.")
-            return
+        self._add_plant_entries(resource, resource, zone_name, plant_id)
+
+    def scale_plant_cost(self, resource, zone_name=None, plant_id=None):
+        """Sets plant cost scaling factor in change table.
+
+        :param str resource: type of generator to consider.
+        :param dict zone_name: load zones. The key(s) is (are) the name of the
+            load zone(s) and the associated value is the scaling factor for the
+            increase/decrease in cost of all the generators fueled by
+            specified resource in the load zone.
+        :param dict plant_id: identification numbers of plants. The key(s) is
+            (are) the id of the plant(s) and the associated value is the
+            scaling factor for the increase/decrease in cost of the
+            generator.
+        """
+        self._add_plant_entries(resource, f"{resource}_cost", zone_name, plant_id)
 
     def scale_branch_capacity(self, zone_name=None, branch_id=None):
         """Sets branch capacity scaling factor in change table.
