@@ -46,6 +46,8 @@ class TransformGrid(object):
         for g in self.gen_types:
             if g in self.ct.keys():
                 self._scale_gen(g)
+            if f"{g}_cost" in self.ct.keys():
+                self._scale_gencost(g)
 
         if "branch" in self.ct.keys():
             self._scale_branch()
@@ -66,7 +68,8 @@ class TransformGrid(object):
             self._add_storage()
 
     def _scale_gen(self, gen_type):
-        """Scales capacity of generators and the associated generation cost.
+        """Scales capacity of generators and the associated generation cost curve
+            (to maintain the same slopes at the start/end of the curve).
 
         :param str gen_type: type of generator.
         """
@@ -79,12 +82,30 @@ class TransformGrid(object):
                 )
                 self._scale_gen_capacity(plant_id, factor)
                 if gen_type in self.thermal_gen_types:
-                    self._scale_gencost(plant_id, factor)
+                    self._scale_gencost_by_capacity(plant_id, factor)
         if "plant_id" in self.ct[gen_type].keys():
             for plant_id, factor in self.ct[gen_type]["plant_id"].items():
                 self._scale_gen_capacity(plant_id, factor)
                 if gen_type in self.thermal_gen_types:
-                    self._scale_gencost(plant_id, factor)
+                    self._scale_gencost_by_capacity(plant_id, factor)
+
+    def _scale_gencost(self, gen_type):
+        """Scales cost of generators.
+
+        :param str gen_type: type of generator.
+        """
+        cost_key = f"{gen_type}_cost"
+        if "zone_id" in self.ct[cost_key].keys():
+            for zone_id, factor in self.ct[cost_key]["zone_id"].items():
+                plant_id = (
+                    self.grid.plant.groupby(["zone_id", "type"])
+                    .get_group((zone_id, gen_type))
+                    .index.tolist()
+                )
+                self.grid.gencost["before"].loc[plant_id, ["c0", "c1", "c2"]] *= factor
+        if "plant_id" in self.ct[cost_key].keys():
+            for plant_id, factor in self.ct[cost_key]["plant_id"].items():
+                self.grid.gencost["before"].loc[plant_id, ["c0", "c1", "c2"]] *= factor
 
     def _scale_gen_capacity(self, plant_id, factor):
         """Scales capacity of plants.
@@ -95,8 +116,9 @@ class TransformGrid(object):
         self.grid.plant.loc[plant_id, "Pmax"] *= factor
         self.grid.plant.loc[plant_id, "Pmin"] *= factor
 
-    def _scale_gencost(self, plant_id, factor):
-        """Scales generation cost curves.
+    def _scale_gencost_by_capacity(self, plant_id, factor):
+        """Scales generation cost curves along with capacity, such that the start/end
+            slopes are consistent before and after.
 
         :param int/list plant_id: plant identification number(s).
         :param float factor: scaling factor.
