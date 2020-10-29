@@ -10,7 +10,7 @@ _cache = MemoryCache()
 class Grid(object):
     """Grid
 
-    :param list interconnect: interconnect name(s).
+    :param str/list interconnect: interconnect name(s).
     :param str source: model used to build the network.
     :param str engine: engine used to run scenario, if using ScenarioGrid.
     :raises TypeError: if source and engine are not both strings.
@@ -25,6 +25,10 @@ class Grid(object):
         if engine not in supported_engines:
             raise ValueError(f"Engine must be one of {','.join(supported_engines)}")
 
+        if isinstance(interconnect, str):
+            interconnect = [interconnect]
+        if not isinstance(interconnect, list):
+            raise TypeError("interconnect must be a str of list of str")
         key = cache_key(interconnect, source)
         cached = _cache.get(key)
         if cached is not None:
