@@ -94,10 +94,12 @@ class Execute(State):
         path_to_package = posixpath.join(
             server_setup.MODEL_DIR, self._scenario_info["engine"]
         )
+        
         if self._scenario_info["engine"] == "REISE":
             folder = "pyreise"
         else:
             folder = "pyreisejl"
+            
         path_to_script = posixpath.join(path_to_package, folder, "utility", script)
         username = server_setup.get_server_user()
         cmd_ssh = ["ssh", username + "@" + server_setup.SERVER_ADDRESS]
@@ -164,7 +166,7 @@ class Execute(State):
             print("Current status: %s" % self._scenario_status)
             return
 
-    def launch_simulation(self, threads=None):
+    def launch_simulation(self, threads=None, extract_data=True):
         """Launches simulation on server.
 
         :param int/None threads: the number of threads to be used (None -> auto).
@@ -182,6 +184,11 @@ class Execute(State):
             # Use the -t flag as defined in call.py in REISE.jl
             extra_args.append("--threads " + str(threads))
 
+        if not isinstance(extract_data, bool):
+            raise TypeError("extract_data must be a boolean: 'True' or 'False'")
+        if extract_data:
+            extra_args.append("--extract-data")
+            
         return self._run_script("call.py", extra_args=extra_args)
 
     def extract_simulation_output(self):
