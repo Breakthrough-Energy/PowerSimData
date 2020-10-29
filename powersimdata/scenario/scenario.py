@@ -16,13 +16,15 @@ pd.set_option("display.max_colwidth", None)
 class Scenario(object):
     """Handles scenario.
 
-    :param str descriptor: scenario name or index.
+    :param int/str descriptor: scenario name or index.
     """
 
     def __init__(self, descriptor):
         """Constructor."""
+        if isinstance(descriptor, int):
+            descriptor = str(descriptor)
         if not isinstance(descriptor, str):
-            raise TypeError("Descriptor must be a string")
+            raise TypeError("Descriptor must be a string or int (for a Scenario ID)")
 
         self.ssh = setup_server_connection()
         self._scenario_list_manager = ScenarioListManager(self.ssh)
