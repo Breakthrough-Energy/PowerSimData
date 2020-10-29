@@ -170,12 +170,11 @@ class Execute(State):
         """Launches simulation on server.
 
         :param int/None threads: the number of threads to be used. This defaults to None,
-        where None means auto,
+            where None means auto.
         :param bool extract_data: whether the results of the simulation engine should
-        automatically extracted after the simulation has run. This defaults to True.
-        :raises TypeError: if threads is not an int.
+            automatically extracted after the simulation has run. This defaults to True.
+        :raises TypeError: if threads is not an int or if extract_data is not a boolean
         :raises ValueError: if threads is not a positive value
-        :raises TypeError: if extract_data is not a boolean.
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
         print("--> Launching simulation on server")
