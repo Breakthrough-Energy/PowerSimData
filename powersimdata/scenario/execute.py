@@ -173,14 +173,16 @@ class Execute(State):
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
         print("--> Launching simulation on server")
-        if threads is None:
-            extra_args = None
-        else:
+
+        extra_args = []
+        
+        if threads:
             if not isinstance(threads, int):
                 raise TypeError("threads must be an int")
             if threads < 1:
                 raise ValueError("threads must be a positive value")
-            extra_args = [threads]
+            # Use the -t flag as defined in call.py in REISE.jl
+            extra_args.append("--threads " + str(threads))
 
         return self._run_script("call.py", extra_args=extra_args)
 
