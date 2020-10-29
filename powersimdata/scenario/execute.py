@@ -81,7 +81,7 @@ class Execute(State):
         scenario = scenario_table[scenario_table.id == scenario_id]
         self._scenario_info = scenario.to_dict("records", into=OrderedDict)[0]
 
-    def _run_script(self, script, extra_args=[]):
+    def _run_script(self, script, extra_args=None):
         """Returns running process
 
         :param str script: script to be used.
@@ -89,7 +89,8 @@ class Execute(State):
         :return: (*subprocess.Popen*) -- process used to run script
         """
 
-        extra_args = " ".join(extra_args)
+        if not extra_args:
+            extra_args = []
 
         path_to_package = posixpath.join(
             server_setup.MODEL_DIR, self._scenario_info["engine"]
