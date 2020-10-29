@@ -139,4 +139,4 @@ class ScenarioListManager(CsvStore):
         err_message = (
             "Failed to delete entry in %s on server" % server_setup.SCENARIO_LIST
         )
-        _ = self._execute_and_check_err(command, err_messsage)
+        _ = self._execute_and_check_err(command, err_message)
