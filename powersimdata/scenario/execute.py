@@ -89,17 +89,17 @@ class Execute(State):
         :return: (*subprocess.Popen*) -- process used to run script
         """
 
-        extra_args = ' '.join(extra_args)
+        extra_args = " ".join(extra_args)
 
         path_to_package = posixpath.join(
             server_setup.MODEL_DIR, self._scenario_info["engine"]
         )
-        
+
         if self._scenario_info["engine"] == "REISE":
             folder = "pyreise"
         else:
             folder = "pyreisejl"
-            
+
         path_to_script = posixpath.join(path_to_package, folder, "utility", script)
         username = server_setup.get_server_user()
         cmd_ssh = ["ssh", username + "@" + server_setup.SERVER_ADDRESS]
@@ -181,7 +181,7 @@ class Execute(State):
         print("--> Launching simulation on server")
 
         extra_args = []
-        
+
         if threads:
             if not isinstance(threads, int):
                 raise TypeError("threads must be an int")
@@ -194,7 +194,7 @@ class Execute(State):
             raise TypeError("extract_data must be a boolean: 'True' or 'False'")
         if extract_data:
             extra_args.append("--extract-data")
-            
+
         return self._run_script("call.py", extra_args=extra_args)
 
     def extract_simulation_output(self):
