@@ -233,8 +233,6 @@ process_run = scenario.state.launch_simulation()
 # Get simulation status
 scenario.state.print_scenario_status()
 
-# Extract data
-process_extract = scenario.state.extract_simulation_output()
 ```
 As an optional parameter, the number of threads used to run the simulation can
 be specified using for example:
@@ -242,6 +240,12 @@ be specified using for example:
 process_run = scenario.state.launch_simulation(threads=8)
 ```
 
+Extracting data from the simulation engine outputs can be a memory intensive process. If there are resource constraints where the engine resides, it is possible to pause the data from being extracted using an optional parameter and then manually extracting the data at a suitable time:
+```python
+process_run = scenario.state.launch_simulation(extract_data=False)
+# Extract data
+process_extract = scenario.state.extract_simulation_output()
+```
 
 ### D. Deleting a Scenario
 A scenario can be deleted. All the input and output files as well as any entries

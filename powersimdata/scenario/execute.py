@@ -85,21 +85,22 @@ class Execute(State):
         """Returns running process
 
         :param str script: script to be used.
-        :param list/None extra_args: list of strings to be passed after scenario id.
+        :param list extra_args: list of strings to be passed after scenario id.
         :return: (*subprocess.Popen*) -- process used to run script
         """
-        if extra_args is None:
+
+        if not extra_args:
             extra_args = []
-        else:
-            extra_args = [str(a) for a in extra_args]
 
         path_to_package = posixpath.join(
             server_setup.MODEL_DIR, self._scenario_info["engine"]
         )
+
         if self._scenario_info["engine"] == "REISE":
             folder = "pyreise"
         else:
             folder = "pyreisejl"
+
         path_to_script = posixpath.join(path_to_package, folder, "utility", script)
         username = server_setup.get_server_user()
         cmd_ssh = ["ssh", username + "@" + server_setup.SERVER_ADDRESS]
@@ -166,21 +167,33 @@ class Execute(State):
             print("Current status: %s" % self._scenario_status)
             return
 
-    def launch_simulation(self, threads=None):
+    def launch_simulation(self, threads=None, extract_data=True):
         """Launches simulation on server.
 
-        :param int/None threads: the number of threads to be used (None -> auto).
+        :param int/None threads: the number of threads to be used. This defaults to None,
+            where None means auto.
+        :param bool extract_data: whether the results of the simulation engine should
+            automatically extracted after the simulation has run. This defaults to True.
+        :raises TypeError: if threads is not an int or if extract_data is not a boolean
+        :raises ValueError: if threads is not a positive value
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
         print("--> Launching simulation on server")
-        if threads is None:
-            extra_args = None
-        else:
+
+        extra_args = []
+
+        if threads:
             if not isinstance(threads, int):
                 raise TypeError("threads must be an int")
             if threads < 1:
                 raise ValueError("threads must be a positive value")
-            extra_args = [threads]
+            # Use the -t flag as defined in call.py in REISE.jl
+            extra_args.append("--threads " + str(threads))
+
+        if not isinstance(extract_data, bool):
+            raise TypeError("extract_data must be a boolean: 'True' or 'False'")
+        if extract_data:
+            extra_args.append("--extract-data")
 
         return self._run_script("call.py", extra_args=extra_args)
 
