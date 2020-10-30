@@ -229,7 +229,7 @@ class TestIdentifyMesh(unittest.TestCase):
     def test_identify_mesh_branch_upgrades_n_4(self):
         # Not enough congest branches (barrier cruft values don't count)
         with self.assertRaises(ValueError):
-            branches = _identify_mesh_branch_upgrades(self.mock_scenario, upgrade_n=4)
+            _identify_mesh_branch_upgrades(self.mock_scenario, upgrade_n=4)
 
     def test_identify_mesh_branch_upgrades_n_3(self):
         expected_return = {101, 102, 103}
@@ -314,7 +314,7 @@ class TestIdentifyMesh(unittest.TestCase):
     # What about a made-up method?
     def test_identify_mesh_bad_method(self):
         with self.assertRaises(ValueError):
-            branches = _identify_mesh_branch_upgrades(
+            _identify_mesh_branch_upgrades(
                 self.mock_scenario, upgrade_n=2, method="does not exist"
             )
 

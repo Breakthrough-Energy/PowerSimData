@@ -1,7 +1,6 @@
 import os
 import posixpath
 
-import pandas as pd
 import paramiko
 from tqdm import tqdm
 

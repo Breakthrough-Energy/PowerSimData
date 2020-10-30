@@ -30,8 +30,8 @@ class CsvStore:
         try:
             table = self._get_from_server(path_on_server)
             table.to_csv(local_path, index=False)
-        except:
-            print(f"Failed to download {filename} list from server.")
+        except Exception as e:
+            print(f"Failed to download {filename} list from server. Error: {str(e)}")
             print("Falling back to local cache...")
 
         if local_path.is_file():

@@ -479,7 +479,7 @@ class TexasEastern(_Builder):
 
     name = "Texas_Eastern"
 
-    def __init__(self):
+    def __init__(self, ssh_client):
         """Constructor."""
         self.interconnect = ["Texas", "Eastern"]
         super().__init__(self.interconnect, ssh_client)
@@ -490,7 +490,7 @@ class EasternWestern(_Builder):
 
     name = "Eastern_Western"
 
-    def __init__(self):
+    def __init__(self, ssh_client):
         """Constructor."""
         self.interconnect = ["Eastern", "Western"]
         super().__init__(self.interconnect, ssh_client)

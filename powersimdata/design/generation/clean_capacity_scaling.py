@@ -1,11 +1,7 @@
-import os
-import pickle
-
 import numpy as np
 import pandas as pd
 
 from powersimdata.design.mimic_grid import mimic_generation_capacity
-from powersimdata.design.scenario_info import ScenarioInfo
 from powersimdata.input.grid import Grid
 from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
 from powersimdata.scenario.scenario import Scenario
@@ -286,7 +282,7 @@ def calculate_overall_shortfall(targets, method, normalized=False):
     """
     if not isinstance(targets, pd.DataFrame):
         raise TypeError("targets must be a pandas DataFrame")
-    if not "ce_shortfall" in targets.columns:
+    if "ce_shortfall" not in targets.columns:
         raise ValueError("targets missing shortfall, see add_shortfall_to_targets()")
     if not isinstance(normalized, bool):
         raise TypeError("normalized must be bool")
