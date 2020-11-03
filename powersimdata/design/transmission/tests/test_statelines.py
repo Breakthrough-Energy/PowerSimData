@@ -46,7 +46,7 @@ class TestClassifyInterstateIntrastate(unittest.TestCase):
         mock_ct = {"branch": {"branch_id": {9: 1.5}}}
 
         with self.assertRaises(ValueError):
-            upgrades = _classify_interstate_intrastate(mock_ct, self.mock_grid)
+            _classify_interstate_intrastate(mock_ct, self.mock_grid)
 
     def test_classify_interstate_intrastate_none(self):
         mock_ct = {"branch": {"branch_id": {}}}

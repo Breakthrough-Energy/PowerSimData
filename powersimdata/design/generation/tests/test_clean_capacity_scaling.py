@@ -1,17 +1,12 @@
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal, assert_series_equal
+from pandas.testing import assert_frame_equal
 
 from powersimdata.design.generation.clean_capacity_scaling import (
-    add_demand_to_targets,
     add_new_capacities_collaborative,
     add_new_capacities_independent,
-    add_resource_data_to_targets,
     add_shortfall_to_targets,
-    calculate_clean_capacity_scaling,
-    create_change_table,
 )
-from powersimdata.tests.mock_scenario import MockScenario
 
 
 def test_independent_new_capacity():

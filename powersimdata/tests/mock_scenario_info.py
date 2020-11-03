@@ -1,5 +1,4 @@
 from powersimdata.design.scenario_info import ScenarioInfo
-from powersimdata.tests.mock_grid import MockGrid
 from powersimdata.tests.mock_scenario import MockScenario
 
 

@@ -142,6 +142,7 @@ class Grid(object):
             _univ_eq(self.id2zone, other.id2zone)
             _univ_eq(self.bus2sub, other.bus2sub)
 
-        except:
+        except Exception as e:
+            print(f"ERROR: could not compare grid. {str(e)}")
             return False
         return True

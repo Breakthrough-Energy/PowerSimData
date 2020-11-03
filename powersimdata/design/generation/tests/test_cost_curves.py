@@ -1,15 +1,12 @@
 import pandas as pd
-import pytest
 from pandas.testing import assert_series_equal
 
 from powersimdata.design.generation.cost_curves import (
     build_supply_curve,
     get_supply_data,
     ks_test,
-    linearize_gencost,
     lower_bound_index,
 )
-from powersimdata.input.grid import Grid
 from powersimdata.tests.mock_grid import MockGrid
 
 mock_plant = {

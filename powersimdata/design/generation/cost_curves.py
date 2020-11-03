@@ -477,7 +477,7 @@ def plot_c1_vs_c2(
     if plot:
         fig, ax = plt.subplots()
         fig.set_size_inches(20, 10)
-        ax = plt.scatter(
+        plt.scatter(
             data["c1"],
             data["c2"],
             s=np.sqrt(data["Pmax"]) * 10,
