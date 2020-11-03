@@ -461,5 +461,5 @@ def test_grid_eq_failure_storage(base_texas):
 def test_that_fields_are_not_modified_when_loading_another_grid():
     western_grid = Grid(["Western"])
     western_plant_original_shape = western_grid.plant.shape
-    eastern_grid = Grid(["Eastern"])  # noqa
+    Grid(["Eastern"])
     assert western_plant_original_shape == western_grid.plant.shape
