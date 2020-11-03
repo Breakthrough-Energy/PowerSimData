@@ -208,6 +208,7 @@ def write_bus_neem_map():
 
     base_grid = Grid(["USA"])
     df_pts_bus = bus_to_neem_reg(base_grid.bus)
+    df_pts_bus.sort_index(inplace=True)
     df_pts_bus.to_csv(const.bus_neem_regions_path)
 
 
