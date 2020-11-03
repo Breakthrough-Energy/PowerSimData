@@ -206,6 +206,19 @@ def write_bus_neem_map():
     df_pts_bus.to_csv(const.bus_neem_regions_path)
 
 
+def write_bus_reeds_map():
+    """
+    Maps the bus locations from the base USA grid to ReEDS regions.
+    Writes out csv with bus numbers, associated ReEDS regions, and distances.
+    """
+    make_dir(const.bus_reeds_regions_path)
+
+    base_grid = Grid(["USA"])
+    df_pts_bus = bus_to_reeds_reg(base_grid.bus)
+    df_pts_bus.sort_index(inplace=True)
+    df_pts_bus.to_csv(const.bus_reeds_regions_path)
+
+
 def write_poly_shapefile():
     """
     Converts a ReEDS csv-format file to a shapefile. Shouldn't need to run again
