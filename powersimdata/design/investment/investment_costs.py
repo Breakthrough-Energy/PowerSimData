@@ -101,7 +101,11 @@ def _calculate_ac_inv_costs(grid_new):
     # import data
     ac_cost = pd.DataFrame(const.ac_line_cost)
     ac_reg_mult = pd.read_csv(const.ac_reg_mult_path)
-    bus_reg = pd.read_csv(const.bus_neem_regions_path, index_col="bus_id")
+    try:
+        bus_reg = pd.read_csv(const.bus_neem_regions_path, index_col="bus_id")
+    except FileNotFoundError:
+        bus_reg = bus_to_neem_reg(grid_new.bus)
+        bus_reg.sort_index().to_csv(const.bus_neem_regions_path)
     xfmr_cost = pd.read_csv(const.transformer_cost_path, index_col=0).fillna(0)
     xfmr_cost.columns = [int(c) for c in xfmr_cost.columns]
     # Mirror across diagonal
