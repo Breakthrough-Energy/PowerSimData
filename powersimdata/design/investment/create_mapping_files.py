@@ -61,12 +61,6 @@ def sjoin_nearest(left_df, right_df, search_dist=0.06):
     if "dist" in (set(left_df.columns) | set(right_df.columns)):
         raise ValueError("neither series nor polygons can contain a 'dist' column")
 
-    if "index_left" in left_df.columns:
-        left_df = left_df.drop("index_left", axis=1)
-
-    if "index_right" in left_df.columns:
-        left_df = left_df.drop("index_right", axis=1)
-
     # Explode possible MultiGeometries. This is a major speedup!
     right_df = right_df.explode()
     right_df = right_df.reset_index(drop=True)
