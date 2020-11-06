@@ -5,6 +5,7 @@ from powersimdata.design.transmission.upgrade import (
     scale_congested_mesh_branches,
     scale_renewable_stubs,
 )
+from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.utility import server_setup
 from powersimdata.utility.distance import find_closest_neighbor, haversine
 
@@ -30,10 +31,10 @@ class ChangeTable(object):
     grid as well as to the original demand, hydro, solar and wind profiles.
     A pickle file enclosing the change table in form of a dictionary can be
     created and transferred on the server. Keys are *'demand'*, *'branch'*, *'dcline'*,
-    '*new_branch*', *'new_dcline'*, *'new_plant'*, *'[resource]'*, *'[resource]_cost'*,
-    and *'storage'*; where 'resource' is one of: {*'biomass'*, *'coal'*, *'dfo'*,
-    *'geothermal'*, *'ng'*, *'nuclear'*, *'hydro'*, *'solar'*, *'wind'*,
-    *'wind_offshore'*, *'other'*}.
+    '*new_branch*', *'new_dcline'*, *'new_plant'*, *'storage'*,
+    *'[resource]'*, *'[resource]_cost'*, and *'[resource]_pmin'*,; where 'resource'
+    is one of: {*'biomass'*, *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*,
+    *'hydro'*, *'solar'*, *'wind'*, *'wind_offshore'*, *'other'*}.
     If a key is missing in the dictionary, then no changes will be applied.
     The data structure is given below:
 
@@ -66,6 +67,14 @@ class ChangeTable(object):
         increase/decrease of cost of the plant or plants in the zone fueled by
         *'[resource]'* (1.2 would correspond to a 20% increase while 0.95 would be
         a 5% decrease).
+    * *'[resource]_pmin*:
+        value is a dictionary. The latter has *'plant_id'* and/or
+        *'zone_id'* as keys. The *'plant_id'* dictionary has the plant ids
+        as keys while the *'zone_id'* dictionary has the zone ids as keys.
+        The value of those dictionaries is a factor indicating the desired
+        increase/decrease of minimum generation of the plant or plants in the zone
+        fueled by *'[resource]'* (1.2 would correspond to a 20% increase while
+        0.95 would be a 5% decrease).
     * *'dcline'*:
         value is a dictionary. The latter has *'dcline_id'* as keys and
         the and the scaling factor for the increase/decrease in capacity
@@ -263,6 +272,39 @@ class ChangeTable(object):
             generator.
         """
         self._add_plant_entries(resource, f"{resource}_cost", zone_name, plant_id)
+
+    def scale_plant_pmin(self, resource, zone_name=None, plant_id=None):
+        """Sets plant cost scaling factor in change table.
+
+        :param str resource: type of generator to consider.
+        :param dict zone_name: load zones. The key(s) is (are) the name of the
+            load zone(s) and the associated value is the scaling factor for the
+            minimum generation for all generators fueled by
+            specified resource in the load zone.
+        :param dict plant_id: identification numbers of plants. The key(s) is
+            (are) the id of the plant(s) and the associated value is the
+            scaling factor for the minimum generation of the generator.
+        """
+        self._add_plant_entries(resource, f"{resource}_pmin", zone_name, plant_id)
+        # Check for situations where Pmin would be scaled above Pmax
+        candidate_grid = TransformGrid(self.grid, self.ct).get_grid()
+        pmax_pmin_ratio = candidate_grid.plant.Pmax / candidate_grid.plant.Pmin
+        to_be_clipped = pmax_pmin_ratio < 1
+        num_clipped = to_be_clipped.sum()
+        if num_clipped > 0:
+            err_msg = (
+                f"{num_clipped} plants would have Pmin > Pmax; "
+                "these plants will have Pmin scaling clipped so that Pmin = Pmax"
+            )
+            print(err_msg)
+            # Add by-plant correction factors as necessary
+            for plant_id, correction in pmax_pmin_ratio[to_be_clipped].items():
+                if "plant_id" not in self.ct[f"{resource}_pmin"]:
+                    self.ct[f"{resource}_pmin"]["plant_id"] = {}
+                if plant_id in self.ct[f"{resource}_pmin"]["plant_id"]:
+                    self.ct[f"{resource}_pmin"]["plant_id"][plant_id] *= correction
+                else:
+                    self.ct[f"{resource}_pmin"]["plant_id"][plant_id] = correction
 
     def scale_branch_capacity(self, zone_name=None, branch_id=None):
         """Sets branch capacity scaling factor in change table.
