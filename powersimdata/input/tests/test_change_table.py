@@ -425,3 +425,37 @@ def test_add_plant_neighbor_can_be_on_same_bus():
         assert hydro_neighbor_id == hydro_plant.iloc[2000].name
     finally:
         ct.clear()
+
+
+def test_scale_pmin_by_plant_too_high():
+    try:
+        ct.scale_plant_pmin("ng", plant_id={0: 100})
+        assert ct.ct["ng_pmin"]["plant_id"][0] * grid.plant.loc[
+            0, "Pmin"
+        ] == pytest.approx(grid.plant.loc[0, "Pmax"])
+    finally:
+        ct.clear()
+
+
+def test_scale_pmin_by_zone_too_high():
+    try:
+        ct.scale_plant_pmin("ng", zone_name={"Maine": 100})
+        assert (
+            ct.ct["ng_pmin"]["plant_id"][0]
+            * ct.ct["ng_pmin"]["zone_id"][1]  # plant_id 0 is in Maine (zone_id 1)
+            * grid.plant.loc[0, "Pmin"]
+        ) == pytest.approx(grid.plant.loc[0, "Pmax"])
+    finally:
+        ct.clear()
+
+
+def test_scale_pmin_by_plant_and_zone_too_high():
+    try:
+        ct.scale_plant_pmin("ng", plant_id={0: 10}, zone_name={"Maine": 10})
+        assert (
+            ct.ct["ng_pmin"]["plant_id"][0]
+            * ct.ct["ng_pmin"]["zone_id"][1]  # plant_id 0 is in Maine (zone_id 1)
+            * grid.plant.loc[0, "Pmin"]
+        ) == pytest.approx(grid.plant.loc[0, "Pmax"])
+    finally:
+        ct.clear()
