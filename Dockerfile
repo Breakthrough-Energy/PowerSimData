@@ -5,8 +5,10 @@ RUN apt-get update && apt-get install -y pipenv
 WORKDIR /app
 COPY Pipfile .
 COPY Pipfile.lock .
-RUN pipenv install --dev --system
-RUN pip install ipython
+RUN pipenv install --dev --system; \
+    pip install ipython;
+
 COPY . .
+RUN pip install .
 
 ENTRYPOINT ["ipython"]
