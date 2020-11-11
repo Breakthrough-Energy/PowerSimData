@@ -7,6 +7,32 @@ from tqdm import tqdm
 from powersimdata.utility import server_setup
 
 
+class DataAccess:
+    """Interface to a local or remote data store."""
+
+    def copy_from(file_name, from_dir, to_dir):
+        raise NotImplementedError
+
+    def copy_to(file_name, from_dir, to_dir, change_name_to=None):
+        raise NotImplementedError
+
+    def execute_command():
+        raise NotImplementedError
+
+
+class SSHDataAccess(DataAccess):
+    """Interface to a remote data store, accessed via SSH."""
+
+    def __init__(self):
+        self.ssh = setup_server_connection()
+
+    def copy_from(self, file_name, from_dir, to_dir):
+        download(self.ssh, file_name, from_dir, to_dir)
+
+    def copy_to(self, file_name, from_dir, to_dir, change_name_to=None):
+        upload(self.ssh, file_name, from_dir, to_dir, change_name_to=None)
+
+
 def download(ssh_client, file_name, from_dir, to_dir):
     """Download data from server.
 
