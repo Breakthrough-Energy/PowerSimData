@@ -32,6 +32,9 @@ class SSHDataAccess(DataAccess):
     def copy_to(self, file_name, from_dir, to_dir, change_name_to=None):
         upload(self.ssh, file_name, from_dir, to_dir, change_name_to=None)
 
+    def execute_command(self, command):
+        return self.ssh.exec_command(command)
+
 
 def download(ssh_client, file_name, from_dir, to_dir):
     """Download data from server.
