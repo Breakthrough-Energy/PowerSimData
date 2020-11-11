@@ -37,7 +37,7 @@ class Move(State):
         if target != "disk":
             raise ValueError("scenario data can only be backed up to disk now")
 
-        backup = BackUpDisk(self._ssh, self._scenario_info)
+        backup = BackUpDisk(self._data_access, self._scenario_info)
 
         backup.move_input_data()
         backup.copy_base_profile()
@@ -50,20 +50,21 @@ class Move(State):
         self._clean()
 
     def _clean(self):
-        """Clean after deletion."""
-        self._ssh.close()
+        """Clean after move."""
+        self._data_access.close()
 
 
 class BackUpDisk(object):
     """Back up scenario data to backup disk mounted on server.
 
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param powersimdata.utility.transfer_data.DataAccess data_access:
+        data access object.
     :param dict scenario: scenario information.
     """
 
-    def __init__(self, ssh_client, scenario_info):
+    def __init__(self, data_access, scenario_info):
         """Constructor."""
-        self._ssh = ssh_client
+        self._data_access = data_access
         self._scenario_info = scenario_info
 
     def move_input_data(self):
@@ -74,7 +75,7 @@ class BackUpDisk(object):
         )
         target = backup.INPUT_DIR
         command = "\cp -pu %s %s; rm -rf %s" % (source, target, source)
-        stdin, stdout, stderr = self._ssh.exec_command(command)
+        stdin, stdout, stderr = self.data_access.execute_command(command)
 
     def copy_base_profile(self):
         """Copies base profile"""
@@ -90,7 +91,7 @@ class BackUpDisk(object):
                 posixpath.join(server_setup.BASE_PROFILE_DIR, source),
                 backup.BASE_PROFILE_DIR,
             )
-            stdin, stdout, stderr = self._ssh.exec_command(command)
+            stdin, stdout, stderr = self.data_access.execute_command(command)
             print(stdout.readlines())
             print(stderr.readlines())
 
@@ -102,7 +103,7 @@ class BackUpDisk(object):
         )
         target = backup.OUTPUT_DIR
         command = "\cp -pu %s %s; rm -rf %s" % (source, target, source)
-        stdin, stdout, stderr = self._ssh.exec_command(command)
+        stdin, stdout, stderr = self.data_access.execute_command(command)
 
     def move_temporary_folder(self):
         """Moves temporary folder."""
@@ -112,4 +113,4 @@ class BackUpDisk(object):
         )
         target = backup.EXECUTE_DIR
         command = "\cp -Rpu %s %s; rm -rf %s " % (source, target, source)
-        stdin, stdout, stderr = self._ssh.exec_command(command)
+        stdin, stdout, stderr = self.data_access.execute_command(command)

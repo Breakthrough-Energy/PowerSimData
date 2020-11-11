@@ -4,17 +4,17 @@ import pandas as pd
 
 from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.utility import backup, server_setup
-from powersimdata.utility.transfer_data import download
 
 
 class InputData(object):
     """Load input data.
 
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param powersimdata.utility.transfer_data.DataAccess data_access:
+        data access object.
     :param str data_loc: data location.
     """
 
-    def __init__(self, ssh_client, data_loc=None):
+    def __init__(self, data_access, data_loc=None):
         """Constructor."""
         if not os.path.exists(server_setup.LOCAL_DIR):
             os.makedirs(server_setup.LOCAL_DIR)
@@ -27,7 +27,7 @@ class InputData(object):
             "ct": "pkl",
             "grid": "mat",
         }
-        self._ssh = ssh_client
+        self._data_access = data_access
         self.data_loc = data_loc
 
     def _check_field(self, field_name):
@@ -83,7 +83,7 @@ class InputData(object):
             )
 
         try:
-            download(self._ssh, file_name, from_dir, server_setup.LOCAL_DIR)
+            self._data_access.copy_from(file_name, from_dir, server_setup.LOCAL_DIR)
             data = _read_data(file_name)
             return data
         except FileNotFoundError:
@@ -116,15 +116,16 @@ def _read_data(file_name):
     return data
 
 
-def get_bus_demand(ssh_client, scenario_id, grid):
+def get_bus_demand(data_access, scenario_id, grid):
     """Returns demand profiles by bus.
 
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param powersimdata.utility.transfer_data.DataAccess data_access:
+        data access object.
     :param str scenario_id: scenario id.
     :param powersimdata.input.grid.Grid grid: grid to construct bus demand for.
     :return: (*pandas.DataFrame*) -- data frame of demand.
     """
-    input = InputData(ssh_client)
+    input = InputData(data_access)
     demand = input.get_data(scenario_id, "demand")
     bus = grid.bus
     bus["zone_Pd"] = bus.groupby("zone_id")["Pd"].transform("sum")

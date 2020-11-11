@@ -18,9 +18,9 @@ class State(object):
         if type(self) == State:
             raise TypeError("Only subclasses of 'State' can be instantiated directly")
 
-        self._ssh = scenario.ssh
-        self._scenario_list_manager = ScenarioListManager(scenario.ssh)
-        self._execute_list_manager = ExecuteListManager(scenario.ssh)
+        self._data_access = scenario.data_access
+        self._scenario_list_manager = ScenarioListManager(self._data_access)
+        self._execute_list_manager = ExecuteListManager(self._data_access)
 
     def switch(self, state):
         """Switches state.
