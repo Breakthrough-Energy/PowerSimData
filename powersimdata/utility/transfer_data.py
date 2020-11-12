@@ -11,7 +11,13 @@ from powersimdata.utility import server_setup
 class DataAccess:
     """Interface to a local or remote data store."""
 
-    def copy_from(file_name, from_dir, to_dir):
+    def copy_from(self, file_name, from_dir, to_dir):
+        """Copy a file from data store to userspace.
+
+        :param str file_name: file name to copy.
+        :param str from_dir: data store directory to copy file from.
+        :param str to_dir: userspace directory to copy file to.
+        """
         raise NotImplementedError
 
     def copy_to(file_name, from_dir, to_dir, change_name_to=None):
