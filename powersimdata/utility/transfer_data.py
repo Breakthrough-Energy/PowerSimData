@@ -1,5 +1,6 @@
 import os
 import posixpath
+from subprocess import Popen
 
 import paramiko
 from tqdm import tqdm
@@ -19,6 +20,13 @@ class DataAccess:
     def execute_command():
         raise NotImplementedError
 
+    def execute_command_async(self, command):
+        """Execute a command locally at the DataAccess, without waiting for completion.
+
+        :param list command: list of str to be passed to command line.
+        """
+        raise NotImplementedError
+
 
 class SSHDataAccess(DataAccess):
     """Interface to a remote data store, accessed via SSH."""
@@ -34,6 +42,17 @@ class SSHDataAccess(DataAccess):
 
     def execute_command(self, command):
         return self.ssh.exec_command(command)
+
+    def execute_command_async(self, command):
+        """Execute a command via ssh, without waiting for completion.
+
+        :param list command: list of str to be passed to command line.
+        """
+        username = server_setup.get_server_user()
+        cmd_ssh = ["ssh", username + "@" + server_setup.SERVER_ADDRESS]
+        full_command = cmd_ssh + command
+        process = Popen(full_command)
+        return process
 
 
 def download(ssh_client, file_name, from_dir, to_dir):
