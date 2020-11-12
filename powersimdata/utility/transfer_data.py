@@ -62,6 +62,13 @@ class SSHDataAccess(DataAccess):
         download(self.ssh, file_name, from_dir, to_dir)
 
     def copy_to(self, file_name, from_dir, to_dir, change_name_to=None):
+        """Copy a file from userspace to data store.
+
+        :param str file_name: file name to copy.
+        :param str from_dir: userspace directory to copy file from.
+        :param str to_dir: data store directory to copy file to.
+        :param str change_name_to: new name for file when copied to data store.
+        """
         upload(self.ssh, file_name, from_dir, to_dir, change_name_to=None)
 
     def execute_command(self, command):
