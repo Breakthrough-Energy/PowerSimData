@@ -76,6 +76,11 @@ class SSHDataAccess(DataAccess):
         upload(self.ssh, file_name, from_dir, to_dir, change_name_to=None)
 
     def execute_command(self, command):
+        """Execute a command locally at the data access.
+
+        :param list command: list of str to be passed to command line.
+        :return: (*tuple*) -- stdin, stdout, stderr of executed command.
+        """
         return self.ssh.exec_command(command)
 
     def execute_command_async(self, command):
