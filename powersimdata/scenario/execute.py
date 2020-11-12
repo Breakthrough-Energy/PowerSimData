@@ -2,7 +2,6 @@ import copy
 import os
 import posixpath
 from collections import OrderedDict
-from subprocess import Popen
 
 import numpy as np
 from scipy.io import savemat
@@ -14,7 +13,6 @@ from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
-from powersimdata.utility.transfer_data import upload
 
 
 class Execute(State):
@@ -45,7 +43,7 @@ class Execute(State):
         """Sets change table and grid."""
         base_grid = Grid(self._scenario_info["interconnect"].split("_"))
         if self._scenario_info["change_table"] == "Yes":
-            input_data = InputData(self._ssh)
+            input_data = InputData(self._data_access)
             self.ct = input_data.get_data(self._scenario_info, "ct")
             self.grid = TransformGrid(base_grid, self.ct).get_grid()
         else:
@@ -102,8 +100,6 @@ class Execute(State):
             folder = "pyreisejl"
 
         path_to_script = posixpath.join(path_to_package, folder, "utility", script)
-        username = server_setup.get_server_user()
-        cmd_ssh = ["ssh", username + "@" + server_setup.SERVER_ADDRESS]
         cmd_pythonpath = [f'export PYTHONPATH="{path_to_package}:$PYTHONPATH";']
         cmd_pythoncall = [
             "nohup",
@@ -113,8 +109,8 @@ class Execute(State):
             self._scenario_info["id"],
         ]
         cmd_io_redirect = ["</dev/null >/dev/null 2>&1 &"]
-        cmd = cmd_ssh + cmd_pythonpath + cmd_pythoncall + extra_args + cmd_io_redirect
-        process = Popen(cmd)
+        cmd = cmd_pythonpath + cmd_pythoncall + extra_args + cmd_io_redirect
+        process = self._data_access.execute_command_async(cmd)
         print("PID: %s" % process.pid)
         return process
 
@@ -218,15 +214,16 @@ class Execute(State):
 class SimulationInput(object):
     """Prepares scenario for execution.
 
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param powersimdata.utility.transfer_data.DataAccess data_access:
+        data access object.
     :param dict scenario_info: scenario information.
     :param powersimdata.input.grid.Grid grid: a Grid object.
     :param dict ct: change table.
     """
 
-    def __init__(self, ssh_client, scenario_info, grid, ct):
+    def __init__(self, data_access, scenario_info, grid, ct):
         """Constructor."""
-        self._ssh = ssh_client
+        self._data_access = data_access
         self._scenario_info = scenario_info
         self.grid = grid
         self.ct = ct
@@ -242,7 +239,7 @@ class SimulationInput(object):
         """
         print("--> Creating temporary folder on server for simulation inputs")
         command = "mkdir %s" % self.TMP_DIR
-        stdin, stdout, stderr = self._ssh.exec_command(command)
+        stdin, stdout, stderr = self._data_access.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to create %s on server" % self.TMP_DIR)
 
@@ -363,8 +360,7 @@ class SimulationInput(object):
                 mpc_storage,
                 appendmat=False,
             )
-            upload(
-                self._ssh,
+            self._data_access.copy_to(
                 file_name,
                 server_setup.LOCAL_DIR,
                 self.TMP_DIR,
@@ -377,8 +373,7 @@ class SimulationInput(object):
         file_name = "%s_case.mat" % self._scenario_info["id"]
         savemat(os.path.join(server_setup.LOCAL_DIR, file_name), mpc, appendmat=False)
 
-        upload(
-            self._ssh,
+        self._data_access.copy_to(
             file_name,
             server_setup.LOCAL_DIR,
             self.TMP_DIR,
@@ -451,8 +446,7 @@ class SimulationInput(object):
         file_name = "%s_%s.csv" % (self._scenario_info["id"], kind)
         profile.to_csv(os.path.join(server_setup.LOCAL_DIR, file_name))
 
-        upload(
-            self._ssh,
+        self._data_access.copy_to(
             file_name,
             server_setup.LOCAL_DIR,
             self.TMP_DIR,
