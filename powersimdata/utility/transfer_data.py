@@ -30,7 +30,11 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def execute_command():
+    def execute_command(self, command):
+        """Execute a command locally at the data access.
+
+        :param list command: list of str to be passed to command line.
+        """
         raise NotImplementedError
 
     def execute_command_async(self, command):
