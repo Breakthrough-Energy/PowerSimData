@@ -20,7 +20,6 @@ from powersimdata.scenario.helpers import (
 )
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
-from powersimdata.utility.transfer_data import upload
 
 
 class Create(State):
@@ -96,7 +95,9 @@ class Create(State):
         self.builder.change_table.write(self._scenario_info["id"])
         print("--> Uploading change table to server")
         file_name = self._scenario_info["id"] + "_ct.pkl"
-        upload(self._ssh, file_name, server_setup.LOCAL_DIR, server_setup.INPUT_DIR)
+        self._data_access.copy_to(
+            file_name, server_setup.LOCAL_DIR, server_setup.INPUT_DIR
+        )
         print("--> Deleting change table on local machine")
         os.remove(os.path.join(server_setup.LOCAL_DIR, file_name))
 
@@ -133,7 +134,7 @@ class Create(State):
         """
         if getattr(self.builder, name):
             profile = TransformProfile(
-                self._ssh,
+                self._data_access,
                 {
                     "interconnect": self.builder.name,
                     "base_%s" % name: getattr(self.builder, name),
@@ -246,16 +247,16 @@ class Create(State):
         n = len(interconnect)
         if n == 1:
             if "Eastern" in interconnect:
-                self.builder = Eastern(self._ssh)
+                self.builder = Eastern(self._data_access)
             elif "Texas" in interconnect:
-                self.builder = Texas(self._ssh)
+                self.builder = Texas(self._data_access)
             elif "Western" in interconnect:
-                self.builder = Western(self._ssh)
+                self.builder = Western(self._data_access)
             elif "USA" in interconnect:
-                self.builder = USA(self._ssh)
+                self.builder = USA(self._data_access)
         elif n == 2:
             if "Western" in interconnect and "Texas" in interconnect:
-                self.builder = TexasWestern(self._ssh)
+                self.builder = TexasWestern(self._data_access)
             elif "Eastern" in interconnect and "Texas" in interconnect:
                 print("Not implemented yet")
                 return
@@ -280,7 +281,12 @@ class Create(State):
 
 
 class _Builder(object):
-    """Scenario Builder."""
+    """Scenario Builder.
+
+    :param list interconnect: list of interconnect(s) to build.
+    :param powersimdata.utility.transfer_data.DataAccess data_access:
+        data access object.
+    """
 
     interconnect = None
     base_grid = None
@@ -299,12 +305,13 @@ class _Builder(object):
     engine = "REISE.jl"
     name = "builder"
 
-    def __init__(self, interconnect, ssh_client):
+    def __init__(self, interconnect, data_access):
         """Constructor."""
         self.base_grid = Grid(interconnect)
-        self.profile = CSV(interconnect, ssh_client)
+        self.profile = CSV(interconnect, data_access)
         self.change_table = ChangeTable(self.base_grid)
-        self._scenario_list_manager = ScenarioListManager(ssh_client)
+        self._scenario_list_manager = ScenarioListManager(data_access)
+        self._scenario_list_manager = ScenarioListManager(data_access)
 
         table = self._scenario_list_manager.get_scenario_table()
         self.existing = table[table.interconnect == self.name]
@@ -429,10 +436,10 @@ class Eastern(_Builder):
 
     name = "Eastern"
 
-    def __init__(self, ssh_client):
+    def __init__(self, data_access):
         """Constructor."""
         self.interconnect = ["Eastern"]
-        super().__init__(self.interconnect, ssh_client)
+        super().__init__(self.interconnect, data_access)
 
 
 class Texas(_Builder):
@@ -440,10 +447,10 @@ class Texas(_Builder):
 
     name = "Texas"
 
-    def __init__(self, ssh_client):
+    def __init__(self, data_access):
         """Constructor."""
         self.interconnect = ["Texas"]
-        super().__init__(self.interconnect, ssh_client)
+        super().__init__(self.interconnect, data_access)
 
 
 class Western(_Builder):
@@ -454,10 +461,10 @@ class Western(_Builder):
 
     name = "Western"
 
-    def __init__(self, ssh_client):
+    def __init__(self, data_access):
         """Constructor."""
         self.interconnect = ["Western"]
-        super().__init__(self.interconnect, ssh_client)
+        super().__init__(self.interconnect, data_access)
 
 
 class TexasWestern(_Builder):
@@ -468,10 +475,10 @@ class TexasWestern(_Builder):
 
     name = "Texas_Western"
 
-    def __init__(self, ssh_client):
+    def __init__(self, data_access):
         """Constructor."""
         self.interconnect = ["Texas", "Western"]
-        super().__init__(self.interconnect, ssh_client)
+        super().__init__(self.interconnect, data_access)
 
 
 class TexasEastern(_Builder):
@@ -479,10 +486,10 @@ class TexasEastern(_Builder):
 
     name = "Texas_Eastern"
 
-    def __init__(self, ssh_client):
+    def __init__(self, data_access):
         """Constructor."""
         self.interconnect = ["Texas", "Eastern"]
-        super().__init__(self.interconnect, ssh_client)
+        super().__init__(self.interconnect, data_access)
 
 
 class EasternWestern(_Builder):
@@ -490,10 +497,10 @@ class EasternWestern(_Builder):
 
     name = "Eastern_Western"
 
-    def __init__(self, ssh_client):
+    def __init__(self, data_access):
         """Constructor."""
         self.interconnect = ["Eastern", "Western"]
-        super().__init__(self.interconnect, ssh_client)
+        super().__init__(self.interconnect, data_access)
 
 
 class USA(_Builder):
@@ -501,22 +508,23 @@ class USA(_Builder):
 
     name = "USA"
 
-    def __init__(self, ssh_client):
+    def __init__(self, data_access):
         """Constructor."""
         self.interconnect = ["USA"]
-        super().__init__(self.interconnect, ssh_client)
+        super().__init__(self.interconnect, data_access)
 
 
 class CSV(object):
     """Profiles handler.
 
     :param list interconnect: interconnect(s)
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param powersimdata.utility.transfer_data.DataAccess data_access:
+        data access object.
     """
 
-    def __init__(self, interconnect, ssh_client):
+    def __init__(self, interconnect, data_access):
         """Constructor."""
-        self._ssh = ssh_client
+        self._data_access = data_access
         self.interconnect = interconnect
 
     def get_base_profile(self, kind):
@@ -531,7 +539,7 @@ class CSV(object):
 
         available = interconnect2name(self.interconnect) + "_" + kind + "_*"
         query = posixpath.join(server_setup.BASE_PROFILE_DIR, available)
-        stdin, stdout, stderr = self._ssh.exec_command("ls " + query)
+        stdin, stdout, stderr = self._data_access.execute_command("ls " + query)
         if len(stderr.readlines()) != 0:
             print("No %s profiles available." % kind)
             possible = []
