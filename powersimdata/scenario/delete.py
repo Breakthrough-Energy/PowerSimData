@@ -38,14 +38,14 @@ class Delete(State):
         # Delete links to base profiles on server
         print("--> Deleting scenario input data on server")
         command = "rm -f %s/%s_*" % (server_setup.INPUT_DIR, self._scenario_info["id"])
-        stdin, stdout, stderr = self._ssh.exec_command(command)
+        stdin, stdout, stderr = self._data_access.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to delete scenario input data on server")
 
         # Delete output profiles
         print("--> Deleting scenario output data on server")
         command = "rm -f %s/%s_*" % (server_setup.OUTPUT_DIR, self._scenario_info["id"])
-        stdin, stdout, stderr = self._ssh.exec_command(command)
+        stdin, stdout, stderr = self._data_access.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to delete scenario output data on server")
 
@@ -56,7 +56,7 @@ class Delete(State):
             self._scenario_info["id"],
         )
         command = "rm -rf %s" % tmp_dir
-        stdin, stdout, stderr = self._ssh.exec_command(command)
+        stdin, stdout, stderr = self._data_access.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to delete temporary folder on server")
 
@@ -74,5 +74,5 @@ class Delete(State):
 
     def _clean(self):
         """Clean after deletion."""
-        self._ssh.close()
+        self._data_access.close()
         self._scenario_info = None
