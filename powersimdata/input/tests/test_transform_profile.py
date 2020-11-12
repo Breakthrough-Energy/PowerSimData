@@ -6,7 +6,7 @@ from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
-from powersimdata.utility.transfer_data import setup_server_connection
+from powersimdata.utility.transfer_data import SSHDataAccess
 
 interconnect = ["Western"]
 param = {
@@ -87,7 +87,7 @@ def get_change_table_for_new_plant_addition(base_grid, resource):
 
 
 def _check_plants_are_scaled(
-    ssh_client, ct, base_grid, base_profile_resource, resource
+    data_access, ct, base_grid, base_profile_resource, resource
 ):
     profile_info = base_profile_resource[0]
     base_profile = base_profile_resource[1]
@@ -95,7 +95,7 @@ def _check_plants_are_scaled(
     tg = TransformGrid(base_grid, ct)
     transformed_grid = tg.get_grid()
 
-    tp = TransformProfile(ssh_client, profile_info, transformed_grid, ct)
+    tp = TransformProfile(data_access, profile_info, transformed_grid, ct)
     transformed_profile = tp.get_profile(resource)
 
     scaled_plant_id = []
@@ -132,7 +132,7 @@ def _check_plants_are_scaled(
 
 
 def _check_new_plants_are_added(
-    ssh_client, ct, base_grid, base_profile_resource, resource
+    data_access, ct, base_grid, base_profile_resource, resource
 ):
     n_plant = param["_".join(interconnect)]["n_plant_to_add"]
     profile_info = base_profile_resource[0]
@@ -141,7 +141,7 @@ def _check_new_plants_are_added(
     tg = TransformGrid(base_grid, ct)
     transformed_grid = tg.get_grid()
 
-    tp = TransformProfile(ssh_client, profile_info, transformed_grid, ct)
+    tp = TransformProfile(data_access, profile_info, transformed_grid, ct)
     transformed_profile = tp.get_profile(resource)
 
     assert not transformed_profile.equals(base_profile)
@@ -155,7 +155,7 @@ def _check_new_plants_are_added(
 
 
 def _check_new_plants_are_not_scaled(
-    ssh_client, base_grid, base_profile_resource, resource
+    data_access, base_grid, base_profile_resource, resource
 ):
     ct_zone = get_change_table_for_zone_scaling(base_grid, resource)
     ct_id = get_change_table_for_id_scaling(base_grid, resource)
@@ -163,11 +163,11 @@ def _check_new_plants_are_not_scaled(
     ct = {**ct_zone, **ct_id[resource], **ct_new}
     # profile of new plants
     new_profile = _check_new_plants_are_added(
-        ssh_client, ct_new, base_grid, base_profile_resource, resource
+        data_access, ct_new, base_grid, base_profile_resource, resource
     )
     # transformed profile
     scaled_profile = _check_plants_are_scaled(
-        ssh_client, ct, base_grid, base_profile_resource, resource
+        data_access, ct, base_grid, base_profile_resource, resource
     )
     # check that the profiles of new plants in the scaled profile are not scaled
     assert new_profile.equals(scaled_profile[new_profile.columns])
@@ -178,7 +178,7 @@ def _check_profile_of_new_plants_are_produced_correctly(
 ):
     ct_new = get_change_table_for_new_plant_addition(base_grid, resource)
     new_profile = _check_new_plants_are_added(
-        ssh_client, ct_new, base_grid, base_profile_resource, resource
+        data_access, ct_new, base_grid, base_profile_resource, resource
     )
     neighbor_id = [d["plant_id_neighbor"] for d in ct_new["new_plant"]]
     neighbor_pmax = base_grid.plant.loc[neighbor_id].Pmax.to_list()
@@ -192,10 +192,10 @@ def _check_profile_of_new_plants_are_produced_correctly(
 
 
 @pytest.fixture(scope="module")
-def ssh_client():
-    ssh_client = setup_server_connection()
-    yield ssh_client
-    ssh_client.close()
+def data_access():
+    data_access = SSHDataAccess()
+    yield data_access
+    data_access.close()
 
 
 @pytest.fixture(scope="module")
@@ -205,8 +205,8 @@ def base_grid():
 
 
 @pytest.fixture(scope="module")
-def base_hydro(ssh_client):
-    input_data = InputData(ssh_client)
+def base_hydro(data_access):
+    input_data = InputData(data_access)
     profile_info = {
         "interconnect": "_".join(interconnect),
         "base_hydro": param["_".join(interconnect)]["hydro"],
@@ -216,8 +216,8 @@ def base_hydro(ssh_client):
 
 
 @pytest.fixture(scope="module")
-def base_wind(ssh_client):
-    input_data = InputData(ssh_client)
+def base_wind(data_access):
+    input_data = InputData(data_access)
     profile_info = {
         "interconnect": "_".join(interconnect),
         "base_wind": param["_".join(interconnect)]["wind"],
@@ -227,8 +227,8 @@ def base_wind(ssh_client):
 
 
 @pytest.fixture(scope="module")
-def base_solar(ssh_client):
-    input_data = InputData(ssh_client)
+def base_solar(data_access):
+    input_data = InputData(data_access)
     profile_info = {
         "interconnect": "_".join(interconnect),
         "base_solar": param["_".join(interconnect)]["solar"],
@@ -238,8 +238,8 @@ def base_solar(ssh_client):
 
 
 @pytest.fixture(scope="module")
-def base_demand(ssh_client):
-    input_data = InputData(ssh_client)
+def base_demand(data_access):
+    input_data = InputData(data_access)
     profile_info = {
         "interconnect": "_".join(interconnect),
         "base_demand": param["_".join(interconnect)]["demand"],
@@ -250,7 +250,7 @@ def base_demand(ssh_client):
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_demand_is_scaled(ssh_client, base_grid, base_demand):
+def test_demand_is_scaled(data_access, base_grid, base_demand):
     n_zone = param["_".join(interconnect)]["n_zone_to_scale"]
     profile_info = base_demand[0]
     base_profile = base_demand[1]
@@ -268,7 +268,7 @@ def test_demand_is_scaled(ssh_client, base_grid, base_demand):
         }
     )
 
-    tp = TransformProfile(ssh_client, profile_info, base_grid, ct.ct)
+    tp = TransformProfile(data_access, profile_info, base_grid, ct.ct)
     transformed_profile = tp.get_profile("demand")
     assert not base_profile.equals(transformed_profile)
 
@@ -284,110 +284,110 @@ def test_demand_is_scaled(ssh_client, base_grid, base_demand):
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_solar_is_scaled_by_zone(ssh_client, base_grid, base_solar):
+def test_solar_is_scaled_by_zone(data_access, base_grid, base_solar):
     ct = get_change_table_for_zone_scaling(base_grid, "solar")
-    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_solar, "solar")
+    _ = _check_plants_are_scaled(data_access, ct, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_solar_is_scaled_by_id(ssh_client, base_grid, base_solar):
+def test_solar_is_scaled_by_id(data_access, base_grid, base_solar):
     ct = get_change_table_for_id_scaling(base_grid, "solar")
-    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_solar, "solar")
+    _ = _check_plants_are_scaled(data_access, ct, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_solar_is_scaled_by_zone_and_id(ssh_client, base_grid, base_solar):
+def test_solar_is_scaled_by_zone_and_id(data_access, base_grid, base_solar):
     ct_zone = get_change_table_for_zone_scaling(base_grid, "solar")
     ct_id = get_change_table_for_id_scaling(base_grid, "solar")
     ct = {**ct_zone, **ct_id["solar"]}
-    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_solar, "solar")
+    _ = _check_plants_are_scaled(data_access, ct, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_wind_is_scaled_by_zone(ssh_client, base_grid, base_wind):
+def test_wind_is_scaled_by_zone(data_access, base_grid, base_wind):
     ct = get_change_table_for_zone_scaling(base_grid, "wind")
-    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_wind, "wind")
+    _ = _check_plants_are_scaled(data_access, ct, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_wind_is_scaled_by_id(ssh_client, base_grid, base_wind):
+def test_wind_is_scaled_by_id(data_access, base_grid, base_wind):
     ct = get_change_table_for_id_scaling(base_grid, "wind")
-    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_wind, "wind")
+    _ = _check_plants_are_scaled(data_access, ct, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_wind_is_scaled_by_zone_and_id(ssh_client, base_grid, base_wind):
+def test_wind_is_scaled_by_zone_and_id(data_access, base_grid, base_wind):
     ct_zone = get_change_table_for_zone_scaling(base_grid, "wind")
     ct_id = get_change_table_for_id_scaling(base_grid, "wind")
     ct = {**ct_zone, **ct_id["wind"]}
-    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_wind, "wind")
+    _ = _check_plants_are_scaled(data_access, ct, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_hydro_is_scaled_by_zone(ssh_client, base_grid, base_hydro):
+def test_hydro_is_scaled_by_zone(data_access, base_grid, base_hydro):
     ct = get_change_table_for_zone_scaling(base_grid, "hydro")
-    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
+    _ = _check_plants_are_scaled(data_access, ct, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_hydro_is_scaled_by_id(ssh_client, base_grid, base_hydro):
+def test_hydro_is_scaled_by_id(data_access, base_grid, base_hydro):
     ct = get_change_table_for_id_scaling(base_grid, "hydro")
-    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
+    _ = _check_plants_are_scaled(data_access, ct, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_hydro_is_scaled_by_zone_and_id(ssh_client, base_grid, base_hydro):
+def test_hydro_is_scaled_by_zone_and_id(data_access, base_grid, base_hydro):
     ct_zone = get_change_table_for_zone_scaling(base_grid, "hydro")
     ct_id = get_change_table_for_id_scaling(base_grid, "hydro")
     ct = {**ct_zone, **ct_id["hydro"]}
-    _ = _check_plants_are_scaled(ssh_client, ct, base_grid, base_hydro, "hydro")
+    _ = _check_plants_are_scaled(data_access, ct, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_new_solar_are_added(ssh_client, base_grid, base_solar):
+def test_new_solar_are_added(data_access, base_grid, base_solar):
     ct = get_change_table_for_new_plant_addition(base_grid, "solar")
-    _ = _check_new_plants_are_added(ssh_client, ct, base_grid, base_solar, "solar")
+    _ = _check_new_plants_are_added(data_access, ct, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_new_wind_are_added(ssh_client, base_grid, base_wind):
+def test_new_wind_are_added(data_access, base_grid, base_wind):
     ct = get_change_table_for_new_plant_addition(base_grid, "wind")
-    _ = _check_new_plants_are_added(ssh_client, ct, base_grid, base_wind, "wind")
+    _ = _check_new_plants_are_added(data_access, ct, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_new_hydro_added(ssh_client, base_grid, base_hydro):
+def test_new_hydro_added(data_access, base_grid, base_hydro):
     ct = get_change_table_for_new_plant_addition(base_grid, "hydro")
-    _ = _check_new_plants_are_added(ssh_client, ct, base_grid, base_hydro, "hydro")
+    _ = _check_new_plants_are_added(data_access, ct, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_new_solar_are_not_scaled(ssh_client, base_grid, base_solar):
-    _check_new_plants_are_not_scaled(ssh_client, base_grid, base_solar, "solar")
+def test_new_solar_are_not_scaled(data_access, base_grid, base_solar):
+    _check_new_plants_are_not_scaled(data_access, base_grid, base_solar, "solar")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_new_wind_are_not_scaled(ssh_client, base_grid, base_wind):
-    _check_new_plants_are_not_scaled(ssh_client, base_grid, base_wind, "wind")
+def test_new_wind_are_not_scaled(data_access, base_grid, base_wind):
+    _check_new_plants_are_not_scaled(data_access, base_grid, base_wind, "wind")
 
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_new_hydro_are_not_scaled(ssh_client, base_grid, base_hydro):
-    _check_new_plants_are_not_scaled(ssh_client, base_grid, base_hydro, "hydro")
+def test_new_hydro_are_not_scaled(data_access, base_grid, base_hydro):
+    _check_new_plants_are_not_scaled(data_access, base_grid, base_hydro, "hydro")
 
 
 @pytest.mark.integration
