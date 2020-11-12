@@ -27,6 +27,10 @@ class DataAccess:
         """
         raise NotImplementedError
 
+    def close(self):
+        """Perform any necessary cleanup for the object."""
+        pass
+
 
 class SSHDataAccess(DataAccess):
     """Interface to a remote data store, accessed via SSH."""
@@ -53,6 +57,9 @@ class SSHDataAccess(DataAccess):
         full_command = cmd_ssh + command
         process = Popen(full_command)
         return process
+
+    def close(self):
+        self.ssh.close()
 
 
 def download(ssh_client, file_name, from_dir, to_dir):
