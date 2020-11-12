@@ -42,6 +42,7 @@ class SSHDataAccess(DataAccess):
     """Interface to a remote data store, accessed via SSH."""
 
     def __init__(self):
+        """Constructor"""
         self.ssh = setup_server_connection()
 
     def copy_from(self, file_name, from_dir, to_dir):
