@@ -95,6 +95,7 @@ class SSHDataAccess(DataAccess):
         return process
 
     def close(self):
+        """Close the connection that was opened when the object was created."""
         self.ssh.close()
 
 
