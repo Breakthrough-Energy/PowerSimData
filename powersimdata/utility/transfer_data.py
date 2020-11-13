@@ -61,7 +61,13 @@ class SSHDataAccess(DataAccess):
 
     def __init__(self):
         """Constructor"""
-        self._setup_server_connection()
+        self._ssh = None
+
+    @property
+    def ssh(self):
+        if self._ssh is None:
+            self._setup_server_connection()
+        return self._ssh
 
     def _setup_server_connection(self):
         """This function setup the connection to the server."""
@@ -82,7 +88,7 @@ class SSHDataAccess(DataAccess):
         server_user = server_setup.get_server_user()
         client.connect(server_setup.SERVER_ADDRESS, username=server_user, timeout=60)
 
-        self.ssh = client
+        self._ssh = client
 
     def copy_from(self, file_name, from_dir, to_dir):
         """Copy a file from data store to userspace.
