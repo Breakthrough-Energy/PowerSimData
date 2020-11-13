@@ -28,6 +28,8 @@ class Execute(State):
         """Constructor."""
         self._scenario_info = scenario.info
         self._scenario_status = scenario.status
+        if not os.path.exists(server_setup.LOCAL_EXECUTE_DIR):
+            os.makedirs(server_setup.LOCAL_EXECUTE_DIR)
         super().__init__(scenario)
 
         print(

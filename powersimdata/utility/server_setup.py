@@ -4,13 +4,27 @@ from pathlib import Path
 
 SERVER_ADDRESS = "becompute01.gatesventures.com"
 DATA_ROOT_DIR = "/mnt/bes/pcm"
+
 SCENARIO_LIST = posixpath.join(DATA_ROOT_DIR, "ScenarioList.csv")
 EXECUTE_LIST = posixpath.join(DATA_ROOT_DIR, "ExecuteList.csv")
-EXECUTE_DIR = posixpath.join(DATA_ROOT_DIR, "tmp")
-BASE_PROFILE_DIR = posixpath.join(DATA_ROOT_DIR, "raw")
-INPUT_DIR = posixpath.join(DATA_ROOT_DIR, "data/input")
-OUTPUT_DIR = posixpath.join(DATA_ROOT_DIR, "data/output")
+
+REL_EXECUTE_DIR = "tmp"
+REL_BASE_PROFILE_DIR = "raw"
+REL_INPUT_DIR = "data/input"
+REL_OUTPUT_DIR = "data/output"
+
+EXECUTE_DIR = posixpath.join(DATA_ROOT_DIR, REL_EXECUTE_DIR)
+BASE_PROFILE_DIR = posixpath.join(DATA_ROOT_DIR, REL_BASE_PROFILE_DIR)
+INPUT_DIR = posixpath.join(DATA_ROOT_DIR, REL_INPUT_DIR)
+OUTPUT_DIR = posixpath.join(DATA_ROOT_DIR, REL_OUTPUT_DIR)
+
 LOCAL_DIR = os.path.join(str(Path.home()), "ScenarioData", "")
+
+LOCAL_EXECUTE_DIR = os.path.join(LOCAL_DIR, REL_EXECUTE_DIR)
+LOCAL_BASE_PROFILE_DIR = os.path.join(LOCAL_DIR, REL_BASE_PROFILE_DIR)
+LOCAL_INPUT_DIR = os.path.join(LOCAL_DIR, REL_INPUT_DIR)
+LOCAL_OUTPUT_DIR = os.path.join(LOCAL_DIR, REL_OUTPUT_DIR)
+
 MODEL_DIR = "/home/bes/pcm"
 
 

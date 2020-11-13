@@ -21,6 +21,9 @@ class OutputData(object):
         """Constructor"""
         if not os.path.exists(server_setup.LOCAL_DIR):
             os.makedirs(server_setup.LOCAL_DIR)
+
+        if not os.path.exists(server_setup.LOCAL_OUTPUT_DIR):
+            os.makedirs(server_setup.LOCAL_OUTPUT_DIR)
         self._data_access = data_access
         self.data_loc = data_loc
 
@@ -54,13 +57,11 @@ class OutputData(object):
         try:
             if self.data_loc == "disk":
                 self.data_access.copy_from(
-                    file_name, backup.OUTPUT_DIR, server_setup.LOCAL_DIR
+                    file_name, backup.OUTPUT_DIR, server_setup.LOCAL_OUTPUT_DIR
                 )
             else:
                 self.data_access.copy_from(
-                    file_name,
-                    server_setup.OUTPUT_DIR,
-                    server_setup.LOCAL_DIR,
+                    file_name, server_setup.OUTPUT_DIR, server_setup.LOCAL_OUTPUT_DIR
                 )
             data = _read_data(file_name)
             return data
@@ -74,7 +75,7 @@ def _read_data(file_name):
     :param str file_name: file name
     :return: (*pandas.DataFrame*) -- specified file as a data frame.
     """
-    data = pd.read_pickle(os.path.join(server_setup.LOCAL_DIR, file_name))
+    data = pd.read_pickle(os.path.join(server_setup.LOCAL_OUTPUT_DIR, file_name))
 
     return data
 

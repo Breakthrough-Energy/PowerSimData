@@ -19,6 +19,12 @@ class InputData(object):
         if not os.path.exists(server_setup.LOCAL_DIR):
             os.makedirs(server_setup.LOCAL_DIR)
 
+        if not os.path.exists(server_setup.LOCAL_BASE_PROFILE_DIR):
+            os.makedirs(server_setup.LOCAL_BASE_PROFILE_DIR)
+
+        if not os.path.exists(server_setup.LOCAL_INPUT_DIR):
+            os.makedirs(server_setup.LOCAL_INPUT_DIR)
+
         self.file_extension = {
             "demand": "csv",
             "hydro": "csv",
@@ -61,12 +67,14 @@ class InputData(object):
         if field_name in ["demand", "hydro", "solar", "wind"]:
             interconnect = interconnect2name(scenario_info["interconnect"].split("_"))
             version = scenario_info["base_" + field_name]
+            to_dir = server_setup.LOCAL_BASE_PROFILE_DIR
             if self.data_loc == "disk":
                 from_dir = backup.BASE_PROFILE_DIR
             else:
                 from_dir = server_setup.BASE_PROFILE_DIR
             file_name = interconnect + "_" + field_name + "_" + version + "." + ext
         else:
+            to_dir = server_setup.LOCAL_INPUT_DIR
             if self.data_loc == "disk":
                 from_dir = backup.INPUT_DIR
             else:
@@ -74,7 +82,7 @@ class InputData(object):
             file_name = scenario_info["id"] + "_" + field_name + "." + ext
 
         try:
-            data = _read_data(file_name)
+            data = _read_data(file_name, to_dir)
             return data
         except FileNotFoundError:
             print(
@@ -83,24 +91,25 @@ class InputData(object):
             )
 
         try:
-            self._data_access.copy_from(file_name, from_dir, server_setup.LOCAL_DIR)
-            data = _read_data(file_name)
+            self._data_access.copy_from(file_name, from_dir, to_dir)
+            data = _read_data(file_name, to_dir)
             return data
         except FileNotFoundError:
             raise
 
 
-def _read_data(file_name):
+def _read_data(file_name, to_dir):
     """Reads data.
 
     :param str file_name: file name, extension either 'pkl', 'csv', or 'mat'.
+    :param str to_dir: local file location for the data
     :return: (*pandas.DataFrame*, *dict*, or *str*) -- demand, hydro, solar or
         wind as a data frame, change table as a dict, or str containing a
         local path to a matfile of grid data.
     :raises ValueError: if extension is unknown.
     """
     ext = file_name.split(".")[-1]
-    filepath = os.path.join(server_setup.LOCAL_DIR, file_name)
+    filepath = os.path.join(to_dir, file_name)
     if ext == "pkl":
         data = pd.read_pickle(filepath)
     elif ext == "csv":
