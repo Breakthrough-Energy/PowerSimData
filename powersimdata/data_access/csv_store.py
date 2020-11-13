@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pandas as pd
@@ -10,14 +9,12 @@ class CsvStore:
     """Base class for common functionality used to manage scenario and execute
     list stored as csv files on the server
 
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param powersimdata.utility.transfer_data.DataAccess: data access object
     """
 
-    def __init__(self, ssh_client):
+    def __init__(self, data_access):
         """Constructor"""
-        self.ssh_client = ssh_client
-        if not os.path.exists(server_setup.LOCAL_DIR):
-            os.makedirs(server_setup.LOCAL_DIR)
+        self.data_access = data_access
 
     def get_table(self, filename, path_on_server):
         """Read the given file from the server, falling back to local copy if
@@ -28,8 +25,9 @@ class CsvStore:
         local_path = Path(server_setup.LOCAL_DIR, filename)
 
         try:
-            table = self._get_from_server(path_on_server)
-            table.to_csv(local_path, index=False)
+            self.data_access.copy_from(
+                filename, server_setup.DATA_ROOT_DIR, server_setup.LOCAL_DIR
+            )
         except:  # noqa
             print(f"Failed to download {filename} from server")
             print("Falling back to local cache...")
@@ -38,15 +36,6 @@ class CsvStore:
             return self._parse_csv(local_path)
         else:
             raise FileNotFoundError(f"{filename} does not exist locally.")
-
-    def _get_from_server(self, path_on_server):
-        """Return csv table from server.
-
-        :return: (*pandas.DataFrame*) -- the specified file as a data frame.
-        """
-        with self.ssh_client.open_sftp() as sftp:
-            file_object = sftp.file(path_on_server, "rb")
-            return self._parse_csv(file_object)
 
     def _parse_csv(self, file_object):
         """Read file from disk into data frame
@@ -67,7 +56,7 @@ class CsvStore:
         :raises IOError: if command is not successfully executed.
         :return: (*str*) -- standard output stream.
         """
-        stdin, stdout, stderr = self.ssh_client.exec_command(command)
+        stdin, stdout, stderr = self.data_access.execute_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError(err_message)
         return stdout

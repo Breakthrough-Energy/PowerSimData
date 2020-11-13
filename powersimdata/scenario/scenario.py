@@ -8,7 +8,7 @@ from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create
 from powersimdata.scenario.execute import Execute
 from powersimdata.utility import server_setup
-from powersimdata.utility.transfer_data import setup_server_connection
+from powersimdata.utility.transfer_data import SSHDataAccess
 
 pd.set_option("display.max_colwidth", None)
 
@@ -26,9 +26,9 @@ class Scenario(object):
         if not isinstance(descriptor, str):
             raise TypeError("Descriptor must be a string or int (for a Scenario ID)")
 
-        self.ssh = setup_server_connection()
-        self._scenario_list_manager = ScenarioListManager(self.ssh)
-        self._execute_list_manager = ExecuteListManager(self.ssh)
+        self.data_access = SSHDataAccess()
+        self._scenario_list_manager = ScenarioListManager(self.data_access)
+        self._execute_list_manager = ExecuteListManager(self.data_access)
 
         if not descriptor:
             self.state = Create(self)

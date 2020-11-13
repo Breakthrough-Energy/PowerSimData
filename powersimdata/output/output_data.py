@@ -7,21 +7,21 @@ from scipy.sparse import coo_matrix
 
 from powersimdata.input.input_data import get_bus_demand
 from powersimdata.utility import backup, server_setup
-from powersimdata.utility.transfer_data import download
 
 
 class OutputData(object):
     """Load output data.
 
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param powersimdata.utility.transfer_data.DataAccess data_access:
+        data access object.
     :param str data_loc: data location.
     """
 
-    def __init__(self, ssh_client, data_loc=None):
+    def __init__(self, data_access, data_loc=None):
         """Constructor"""
         if not os.path.exists(server_setup.LOCAL_DIR):
             os.makedirs(server_setup.LOCAL_DIR)
-        self._ssh = ssh_client
+        self._data_access = data_access
         self.data_loc = data_loc
 
     def get_data(self, scenario_id, field_name):
@@ -53,12 +53,11 @@ class OutputData(object):
 
         try:
             if self.data_loc == "disk":
-                download(
-                    self._ssh, file_name, backup.OUTPUT_DIR, server_setup.LOCAL_DIR
+                self.data_access.copy_from(
+                    file_name, backup.OUTPUT_DIR, server_setup.LOCAL_DIR
                 )
             else:
-                download(
-                    self._ssh,
+                self.data_access.copy_from(
                     file_name,
                     server_setup.OUTPUT_DIR,
                     server_setup.LOCAL_DIR,
@@ -106,10 +105,11 @@ def _check_field(field_name):
         raise ValueError("Only %s data can be loaded" % " | ".join(possible))
 
 
-def construct_load_shed(ssh_client, scenario_info, grid, infeasibilities=None):
+def construct_load_shed(data_access, scenario_info, grid, infeasibilities=None):
     """Constructs load_shed dataframe from relevant scenario/grid data.
 
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param powersimdata.utility.transfer_data.DataAccess data_access:
+        data access object.
     :param dict scenario_info: info attribute of Scenario object.
     :param powersimdata.input.grid.Grid grid: grid to construct load_shed for.
     :param dict/None infeasibilities: dictionary of
@@ -126,7 +126,7 @@ def construct_load_shed(ssh_client, scenario_info, grid, infeasibilities=None):
         load_shed = pd.DataFrame.sparse.from_spmatrix(load_shed_data)
     else:
         print("Infeasibilities, constructing DataFrame")
-        bus_demand = get_bus_demand(ssh_client, scenario_info["id"], grid)
+        bus_demand = get_bus_demand(data_access, scenario_info["id"], grid)
         load_shed = np.zeros((len(hours), len(buses)))
         # Convert '24H' to 24
         interval = int(scenario_info["interval"][:-1])
