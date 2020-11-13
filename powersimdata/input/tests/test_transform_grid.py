@@ -144,6 +144,72 @@ def test_scale_gen_one_plant():
         ct.clear()
 
 
+def test_scale_gencost_one_plant():
+    # This must be the plant ID of a non-zero-cost resource
+    plant_id = 3000
+    gen_type = grid.plant.loc[plant_id].type
+    factor = 1.5
+    ct.scale_plant_cost(gen_type, plant_id={plant_id: factor})
+    new_grid = TransformGrid(grid, ct.ct).get_grid()
+
+    old_gencost = grid.gencost["before"]
+    new_gencost = new_grid.gencost["before"]
+    modified_columns = ["c0", "c1", "c2"]
+    non_modified_columns = set(old_gencost.columns) - set(modified_columns)
+
+    try:
+        assert new_grid != grid
+        # Make sure we don't mess with the plant dataframe
+        assert new_grid.plant.equals(grid.plant)
+        # Make sure we modify cost coefficient columns and only those columns
+        assert new_gencost.loc[plant_id, modified_columns].equals(
+            old_gencost.loc[plant_id, modified_columns] * factor
+        )
+        assert new_gencost.loc[plant_id, non_modified_columns].equals(
+            old_gencost.loc[plant_id, non_modified_columns]
+        )
+    finally:
+        ct.clear()
+
+
+def test_scale_gencost_two_types_two_zones():
+    gen_type = ["ng", "coal"]
+    zone = ["Louisiana", "Montana Eastern"]
+    factor = [0.8, 1.25]
+    for i, r in enumerate(gen_type):
+        ct.scale_plant_cost(r, zone_name={zone[i]: factor[i]})
+    new_grid = TransformGrid(grid, ct.ct).get_grid()
+    plant_id = []
+    for z, r in zip(zone, gen_type):
+        plant_id.append(get_plant_id(grid.zone2id[z], r))
+
+    old_gencost = grid.gencost["before"]
+    new_gencost = new_grid.gencost["before"]
+    modified_columns = ["c0", "c1", "c2"]
+    non_modified_columns = set(old_gencost.columns) - set(modified_columns)
+
+    try:
+        assert new_grid != grid
+        # Make sure we don't mess with the plant dataframe
+        assert new_grid.plant.equals(grid.plant)
+        # Make sure we didn't mess with any other plants
+        changed_plants = set().union(*plant_id)
+        unchanged_plants = set(grid.plant.index.tolist()) - changed_plants
+        assert old_gencost.loc[unchanged_plants].equals(
+            new_gencost.loc[unchanged_plants]
+        )
+        for f, i in zip(factor, plant_id):
+            # Make sure we modify cost coefficient columns and only those columns
+            assert new_gencost.loc[i, modified_columns].equals(
+                old_gencost.loc[i, modified_columns] * f
+            )
+            assert new_gencost.loc[i, non_modified_columns].equals(
+                old_gencost.loc[i, non_modified_columns]
+            )
+    finally:
+        ct.clear()
+
+
 def test_scale_branch_one_zone():
     factor = 4
     zone = "Washington"
