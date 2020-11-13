@@ -15,11 +15,18 @@ MODEL_DIR = "/home/bes/pcm"
 
 
 def get_server_user():
-    """Returns either the content of powersimdata/utility/.server_user, or the
-    username of the active login.
+    """Returns the first username found using the following sources:
+
+    - BE_SERVER_USER environment variable
+    - powersimdata/utility/.server_user
+    - username of the active login.
 
     :return: (*str*) -- user name to be used to log into server.
     """
+    server_user = os.getenv("BE_SERVER_USER")
+    if server_user is not None:
+        return server_user
+
     dir_path = os.path.dirname(os.path.realpath(__file__))
     try:
         with open(os.path.join(dir_path, ".server_user")) as f:
