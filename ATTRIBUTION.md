@@ -15,7 +15,11 @@ This package contains a variety of materials, including data sets and related ma
 * Modifications to source files(s): None
 * Location: ***powersimdata/network/usa_tamu/data/****
 
+##### General Purpose
+The dataset is used to generate simulation inputs
+
 ##### Note
-* https://creativecommons.org/licenses/by/4.0/legalcode
+https://creativecommons.org/licenses/by/4.0/legalcode
+
 
 ---
