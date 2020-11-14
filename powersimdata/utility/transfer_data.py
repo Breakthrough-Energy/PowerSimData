@@ -1,6 +1,7 @@
 import glob
 import os
 import posixpath
+import time
 from subprocess import Popen
 
 import paramiko
@@ -59,14 +60,27 @@ class DataAccess:
 class SSHDataAccess(DataAccess):
     """Interface to a remote data store, accessed via SSH."""
 
+    _last_attempt = 0
+
     def __init__(self):
         """Constructor"""
         self._ssh = None
+        self._retry_after = 5
 
     @property
     def ssh(self):
+        should_attempt = time.time() - SSHDataAccess._last_attempt > self._retry_after
+
         if self._ssh is None:
-            self._setup_server_connection()
+            if should_attempt:
+                try:
+                    self._setup_server_connection()
+                    return self._ssh
+                except:  # noqa
+                    SSHDataAccess._last_attempt = time.time()
+            msg = f"Could not connect to server, will try again after {self._retry_after} seconds"
+            raise IOError(msg)
+
         return self._ssh
 
     def _setup_server_connection(self):
