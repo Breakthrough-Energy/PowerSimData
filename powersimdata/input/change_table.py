@@ -196,9 +196,11 @@ class ChangeTable(object):
         :param str resource: type of generator to consider.
         :param str ct_key: top-level key to add to the change table.
         :param dict zone_name: load zones. The key(s) is (are) the name of the
-            load zone(s).
+            load zone(s) and the associated value is the entry for all the generators
+            fueled by specified resource in the load zone.
         :param dict plant_id: identification numbers of plants. The key(s) is
-            (are) the id of the plant(s).
+            (are) the id of the plant(s) and the associated value is the entry for
+            that generator.
         :raise ValueError: if any values within zone_name or plant_id are negative.
         """
         self._check_resource(resource)
