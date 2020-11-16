@@ -240,8 +240,7 @@ class ChangeTable(object):
                 for i in plant_id.keys():
                     self.ct[ct_key]["plant_id"][i] = plant_id[i]
         else:
-            print("<zone> and/or <plant_id> must be set.")
-            raise
+            raise ValueError("<zone> and/or <plant_id> must be set.")
 
     def scale_plant_capacity(self, resource, zone_name=None, plant_id=None):
         """Sets plant capacity scaling factor in change table.
