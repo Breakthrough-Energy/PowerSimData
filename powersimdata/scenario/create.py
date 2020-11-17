@@ -51,7 +51,8 @@ class Create(State):
                 ("start_date", ""),
                 ("end_date", ""),
                 ("interval", ""),
-                ("engine", ""),
+                ("engine", "REISE.jl"),
+                ("grid_model", "usa_tamu"),
             ]
         )
         super().__init__(scenario)
@@ -69,6 +70,7 @@ class Create(State):
             self._scenario_info["base_solar"] = self.builder.solar
             self._scenario_info["base_wind"] = self.builder.wind
             self._scenario_info["engine"] = self.builder.engine
+            self._scenario_info["grid_model"] = self.builder.grid_model
             if bool(self.builder.change_table.ct):
                 self._scenario_info["change_table"] = "Yes"
             else:
@@ -83,7 +85,6 @@ class Create(State):
     def _add_entry_in_execute_list(self):
         """Adds scenario to the execute list file on server and update status
         information.
-
         """
         self._execute_list_manager.add_entry(self._scenario_info)
         self._scenario_status = "created"
@@ -231,26 +232,55 @@ class Create(State):
         for key, val in self._scenario_info.items():
             print("%s: %s" % (key, val))
 
+    def set_engine(self, engine):
+        """Sets simulation engine to be used for scenario.
+
+        :param str engine: simulation engine
+        """
+        possible = ["REISE", "REISE.jl"]
+        if engine not in possible:
+            raise ValueError("Available engines: %s" % " | ".join(possible))
+        else:
+            self._scenario_info["engine"] = engine
+
+    def set_grid_model(self, model):
+        """Sets grid model to be used for scenario.
+
+        :param str model: grid model
+        """
+        possible = ["usa_tamu"]
+        if model not in possible:
+            raise ValueError("Available grid model: %s" % " | ".join(possible))
+        else:
+            self._scenario_info["grid_model"] = model
+
     def set_builder(self, interconnect):
         """Sets builder.
 
         :param list interconnect: name of interconnect(s).
         """
-
         check_interconnect(interconnect)
         n = len(interconnect)
         if n == 1:
             if "Eastern" in interconnect:
-                self.builder = Eastern(self._data_access)
+                self.builder = Eastern(
+                    self._scenario_info["grid_model"], self._data_access
+                )
             elif "Texas" in interconnect:
-                self.builder = Texas(self._data_access)
+                self.builder = Texas(
+                    self._scenario_info["grid_model"], self._data_access
+                )
             elif "Western" in interconnect:
-                self.builder = Western(self._data_access)
+                self.builder = Western(
+                    self._scenario_info["grid_model"], self._data_access
+                )
             elif "USA" in interconnect:
-                self.builder = USA(self._data_access)
+                self.builder = USA(self._scenario_info["grid_model"], self._data_access)
         elif n == 2:
             if "Western" in interconnect and "Texas" in interconnect:
-                self.builder = TexasWestern(self._data_access)
+                self.builder = TexasWestern(
+                    self._scenario_info["grid_model"], self._data_access
+                )
             elif "Eastern" in interconnect and "Texas" in interconnect:
                 print("Not implemented yet")
                 return
@@ -277,7 +307,8 @@ class Create(State):
 class _Builder(object):
     """Scenario Builder.
 
-    :param list interconnect: list of interconnect(s) to build.
+    :param tuple grid_info: first element is a list of interconnect(s). Second element
+        is the grid model.
     :param powersimdata.utility.transfer_data.DataAccess data_access:
         data access object.
     """
@@ -296,13 +327,12 @@ class _Builder(object):
     hydro = ""
     solar = ""
     wind = ""
-    engine = "REISE.jl"
     name = "builder"
 
-    def __init__(self, interconnect, data_access):
+    def __init__(self, grid_info, data_access):
         """Constructor."""
-        self.base_grid = Grid(interconnect)
-        self.profile = CSV(interconnect, data_access)
+        self.base_grid = Grid(grid_info[0], source=grid_info[1])
+        self.profile = CSV(grid_info[0], data_access)
         self.change_table = ChangeTable(self.base_grid)
         self._scenario_list_manager = ScenarioListManager(data_access)
 
@@ -389,18 +419,6 @@ class _Builder(object):
                 % (kind, " + ".join(self.interconnect), " | ".join(possible))
             )
 
-    def set_engine(self, engine):
-        """Sets simulation engine to be used for scenarion.
-
-        :param str engine: simulation engine
-        """
-        possible = ["REISE", "REISE.jl"]
-        if engine not in possible:
-            print("Available engines: %s" % " | ".join(possible))
-            return
-        else:
-            self.engine = engine
-
     def load_change_table(self, filename):
         """Uploads change table.
 
@@ -429,10 +447,10 @@ class Eastern(_Builder):
 
     name = "Eastern"
 
-    def __init__(self, data_access):
+    def __init__(self, grid_model, data_access):
         """Constructor."""
         self.interconnect = ["Eastern"]
-        super().__init__(self.interconnect, data_access)
+        super().__init__((self.interconnect, grid_model), data_access)
 
 
 class Texas(_Builder):
@@ -440,10 +458,10 @@ class Texas(_Builder):
 
     name = "Texas"
 
-    def __init__(self, data_access):
+    def __init__(self, grid_model, data_access):
         """Constructor."""
         self.interconnect = ["Texas"]
-        super().__init__(self.interconnect, data_access)
+        super().__init__((self.interconnect, grid_model), data_access)
 
 
 class Western(_Builder):
@@ -454,10 +472,10 @@ class Western(_Builder):
 
     name = "Western"
 
-    def __init__(self, data_access):
+    def __init__(self, grid_model, data_access):
         """Constructor."""
         self.interconnect = ["Western"]
-        super().__init__(self.interconnect, data_access)
+        super().__init__((self.interconnect, grid_model), data_access)
 
 
 class TexasWestern(_Builder):
@@ -468,10 +486,10 @@ class TexasWestern(_Builder):
 
     name = "Texas_Western"
 
-    def __init__(self, data_access):
+    def __init__(self, grid_model, data_access):
         """Constructor."""
         self.interconnect = ["Texas", "Western"]
-        super().__init__(self.interconnect, data_access)
+        super().__init__((self.interconnect, grid_model), data_access)
 
 
 class TexasEastern(_Builder):
@@ -479,10 +497,10 @@ class TexasEastern(_Builder):
 
     name = "Texas_Eastern"
 
-    def __init__(self, data_access):
+    def __init__(self, grid_model, data_access):
         """Constructor."""
         self.interconnect = ["Texas", "Eastern"]
-        super().__init__(self.interconnect, data_access)
+        super().__init__((self.interconnect, grid_model), data_access)
 
 
 class EasternWestern(_Builder):
@@ -490,10 +508,10 @@ class EasternWestern(_Builder):
 
     name = "Eastern_Western"
 
-    def __init__(self, data_access):
+    def __init__(self, grid_model, data_access):
         """Constructor."""
         self.interconnect = ["Eastern", "Western"]
-        super().__init__(self.interconnect, data_access)
+        super().__init__((self.interconnect, grid_model), data_access)
 
 
 class USA(_Builder):
@@ -501,10 +519,10 @@ class USA(_Builder):
 
     name = "USA"
 
-    def __init__(self, data_access):
+    def __init__(self, grid_model, data_access):
         """Constructor."""
         self.interconnect = ["USA"]
-        super().__init__(self.interconnect, data_access)
+        super().__init__((self.interconnect, grid_model), data_access)
 
 
 class CSV(object):
