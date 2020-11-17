@@ -375,7 +375,11 @@ class SimulationInput(object):
 
         # MPC file
         file_name = "%s_case.mat" % self._scenario_info["id"]
-        savemat(os.path.join(server_setup.LOCAL_EXECUTE_DIR, file_name), mpc, appendmat=False)
+        savemat(
+            os.path.join(server_setup.LOCAL_EXECUTE_DIR, file_name),
+            mpc,
+            appendmat=False,
+        )
 
         self._data_access.copy_to(
             file_name,

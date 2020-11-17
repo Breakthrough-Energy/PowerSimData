@@ -621,7 +621,7 @@ class ChangeTable(object):
         """
         if not os.path.exists(server_setup.LOCAL_DIR):
             os.makedirs(server_setup.LOCAL_DIR)
-        
+
         if not os.path.exists(server_setup.LOCAL_INPUT_DIR):
             os.makedirs(server_setup.LOCAL_INPUT_DIR)
 

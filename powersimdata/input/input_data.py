@@ -85,10 +85,7 @@ class InputData(object):
             data = _read_data(file_name, to_dir)
             return data
         except FileNotFoundError:
-            print(
-                "%s not found in %s on local machine"
-                % (file_name, to_dir)
-            )
+            print("%s not found in %s on local machine" % (file_name, to_dir))
 
         try:
             self._data_access.copy_from(file_name, from_dir, to_dir)
