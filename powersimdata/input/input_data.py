@@ -87,7 +87,7 @@ class InputData(object):
         except FileNotFoundError:
             print(
                 "%s not found in %s on local machine"
-                % (file_name, server_setup.LOCAL_DIR)
+                % (file_name, to_dir)
             )
 
         try:

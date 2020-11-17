@@ -96,10 +96,10 @@ class Create(State):
         print("--> Uploading change table to server")
         file_name = self._scenario_info["id"] + "_ct.pkl"
         self._data_access.copy_to(
-            file_name, server_setup.LOCAL_DIR, server_setup.INPUT_DIR
+            file_name, server_setup.LOCAL_INPUT_DIR server_setup.INPUT_DIR
         )
         print("--> Deleting change table on local machine")
-        os.remove(os.path.join(server_setup.LOCAL_DIR, file_name))
+        os.remove(os.path.join(server_setup.LOCAL_INPUT_DIR, file_name))
 
     def get_ct(self):
         """Returns change table.

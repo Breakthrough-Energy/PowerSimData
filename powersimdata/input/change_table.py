@@ -621,8 +621,11 @@ class ChangeTable(object):
         """
         if not os.path.exists(server_setup.LOCAL_DIR):
             os.makedirs(server_setup.LOCAL_DIR)
+        
+        if not os.path.exists(server_setup.LOCAL_INPUT_DIR):
+            os.makedirs(server_setup.LOCAL_INPUT_DIR)
 
-        file_name = os.path.join(server_setup.LOCAL_DIR, scenario_id + "_ct.pkl")
+        file_name = os.path.join(server_setup.LOCAL_INPUT_DIR, scenario_id + "_ct.pkl")
         if os.path.isfile(file_name) is False:
             print("Writing %s" % file_name)
             pickle.dump(self.ct, open(file_name, "wb"))
