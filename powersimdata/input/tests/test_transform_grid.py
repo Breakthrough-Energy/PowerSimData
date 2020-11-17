@@ -44,8 +44,7 @@ def test_that_only_capacities_are_modified_when_scaling_renewable_gen(ct):
     plant_id = get_plant_id(grid.zone2id[zone], gen_type)
 
     assert new_grid != ref_grid
-    ref_grid.plant.loc[plant_id, "Pmax"] *= factor
-    ref_grid.plant.loc[plant_id, "Pmin"] *= factor
+    ref_grid.plant.loc[plant_id, ["Pmax", "Pmin"]] *= factor
     assert new_grid == ref_grid
 
 
