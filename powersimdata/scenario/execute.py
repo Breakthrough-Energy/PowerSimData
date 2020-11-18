@@ -40,7 +40,10 @@ class Execute(State):
 
     def _set_ct_and_grid(self):
         """Sets change table and grid."""
-        base_grid = Grid(self._scenario_info["interconnect"].split("_"))
+        base_grid = Grid(
+            self._scenario_info["interconnect"].split("_"),
+            source=self._scenario_info["grid_model"],
+        )
         if self._scenario_info["change_table"] == "Yes":
             input_data = InputData()
             self.ct = input_data.get_data(self._scenario_info, "ct")
@@ -162,8 +165,8 @@ class Execute(State):
     def launch_simulation(self, threads=None, extract_data=True):
         """Launches simulation on server.
 
-        :param int/None threads: the number of threads to be used. This defaults to None,
-            where None means auto.
+        :param int/None threads: the number of threads to be used. This defaults to
+            None, where None means auto.
         :param bool extract_data: whether the results of the simulation engine should
             automatically extracted after the simulation has run. This defaults to True.
         :raises TypeError: if threads is not an int or if extract_data is not a boolean
