@@ -53,11 +53,11 @@ class OutputData(object):
 
         try:
             if self.data_loc == "disk":
-                self.data_access.copy_from(
+                self._data_access.copy_from(
                     file_name, backup.OUTPUT_DIR, server_setup.LOCAL_DIR
                 )
             else:
-                self.data_access.copy_from(
+                self._data_access.copy_from(
                     file_name,
                     server_setup.OUTPUT_DIR,
                     server_setup.LOCAL_DIR,
