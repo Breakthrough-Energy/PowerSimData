@@ -11,7 +11,9 @@ class Grid(object):
     """Grid
 
     :param str/list interconnect: interconnect name(s).
-    :param str source: model used to build the network.
+    :param str source: should be either the name of a grid model within the
+        '*powersimdata/network*' directory or a filename for a '*.mat*' file, which
+        will be interpreted based on the engine which created it.
     :param str engine: engine used to run scenario, if using ScenarioGrid.
     :raises TypeError: if source and engine are not both strings.
     :raises ValueError: if model or engine does not exist.
