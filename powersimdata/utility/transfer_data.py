@@ -1,6 +1,7 @@
 import glob
 import os
 import posixpath
+import time
 from subprocess import Popen
 
 import paramiko
@@ -59,9 +60,28 @@ class DataAccess:
 class SSHDataAccess(DataAccess):
     """Interface to a remote data store, accessed via SSH."""
 
+    _last_attempt = 0
+
     def __init__(self):
         """Constructor"""
-        self._setup_server_connection()
+        self._ssh = None
+        self._retry_after = 5
+
+    @property
+    def ssh(self):
+        should_attempt = time.time() - SSHDataAccess._last_attempt > self._retry_after
+
+        if self._ssh is None:
+            if should_attempt:
+                try:
+                    self._setup_server_connection()
+                    return self._ssh
+                except:  # noqa
+                    SSHDataAccess._last_attempt = time.time()
+            msg = f"Could not connect to server, will try again after {self._retry_after} seconds"
+            raise IOError(msg)
+
+        return self._ssh
 
     def _setup_server_connection(self):
         """This function setup the connection to the server."""
@@ -82,7 +102,7 @@ class SSHDataAccess(DataAccess):
         server_user = server_setup.get_server_user()
         client.connect(server_setup.SERVER_ADDRESS, username=server_user, timeout=60)
 
-        self.ssh = client
+        self._ssh = client
 
     def copy_from(self, file_name, from_dir, to_dir):
         """Copy a file from data store to userspace.
