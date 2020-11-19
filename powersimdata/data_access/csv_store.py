@@ -16,7 +16,7 @@ class CsvStore:
         """Constructor"""
         self.data_access = data_access
 
-    def get_table(self, filename, path_on_server):
+    def get_table(self, filename):
         """Read the given file from the server, falling back to local copy if
         unable to connect.
 
@@ -25,9 +25,7 @@ class CsvStore:
         local_path = Path(server_setup.LOCAL_DIR, filename)
 
         try:
-            self.data_access.copy_from(
-                filename, server_setup.DATA_ROOT_DIR, server_setup.LOCAL_DIR
-            )
+            self.data_access.copy_from(filename, ".")
         except:  # noqa
             print(f"Failed to download {filename} from server")
             print("Falling back to local cache...")

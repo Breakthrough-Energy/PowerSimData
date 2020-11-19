@@ -13,12 +13,11 @@ from powersimdata.utility import server_setup
 class DataAccess:
     """Interface to a local or remote data store."""
 
-    def copy_from(self, file_name, from_dir, to_dir):
+    def copy_from(self, file_name, from_dir):
         """Copy a file from data store to userspace.
 
         :param str file_name: file name to copy.
         :param str from_dir: data store directory to copy file from.
-        :param str to_dir: userspace directory to copy file to.
         """
         raise NotImplementedError
 
@@ -62,10 +61,12 @@ class SSHDataAccess(DataAccess):
 
     _last_attempt = 0
 
-    def __init__(self):
+    def __init__(self, root):
         """Constructor"""
         self._ssh = None
         self._retry_after = 5
+        self.root = server_setup.DATA_ROOT_DIR if root is None else root
+        self.dest_root = server_setup.LOCAL_DIR
 
     @property
     def ssh(self):
@@ -104,16 +105,18 @@ class SSHDataAccess(DataAccess):
 
         self._ssh = client
 
-    def copy_from(self, file_name, from_dir, to_dir):
+    def copy_from(self, file_name, from_dir):
         """Copy a file from data store to userspace.
 
         :param str file_name: file name to copy.
         :param str from_dir: data store directory to copy file from.
         :param str to_dir: userspace directory to copy file to.
         """
+        to_dir = os.path.join(self.dest_root, from_dir)
         if not os.path.exists(to_dir):
             os.makedirs(to_dir)
 
+        from_dir = posixpath.join(self.root, from_dir)
         from_path = posixpath.join(from_dir, file_name)
         stdin, stdout, stderr = self.ssh.exec_command("ls " + from_path)
         if len(stderr.readlines()) != 0:

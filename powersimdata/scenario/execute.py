@@ -43,7 +43,7 @@ class Execute(State):
         """Sets change table and grid."""
         base_grid = Grid(self._scenario_info["interconnect"].split("_"))
         if self._scenario_info["change_table"] == "Yes":
-            input_data = InputData(self._data_access)
+            input_data = InputData()
             self.ct = input_data.get_data(self._scenario_info, "ct")
             self.grid = TransformGrid(base_grid, self.ct).get_grid()
         else:
@@ -91,7 +91,9 @@ class Execute(State):
             extra_args = []
 
         path_to_package = posixpath.join(
-            server_setup.MODEL_DIR, self._scenario_info["engine"]
+            server_setup.DATA_ROOT_DIR,
+            server_setup.MODEL_DIR,
+            self._scenario_info["engine"],
         )
 
         if self._scenario_info["engine"] == "REISE":
@@ -231,7 +233,9 @@ class SimulationInput(object):
         self.ct = ct
 
         self.TMP_DIR = posixpath.join(
-            server_setup.EXECUTE_DIR, "scenario_%s" % scenario_info["id"]
+            server_setup.DATA_ROOT_DIR,
+            server_setup.EXECUTE_DIR,
+            "scenario_%s" % scenario_info["id"],
         )
 
     def create_folder(self):
@@ -392,19 +396,21 @@ class SimulationInput(object):
         :param int/str/None profile_as: if given, copy profile from this scenario.
         """
         if profile_as is None:
-            profile = TransformProfile(
-                self._data_access, self._scenario_info, self.grid, self.ct
-            )
+            profile = TransformProfile(self._scenario_info, self.grid, self.ct)
             if bool(profile.scale_keys[kind] & set(self.ct.keys())):
                 self._prepare_scaled_profile(kind, profile)
             else:
                 self._create_link_to_base_profile(kind)
         else:
             from_dir = posixpath.join(
-                server_setup.EXECUTE_DIR, f"scenario_{profile_as}"
+                server_setup.DATA_ROOT_DIR,
+                server_setup.EXECUTE_DIR,
+                f"scenario_{profile_as}",
             )
             to_dir = posixpath.join(
-                server_setup.EXECUTE_DIR, f"scenario_{self._scenario_info['id']}"
+                server_setup.DATA_ROOT_DIR,
+                server_setup.EXECUTE_DIR,
+                f"scenario_{self._scenario_info['id']}",
             )
             command = f"cp {from_dir}/{kind}.csv {to_dir}"
             stdin, stdout, stderr = self._data_access.execute_command(command)

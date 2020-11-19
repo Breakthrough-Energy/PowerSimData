@@ -6,14 +6,15 @@ import pandas as pd
 from scipy.sparse import coo_matrix
 
 from powersimdata.input.input_data import get_bus_demand
-from powersimdata.utility import backup, server_setup
+from powersimdata.utility import server_setup
+from powersimdata.utility.transfer_data import SSHDataAccess
 
 
 class OutputData(object):
     """Load output data.
 
     :param powersimdata.utility.transfer_data.DataAccess data_access:
-        data access object.
+        data access object. - THIS IS IGNORED
     :param str data_loc: data location.
     """
 
@@ -21,8 +22,11 @@ class OutputData(object):
         """Constructor"""
         if not os.path.exists(server_setup.LOCAL_DIR):
             os.makedirs(server_setup.LOCAL_DIR)
-        self._data_access = data_access
         self.data_loc = data_loc
+        if self.data_loc == "disk":
+            self._data_access = SSHDataAccess(server_setup.BACKUP_DATA_ROOT_DIR)
+        else:
+            self._data_access = SSHDataAccess(server_setup.DATA_ROOT_DIR)
 
     def get_data(self, scenario_id, field_name):
         """Returns data either from server or from local directory.
@@ -38,45 +42,31 @@ class OutputData(object):
 
         print("--> Loading %s" % field_name)
         file_name = scenario_id + "_" + field_name + ".pkl"
+        from_dir = server_setup.OUTPUT_DIR
 
         try:
-            data = _read_data(file_name)
-            return data
+            return _read_data(file_name, path_to_file=from_dir)
         except pickle.UnpicklingError:
             err_msg = f"Unable to unpickle {file_name}, possibly corrupted in download."
             raise ValueError(err_msg)
         except FileNotFoundError:
             print(
                 "%s not found in %s on local machine"
-                % (file_name, server_setup.LOCAL_DIR)
+                % (file_name, os.path.join(server_setup.LOCAL_DIR, from_dir))
             )
 
-        try:
-            if self.data_loc == "disk":
-                self._data_access.copy_from(
-                    file_name, backup.OUTPUT_DIR, server_setup.LOCAL_DIR
-                )
-            else:
-                self._data_access.copy_from(
-                    file_name,
-                    server_setup.OUTPUT_DIR,
-                    server_setup.LOCAL_DIR,
-                )
-            data = _read_data(file_name)
-            return data
-        except FileNotFoundError:
-            raise
+        self._data_access.copy_from(file_name, from_dir)
+        return _read_data(file_name, path_to_file=from_dir)
 
 
-def _read_data(file_name):
+def _read_data(file_name, path_to_file):
     """Reads data.
 
     :param str file_name: file name
+    :param str path_to_file: relative path segment excluding root and filename
     :return: (*pandas.DataFrame*) -- specified file as a data frame.
     """
-    data = pd.read_pickle(os.path.join(server_setup.LOCAL_DIR, file_name))
-
-    return data
+    return pd.read_pickle(os.path.join(server_setup.LOCAL_DIR, path_to_file, file_name))
 
 
 def _check_field(field_name):

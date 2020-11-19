@@ -46,7 +46,7 @@ class Analyze(State):
 
     def _set_ct_and_grid(self):
         """Sets change table and grid."""
-        input_data = InputData(self._data_access, data_loc=self.data_loc)
+        input_data = InputData(data_loc=self.data_loc)
         grid_mat_path = input_data.get_data(self._scenario_info, "grid")
         self.grid = Grid(
             interconnect=[None],
@@ -245,9 +245,7 @@ class Analyze(State):
             potentially modified one be returned.
         :return: (*pandas.DataFrame*) -- data frame of demand (hour, zone).
         """
-        profile = TransformProfile(
-            self._data_access, self._scenario_info, self.get_grid(), self.get_ct()
-        )
+        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
         demand = profile.get_profile("demand")
 
         if original:
@@ -278,9 +276,7 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of demand (hour, bus).
         """
-        profile = TransformProfile(
-            self._data_access, self._scenario_info, self.get_grid(), self.get_ct()
-        )
+        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
         demand = profile.get_profile("demand")
         grid = self.get_grid()
         return calculate_bus_demand(grid.bus, demand)
@@ -290,9 +286,7 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of hydro energy output.
         """
-        profile = TransformProfile(
-            self._data_access, self._scenario_info, self.get_grid(), self.get_ct()
-        )
+        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
         return profile.get_profile("hydro")
 
     def get_solar(self):
@@ -300,9 +294,7 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of solar energy output.
         """
-        profile = TransformProfile(
-            self._data_access, self._scenario_info, self.get_grid(), self.get_ct()
-        )
+        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
         return profile.get_profile("solar")
 
     def get_wind(self):
@@ -310,7 +302,5 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of wind energy output.
         """
-        profile = TransformProfile(
-            self._data_access, self._scenario_info, self.get_grid(), self.get_ct()
-        )
+        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
         return profile.get_profile("wind")

@@ -1,3 +1,5 @@
+import os
+
 from powersimdata.data_access.csv_store import CsvStore
 from powersimdata.data_access.sql_store import SqlStore, to_data_frame
 from powersimdata.utility import server_setup
@@ -84,7 +86,7 @@ class ExecuteListManager(CsvStore):
 
         :return: (*pandas.DataFrame*) -- execute list as a data frame.
         """
-        return self.get_table("ExecuteList.csv", server_setup.EXECUTE_LIST)
+        return self.get_table(os.path.basename(server_setup.EXECUTE_LIST))
 
     def add_entry(self, scenario_info):
         """Adds scenario to the execute list file on server.

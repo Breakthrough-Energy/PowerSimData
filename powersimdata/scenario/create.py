@@ -134,7 +134,6 @@ class Create(State):
         """
         if getattr(self.builder, name):
             profile = TransformProfile(
-                self._data_access,
                 {
                     "interconnect": self.builder.name,
                     "base_%s" % name: getattr(self.builder, name),
@@ -538,7 +537,9 @@ class CSV(object):
             raise NameError("Choose from %s" % " | ".join(possible))
 
         available = interconnect2name(self.interconnect) + "_" + kind + "_*"
-        query = posixpath.join(server_setup.BASE_PROFILE_DIR, available)
+        query = posixpath.join(
+            server_setup.DATA_ROOT_DIR, server_setup.BASE_PROFILE_DIR, available
+        )
         stdin, stdout, stderr = self._data_access.execute_command("ls " + query)
         if len(stderr.readlines()) != 0:
             print("No %s profiles available." % kind)

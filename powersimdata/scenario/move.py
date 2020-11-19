@@ -2,7 +2,7 @@ import posixpath
 
 from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.scenario.state import State
-from powersimdata.utility import backup, server_setup
+from powersimdata.utility import server_setup
 
 
 class Move(State):
@@ -71,9 +71,13 @@ class BackUpDisk(object):
         """Moves input data."""
         print("--> Moving scenario input data to backup disk")
         source = posixpath.join(
-            server_setup.INPUT_DIR, self._scenario_info["id"] + "_*"
+            server_setup.DATA_ROOT_DIR,
+            server_setup.INPUT_DIR,
+            self._scenario_info["id"] + "_*",
         )
-        target = backup.INPUT_DIR
+        target = posixpath.join(
+            server_setup.BACKUP_DATA_ROOT_DIR, server_setup.INPUT_DIR
+        )
         command = "\cp -pu %s %s; rm -rf %s" % (source, target, source)
         stdin, stdout, stderr = self.data_access.execute_command(command)
 
@@ -88,8 +92,12 @@ class BackUpDisk(object):
             source = interconnect + "_" + kind + "_" + version + ".csv"
 
             command = "\cp -pu %s %s" % (
-                posixpath.join(server_setup.BASE_PROFILE_DIR, source),
-                backup.BASE_PROFILE_DIR,
+                posixpath.join(
+                    server_setup.DATA_ROOT_DIR, server_setup.BASE_PROFILE_DIR, source
+                ),
+                posixpath.join(
+                    server_setup.BACKUP_DATA_ROOT_DIR, server_setup.BASE_PROFILE_DIR
+                ),
             )
             stdin, stdout, stderr = self.data_access.execute_command(command)
             print(stdout.readlines())
@@ -99,9 +107,13 @@ class BackUpDisk(object):
         """Moves output data"""
         print("--> Moving scenario output data to backup disk")
         source = posixpath.join(
-            server_setup.OUTPUT_DIR, self._scenario_info["id"] + "_*"
+            server_setup.DATA_ROOT_DIR,
+            server_setup.OUTPUT_DIR,
+            self._scenario_info["id"] + "_*",
         )
-        target = backup.OUTPUT_DIR
+        target = posixpath.join(
+            server_setup.BACKUP_DATA_ROOT_DIR, server_setup.OUTPUT_DIR
+        )
         command = "\cp -pu %s %s; rm -rf %s" % (source, target, source)
         stdin, stdout, stderr = self.data_access.execute_command(command)
 
@@ -109,8 +121,12 @@ class BackUpDisk(object):
         """Moves temporary folder."""
         print("--> Moving temporary folder to backup disk")
         source = posixpath.join(
-            server_setup.EXECUTE_DIR, "scenario_" + self._scenario_info["id"]
+            server_setup.DATA_ROOT_DIR,
+            server_setup.EXECUTE_DIR,
+            "scenario_" + self._scenario_info["id"],
         )
-        target = backup.EXECUTE_DIR
+        target = posixpath.join(
+            server_setup.BACKUP_DATA_ROOT_DIR, server_setup.EXECUTE_DIR
+        )
         command = "\cp -Rpu %s %s; rm -rf %s " % (source, target, source)
         stdin, stdout, stderr = self.data_access.execute_command(command)

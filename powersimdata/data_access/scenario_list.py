@@ -1,3 +1,4 @@
+import os
 import posixpath
 
 from powersimdata.data_access.csv_store import CsvStore
@@ -85,7 +86,7 @@ class ScenarioListManager(CsvStore):
 
         :return: (*pandas.DataFrame*) -- scenario list as a data frame.
         """
-        return self.get_table("ScenarioList.csv", server_setup.SCENARIO_LIST)
+        return self.get_table(os.path.basename(server_setup.SCENARIO_LIST))
 
     def generate_scenario_id(self):
         """Generates scenario id.
