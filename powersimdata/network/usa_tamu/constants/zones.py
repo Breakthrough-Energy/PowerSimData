@@ -201,77 +201,9 @@ interconnect2timezone = {
 }
 
 
-# Map time zones to load zone IDs
-# Note: load zones in > 1 time zone are put in the one where most load centers reside
-timezone2id = {
-    "ETC/GMT+5": {
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        22,
-        23,
-        27,
-        28,
-        29,
-        30,
-        31,
-        32,
-        33,
-    },
-    "ETC/GMT+6": {
-        21,
-        24,
-        25,
-        26,
-        34,
-        35,
-        36,
-        37,
-        38,
-        39,
-        40,
-        41,
-        42,
-        43,
-        44,
-        45,
-        47,
-        48,
-        49,
-        50,
-        51,
-        301,
-        302,
-        303,
-        304,
-        305,
-        306,
-        307,
-        308,
-    },
-    "ETC/GMT+7": {46, 52, 209, 210, 211, 212, 213, 214, 215, 216},
-    "ETC/GMT+8": {201, 202, 203, 204, 205, 206, 207, 208},
-}
-
 # Map load zone IDs to time zones
-id2timezone = {}
-for x in timezone2id:
-    for y in timezone2id[x]:
-        id2timezone[y] = x
+# Note: load zones in > 1 time zone are put in the one where most load centers reside
+id2timezone = zone_df["time_zone"].to_dict()
+
+# Map time zones to load zone IDs
+timezone2id = {k: set(v) for k, v in zone_df.groupby("time_zone").groups.items()}
