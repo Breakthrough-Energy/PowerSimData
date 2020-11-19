@@ -199,3 +199,11 @@ interconnect2timezone = {
     "Texas_Eastern": "ETC/GMT+5",
     "Eastern_Western": "ETC/GMT+6",
 }
+
+
+# Map load zone IDs to time zones
+# Note: load zones in > 1 time zone are put in the one where most load centers reside
+id2timezone = zone_df["time_zone"].to_dict()
+
+# Map time zones to load zone IDs
+timezone2id = {k: set(v) for k, v in zone_df.groupby("time_zone").groups.items()}
