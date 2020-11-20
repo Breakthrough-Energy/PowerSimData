@@ -112,8 +112,7 @@ class SSHDataAccess(DataAccess):
         :param str from_dir: data store directory to copy file from.
         """
         to_dir = os.path.join(self.dest_root, from_dir)
-        if not os.path.exists(to_dir):
-            os.makedirs(to_dir)
+        os.makedirs(to_dir, exist_ok=True)
 
         from_dir = posixpath.join(self.root, from_dir)
         from_path = posixpath.join(from_dir, file_name)

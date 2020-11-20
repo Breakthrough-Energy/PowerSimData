@@ -15,8 +15,7 @@ class InputData(object):
 
     def __init__(self, data_loc=None):
         """Constructor."""
-        if not os.path.exists(server_setup.LOCAL_DIR):
-            os.makedirs(server_setup.LOCAL_DIR)
+        os.makedirs(server_setup.LOCAL_DIR, exist_ok=True)
 
         self.file_extension = {
             "demand": "csv",

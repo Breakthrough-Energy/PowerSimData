@@ -18,8 +18,7 @@ class OutputData(object):
 
     def __init__(self, data_loc=None):
         """Constructor"""
-        if not os.path.exists(server_setup.LOCAL_DIR):
-            os.makedirs(server_setup.LOCAL_DIR)
+        os.makedirs(server_setup.LOCAL_DIR, exist_ok=True)
         self.data_loc = data_loc
         if self.data_loc == "disk":
             self._data_access = SSHDataAccess(server_setup.BACKUP_DATA_ROOT_DIR)
