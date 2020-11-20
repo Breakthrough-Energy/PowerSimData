@@ -38,21 +38,21 @@ class Delete(State):
 
         # Delete links to base profiles on server
         print("--> Deleting scenario input data on server")
-        command = "rm -f %s/%s_*" % (
+        target = "%s/%s_*" % (
             posixpath.join(server_setup.DATA_ROOT_DIR, server_setup.INPUT_DIR),
             self._scenario_info["id"],
         )
-        stdin, stdout, stderr = self._data_access.execute_command(command)
+        _, _, stderr = self._data_access.remove(target, recursive=False, force=True)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to delete scenario input data on server")
 
         # Delete output profiles
         print("--> Deleting scenario output data on server")
-        command = "rm -f %s/%s_*" % (
+        target = "%s/%s_*" % (
             posixpath.join(server_setup.DATA_ROOT_DIR, server_setup.OUTPUT_DIR),
             self._scenario_info["id"],
         )
-        stdin, stdout, stderr = self._data_access.execute_command(command)
+        _, _, stderr = self._data_access.remove(target, recursive=False, force=True)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to delete scenario output data on server")
 
@@ -62,8 +62,7 @@ class Delete(State):
             posixpath.join(server_setup.DATA_ROOT_DIR, server_setup.EXECUTE_DIR),
             self._scenario_info["id"],
         )
-        command = "rm -rf %s" % tmp_dir
-        stdin, stdout, stderr = self._data_access.execute_command(command)
+        _, _, stderr = self._data_access.remove(tmp_dir, recursive=True, force=True)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to delete temporary folder on server")
 

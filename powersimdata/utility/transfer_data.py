@@ -31,6 +31,25 @@ class DataAccess:
         """
         raise NotImplementedError
 
+    def copy(self, src, dest, recursive=False, update=False):
+        """Wrapper around cp command
+
+        :param str src: path to original
+        :param str dest: destination path
+        :param bool recursive: create directories recursively
+        :param bool update: only copy if needed
+        """
+        raise NotImplementedError
+
+    def remove(self, target, recursive=False, force=False):
+        """Wrapper around rm command
+
+        :param str target: path to remove
+        :param bool recursive: delete directories recursively
+        :param bool force: remove without confirmation
+        """
+        raise NotImplementedError
+
     def execute_command(self, command):
         """Execute a command locally at the data access.
 
@@ -105,22 +124,22 @@ class SSHDataAccess(DataAccess):
 
         self._ssh = client
 
-    def copy_from(self, file_name, from_dir):
+    def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
 
         :param str file_name: file name to copy.
         :param str from_dir: data store directory to copy file from.
         """
+        from_dir = "" if from_dir is None else from_dir
         to_dir = os.path.join(self.dest_root, from_dir)
         os.makedirs(to_dir, exist_ok=True)
 
-        from_dir = posixpath.join(self.root, from_dir)
-        from_path = posixpath.join(from_dir, file_name)
+        from_path = posixpath.join(self.root, from_dir, file_name)
         stdin, stdout, stderr = self.ssh.exec_command("ls " + from_path)
         if len(stderr.readlines()) != 0:
             raise FileNotFoundError(f"{file_name} not found in {from_dir} on server")
         else:
-            print("Transferring %s from server" % file_name)
+            print(f"Transferring {file_name} from server")
             to_path = os.path.join(to_dir, file_name)
             sftp = self.ssh.open_sftp()
             try:
@@ -140,9 +159,9 @@ class SSHDataAccess(DataAccess):
         """
         from_path = os.path.join(from_dir, file_name)
 
-        if os.path.isfile(from_path) is False:
+        if not os.path.isfile(from_path):
             raise FileNotFoundError(
-                "%s not found in %s on local machine" % (file_name, from_dir)
+                f"{file_name} not found in {from_dir} on local machine"
             )
         else:
             if bool(change_name_to):
@@ -151,14 +170,29 @@ class SSHDataAccess(DataAccess):
                 to_path = posixpath.join(to_dir, file_name)
             stdin, stdout, stderr = self.ssh.exec_command("ls " + to_path)
             if len(stderr.readlines()) == 0:
-                raise IOError("%s already exists in %s on server" % (file_name, to_dir))
+                raise IOError(f"{file_name} already exists in {to_dir} on server")
             else:
-                print("Transferring %s to server" % file_name)
+                print(f"Transferring {file_name} to server")
                 sftp = self.ssh.open_sftp()
                 try:
                     sftp.put(from_path, to_path)
                 finally:
                     sftp.close()
+
+    def copy(self, src, dest, recursive=False, update=False):
+        r_flag = "R" if recursive else ""
+        u_flag = "u" if update else ""
+        p_flag = "p"
+        flags = f"-{r_flag}{u_flag}{p_flag}"
+        command = f"\cp {flags} {src} {dest}"
+        return self.execute_command(command)
+
+    def remove(self, target, recursive=False, force=False):
+        r_flag = "r" if recursive else ""
+        f_flag = "f" if force else ""
+        flags = f"-{r_flag}{f_flag}"
+        command = f"rm {flags} {target}"
+        return self.execute_command(command)
 
     def execute_command(self, command):
         """Execute a command locally at the data access.

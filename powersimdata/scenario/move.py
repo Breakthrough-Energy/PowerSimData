@@ -78,8 +78,8 @@ class BackUpDisk(object):
         target = posixpath.join(
             server_setup.BACKUP_DATA_ROOT_DIR, server_setup.INPUT_DIR
         )
-        command = "\cp -pu %s %s; rm -rf %s" % (source, target, source)
-        stdin, stdout, stderr = self.data_access.execute_command(command)
+        self._data_access.copy(source, target, update=True)
+        self._data_access.remove(source, recursive=True, force=True)
 
     def copy_base_profile(self):
         """Copies base profile"""
@@ -91,15 +91,13 @@ class BackUpDisk(object):
             version = self._scenario_info["base_" + kind]
             source = interconnect + "_" + kind + "_" + version + ".csv"
 
-            command = "\cp -pu %s %s" % (
-                posixpath.join(
-                    server_setup.DATA_ROOT_DIR, server_setup.BASE_PROFILE_DIR, source
-                ),
-                posixpath.join(
-                    server_setup.BACKUP_DATA_ROOT_DIR, server_setup.BASE_PROFILE_DIR
-                ),
+            src = posixpath.join(
+                server_setup.DATA_ROOT_DIR, server_setup.BASE_PROFILE_DIR, source
             )
-            stdin, stdout, stderr = self.data_access.execute_command(command)
+            dest = posixpath.join(
+                server_setup.BACKUP_DATA_ROOT_DIR, server_setup.BASE_PROFILE_DIR
+            )
+            _, stdout, stderr = self._data_access.copy(src, dest, update=True)
             print(stdout.readlines())
             print(stderr.readlines())
 
@@ -114,8 +112,8 @@ class BackUpDisk(object):
         target = posixpath.join(
             server_setup.BACKUP_DATA_ROOT_DIR, server_setup.OUTPUT_DIR
         )
-        command = "\cp -pu %s %s; rm -rf %s" % (source, target, source)
-        stdin, stdout, stderr = self.data_access.execute_command(command)
+        self._data_access.copy(source, target, update=True)
+        self._data_access.remove(source, recursive=True, force=True)
 
     def move_temporary_folder(self):
         """Moves temporary folder."""
@@ -128,5 +126,5 @@ class BackUpDisk(object):
         target = posixpath.join(
             server_setup.BACKUP_DATA_ROOT_DIR, server_setup.EXECUTE_DIR
         )
-        command = "\cp -Rpu %s %s; rm -rf %s " % (source, target, source)
-        stdin, stdout, stderr = self.data_access.execute_command(command)
+        self._data_access.copy(source, target, recursive=True, update=True)
+        self._data_access.remove(source, recursive=True, force=True)
