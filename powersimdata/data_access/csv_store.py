@@ -25,7 +25,7 @@ class CsvStore:
         local_path = Path(server_setup.LOCAL_DIR, filename)
 
         try:
-            self.data_access.copy_from(filename, ".")
+            self.data_access.copy_from(filename, "")
         except:  # noqa
             print(f"Failed to download {filename} from server")
             print("Falling back to local cache...")

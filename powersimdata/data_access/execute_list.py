@@ -1,4 +1,4 @@
-import os
+import posixpath
 
 from powersimdata.data_access.csv_store import CsvStore
 from powersimdata.data_access.sql_store import SqlStore, to_data_frame
@@ -76,9 +76,14 @@ class ExecuteListManager(CsvStore):
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
 
+    _EXECUTE_LIST = "ExecuteList.csv"
+
     def __init__(self, ssh_client):
         """Constructor"""
         super().__init__(ssh_client)
+        self._server_path = posixpath.join(
+            server_setup.DATA_ROOT_DIR, self._EXECUTE_LIST
+        )
 
     def get_execute_table(self):
         """Returns execute table from server if possible, otherwise read local
@@ -86,7 +91,7 @@ class ExecuteListManager(CsvStore):
 
         :return: (*pandas.DataFrame*) -- execute list as a data frame.
         """
-        return self.get_table(os.path.basename(server_setup.EXECUTE_LIST))
+        return self.get_table(self._EXECUTE_LIST)
 
     def add_entry(self, scenario_info):
         """Adds scenario to the execute list file on server.
@@ -95,8 +100,8 @@ class ExecuteListManager(CsvStore):
         """
         print("--> Adding entry in execute table on server")
         entry = "%s,created" % scenario_info["id"]
-        command = "echo %s >> %s" % (entry, server_setup.EXECUTE_LIST)
-        err_message = "Failed to update %s on server" % server_setup.EXECUTE_LIST
+        command = "echo %s >> %s" % (entry, self._server_path)
+        err_message = "Failed to update %s on server" % self._EXECUTE_LIST
         _ = self._execute_and_check_err(command, err_message)
 
     def update_execute_list(self, status, scenario_info):
@@ -111,8 +116,8 @@ class ExecuteListManager(CsvStore):
         # to the scenario identification number, the second column is replaced by the
         # status parameter.
         program = "'{if($1==%s) $2=\"%s\"};1'" % (scenario_info["id"], status)
-        command = "awk %s %s %s" % (options, program, server_setup.EXECUTE_LIST)
-        err_message = "Failed to update %s on server" % server_setup.EXECUTE_LIST
+        command = "awk %s %s %s" % (options, program, self._server_path)
+        err_message = "Failed to update %s on server" % self._EXECUTE_LIST
         _ = self._execute_and_check_err(command, err_message)
 
     def delete_entry(self, scenario_info):
@@ -122,8 +127,6 @@ class ExecuteListManager(CsvStore):
         """
         print("--> Deleting entry in execute table on server")
         entry = "^%s,extracted" % scenario_info["id"]
-        command = "sed -i.bak '/%s/d' %s" % (entry, server_setup.EXECUTE_LIST)
-        err_message = (
-            "Failed to delete entry in %s on server" % server_setup.EXECUTE_LIST
-        )
+        command = "sed -i.bak '/%s/d' %s" % (entry, self._server_path)
+        err_message = "Failed to delete entry in %s on server" % self._EXECUTE_LIST
         _ = self._execute_and_check_err(command, err_message)
