@@ -110,7 +110,6 @@ class SSHDataAccess(DataAccess):
 
         :param str file_name: file name to copy.
         :param str from_dir: data store directory to copy file from.
-        :param str to_dir: userspace directory to copy file to.
         """
         to_dir = os.path.join(self.dest_root, from_dir)
         if not os.path.exists(to_dir):

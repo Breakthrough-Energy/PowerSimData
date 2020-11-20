@@ -13,12 +13,10 @@ from powersimdata.utility.transfer_data import SSHDataAccess
 class OutputData(object):
     """Load output data.
 
-    :param powersimdata.utility.transfer_data.DataAccess data_access:
-        data access object. - THIS IS IGNORED
     :param str data_loc: data location.
     """
 
-    def __init__(self, data_access, data_loc=None):
+    def __init__(self, data_loc=None):
         """Constructor"""
         if not os.path.exists(server_setup.LOCAL_DIR):
             os.makedirs(server_setup.LOCAL_DIR)
