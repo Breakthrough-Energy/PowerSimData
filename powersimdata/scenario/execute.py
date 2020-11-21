@@ -91,7 +91,6 @@ class Execute(State):
             extra_args = []
 
         path_to_package = posixpath.join(
-            server_setup.DATA_ROOT_DIR,
             server_setup.MODEL_DIR,
             self._scenario_info["engine"],
         )
@@ -231,10 +230,10 @@ class SimulationInput(object):
         self._scenario_info = scenario_info
         self.grid = grid
         self.ct = ct
+        self.server_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
 
         self.TMP_DIR = posixpath.join(
-            server_setup.DATA_ROOT_DIR,
-            server_setup.EXECUTE_DIR,
+            self.server_config.execute_dir(),
             "scenario_%s" % scenario_info["id"],
         )
 
@@ -403,13 +402,11 @@ class SimulationInput(object):
                 self._create_link_to_base_profile(kind)
         else:
             from_dir = posixpath.join(
-                server_setup.DATA_ROOT_DIR,
-                server_setup.EXECUTE_DIR,
+                self.server_config.execute_dir(),
                 f"scenario_{profile_as}",
             )
             to_dir = posixpath.join(
-                server_setup.DATA_ROOT_DIR,
-                server_setup.EXECUTE_DIR,
+                self.server_config.execute_dir(),
                 f"scenario_{self._scenario_info['id']}",
             )
             command = f"cp {from_dir}/{kind}.csv {to_dir}"

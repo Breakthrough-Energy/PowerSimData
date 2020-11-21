@@ -1,4 +1,5 @@
 import os
+import posixpath
 from pathlib import Path
 
 SERVER_ADDRESS = "becompute01.gatesventures.com"
@@ -10,6 +11,26 @@ INPUT_DIR = "data/input"
 OUTPUT_DIR = "data/output"
 LOCAL_DIR = os.path.join(str(Path.home()), "ScenarioData", "")
 MODEL_DIR = "/home/bes/pcm"
+
+
+class PathConfig:
+    def __init__(self, root=None):
+        self.root = root
+
+    def _join(self, rel_path):
+        return posixpath.join(self.root, rel_path)
+
+    def execute_dir(self):
+        return self._join(EXECUTE_DIR)
+
+    def base_profile_dir(self):
+        return self._join(BASE_PROFILE_DIR)
+
+    def input_dir(self):
+        return self._join(INPUT_DIR)
+
+    def output_dir(self):
+        return self._join(OUTPUT_DIR)
 
 
 def get_server_user():

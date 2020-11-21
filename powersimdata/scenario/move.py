@@ -66,18 +66,17 @@ class BackUpDisk(object):
         """Constructor."""
         self._data_access = data_access
         self._scenario_info = scenario_info
+        self.backup_config = server_setup.PathConfig(server_setup.BACKUP_DATA_ROOT_DIR)
+        self.server_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
 
     def move_input_data(self):
         """Moves input data."""
         print("--> Moving scenario input data to backup disk")
         source = posixpath.join(
-            server_setup.DATA_ROOT_DIR,
-            server_setup.INPUT_DIR,
+            self.server_config.input_dir(),
             self._scenario_info["id"] + "_*",
         )
-        target = posixpath.join(
-            server_setup.BACKUP_DATA_ROOT_DIR, server_setup.INPUT_DIR
-        )
+        target = self.backup_config.input_dir()
         self._data_access.copy(source, target, update=True)
         self._data_access.remove(source, recursive=True, force=True)
 
@@ -91,12 +90,8 @@ class BackUpDisk(object):
             version = self._scenario_info["base_" + kind]
             source = interconnect + "_" + kind + "_" + version + ".csv"
 
-            src = posixpath.join(
-                server_setup.DATA_ROOT_DIR, server_setup.BASE_PROFILE_DIR, source
-            )
-            dest = posixpath.join(
-                server_setup.BACKUP_DATA_ROOT_DIR, server_setup.BASE_PROFILE_DIR
-            )
+            src = posixpath.join(self.server_config.base_profile_dir(), source)
+            dest = self.backup_config.base_profile_dir()
             _, stdout, stderr = self._data_access.copy(src, dest, update=True)
             print(stdout.readlines())
             print(stderr.readlines())
@@ -105,13 +100,10 @@ class BackUpDisk(object):
         """Moves output data"""
         print("--> Moving scenario output data to backup disk")
         source = posixpath.join(
-            server_setup.DATA_ROOT_DIR,
-            server_setup.OUTPUT_DIR,
+            self.server_config.output_dir(),
             self._scenario_info["id"] + "_*",
         )
-        target = posixpath.join(
-            server_setup.BACKUP_DATA_ROOT_DIR, server_setup.OUTPUT_DIR
-        )
+        target = self.backup_config.output_dir()
         self._data_access.copy(source, target, update=True)
         self._data_access.remove(source, recursive=True, force=True)
 
@@ -119,12 +111,9 @@ class BackUpDisk(object):
         """Moves temporary folder."""
         print("--> Moving temporary folder to backup disk")
         source = posixpath.join(
-            server_setup.DATA_ROOT_DIR,
-            server_setup.EXECUTE_DIR,
+            self.server_config.execute_dir(),
             "scenario_" + self._scenario_info["id"],
         )
-        target = posixpath.join(
-            server_setup.BACKUP_DATA_ROOT_DIR, server_setup.EXECUTE_DIR
-        )
+        target = self.backup_config.execute_dir()
         self._data_access.copy(source, target, recursive=True, update=True)
         self._data_access.remove(source, recursive=True, force=True)
