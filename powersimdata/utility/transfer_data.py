@@ -138,46 +138,46 @@ class SSHDataAccess(DataAccess):
         stdin, stdout, stderr = self.ssh.exec_command("ls " + from_path)
         if len(stderr.readlines()) != 0:
             raise FileNotFoundError(f"{file_name} not found in {from_dir} on server")
-        else:
-            print(f"Transferring {file_name} from server")
-            to_path = os.path.join(to_dir, file_name)
-            sftp = self.ssh.open_sftp()
-            try:
-                cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
-                sftp.get(from_path, to_path, callback=cbk)
-            finally:
-                sftp.close()
-                bar.close()
 
-    def copy_to(self, file_name, from_dir, to_dir, change_name_to=None):
+        print(f"Transferring {file_name} from server")
+        to_path = os.path.join(to_dir, file_name)
+        sftp = self.ssh.open_sftp()
+        try:
+            cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
+            sftp.get(from_path, to_path, callback=cbk)
+        finally:
+            sftp.close()
+            bar.close()
+
+    def copy_to(self, file_name, to_dir, change_name_to=None):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
-        :param str from_dir: userspace directory to copy file from.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
         """
-        from_path = os.path.join(from_dir, file_name)
+        from_path = os.path.join(self.dest_root, file_name)
 
         if not os.path.isfile(from_path):
             raise FileNotFoundError(
-                f"{file_name} not found in {from_dir} on local machine"
+                f"{file_name} not found in {self.dest_root} on local machine"
             )
-        else:
-            if bool(change_name_to):
-                to_path = posixpath.join(to_dir, change_name_to)
-            else:
-                to_path = posixpath.join(to_dir, file_name)
-            stdin, stdout, stderr = self.ssh.exec_command("ls " + to_path)
-            if len(stderr.readlines()) == 0:
-                raise IOError(f"{file_name} already exists in {to_dir} on server")
-            else:
-                print(f"Transferring {file_name} to server")
-                sftp = self.ssh.open_sftp()
-                try:
-                    sftp.put(from_path, to_path)
-                finally:
-                    sftp.close()
+
+        file_name = file_name if change_name_to is None else change_name_to
+        to_path = posixpath.join(self.root, to_dir, file_name)
+        _, _, stderr = self.ssh.exec_command("ls " + to_path)
+        if len(stderr.readlines()) == 0:
+            raise IOError(f"{file_name} already exists in {to_dir} on server")
+
+        print(f"Transferring {from_path} to server")
+        sftp = self.ssh.open_sftp()
+        try:
+            sftp.put(from_path, to_path)
+        finally:
+            sftp.close()
+
+        print(f"--> Deleting {from_path} on local machine")
+        os.remove(from_path)
 
     def copy(self, src, dest, recursive=False, update=False):
         r_flag = "R" if recursive else ""

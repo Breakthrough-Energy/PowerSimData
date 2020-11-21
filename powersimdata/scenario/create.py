@@ -93,13 +93,8 @@ class Create(State):
         """Uploads change table to server."""
         print("--> Writing change table on local machine")
         self.builder.change_table.write(self._scenario_info["id"])
-        print("--> Uploading change table to server")
         file_name = self._scenario_info["id"] + "_ct.pkl"
-        self._data_access.copy_to(
-            file_name, server_setup.LOCAL_DIR, server_setup.INPUT_DIR
-        )
-        print("--> Deleting change table on local machine")
-        os.remove(os.path.join(server_setup.LOCAL_DIR, file_name))
+        self._data_access.copy_to(file_name, server_setup.INPUT_DIR)
 
     def get_ct(self):
         """Returns change table.
