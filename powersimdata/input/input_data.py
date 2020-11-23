@@ -68,8 +68,9 @@ class InputData(object):
             file_name = scenario_info["id"] + "_" + field_name + "." + ext
             from_dir = server_setup.INPUT_DIR
 
+        filepath = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
         try:
-            return _read_data(file_name, path_to_file=from_dir)
+            return _read_data(filepath)
         except FileNotFoundError:
             print(
                 "%s not found in %s on local machine"
@@ -77,20 +78,19 @@ class InputData(object):
             )
 
         self.data_access.copy_from(file_name, from_dir)
-        return _read_data(file_name, path_to_file=from_dir)
+        return _read_data(filepath)
 
 
-def _read_data(file_name, path_to_file):
-    """Reads data.
+def _read_data(filepath):
+    """Reads data from local machine.
 
-    :param str file_name: file name, extension either 'pkl', 'csv', or 'mat'.
+    :param str filepath: path to file, with extension either 'pkl', 'csv', or 'mat'.
     :return: (*pandas.DataFrame*, *dict*, or *str*) -- demand, hydro, solar or
         wind as a data frame, change table as a dict, or str containing a
         local path to a matfile of grid data.
     :raises ValueError: if extension is unknown.
     """
-    ext = file_name.split(".")[-1]
-    filepath = os.path.join(server_setup.LOCAL_DIR, path_to_file, file_name)
+    ext = os.path.basename(filepath).split(".")[-1]
     if ext == "pkl":
         data = pd.read_pickle(filepath)
     elif ext == "csv":

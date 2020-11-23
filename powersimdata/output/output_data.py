@@ -40,30 +40,18 @@ class OutputData(object):
         print("--> Loading %s" % field_name)
         file_name = scenario_id + "_" + field_name + ".pkl"
         from_dir = server_setup.OUTPUT_DIR
+        filepath = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
 
         try:
-            return _read_data(file_name, path_to_file=from_dir)
+            return pd.read_pickle(filepath)
         except pickle.UnpicklingError:
             err_msg = f"Unable to unpickle {file_name}, possibly corrupted in download."
             raise ValueError(err_msg)
         except FileNotFoundError:
-            print(
-                "%s not found in %s on local machine"
-                % (file_name, os.path.join(server_setup.LOCAL_DIR, from_dir))
-            )
+            print(f"{filepath} not found on local machine")
 
         self._data_access.copy_from(file_name, from_dir)
-        return _read_data(file_name, path_to_file=from_dir)
-
-
-def _read_data(file_name, path_to_file):
-    """Reads data.
-
-    :param str file_name: file name
-    :param str path_to_file: relative path segment excluding root and filename
-    :return: (*pandas.DataFrame*) -- specified file as a data frame.
-    """
-    return pd.read_pickle(os.path.join(server_setup.LOCAL_DIR, path_to_file, file_name))
+        return pd.read_pickle(filepath)
 
 
 def _check_field(field_name):

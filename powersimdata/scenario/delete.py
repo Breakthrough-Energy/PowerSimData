@@ -1,5 +1,6 @@
 import glob
 import os
+import posixpath
 
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
@@ -38,9 +39,8 @@ class Delete(State):
 
         # Delete links to base profiles on server
         print("--> Deleting scenario input data on server")
-        target = "%s/%s_*" % (
-            self.path_config.input_dir(),
-            self._scenario_info["id"],
+        target = posixpath.join(
+            self.path_config.input_dir(), "%s_*" % (self._scenario_info["id"])
         )
         _, _, stderr = self._data_access.remove(target, recursive=False, force=True)
         if len(stderr.readlines()) != 0:
@@ -48,9 +48,8 @@ class Delete(State):
 
         # Delete output profiles
         print("--> Deleting scenario output data on server")
-        target = "%s/%s_*" % (
-            self.path_config.output_dir(),
-            self._scenario_info["id"],
+        target = posixpath.join(
+            self.path_config.output_dir(), "%s_*" % (self._scenario_info["id"])
         )
         _, _, stderr = self._data_access.remove(target, recursive=False, force=True)
         if len(stderr.readlines()) != 0:
@@ -58,9 +57,8 @@ class Delete(State):
 
         # Delete temporary folder enclosing simulation inputs
         print("--> Deleting temporary folder on server")
-        tmp_dir = "%s/scenario_%s" % (
-            self.path_config.execute_dir(),
-            self._scenario_info["id"],
+        tmp_dir = posixpath.join(
+            self.path_config.execute_dir(), "scenario_%s" % (self._scenario_info["id"])
         )
         _, _, stderr = self._data_access.remove(tmp_dir, recursive=True, force=True)
         if len(stderr.readlines()) != 0:
