@@ -8,6 +8,7 @@ import paramiko
 from tqdm import tqdm
 
 from powersimdata.utility import server_setup
+from powersimdata.utility.helpers import CommandBuilder
 
 
 class DataAccess:
@@ -80,7 +81,7 @@ class SSHDataAccess(DataAccess):
 
     _last_attempt = 0
 
-    def __init__(self, root):
+    def __init__(self, root=None):
         """Constructor"""
         self._ssh = None
         self._retry_after = 5
@@ -141,12 +142,9 @@ class SSHDataAccess(DataAccess):
 
         print(f"Transferring {file_name} from server")
         to_path = os.path.join(to_dir, file_name)
-        sftp = self.ssh.open_sftp()
-        try:
+        with self.ssh.open_sftp() as sftp:
             cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
             sftp.get(from_path, to_path, callback=cbk)
-        finally:
-            sftp.close()
             bar.close()
 
     def copy_to(self, file_name, to_dir, change_name_to=None):
@@ -170,28 +168,18 @@ class SSHDataAccess(DataAccess):
             raise IOError(f"{file_name} already exists in {to_dir} on server")
 
         print(f"Transferring {from_path} to server")
-        sftp = self.ssh.open_sftp()
-        try:
+        with self.ssh.open_sftp() as sftp:
             sftp.put(from_path, to_path)
-        finally:
-            sftp.close()
 
         print(f"--> Deleting {from_path} on local machine")
         os.remove(from_path)
 
     def copy(self, src, dest, recursive=False, update=False):
-        r_flag = "R" if recursive else ""
-        u_flag = "u" if update else ""
-        p_flag = "p"
-        flags = f"-{r_flag}{u_flag}{p_flag}"
-        command = f"\cp {flags} {src} {dest}"
+        command = CommandBuilder.copy(src, dest, recursive, update)
         return self.execute_command(command)
 
     def remove(self, target, recursive=False, force=False):
-        r_flag = "r" if recursive else ""
-        f_flag = "f" if force else ""
-        flags = f"-{r_flag}{f_flag}"
-        command = f"rm {flags} {target}"
+        command = CommandBuilder.remove(target, recursive, force)
         return self.execute_command(command)
 
     def execute_command(self, command):

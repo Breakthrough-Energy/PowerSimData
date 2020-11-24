@@ -58,9 +58,6 @@ class Scenario(object):
             :param pandas.DataFrame table: scenario table.
             :param str text: message to print.
             """
-            print("------------------")
-            print(text)
-            print("------------------")
             print(
                 table.to_string(
                     index=False,
@@ -77,6 +74,9 @@ class Scenario(object):
                     ],
                 )
             )
+            print("------------------")
+            print(text)
+            print("------------------")
 
         try:
             int(descriptor)

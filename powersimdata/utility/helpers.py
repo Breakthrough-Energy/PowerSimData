@@ -4,6 +4,25 @@ import os
 import sys
 
 
+class CommandBuilder:
+    @staticmethod
+    def copy(src, dest, recursive=False, update=False):
+        r_flag = "R" if recursive else ""
+        u_flag = "u" if update else ""
+        p_flag = "p"
+        flags = f"-{r_flag}{u_flag}{p_flag}"
+        return fr"\cp {flags} {src} {dest}"
+
+    @staticmethod
+    def remove(target, recursive=False, force=False):
+        r_flag = "r" if recursive else ""
+        f_flag = "f" if force else ""
+        if recursive or force:
+            flags = f"-{r_flag}{f_flag}"
+            return f"rm {flags} {target}"
+        return f"rm {target}"
+
+
 class MemoryCache:
     """Wrapper around a dict object that exposes a cache interface. Users should
     create a separate instance for each distinct use case.
