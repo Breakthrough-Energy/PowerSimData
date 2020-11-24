@@ -1,4 +1,5 @@
 import glob
+import operator
 import os
 import posixpath
 import time
@@ -40,7 +41,8 @@ class DataAccess:
         :param bool recursive: create directories recursively
         :param bool update: only copy if needed
         """
-        raise NotImplementedError
+        command = CommandBuilder.copy(src, dest, recursive, update)
+        return self.execute_command(command)
 
     def remove(self, target, recursive=False, force=False):
         """Wrapper around rm command
@@ -49,7 +51,15 @@ class DataAccess:
         :param bool recursive: delete directories recursively
         :param bool force: remove without confirmation
         """
-        raise NotImplementedError
+        command = CommandBuilder.remove(target, recursive, force)
+        return self.execute_command(command)
+
+    def check_file_exists(self, filepath, should_exist=True):
+        _, _, stderr = self.execute_command(CommandBuilder.list(filepath))
+        compare = operator.ne if should_exist else operator.eq
+        if compare(len(stderr.readlines()), 0):
+            msg = "not found" if should_exist else "already exists"
+            raise OSError(f"{filepath} {msg} on server")
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -136,14 +146,12 @@ class SSHDataAccess(DataAccess):
         os.makedirs(to_dir, exist_ok=True)
 
         from_path = posixpath.join(self.root, from_dir, file_name)
-        stdin, stdout, stderr = self.ssh.exec_command("ls " + from_path)
-        if len(stderr.readlines()) != 0:
-            raise FileNotFoundError(f"{file_name} not found in {from_dir} on server")
+        self.check_file_exists(from_path, should_exist=True)
 
-        print(f"Transferring {file_name} from server")
-        to_path = os.path.join(to_dir, file_name)
         with self.ssh.open_sftp() as sftp:
+            print(f"Transferring {file_name} from server")
             cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
+            to_path = os.path.join(to_dir, file_name)
             sftp.get(from_path, to_path, callback=cbk)
             bar.close()
 
@@ -163,24 +171,14 @@ class SSHDataAccess(DataAccess):
 
         file_name = file_name if change_name_to is None else change_name_to
         to_path = posixpath.join(self.root, to_dir, file_name)
-        _, _, stderr = self.ssh.exec_command("ls " + to_path)
-        if len(stderr.readlines()) == 0:
-            raise IOError(f"{file_name} already exists in {to_dir} on server")
+        self.check_file_exists(to_path, should_exist=False)
 
-        print(f"Transferring {from_path} to server")
         with self.ssh.open_sftp() as sftp:
+            print(f"Transferring {from_path} to server")
             sftp.put(from_path, to_path)
 
         print(f"--> Deleting {from_path} on local machine")
         os.remove(from_path)
-
-    def copy(self, src, dest, recursive=False, update=False):
-        command = CommandBuilder.copy(src, dest, recursive, update)
-        return self.execute_command(command)
-
-    def remove(self, target, recursive=False, force=False):
-        command = CommandBuilder.remove(target, recursive, force)
-        return self.execute_command(command)
 
     def execute_command(self, command):
         """Execute a command locally at the data access.

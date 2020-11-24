@@ -91,8 +91,7 @@ class Execute(State):
             extra_args = []
 
         path_to_package = posixpath.join(
-            server_setup.MODEL_DIR,
-            self._scenario_info["engine"],
+            server_setup.MODEL_DIR, self._scenario_info["engine"]
         )
 
         if self._scenario_info["engine"] == "REISE":
