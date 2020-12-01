@@ -55,6 +55,12 @@ class DataAccess:
         return self.execute_command(command)
 
     def check_file_exists(self, filepath, should_exist=True):
+        """
+        Check that file exists (or not) at the given path
+
+        :param str filepath: the full path to the file
+        :param bool should_exist: whether the file is expected to exist
+        """
         _, _, stderr = self.execute_command(CommandBuilder.list(filepath))
         compare = operator.ne if should_exist else operator.eq
         if compare(len(stderr.readlines()), 0):
@@ -62,6 +68,11 @@ class DataAccess:
             raise OSError(f"{filepath} {msg} on server")
 
     def check_filename(self, filename):
+        """
+        Check that filename is only the name part
+
+        :param str filename: the filename to verify
+        """
         if len(os.path.dirname(filename)) != 0:
             raise ValueError(f"Expecting file name but got path {filename}")
 
