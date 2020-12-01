@@ -41,10 +41,11 @@ def mock_data_access(monkeypatch, temp_fs):
 def make_temp(temp_fs):
     files = []
 
-    def _make_temp(rel_path=None):
+    def _make_temp(rel_path=None, remote=True):
         if rel_path is None:
             rel_path = Path("")
-        location = temp_fs[0] / rel_path
+        root = temp_fs[0] if remote else temp_fs[1]
+        location = root / rel_path
         test_file = tempfile.NamedTemporaryFile(dir=location)
         files.append(test_file)
         test_file.write(CONTENT)
@@ -53,7 +54,10 @@ def make_temp(temp_fs):
 
     yield _make_temp
     for f in files:
-        f.close()
+        try:
+            f.close()
+        except:  # noqa: ignore failure if file already deleted
+            pass
 
 
 def _check_content(filepath):
@@ -91,5 +95,17 @@ def test_copy_from_multi_path(mock_data_access, temp_fs, make_temp):
 
 
 @pytest.mark.wip
-def test_copy_to(mock_data_access, tmp_path):
-    pass
+def test_copy_to(mock_data_access, temp_fs, make_temp):
+    fname = make_temp(remote=False)
+    mock_data_access.copy_to(fname, temp_fs[0])
+    _check_content(os.path.join(temp_fs[0], fname))
+
+
+@pytest.mark.wip
+def test_copy_to_multi_path(mock_data_access, temp_fs, make_temp):
+    rel_path = Path("foo", "bar")
+    remote_path = temp_fs[0] / rel_path
+    remote_path.mkdir(parents=True)
+    fname = make_temp(remote=False)
+    mock_data_access.copy_to(fname, rel_path)
+    _check_content(os.path.join(remote_path, fname))
