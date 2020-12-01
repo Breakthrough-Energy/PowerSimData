@@ -42,8 +42,7 @@ def make_temp(temp_fs):
     files = []
 
     def _make_temp(rel_path=None, remote=True):
-        if rel_path is None:
-            rel_path = Path("")
+        rel_path = Path("" if rel_path is None else rel_path)
         root = temp_fs[0] if remote else temp_fs[1]
         location = root / rel_path
         test_file = tempfile.NamedTemporaryFile(dir=location)
@@ -54,6 +53,7 @@ def make_temp(temp_fs):
 
     yield _make_temp
     for f in files:
+        # NOTE: the tmp_path fixture will handle remaining cleanup
         try:
             f.close()
         except:  # noqa: ignore failure if file already deleted
@@ -104,8 +104,25 @@ def test_copy_to(mock_data_access, temp_fs, make_temp):
 @pytest.mark.wip
 def test_copy_to_multi_path(mock_data_access, temp_fs, make_temp):
     rel_path = Path("foo", "bar")
-    remote_path = temp_fs[0] / rel_path
+    remote_path = mock_data_access.root / rel_path
     remote_path.mkdir(parents=True)
     fname = make_temp(remote=False)
     mock_data_access.copy_to(fname, rel_path)
     _check_content(os.path.join(remote_path, fname))
+
+
+@pytest.mark.wip
+def test_copy_to_rename(mock_data_access, make_temp):
+    root = mock_data_access.root
+    fname = make_temp(remote=False)
+    new_fname = "new_fname"
+    mock_data_access.copy_to(fname, root, change_name_to=new_fname)
+    _check_content(os.path.join(root, new_fname))
+
+
+@pytest.mark.wip
+def test_check_filename(mock_data_access, make_temp):
+    with pytest.raises(ValueError):
+        mock_data_access.copy_from("dir/foo.txt", "dir")
+    with pytest.raises(ValueError):
+        mock_data_access.copy_to("dir/foo.txt", "asdf")

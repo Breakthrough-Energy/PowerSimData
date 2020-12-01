@@ -61,6 +61,10 @@ class DataAccess:
             msg = "not found" if should_exist else "already exists"
             raise OSError(f"{filepath} {msg} on server")
 
+    def check_filename(self, filename):
+        if len(os.path.dirname(filename)) != 0:
+            raise ValueError(f"Expecting file name but got path {filename}")
+
     def execute_command(self, command):
         """Execute a command locally at the data access.
 
@@ -141,6 +145,7 @@ class SSHDataAccess(DataAccess):
         :param str file_name: file name to copy.
         :param str from_dir: data store directory to copy file from.
         """
+        self.check_filename(file_name)
         from_dir = "" if from_dir is None else from_dir
         to_dir = os.path.join(self.dest_root, from_dir)
         os.makedirs(to_dir, exist_ok=True)
@@ -162,6 +167,7 @@ class SSHDataAccess(DataAccess):
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
         """
+        self.check_filename(file_name)
         from_path = os.path.join(self.dest_root, file_name)
 
         if not os.path.isfile(from_path):
