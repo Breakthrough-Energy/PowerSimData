@@ -43,7 +43,7 @@ A scenario is defined by the following objects:
   - Substations that change voltage levels (from high to low, or the reverse)
   - Transmission lines that carry power from one place to the other (between two substations, between a substation and load bus, between a generator bus and a substation, etc.) - Both, high voltage AC and DC lines are used in our model
   - Generator cost curve that specifies the cost as a function of power generated ($/MWh) - These are determined by fuel cost and generator efficiency
-* **Time series** for renewable generators and demand - These profiles are calculated in the [PreREISE] package and the list of profiles generated can be consulted [here](https://github.com/Breakthrough-Energy/PreREISE/tree/develop/docs):
+* **Time series** for renewable generators and demand - These profiles are calculated in the [PreREISE] package and the list of profiles generated can be consulted through the following links: [demand](https://github.com/Breakthrough-Energy/PreREISE/tree/develop/prereise/gather/demanddata), [hydro](https://github.com/Breakthrough-Energy/PreREISE/tree/develop/prereise/gather/hydrodata), [solar](https://github.com/Breakthrough-Energy/PreREISE/tree/develop/prereise/gather/solardata) and [wind](https://github.com/Breakthrough-Energy/PreREISE/tree/develop/prereise/gather/winddata).
   - Profile for the renewable generators consists of hourly power output
   - Load profile gives the hourly demand (MW) in various load zones, which are geographic entities such as a state or a portion of a state
 * **Change table** used to alter the grid and profiles. To illustrate:
