@@ -173,16 +173,19 @@ class ChangeTable(object):
         :param str/set which: str or set of strings of what to clear from self.ct
             If None or "all", everything is cleared.
         """
+        # Input validation
+        allowed = {"all", "branch", "dcline", "demand", "plant", "storage"}
         if which is None:
             which = {"all"}
         if isinstance(which, str):
             which = {which}
-        allowed = {"all", "branch", "dcline", "demand", "plant", "storage"}
         if not which <= allowed:
             raise ValueError("which must contain only: " + " | ".join(allowed))
+        # Clear all
         if "all" in which:
             self.ct = {}
             return
+        # Clear only top-level keys specified in which
         for key in ("branch", "dcline", "demand", "storage"):
             if key in which:
                 del self.ct[key]
