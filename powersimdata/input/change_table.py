@@ -187,8 +187,10 @@ class ChangeTable(object):
                 del self.ct[key]
         if "plant" in which:
             for r in _resources:
-                if r in self.ct:
-                    del self.ct[r]
+                for suffix in {"", "_cost", "_pmin"}:
+                    key = r + suffix
+                    if key in self.ct:
+                        del self.ct[key]
 
     def _add_plant_entries(self, resource, ct_key, zone_name=None, plant_id=None):
         """Sets plant entries in change table.
