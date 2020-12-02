@@ -197,6 +197,8 @@ class ChangeTable(object):
                     if key in self.ct:
                         del self.ct[key]
         if "plant" in which:
+            if "new_plant" in self.ct:
+                del self.ct["new_plant"]
             for r in _resources:
                 for suffix in {"", "_cost", "_pmin"}:
                     key = r + suffix
