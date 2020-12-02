@@ -170,7 +170,8 @@ class ChangeTable(object):
     def clear(self, which=None):
         """Clear all or part of the change table.
 
-        :param set which: set of strings of what to clear from self.ct
+        :param str/set which: str or set of strings of what to clear from self.ct
+            If None or "all", everything is cleared.
         """
         if which is None:
             which = {"all"}
