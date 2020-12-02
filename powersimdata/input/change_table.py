@@ -104,6 +104,12 @@ class ChangeTable(object):
         the fuel type, the identification number of the bus, the maximum
         capacity of the generator, the coefficients of the cost curve
         (polynomials) and optionally the minimum capacity of the generator.
+    * *'new_bus'*:
+        value is a list. Each entry in this list is a dictionary enclosing
+        all the information needed to add a new bus to the grid. The
+        keys in the dictionary are: *'lat'*, *'lon'*, one of *'zone_id'*/*'zone_name'*,
+        and optionally *'Pd'*, specifying the location of the bus, the demand zone, and
+        optionally the nominal demand at that bus (defaults to 0).
     """
 
     def __init__(self, grid):
@@ -627,6 +633,73 @@ class ChangeTable(object):
                         return
 
             self.ct["new_plant"].append(plant)
+
+    def add_bus(self, info):
+        """Sets parameters of new bus(es) in change table.
+
+        :param list info: each entry is a dictionary. The dictionary gathers
+            the information needed to create a new bus.
+            Required keys: "lat", "lon", ["zone_id" XOR "zone_name"].
+            Optional key: "Pd".
+        :raises TypeError: if info is not a list.
+        :raises ValueError: if each element of info is not a dict with appropriate keys
+            and values.
+        """
+        allowable_keys = {"lat", "lon", "zone_id", "zone_name", "Pd", "baseKV"}
+        defaults = {"Pd": 0, "baseKV": 230}
+        if not isinstance(info, list):
+            raise TypeError("Argument enclosing new bus(es) must be a list")
+
+        if "new_bus" not in self.ct:
+            self.ct["new_bus"] = []
+
+        try:
+            for i, new_bus in enumerate(info):
+                if not isinstance(new_bus, dict):
+                    raise ValueError("Each entry in the list must be a dict")
+                new_bus = new_bus.copy()
+                if not set(new_bus.keys()) <= allowable_keys:
+                    unknown_keys = set(new_bus.keys()) - allowable_keys
+                    raise ValueError(f"Got unknown keys: {', '.join(unknown_keys)}")
+                for l in {"lat", "lon"}:
+                    if l not in new_bus.keys():
+                        raise ValueError(f"Each new bus needs {l} info")
+                    if not isinstance(new_bus[l], (int, float)):
+                        raise ValueError(f"{l} must be numeric (int/float)")
+                if abs(new_bus["lat"]) > 90:
+                    raise ValueError("'lat' must be between -90 and +90")
+                if abs(new_bus["lon"]) > 180:
+                    raise ValueError("'lon' must be between -180 and +180")
+                if {"zone_id", "zone_name"} <= set(new_bus.keys()):
+                    raise ValueError("Cannot specify both 'zone_id' and 'zone_name'")
+                if {"zone_id", "zone_name"} & set(new_bus.keys()) == set():
+                    raise ValueError("Must specify either 'zone_id' or 'zone_name'")
+                if "zone_id" in new_bus and new_bus["zone_id"] not in self.grid.id2zone:
+                    zone_id = new_bus["zone_id"]
+                    raise ValueError(f"zone_id {zone_id} not present in Grid")
+                if "zone_name" in new_bus:
+                    try:
+                        new_bus["zone_id"] = self.grid.zone2id[new_bus["zone_name"]]
+                    except KeyError:
+                        zone_name = new_bus["zone_name"]
+                        raise ValueError(f"zone_name {zone_name} not present in Grid")
+                    del new_bus["zone_name"]
+                if "Pd" in new_bus:
+                    if not isinstance(new_bus["Pd"], (int, float)):
+                        raise ValueError("Pd must be numeric (int/float)")
+                else:
+                    new_bus["Pd"] = defaults["Pd"]
+                if "baseKV" in new_bus:
+                    if not isinstance(new_bus["baseKV"], (int, float)):
+                        raise ValueError("baseKV must be numeric (int/float)")
+                    if new_bus["baseKV"] <= 0:
+                        raise ValueError("baseKV must be positive")
+                else:
+                    new_bus["baseKV"] = defaults["baseKV"]
+                self.ct["new_bus"].append(new_bus)
+        except ValueError:
+            self.ct.pop("new_bus")
+            raise
 
     def write(self, scenario_id):
         """Saves change table to disk.
