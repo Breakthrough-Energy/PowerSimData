@@ -186,9 +186,16 @@ class ChangeTable(object):
             self.ct = {}
             return
         # Clear only top-level keys specified in which
-        for key in ("branch", "dcline", "demand", "storage"):
+        for key in {"demand", "storage"}:
             if key in which:
                 del self.ct[key]
+        # Clear multiple keys for each entry in which
+        for line_type in {"branch", "dcline"}:
+            if line_type in which:
+                for prefix in {"", "new_"}:
+                    key = prefix + line_type
+                    if key in self.ct:
+                        del self.ct[key]
         if "plant" in which:
             for r in _resources:
                 for suffix in {"", "_cost", "_pmin"}:
