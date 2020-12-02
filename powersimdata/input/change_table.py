@@ -176,13 +176,13 @@ class ChangeTable(object):
             which = {"all"}
         if isinstance(which, str):
             which = {which}
-        allowed = {"all", "branch", "dcline", "plant", "storage"}
+        allowed = {"all", "branch", "dcline", "demand", "plant", "storage"}
         if not which <= allowed:
             raise ValueError("which must contain only: " + " | ".join(allowed))
         if "all" in which:
             self.ct = {}
             return
-        for key in ("branch", "dcline", "storage"):
+        for key in ("branch", "dcline", "demand", "storage"):
             if key in which:
                 del self.ct[key]
         if "plant" in which:
