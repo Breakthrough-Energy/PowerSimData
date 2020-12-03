@@ -171,22 +171,20 @@ class ChangeTable(object):
         """Clear all or part of the change table.
 
         :param str/set which: str or set of strings of what to clear from self.ct
-            If None or "all", everything is cleared.
+            If None (default), everything is cleared.
         """
-        # Input validation
-        allowed = {"all", "branch", "dcline", "demand", "plant", "storage"}
+        # Clear all
         if which is None:
-            which = {"all"}
+            self.ct.clear()
+            return
+        # Input validation
+        allowed = {"branch", "dcline", "demand", "plant", "storage"}
         if isinstance(which, str):
             which = {which}
         if not isinstance(which, set):
             raise TypeError("Which must be a str, a set, or None (defaults to 'all')")
         if not which <= allowed:
             raise ValueError("which must contain only: " + " | ".join(allowed))
-        # Clear all
-        if "all" in which:
-            self.ct.clear()
-            return
         # Clear only top-level keys specified in which
         for key in {"demand", "storage"}:
             if key in which:

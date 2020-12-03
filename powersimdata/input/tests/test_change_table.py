@@ -386,11 +386,11 @@ def test_change_table_clear_success(ct):
         ct.clear(key)
         assert set(ct.ct.keys()) < old_keys
     assert ct.ct == {}
-    # Test that "all" clears everything in one shot
+    # Test that passing no args clears everything in one shot
     all_fakes = fake_scaling | fake_additions
     for fake in all_fakes:
         ct.ct[fake] = {}
-    ct.clear({"all"})
+    ct.clear()
     assert ct.ct == {}
     assert ct.ct is original_dict_object
 
