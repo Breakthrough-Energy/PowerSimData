@@ -183,7 +183,7 @@ class ChangeTable(object):
             raise ValueError("which must contain only: " + " | ".join(allowed))
         # Clear all
         if "all" in which:
-            self.ct = {}
+            self.ct.clear()
             return
         # Clear only top-level keys specified in which
         for key in {"demand", "storage"}:
