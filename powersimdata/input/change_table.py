@@ -179,6 +179,8 @@ class ChangeTable(object):
             which = {"all"}
         if isinstance(which, str):
             which = {which}
+        if not isinstance(which, set):
+            raise TypeError("Which must be a str, a set, or None (defaults to 'all')")
         if not which <= allowed:
             raise ValueError("which must contain only: " + " | ".join(allowed))
         # Clear all
