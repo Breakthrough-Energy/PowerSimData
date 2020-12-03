@@ -370,3 +370,24 @@ def test_scale_pmin_by_plant_and_zone_too_high(ct):
         * ct.ct["ng_pmin"]["zone_id"][1]  # plant_id 0 is in Maine (zone_id 1)
         * grid.plant.loc[0, "Pmin"]
     ) == pytest.approx(grid.plant.loc[0, "Pmax"])
+
+
+def test_change_table_clear(ct):
+    fake_scaling = {"demand", "branch", "solar", "ng_cost", "coal_pmin", "dcline"}
+    fake_additions = {"storage", "new_dcline", "new_branch", "new_plant"}
+    all_fakes = fake_scaling | fake_additions
+    for fake in all_fakes:
+        ct.ct[fake] = {}
+    # Test that each individual clear makes a change, and the ct ends up empty
+    clear_keys = {"branch", "dcline", "demand", "plant", "storage"}
+    for key in clear_keys:
+        old_keys = set(ct.ct.keys())
+        ct.clear(key)
+        assert set(ct.ct.keys()) < old_keys
+    assert ct.ct == {}
+    # Test that "all" clears everything in one shot
+    all_fakes = fake_scaling | fake_additions
+    for fake in all_fakes:
+        ct.ct[fake] = {}
+    ct.clear({"all"})
+    assert ct.ct == {}
