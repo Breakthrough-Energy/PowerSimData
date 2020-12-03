@@ -376,6 +376,7 @@ def test_change_table_clear(ct):
     fake_scaling = {"demand", "branch", "solar", "ng_cost", "coal_pmin", "dcline"}
     fake_additions = {"storage", "new_dcline", "new_branch", "new_plant"}
     all_fakes = fake_scaling | fake_additions
+    original_dict_object = ct.ct
     for fake in all_fakes:
         ct.ct[fake] = {}
     # Test that each individual clear makes a change, and the ct ends up empty
@@ -389,5 +390,7 @@ def test_change_table_clear(ct):
     all_fakes = fake_scaling | fake_additions
     for fake in all_fakes:
         ct.ct[fake] = {}
+    
     ct.clear({"all"})
     assert ct.ct == {}
+    assert ct.ct is original_dict_object
