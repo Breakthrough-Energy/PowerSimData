@@ -390,7 +390,6 @@ def test_change_table_clear(ct):
     all_fakes = fake_scaling | fake_additions
     for fake in all_fakes:
         ct.ct[fake] = {}
-    
     ct.clear({"all"})
     assert ct.ct == {}
     assert ct.ct is original_dict_object
