@@ -372,7 +372,7 @@ def test_scale_pmin_by_plant_and_zone_too_high(ct):
     ) == pytest.approx(grid.plant.loc[0, "Pmax"])
 
 
-def test_change_table_clear(ct):
+def test_change_table_clear_success(ct):
     fake_scaling = {"demand", "branch", "solar", "ng_cost", "coal_pmin", "dcline"}
     fake_additions = {"storage", "new_dcline", "new_branch", "new_plant"}
     all_fakes = fake_scaling | fake_additions
@@ -393,3 +393,13 @@ def test_change_table_clear(ct):
     ct.clear({"all"})
     assert ct.ct == {}
     assert ct.ct is original_dict_object
+
+
+def test_change_table_clear_bad_type(ct):
+    with pytest.raises(TypeError):
+        ct.clear(["plant"])
+
+
+def test_change_table_clear_bad_key(ct):
+    with pytest.raises(ValueError):
+        ct.clear({"plantttt"})
