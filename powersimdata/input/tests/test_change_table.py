@@ -372,6 +372,44 @@ def test_scale_pmin_by_plant_and_zone_too_high(ct):
     ) == pytest.approx(grid.plant.loc[0, "Pmax"])
 
 
+def test_add_bus_success(ct):
+    new_buses = [
+        {"lat": 40, "lon": 50.5, "zone_id": 2, "baseKV": 69},
+        {"lat": -40.5, "lon": -50, "zone_name": "Massachusetts", "Pd": 10},
+    ]
+    ct.add_bus(new_buses)
+    expected_new_buses = [
+        {"lat": 40, "lon": 50.5, "zone_id": 2, "Pd": 0, "baseKV": 69},
+        {"lat": -40.5, "lon": -50, "zone_id": 4, "Pd": 10, "baseKV": 230},
+    ]
+    assert ct.ct["new_bus"] == expected_new_buses
+
+
+def test_add_bus_bad_list_entries(ct):
+    bad_dicts = [
+        {"lat": 40, "lon": 50},  # missing zone_id/zone_name
+        {"lat": 40, "zone_id": 2},  # missing lon
+        {"lon": 50, "zone_id": 2},  # missing lat
+        {"lat": 40, "lon": 250, "zone_id": 2},  # bad lat value
+        {"lat": -100, "lon": 120, "zone_id": 2},  # bad lon value
+        {"lat": "40", "lon": "50", "zone_id": 2},  # strings for lat/lon
+        {"lat": 4, "lon": 5, "zone_id": 2, "zone_name": "Ohio"},  # zone_id & zone_name
+        {"lat": 40, "lon": 50, "zone_id": 1000},  # bad zone_id
+        {"lat": 40, "lon": 50, "zone_name": "France"},  # bad zone_name
+        {"lat": 40, "lon": 50, "Pd": "100 MW"},  # bad Pd
+        {"lat": 40, "lon": 50.5, "zone_id": 2, "baseKV": "69"},  # bad baseKV type
+        {"lat": 40, "lon": 50.5, "zone_id": 2, "baseKV": -230},  # bad baseKV value
+    ]
+    for d in bad_dicts:
+        with pytest.raises(ValueError):
+            ct.add_bus([d])
+
+
+def test_add_bus_bad_type(ct):
+    with pytest.raises(TypeError):
+        ct.add_bus({"bus1": {"lat": 40, "lon": 50.5, "zone_id": 2}})
+
+
 def test_change_table_clear_success(ct):
     fake_scaling = {"demand", "branch", "solar", "ng_cost", "coal_pmin", "dcline"}
     fake_additions = {"storage", "new_dcline", "new_branch", "new_plant"}

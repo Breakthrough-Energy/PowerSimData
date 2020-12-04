@@ -499,3 +499,28 @@ def test_add_storage(ct):
     assert new_grid.storage["gen"].shape[0] != grid.storage["gen"].shape[0]
     assert np.array_equal(pmin, -1 * np.array(list(storage.values())))
     assert np.array_equal(pmax, np.array(list(storage.values())))
+
+
+def test_add_bus(ct):
+    prev_num_buses = len(grid.bus.index)
+    prev_max_bus = grid.bus.index.max()
+    prev_num_subs = len(grid.sub.index)
+    ct.ct["new_bus"] = [
+        # These two are buses at new locations
+        {"lat": 40, "lon": 50.5, "zone_id": 2, "Pd": 0, "baseKV": 69},
+        {"lat": -40.5, "lon": -50, "zone_id": 201, "Pd": 10, "baseKV": 230},
+        # This one is at the lat/lon of an existing substation
+        {"lat": 36.0155, "lon": -114.738, "zone_id": 208, "Pd": 0, "baseKV": 345},
+    ]
+    expected_interconnects = ("Eastern", "Western", "Western")
+    new_grid = TransformGrid(grid, ct.ct).get_grid()
+    assert len(new_grid.bus.index) == prev_num_buses + len(ct.ct["new_bus"])
+    for i, new_bus in enumerate(ct.ct["new_bus"]):
+        new_bus_id = prev_max_bus + 1 + i
+        for k, v in new_bus.items():
+            assert new_grid.bus.loc[new_bus_id, k] == v
+        assert new_grid.bus.loc[new_bus_id, "interconnect"] == expected_interconnects[i]
+    # Ensure that we still match with the other dataframes that matter
+    assert len(new_grid.bus) == len(new_grid.bus2sub)
+    assert len(new_grid.bus2sub.sub_id.unique()) == len(new_grid.sub)
+    assert len(new_grid.sub) == prev_num_subs + 2
