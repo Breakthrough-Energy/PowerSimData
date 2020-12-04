@@ -170,25 +170,40 @@ class ChangeTable(object):
     def clear(self, which=None):
         """Clear all or part of the change table.
 
-        :param set which: set of strings of what to clear from self.ct
+        :param str/set which: str or set of strings of what to clear from self.ct
+            If None (default), everything is cleared.
         """
+        # Clear all
         if which is None:
-            which = {"all"}
+            self.ct.clear()
+            return
+        # Input validation
+        allowed = {"branch", "dcline", "demand", "plant", "storage"}
         if isinstance(which, str):
             which = {which}
-        allowed = {"all", "branch", "dcline", "plant", "storage"}
+        if not isinstance(which, set):
+            raise TypeError("Which must be a str, a set, or None (defaults to all)")
         if not which <= allowed:
             raise ValueError("which must contain only: " + " | ".join(allowed))
-        if "all" in which:
-            self.ct = {}
-            return
-        for key in ("branch", "dcline", "storage"):
+        # Clear only top-level keys specified in which
+        for key in {"demand", "storage"}:
             if key in which:
                 del self.ct[key]
+        # Clear multiple keys for each entry in which
+        for line_type in {"branch", "dcline"}:
+            if line_type in which:
+                for prefix in {"", "new_"}:
+                    key = prefix + line_type
+                    if key in self.ct:
+                        del self.ct[key]
         if "plant" in which:
+            if "new_plant" in self.ct:
+                del self.ct["new_plant"]
             for r in _resources:
-                if r in self.ct:
-                    del self.ct[r]
+                for suffix in {"", "_cost", "_pmin"}:
+                    key = r + suffix
+                    if key in self.ct:
+                        del self.ct[key]
 
     def _add_plant_entries(self, resource, ct_key, zone_name=None, plant_id=None):
         """Sets plant entries in change table.
