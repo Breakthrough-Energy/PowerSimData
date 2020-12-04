@@ -7,7 +7,7 @@ from powersimdata.design.transmission.upgrade import (
 )
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.utility import server_setup
-from powersimdata.utility.distance import find_closest_neighbor, haversine
+from powersimdata.utility.distance import find_closest_neighbor
 
 _resources = (
     "coal",
@@ -119,6 +119,7 @@ class ChangeTable(object):
         """
         self.grid = grid
         self.ct = {}
+        self.new_bus_cache = {}
 
     @staticmethod
     def _check_resource(resource):
@@ -456,10 +457,12 @@ class ChangeTable(object):
         :param dict bus_id: key(s) for the id of bus(es), value(s) is (are)
             capacity of the energy storage system in MW.
         """
+        anticipated_bus = self._get_new_bus()
+
         if "storage" not in self.ct:
             self.ct["storage"] = {}
 
-        diff = set(bus_id.keys()).difference(set(self.grid.bus.index))
+        diff = set(bus_id.keys()).difference(set(anticipated_bus.index))
         if len(diff) != 0:
             print("No bus with the following id:")
             for i in list(diff):
@@ -503,6 +506,7 @@ class ChangeTable(object):
             *'new_dcline'*
         :param list info: parameters of the line.
         """
+        anticipated_bus = self._get_new_bus()
         if key not in self.ct:
             self.ct[key] = []
 
@@ -519,13 +523,13 @@ class ChangeTable(object):
             else:
                 start = line["from_bus_id"]
                 end = line["to_bus_id"]
-                if start not in self.grid.bus.index:
+                if start not in anticipated_bus.index:
                     print(
                         "No bus with the following id for line #%d: %d" % (i + 1, start)
                     )
                     self.ct.pop(key)
                     return
-                elif end not in self.grid.bus.index:
+                elif end not in anticipated_bus.index:
                     print(
                         "No bus with the following id for line #%d: %d" % (i + 1, end)
                     )
@@ -541,19 +545,16 @@ class ChangeTable(object):
                     return
                 elif (
                     key == "new_branch"
-                    and self.grid.bus.interconnect[start]
-                    != self.grid.bus.interconnect[end]
+                    and anticipated_bus.interconnect[start]
+                    != anticipated_bus.interconnect[end]
                 ):
                     print("Buses of line #%d must be in same interconnect" % (i + 1))
                     self.ct.pop(key)
                     return
 
                 elif (
-                    haversine(
-                        (self.grid.bus.lat[start], self.grid.bus.lon[start]),
-                        (self.grid.bus.lat[end], self.grid.bus.lon[end]),
-                    )
-                    == 0
+                    anticipated_bus.lat[start] == anticipated_bus.lat[end]
+                    and anticipated_bus.lon[start] == anticipated_bus.lon[end]
                 ):
                     print("Distance between buses of line #%d is 0" % (i + 1))
                     self.ct.pop(key)
@@ -571,6 +572,7 @@ class ChangeTable(object):
             print("Argument enclosing new plant(s) must be a list")
             return
 
+        anticipated_bus = self._get_new_bus()
         if "new_plant" not in self.ct:
             self.ct["new_plant"] = []
 
@@ -593,7 +595,7 @@ class ChangeTable(object):
                 print("Missing key bus_id for plant #%d" % (i + 1))
                 self.ct.pop("new_plant")
                 return
-            elif plant["bus_id"] not in self.grid.bus.index:
+            elif plant["bus_id"] not in anticipated_bus.index:
                 print("No bus id %d available for plant #%d" % (plant["bus_id"], i + 1))
                 self.ct.pop("new_plant")
                 return
@@ -612,8 +614,8 @@ class ChangeTable(object):
                 self.ct.pop("new_plant")
                 return
             if plant["type"] in _renewable_resource:
-                lon = self.grid.bus.loc[plant["bus_id"]].lon
-                lat = self.grid.bus.loc[plant["bus_id"]].lat
+                lon = anticipated_bus.loc[plant["bus_id"]].lon
+                lat = anticipated_bus.loc[plant["bus_id"]].lat
                 plant_same_type = self.grid.plant.groupby("type").get_group(
                     plant["type"]
                 )
@@ -700,6 +702,17 @@ class ChangeTable(object):
         except ValueError:
             self.ct.pop("new_bus")
             raise
+
+    def _get_new_bus(self):
+        if "new_bus" not in self.ct:
+            return self.grid.bus
+        new_bus_tuple = tuple(tuple(sorted(b.items())) for b in self.ct["new_bus"])
+        if new_bus_tuple in self.new_bus_cache:
+            return self.new_bus_cache[new_bus_tuple]
+        else:
+            bus = TransformGrid(self.grid, self.ct).get_grid().bus
+            self.new_bus_cache[new_bus_tuple] = bus
+            return bus
 
     def write(self, scenario_id):
         """Saves change table to disk.
