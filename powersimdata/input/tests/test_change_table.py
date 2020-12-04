@@ -101,6 +101,30 @@ def test_add_dcline_in_different_interconnect(ct):
     assert ct.ct == expected
 
 
+def test_add_dcline_Pmin_and_Pmax_success(ct):
+    new_dcline = [{"Pmax": 2000, "Pmin": 0, "from_bus_id": 200, "to_bus_id": 2000}]
+    ct.add_dcline(new_dcline)
+    assert ct.ct == {"new_dcline": new_dcline}
+
+
+def test_add_dcline_Pmin_gt_Pmax(ct):
+    new_dcline = [{"Pmax": 2000, "Pmin": 3000, "from_bus_id": 200, "to_bus_id": 2000}]
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    assert "Pmin cannot be greater than Pmax" in str(excinfo.value)
+    assert ct.ct == {}
+
+
+def test_add_dcline_Pmin_and_Pmax_and_capacity(ct):
+    new_dcline = [
+        {"Pmax": 200, "Pmin": -200, "capacity": 10, "from_bus_id": 1, "to_bus_id": 2}
+    ]
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    assert "can't specify both 'capacity' & 'Pmin'/Pmax'" in str(excinfo.value)
+    assert ct.ct == {}
+
+
 def test_add_branch_argument_buses_in_different_interconnect(capsys, ct):
     new_branch = [
         {"capacity": 2000, "from_bus_id": 300, "to_bus_id": 1000},
@@ -117,6 +141,14 @@ def test_add_branch_zero_distance_between_buses(capsys, ct):
     with pytest.raises(ValueError) as excinfo:
         ct.add_branch(new_branch)
     assert "Distance between buses of line #1 is 0" in str(excinfo.value)
+    assert ct.ct == {}
+
+
+def test_add_branch_Pmin_and_Pmax(ct):
+    new_dcline = [{"Pmax": 2000, "Pmin": 0, "from_bus_id": 200, "to_bus_id": 2000}]
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_branch(new_dcline)
+    assert "Can't independently set Pmin & Pmax for AC branches" in str(excinfo.value)
     assert ct.ct == {}
 
 
