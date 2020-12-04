@@ -208,7 +208,7 @@ class TransformGrid(object):
             new_branch["status"] = 1
             new_branch["ratio"] = 0
             new_branch["branch_device_type"] = "Line"
-            new_branch["rateA"] = entry["capacity"]
+            new_branch["rateA"] = entry["Pmax"]
             new_branch["interconnect"] = interconnect
             new_branch["from_zone_id"] = from_zone_id
             new_branch["to_zone_id"] = to_zone_id
@@ -294,10 +294,10 @@ class TransformGrid(object):
             new_dcline["from_bus_id"] = entry["from_bus_id"]
             new_dcline["to_bus_id"] = entry["to_bus_id"]
             new_dcline["status"] = 1
-            new_dcline["Pf"] = entry["capacity"]
-            new_dcline["Pt"] = 0.98 * entry["capacity"]
-            new_dcline["Pmin"] = -1 * entry["capacity"]
-            new_dcline["Pmax"] = entry["capacity"]
+            new_dcline["Pf"] = entry["Pmax"]
+            new_dcline["Pt"] = 0.98 * entry["Pmax"]
+            new_dcline["Pmin"] = entry["Pmin"]
+            new_dcline["Pmax"] = entry["Pmax"]
             new_dcline["from_interconnect"] = from_interconnect
             new_dcline["to_interconnect"] = to_interconnect
             new_index = [self.grid.dcline.index[-1] + 1]

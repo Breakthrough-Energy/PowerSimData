@@ -27,56 +27,45 @@ def test_add_dcline_argument_type(capsys, ct):
 
 
 def test_add_dcline_argument_number_of_keys(capsys, ct):
-    capsys.readouterr()
     new_dcline = [{"from_bus_id": 1, "to_bus_id": 2}]
-    ct.add_dcline(new_dcline)
-    cap = capsys.readouterr()
-    assert (
-        cap.out == "Dictionary must have capacity | from_bus_id | "
-        "to_bus_id as keys\n"
-    )
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    assert "Must specify either 'capacity' or Pmin and Pmax" in str(excinfo.value)
     assert ct.ct == {}
 
 
 def test_add_dcline_argument_wrong_keys(capsys, ct):
-    capsys.readouterr()
     new_dcline = [{"capacity": 1000, "from_bus": 1, "to_bus": 2}]
-    ct.add_dcline(new_dcline)
-    cap = capsys.readouterr()
-    assert (
-        cap.out == "Dictionary must have capacity | from_bus_id | "
-        "to_bus_id as keys\n"
-    )
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    assert "Dictionary must have from_bus_id | to_bus_id as keys" in str(excinfo.value)
     assert ct.ct == {}
 
 
 def test_add_dcline_argument_wrong_bus(capsys, ct):
-    capsys.readouterr()
     new_dcline = [
         {"capacity": 2000, "from_bus_id": 300, "to_bus_id": 1000},
         {"capacity": 1000, "from_bus_id": 1, "to_bus_id": 30010010},
     ]
-    ct.add_dcline(new_dcline)
-    cap = capsys.readouterr()
-    assert cap.out == "No bus with the following id for line #2: 30010010\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    assert "No bus with the following id for line #2: 30010010" in str(excinfo.value)
     assert ct.ct == {}
 
 
 def test_add_dcline_argument_same_buses(capsys, ct):
-    capsys.readouterr()
     new_dcline = [{"capacity": 1000, "from_bus_id": 1, "to_bus_id": 1}]
-    ct.add_dcline(new_dcline)
-    cap = capsys.readouterr()
-    assert cap.out == "buses of line #1 must be different\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    assert "buses of line #1 must be different" in str(excinfo.value)
     assert ct.ct == {}
 
 
 def test_add_dcline_argument_negative_capacity(capsys, ct):
-    capsys.readouterr()
     new_dcline = [{"capacity": -1000, "from_bus_id": 300, "to_bus_id": 1000}]
-    ct.add_dcline(new_dcline)
-    cap = capsys.readouterr()
-    assert cap.out == "capacity of line #1 must be positive\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    assert "capacity of line #1 must be positive" in str(excinfo.value)
     assert ct.ct == {}
 
 
@@ -89,9 +78,9 @@ def test_add_dcline_output(ct):
     ct.add_dcline(new_dcline)
     expected = {
         "new_dcline": [
-            {"capacity": 2000, "from_bus_id": 200, "to_bus_id": 2000},
-            {"capacity": 1000, "from_bus_id": 9, "to_bus_id": 70042},
-            {"capacity": 8000, "from_bus_id": 2008, "to_bus_id": 5997},
+            {"Pmax": 2000, "Pmin": -2000, "from_bus_id": 200, "to_bus_id": 2000},
+            {"Pmax": 1000, "Pmin": -1000, "from_bus_id": 9, "to_bus_id": 70042},
+            {"Pmax": 8000, "Pmin": -8000, "from_bus_id": 2008, "to_bus_id": 5997},
         ]
     }
     assert ct.ct == expected
@@ -105,31 +94,29 @@ def test_add_dcline_in_different_interconnect(ct):
     ct.add_dcline(new_dcline)
     expected = {
         "new_dcline": [
-            {"capacity": 2000, "from_bus_id": 200, "to_bus_id": 2000},
-            {"capacity": 8000, "from_bus_id": 2008, "to_bus_id": 3001001},
+            {"Pmax": 2000, "Pmin": -2000, "from_bus_id": 200, "to_bus_id": 2000},
+            {"Pmax": 8000, "Pmin": -8000, "from_bus_id": 2008, "to_bus_id": 3001001},
         ]
     }
     assert ct.ct == expected
 
 
 def test_add_branch_argument_buses_in_different_interconnect(capsys, ct):
-    capsys.readouterr()
     new_branch = [
         {"capacity": 2000, "from_bus_id": 300, "to_bus_id": 1000},
         {"capacity": 1000, "from_bus_id": 1, "to_bus_id": 3001001},
     ]
-    ct.add_branch(new_branch)
-    cap = capsys.readouterr()
-    assert cap.out == "Buses of line #2 must be in same interconnect\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_branch(new_branch)
+    assert "Buses of line #2 must be in same interconnect" in str(excinfo.value)
     assert ct.ct == {}
 
 
 def test_add_branch_zero_distance_between_buses(capsys, ct):
-    capsys.readouterr()
     new_branch = [{"capacity": 75, "from_bus_id": 1, "to_bus_id": 3}]
-    ct.add_branch(new_branch)
-    cap = capsys.readouterr()
-    assert cap.out == "Distance between buses of line #1 is 0\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_branch(new_branch)
+    assert "Distance between buses of line #1 is 0" in str(excinfo.value)
     assert ct.ct == {}
 
 

@@ -510,57 +510,72 @@ class ChangeTable(object):
         if key not in self.ct:
             self.ct[key] = []
 
-        required_info = ["capacity", "from_bus_id", "to_bus_id"]
-        for i, line in enumerate(info):
-            if not isinstance(line, dict):
-                print("Each entry must be a dictionary")
-                self.ct.pop(key)
-                return
-            elif set(line.keys()) != set(required_info):
-                print("Dictionary must have %s as keys" % " | ".join(required_info))
-                self.ct.pop(key)
-                return
-            else:
+        required_info = ["from_bus_id", "to_bus_id"]
+        try:
+            for i, line in enumerate(info):
+                if not isinstance(line, dict):
+                    raise ValueError("Each entry must be a dictionary")
+                if set(required_info) - set(line.keys()) > set():
+                    raise ValueError(
+                        "Dictionary must have %s as keys" % " | ".join(required_info)
+                    )
+                line = line.copy()
                 start = line["from_bus_id"]
                 end = line["to_bus_id"]
                 if start not in anticipated_bus.index:
-                    print(
+                    raise ValueError(
                         "No bus with the following id for line #%d: %d" % (i + 1, start)
                     )
-                    self.ct.pop(key)
-                    return
-                elif end not in anticipated_bus.index:
-                    print(
+                if end not in anticipated_bus.index:
+                    raise ValueError(
                         "No bus with the following id for line #%d: %d" % (i + 1, end)
                     )
-                    self.ct.pop(key)
-                    return
-                elif start == end:
-                    print("buses of line #%d must be different" % (i + 1))
-                    self.ct.pop(key)
-                    return
-                elif line["capacity"] < 0:
-                    print("capacity of line #%d must be positive" % (i + 1))
-                    self.ct.pop(key)
-                    return
-                elif (
+                if start == end:
+                    raise ValueError("buses of line #%d must be different" % (i + 1))
+                if "capacity" in line:
+                    if set(line.keys()) & {"Pmin", "Pmax"} > set():
+                        raise ValueError(
+                            "can't specify both 'capacity' & 'Pmin'/Pmax' "
+                            "for line #%d" % (i + 1)
+                        )
+                    if not isinstance(line["capacity"], (int, float)):
+                        raise ValueError("'capacity' must be a number (int/float)")
+                    if line["capacity"] < 0:
+                        err_msg = "capacity of line #%d must be positive" % (i + 1)
+                        raise ValueError(err_msg)
+                    # Everything looks good, let's translate this to Pmin/Pmax
+                    line["Pmax"] = line["capacity"]
+                    line["Pmin"] = -1 * line["capacity"]
+                    del line["capacity"]
+                elif {"Pmin", "Pmax"} < set(line.keys()):
+                    if key == "new_branch":
+                        err_msg = "Can't independently set Pmin & Pmax for AC branches"
+                        raise ValueError(err_msg)
+                    for p in {"Pmin", "Pmax"}:
+                        if not isinstance(line[p], (int, float)):
+                            raise ValueError(f"'{p}' must be a number (int/float)")
+                    if line["Pmin"] > line["Pmax"]:
+                        raise ValueError("Pmin cannot be greater than Pmax")
+                else:
+                    raise ValueError("Must specify either 'capacity' or Pmin and Pmax")
+                if (
                     key == "new_branch"
                     and anticipated_bus.interconnect[start]
                     != anticipated_bus.interconnect[end]
                 ):
-                    print("Buses of line #%d must be in same interconnect" % (i + 1))
-                    self.ct.pop(key)
-                    return
-
+                    raise ValueError(
+                        "Buses of line #%d must be in same interconnect" % (i + 1)
+                    )
                 elif (
                     anticipated_bus.lat[start] == anticipated_bus.lat[end]
                     and anticipated_bus.lon[start] == anticipated_bus.lon[end]
                 ):
-                    print("Distance between buses of line #%d is 0" % (i + 1))
-                    self.ct.pop(key)
-                    return
-
+                    err_msg = "Distance between buses of line #%d is 0" % (i + 1)
+                    raise ValueError(err_msg)
                 self.ct[key].append(line)
+        except ValueError:
+            self.ct.pop(key)
+            raise
 
     def add_plant(self, info):
         """Sets parameters of new generator(s) in change table.

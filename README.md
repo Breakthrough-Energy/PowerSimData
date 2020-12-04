@@ -169,6 +169,12 @@ scenario.state.builder.change_table.add_plant(
      {"type": "coal", "bus_id": 2074334, "Pmin": 25, "Pmax": 750, "c0": 1800, "c1": 30, "c2": 0.0025},
      {"type": "ng", "bus_id": 2090018, "Pmax": 75, "c0": 900, "c1": 30, "c2": 0.0015}])
 
+# add a new bus, and a new one-way DC line connected to this bus
+scenario.state.builder.change_table.add_bus(
+	[{"lat": 48, "lon": -125, "zone_id": 201, "baseKV": 138}])
+scenario.state.builder.change_table.add_dcline(
+	[{"from_bus_id": 2090023, "to_bus_id": 20090024, "Pmin": 0, "Pmax": 200}])
+
 # get grid used in scenario
 grid = scenario.state.get_grid()
 # get change table used to alter the base grid.
