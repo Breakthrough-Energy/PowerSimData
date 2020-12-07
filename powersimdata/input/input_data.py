@@ -106,11 +106,9 @@ def _read_data(filepath):
     return data
 
 
-def get_bus_demand(data_access, scenario_id, grid):
+def get_bus_demand(scenario_id, grid):
     """Returns demand profiles by bus.
 
-    :param powersimdata.utility.transfer_data.DataAccess data_access:
-        data access object.
     :param str scenario_id: scenario id.
     :param powersimdata.input.grid.Grid grid: grid to construct bus demand for.
     :return: (*pandas.DataFrame*) -- data frame of demand.

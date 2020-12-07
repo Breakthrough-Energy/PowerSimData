@@ -80,11 +80,9 @@ def _check_field(field_name):
         raise ValueError("Only %s data can be loaded" % " | ".join(possible))
 
 
-def construct_load_shed(data_access, scenario_info, grid, infeasibilities=None):
+def construct_load_shed(scenario_info, grid, infeasibilities=None):
     """Constructs load_shed dataframe from relevant scenario/grid data.
 
-    :param powersimdata.utility.transfer_data.DataAccess data_access:
-        data access object.
     :param dict scenario_info: info attribute of Scenario object.
     :param powersimdata.input.grid.Grid grid: grid to construct load_shed for.
     :param dict/None infeasibilities: dictionary of
@@ -101,7 +99,7 @@ def construct_load_shed(data_access, scenario_info, grid, infeasibilities=None):
         load_shed = pd.DataFrame.sparse.from_spmatrix(load_shed_data)
     else:
         print("Infeasibilities, constructing DataFrame")
-        bus_demand = get_bus_demand(data_access, scenario_info["id"], grid)
+        bus_demand = get_bus_demand(scenario_info["id"], grid)
         load_shed = np.zeros((len(hours), len(buses)))
         # Convert '24H' to 24
         interval = int(scenario_info["interval"][:-1])

@@ -213,9 +213,7 @@ class Analyze(State):
             # The scenario was run without load_shed, and we must construct it
             grid = self.get_grid()
             infeasibilities = self._parse_infeasibilities()
-            load_shed = construct_load_shed(
-                self._data_access, self._scenario_info, grid, infeasibilities
-            )
+            load_shed = construct_load_shed(self._scenario_info, grid, infeasibilities)
 
             filename = scenario_id + "_LOAD_SHED.pkl"
             filepath = os.path.join(server_setup.LOCAL_DIR, filename)
