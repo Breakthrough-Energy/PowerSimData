@@ -5,9 +5,9 @@ import numpy as np
 import pandas as pd
 from scipy.sparse import coo_matrix
 
+from powersimdata.data_access.context import Context
 from powersimdata.input.input_data import get_bus_demand
 from powersimdata.utility import server_setup
-from powersimdata.utility.transfer_data import SSHDataAccess
 
 
 class OutputData(object):
@@ -19,11 +19,7 @@ class OutputData(object):
     def __init__(self, data_loc=None):
         """Constructor"""
         os.makedirs(server_setup.LOCAL_DIR, exist_ok=True)
-        self.data_loc = data_loc
-        if self.data_loc == "disk":
-            self._data_access = SSHDataAccess(server_setup.BACKUP_DATA_ROOT_DIR)
-        else:
-            self._data_access = SSHDataAccess(server_setup.DATA_ROOT_DIR)
+        self._data_access = Context.get_data_access(data_loc)
 
     def get_data(self, scenario_id, field_name):
         """Returns data either from server or from local directory.

@@ -305,7 +305,6 @@ class _Builder(object):
         self.profile = CSV(interconnect, data_access)
         self.change_table = ChangeTable(self.base_grid)
         self._scenario_list_manager = ScenarioListManager(data_access)
-        self._scenario_list_manager = ScenarioListManager(data_access)
 
         table = self._scenario_list_manager.get_scenario_table()
         self.existing = table[table.interconnect == self.name]

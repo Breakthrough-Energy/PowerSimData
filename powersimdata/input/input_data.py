@@ -2,9 +2,9 @@ import os
 
 import pandas as pd
 
+from powersimdata.data_access.context import Context
 from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.utility import server_setup
-from powersimdata.utility.transfer_data import SSHDataAccess
 
 
 class InputData(object):
@@ -25,11 +25,7 @@ class InputData(object):
             "ct": "pkl",
             "grid": "mat",
         }
-        self.data_loc = data_loc
-        if self.data_loc == "disk":
-            self.data_access = SSHDataAccess(server_setup.BACKUP_DATA_ROOT_DIR)
-        else:
-            self.data_access = SSHDataAccess(server_setup.DATA_ROOT_DIR)
+        self.data_access = Context.get_data_access(data_loc)
 
     def _check_field(self, field_name):
         """Checks field name.

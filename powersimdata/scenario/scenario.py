@@ -2,13 +2,13 @@ from collections import OrderedDict
 
 import pandas as pd
 
+from powersimdata.data_access.context import Context
 from powersimdata.data_access.execute_list import ExecuteListManager
 from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create
 from powersimdata.scenario.execute import Execute
 from powersimdata.utility import server_setup
-from powersimdata.utility.transfer_data import SSHDataAccess
 
 pd.set_option("display.max_colwidth", None)
 
@@ -26,7 +26,7 @@ class Scenario(object):
         if not isinstance(descriptor, str):
             raise TypeError("Descriptor must be a string or int (for a Scenario ID)")
 
-        self.data_access = SSHDataAccess()
+        self.data_access = Context.get_data_access()
         self._scenario_list_manager = ScenarioListManager(self.data_access)
         self._execute_list_manager = ExecuteListManager(self.data_access)
 
