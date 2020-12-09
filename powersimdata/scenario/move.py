@@ -2,7 +2,7 @@ import posixpath
 
 from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.scenario.state import State
-from powersimdata.utility import backup, server_setup
+from powersimdata.utility import server_setup
 
 
 class Move(State):
@@ -66,16 +66,19 @@ class BackUpDisk(object):
         """Constructor."""
         self._data_access = data_access
         self._scenario_info = scenario_info
+        self.backup_config = server_setup.PathConfig(server_setup.BACKUP_DATA_ROOT_DIR)
+        self.server_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
 
     def move_input_data(self):
         """Moves input data."""
         print("--> Moving scenario input data to backup disk")
         source = posixpath.join(
-            server_setup.INPUT_DIR, self._scenario_info["id"] + "_*"
+            self.server_config.input_dir(),
+            self._scenario_info["id"] + "_*",
         )
-        target = backup.INPUT_DIR
-        command = "\cp -pu %s %s; rm -rf %s" % (source, target, source)
-        stdin, stdout, stderr = self.data_access.execute_command(command)
+        target = self.backup_config.input_dir()
+        self._data_access.copy(source, target, update=True)
+        self._data_access.remove(source, recursive=True, force=True)
 
     def copy_base_profile(self):
         """Copies base profile"""
@@ -87,11 +90,9 @@ class BackUpDisk(object):
             version = self._scenario_info["base_" + kind]
             source = interconnect + "_" + kind + "_" + version + ".csv"
 
-            command = "\cp -pu %s %s" % (
-                posixpath.join(server_setup.BASE_PROFILE_DIR, source),
-                backup.BASE_PROFILE_DIR,
-            )
-            stdin, stdout, stderr = self.data_access.execute_command(command)
+            src = posixpath.join(self.server_config.base_profile_dir(), source)
+            dest = self.backup_config.base_profile_dir()
+            _, stdout, stderr = self._data_access.copy(src, dest, update=True)
             print(stdout.readlines())
             print(stderr.readlines())
 
@@ -99,18 +100,20 @@ class BackUpDisk(object):
         """Moves output data"""
         print("--> Moving scenario output data to backup disk")
         source = posixpath.join(
-            server_setup.OUTPUT_DIR, self._scenario_info["id"] + "_*"
+            self.server_config.output_dir(),
+            self._scenario_info["id"] + "_*",
         )
-        target = backup.OUTPUT_DIR
-        command = "\cp -pu %s %s; rm -rf %s" % (source, target, source)
-        stdin, stdout, stderr = self.data_access.execute_command(command)
+        target = self.backup_config.output_dir()
+        self._data_access.copy(source, target, update=True)
+        self._data_access.remove(source, recursive=True, force=True)
 
     def move_temporary_folder(self):
         """Moves temporary folder."""
         print("--> Moving temporary folder to backup disk")
         source = posixpath.join(
-            server_setup.EXECUTE_DIR, "scenario_" + self._scenario_info["id"]
+            self.server_config.execute_dir(),
+            "scenario_" + self._scenario_info["id"],
         )
-        target = backup.EXECUTE_DIR
-        command = "\cp -Rpu %s %s; rm -rf %s " % (source, target, source)
-        stdin, stdout, stderr = self.data_access.execute_command(command)
+        target = self.backup_config.execute_dir()
+        self._data_access.copy(source, target, recursive=True, update=True)
+        self._data_access.remove(source, recursive=True, force=True)

@@ -3,15 +3,34 @@ import posixpath
 from pathlib import Path
 
 SERVER_ADDRESS = "becompute01.gatesventures.com"
+BACKUP_DATA_ROOT_DIR = "/mnt/RE-Storage/v2"
 DATA_ROOT_DIR = "/mnt/bes/pcm"
-SCENARIO_LIST = posixpath.join(DATA_ROOT_DIR, "ScenarioList.csv")
-EXECUTE_LIST = posixpath.join(DATA_ROOT_DIR, "ExecuteList.csv")
-EXECUTE_DIR = posixpath.join(DATA_ROOT_DIR, "tmp")
-BASE_PROFILE_DIR = posixpath.join(DATA_ROOT_DIR, "raw")
-INPUT_DIR = posixpath.join(DATA_ROOT_DIR, "data/input")
-OUTPUT_DIR = posixpath.join(DATA_ROOT_DIR, "data/output")
+EXECUTE_DIR = "tmp"
+BASE_PROFILE_DIR = "raw"
+INPUT_DIR = "data/input"
+OUTPUT_DIR = "data/output"
 LOCAL_DIR = os.path.join(str(Path.home()), "ScenarioData", "")
 MODEL_DIR = "/home/bes/pcm"
+
+
+class PathConfig:
+    def __init__(self, root=None):
+        self.root = root
+
+    def _join(self, rel_path):
+        return posixpath.join(self.root, rel_path)
+
+    def execute_dir(self):
+        return self._join(EXECUTE_DIR)
+
+    def base_profile_dir(self):
+        return self._join(BASE_PROFILE_DIR)
+
+    def input_dir(self):
+        return self._join(INPUT_DIR)
+
+    def output_dir(self):
+        return self._join(OUTPUT_DIR)
 
 
 def get_server_user():

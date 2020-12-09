@@ -93,13 +93,8 @@ class Create(State):
         """Uploads change table to server."""
         print("--> Writing change table on local machine")
         self.builder.change_table.write(self._scenario_info["id"])
-        print("--> Uploading change table to server")
         file_name = self._scenario_info["id"] + "_ct.pkl"
-        self._data_access.copy_to(
-            file_name, server_setup.LOCAL_DIR, server_setup.INPUT_DIR
-        )
-        print("--> Deleting change table on local machine")
-        os.remove(os.path.join(server_setup.LOCAL_DIR, file_name))
+        self._data_access.copy_to(file_name, server_setup.INPUT_DIR)
 
     def get_ct(self):
         """Returns change table.
@@ -134,7 +129,6 @@ class Create(State):
         """
         if getattr(self.builder, name):
             profile = TransformProfile(
-                self._data_access,
                 {
                     "interconnect": self.builder.name,
                     "base_%s" % name: getattr(self.builder, name),
@@ -310,7 +304,6 @@ class _Builder(object):
         self.base_grid = Grid(interconnect)
         self.profile = CSV(interconnect, data_access)
         self.change_table = ChangeTable(self.base_grid)
-        self._scenario_list_manager = ScenarioListManager(data_access)
         self._scenario_list_manager = ScenarioListManager(data_access)
 
         table = self._scenario_list_manager.get_scenario_table()
@@ -538,7 +531,9 @@ class CSV(object):
             raise NameError("Choose from %s" % " | ".join(possible))
 
         available = interconnect2name(self.interconnect) + "_" + kind + "_*"
-        query = posixpath.join(server_setup.BASE_PROFILE_DIR, available)
+        query = posixpath.join(
+            server_setup.DATA_ROOT_DIR, server_setup.BASE_PROFILE_DIR, available
+        )
         stdin, stdout, stderr = self._data_access.execute_command("ls " + query)
         if len(stderr.readlines()) != 0:
             print("No %s profiles available." % kind)

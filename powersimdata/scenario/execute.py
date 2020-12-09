@@ -43,7 +43,7 @@ class Execute(State):
         """Sets change table and grid."""
         base_grid = Grid(self._scenario_info["interconnect"].split("_"))
         if self._scenario_info["change_table"] == "Yes":
-            input_data = InputData(self._data_access)
+            input_data = InputData()
             self.ct = input_data.get_data(self._scenario_info, "ct")
             self.grid = TransformGrid(base_grid, self.ct).get_grid()
         else:
@@ -229,9 +229,14 @@ class SimulationInput(object):
         self._scenario_info = scenario_info
         self.grid = grid
         self.ct = ct
+        self.server_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
+        self.scenario_folder = "scenario_%s" % scenario_info["id"]
 
         self.TMP_DIR = posixpath.join(
-            server_setup.EXECUTE_DIR, "scenario_%s" % scenario_info["id"]
+            self.server_config.execute_dir(), self.scenario_folder
+        )
+        self.REL_TMP_DIR = posixpath.join(
+            server_setup.EXECUTE_DIR, self.scenario_folder
         )
 
     def create_folder(self):
@@ -363,27 +368,16 @@ class SimulationInput(object):
                 appendmat=False,
             )
             self._data_access.copy_to(
-                file_name,
-                server_setup.LOCAL_DIR,
-                self.TMP_DIR,
-                change_name_to="case_storage.mat",
+                file_name, self.REL_TMP_DIR, change_name_to="case_storage.mat"
             )
-            print("Deleting %s on local machine" % file_name)
-            os.remove(os.path.join(server_setup.LOCAL_DIR, file_name))
 
         # MPC file
         file_name = "%s_case.mat" % self._scenario_info["id"]
         savemat(os.path.join(server_setup.LOCAL_DIR, file_name), mpc, appendmat=False)
 
         self._data_access.copy_to(
-            file_name,
-            server_setup.LOCAL_DIR,
-            self.TMP_DIR,
-            change_name_to="case.mat",
+            file_name, self.REL_TMP_DIR, change_name_to="case.mat"
         )
-
-        print("Deleting %s on local machine" % file_name)
-        os.remove(os.path.join(server_setup.LOCAL_DIR, file_name))
 
     def prepare_profile(self, kind, profile_as=None):
         """Prepares profile for simulation.
@@ -392,19 +386,18 @@ class SimulationInput(object):
         :param int/str/None profile_as: if given, copy profile from this scenario.
         """
         if profile_as is None:
-            profile = TransformProfile(
-                self._data_access, self._scenario_info, self.grid, self.ct
-            )
+            profile = TransformProfile(self._scenario_info, self.grid, self.ct)
             if bool(profile.scale_keys[kind] & set(self.ct.keys())):
                 self._prepare_scaled_profile(kind, profile)
             else:
                 self._create_link_to_base_profile(kind)
         else:
             from_dir = posixpath.join(
-                server_setup.EXECUTE_DIR, f"scenario_{profile_as}"
+                self.server_config.execute_dir(),
+                f"scenario_{profile_as}",
             )
             to_dir = posixpath.join(
-                server_setup.EXECUTE_DIR, f"scenario_{self._scenario_info['id']}"
+                self.server_config.execute_dir(), self.scenario_folder
             )
             command = f"cp {from_dir}/{kind}.csv {to_dir}"
             stdin, stdout, stderr = self._data_access.execute_command(command)
@@ -442,18 +435,11 @@ class SimulationInput(object):
         profile = profile.get_profile(kind)
 
         print(
-            "Writing scaled %s profile in %s on local machine"
-            % (kind, server_setup.LOCAL_DIR)
+            f"Writing scaled {kind} profile in {server_setup.LOCAL_DIR} on local machine"
         )
         file_name = "%s_%s.csv" % (self._scenario_info["id"], kind)
         profile.to_csv(os.path.join(server_setup.LOCAL_DIR, file_name))
 
         self._data_access.copy_to(
-            file_name,
-            server_setup.LOCAL_DIR,
-            self.TMP_DIR,
-            change_name_to="%s.csv" % kind,
+            file_name, self.REL_TMP_DIR, change_name_to=f"{kind}.csv"
         )
-
-        print("Deleting %s on local machine" % file_name)
-        os.remove(os.path.join(server_setup.LOCAL_DIR, file_name))

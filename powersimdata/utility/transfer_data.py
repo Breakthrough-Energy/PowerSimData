@@ -1,4 +1,5 @@
 import glob
+import operator
 import os
 import posixpath
 import time
@@ -8,17 +9,17 @@ import paramiko
 from tqdm import tqdm
 
 from powersimdata.utility import server_setup
+from powersimdata.utility.helpers import CommandBuilder
 
 
 class DataAccess:
     """Interface to a local or remote data store."""
 
-    def copy_from(self, file_name, from_dir, to_dir):
+    def copy_from(self, file_name, from_dir):
         """Copy a file from data store to userspace.
 
         :param str file_name: file name to copy.
         :param str from_dir: data store directory to copy file from.
-        :param str to_dir: userspace directory to copy file to.
         """
         raise NotImplementedError
 
@@ -31,6 +32,49 @@ class DataAccess:
         :param str change_name_to: new name for file when copied to data store.
         """
         raise NotImplementedError
+
+    def copy(self, src, dest, recursive=False, update=False):
+        """Wrapper around cp command
+
+        :param str src: path to original
+        :param str dest: destination path
+        :param bool recursive: create directories recursively
+        :param bool update: only copy if needed
+        """
+        command = CommandBuilder.copy(src, dest, recursive, update)
+        return self.execute_command(command)
+
+    def remove(self, target, recursive=False, force=False):
+        """Wrapper around rm command
+
+        :param str target: path to remove
+        :param bool recursive: delete directories recursively
+        :param bool force: remove without confirmation
+        """
+        command = CommandBuilder.remove(target, recursive, force)
+        return self.execute_command(command)
+
+    def check_file_exists(self, filepath, should_exist=True):
+        """
+        Check that file exists (or not) at the given path
+
+        :param str filepath: the full path to the file
+        :param bool should_exist: whether the file is expected to exist
+        """
+        _, _, stderr = self.execute_command(CommandBuilder.list(filepath))
+        compare = operator.ne if should_exist else operator.eq
+        if compare(len(stderr.readlines()), 0):
+            msg = "not found" if should_exist else "already exists"
+            raise OSError(f"{filepath} {msg} on server")
+
+    def check_filename(self, filename):
+        """
+        Check that filename is only the name part
+
+        :param str filename: the filename to verify
+        """
+        if len(os.path.dirname(filename)) != 0:
+            raise ValueError(f"Expecting file name but got path {filename}")
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -62,10 +106,12 @@ class SSHDataAccess(DataAccess):
 
     _last_attempt = 0
 
-    def __init__(self):
+    def __init__(self, root=None):
         """Constructor"""
         self._ssh = None
         self._retry_after = 5
+        self.root = server_setup.DATA_ROOT_DIR if root is None else root
+        self.dest_root = server_setup.LOCAL_DIR
 
     @property
     def ssh(self):
@@ -104,60 +150,53 @@ class SSHDataAccess(DataAccess):
 
         self._ssh = client
 
-    def copy_from(self, file_name, from_dir, to_dir):
+    def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
 
         :param str file_name: file name to copy.
         :param str from_dir: data store directory to copy file from.
-        :param str to_dir: userspace directory to copy file to.
         """
-        if not os.path.exists(to_dir):
-            os.makedirs(to_dir)
+        self.check_filename(file_name)
+        from_dir = "" if from_dir is None else from_dir
+        to_dir = os.path.join(self.dest_root, from_dir)
+        os.makedirs(to_dir, exist_ok=True)
 
-        from_path = posixpath.join(from_dir, file_name)
-        stdin, stdout, stderr = self.ssh.exec_command("ls " + from_path)
-        if len(stderr.readlines()) != 0:
-            raise FileNotFoundError(f"{file_name} not found in {from_dir} on server")
-        else:
-            print("Transferring %s from server" % file_name)
+        from_path = posixpath.join(self.root, from_dir, file_name)
+        self.check_file_exists(from_path, should_exist=True)
+
+        with self.ssh.open_sftp() as sftp:
+            print(f"Transferring {file_name} from server")
+            cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
             to_path = os.path.join(to_dir, file_name)
-            sftp = self.ssh.open_sftp()
-            try:
-                cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
-                sftp.get(from_path, to_path, callback=cbk)
-            finally:
-                sftp.close()
-                bar.close()
+            sftp.get(from_path, to_path, callback=cbk)
+            bar.close()
 
-    def copy_to(self, file_name, from_dir, to_dir, change_name_to=None):
+    def copy_to(self, file_name, to_dir=None, change_name_to=None):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
-        :param str from_dir: userspace directory to copy file from.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
         """
-        from_path = os.path.join(from_dir, file_name)
+        self.check_filename(file_name)
+        from_path = os.path.join(self.dest_root, file_name)
 
-        if os.path.isfile(from_path) is False:
+        if not os.path.isfile(from_path):
             raise FileNotFoundError(
-                "%s not found in %s on local machine" % (file_name, from_dir)
+                f"{file_name} not found in {self.dest_root} on local machine"
             )
-        else:
-            if bool(change_name_to):
-                to_path = posixpath.join(to_dir, change_name_to)
-            else:
-                to_path = posixpath.join(to_dir, file_name)
-            stdin, stdout, stderr = self.ssh.exec_command("ls " + to_path)
-            if len(stderr.readlines()) == 0:
-                raise IOError("%s already exists in %s on server" % (file_name, to_dir))
-            else:
-                print("Transferring %s to server" % file_name)
-                sftp = self.ssh.open_sftp()
-                try:
-                    sftp.put(from_path, to_path)
-                finally:
-                    sftp.close()
+
+        file_name = file_name if change_name_to is None else change_name_to
+        to_dir = "" if to_dir is None else to_dir
+        to_path = posixpath.join(self.root, to_dir, file_name)
+        self.check_file_exists(to_path, should_exist=False)
+
+        with self.ssh.open_sftp() as sftp:
+            print(f"Transferring {from_path} to server")
+            sftp.put(from_path, to_path)
+
+        print(f"--> Deleting {from_path} on local machine")
+        os.remove(from_path)
 
     def execute_command(self, command):
         """Execute a command locally at the data access.

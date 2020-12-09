@@ -1,12 +1,15 @@
-import pandas as pd
-import pytest
-from numpy.testing import assert_array_equal
-from pandas.testing import assert_frame_equal
+import os
+import sys
+import tempfile
+from pathlib import Path
 
-from powersimdata.data_access.execute_list import ExecuteListManager
-from powersimdata.data_access.scenario_list import ScenarioListManager
+import pytest
+
+from powersimdata.tests.mock_ssh import MockConnection
 from powersimdata.utility.server_setup import get_server_user
 from powersimdata.utility.transfer_data import SSHDataAccess
+
+CONTENT = b"content"
 
 
 @pytest.fixture
@@ -17,15 +20,51 @@ def data_access():
 
 
 @pytest.fixture
-def scenario_table(data_access):
-    scenario_list_manager = ScenarioListManager(data_access)
-    return scenario_list_manager.get_scenario_table()
+def temp_fs(tmp_path):
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+    return src_dir, dest_dir
 
 
 @pytest.fixture
-def execute_table(data_access):
-    execute_list_manager = ExecuteListManager(data_access)
-    return execute_list_manager.get_execute_table()
+def mock_data_access(monkeypatch, temp_fs):
+    data_access = SSHDataAccess()
+    monkeypatch.setattr(data_access, "_ssh", MockConnection())
+    data_access.root = temp_fs[0]
+    data_access.dest_root = temp_fs[1]
+    yield data_access
+    data_access.close()
+
+
+@pytest.fixture
+def make_temp(temp_fs):
+    files = []
+
+    def _make_temp(rel_path=None, remote=True):
+        rel_path = Path("" if rel_path is None else rel_path)
+        root = temp_fs[0] if remote else temp_fs[1]
+        location = root / rel_path
+        test_file = tempfile.NamedTemporaryFile(dir=location)
+        files.append(test_file)
+        test_file.write(CONTENT)
+        test_file.seek(0)
+        return os.path.basename(test_file.name)
+
+    yield _make_temp
+    for f in files:
+        # NOTE: the tmp_path fixture will handle remaining cleanup
+        try:
+            f.close()
+        except:  # noqa: ignore failure if file already deleted
+            pass
+
+
+def _check_content(filepath):
+    assert os.path.exists(filepath)
+    with open(filepath, "rb") as f:
+        assert CONTENT == f.read()
 
 
 @pytest.mark.integration
@@ -35,60 +74,54 @@ def test_setup_server_connection(data_access):
     assert stdout.read().decode("utf-8").strip() == get_server_user()
 
 
-@pytest.mark.integration
-@pytest.mark.ssh
-def test_get_scenario_file_from_server_type(data_access, scenario_table):
-    assert isinstance(scenario_table, pd.DataFrame)
+def test_mocked_correctly(mock_data_access):
+    assert isinstance(mock_data_access.ssh, MockConnection)
 
 
-@pytest.mark.integration
-@pytest.mark.ssh
-def test_get_scenario_file_from_server_header(data_access, scenario_table):
-    header = [
-        "id",
-        "plan",
-        "name",
-        "state",
-        "interconnect",
-        "base_demand",
-        "base_hydro",
-        "base_solar",
-        "base_wind",
-        "change_table",
-        "start_date",
-        "end_date",
-        "interval",
-        "engine",
-        "runtime",
-        "infeasibilities",
-    ]
-    assert_array_equal(scenario_table.columns, header)
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
+def test_copy_from(mock_data_access, temp_fs, make_temp):
+    fname = make_temp()
+    mock_data_access.copy_from(fname)
+    _check_content(os.path.join(temp_fs[1], fname))
 
 
-@pytest.mark.integration
-@pytest.mark.ssh
-def test_get_scenario_file_local(scenario_table):
-    scm = ScenarioListManager(None)
-    from_local = scm.get_scenario_table()
-    assert_frame_equal(from_local, scenario_table)
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
+def test_copy_from_multi_path(mock_data_access, temp_fs, make_temp):
+    rel_path = Path("foo", "bar")
+    src_path = temp_fs[0] / rel_path
+    src_path.mkdir(parents=True)
+    fname = make_temp(rel_path)
+    mock_data_access.copy_from(fname, rel_path)
+    _check_content(os.path.join(temp_fs[1], rel_path, fname))
 
 
-@pytest.mark.integration
-@pytest.mark.ssh
-def test_get_execute_file_local(execute_table):
-    ecm = ExecuteListManager(None)
-    from_local = ecm.get_execute_table()
-    assert_frame_equal(from_local, execute_table)
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
+def test_copy_to(mock_data_access, make_temp):
+    fname = make_temp(remote=False)
+    mock_data_access.copy_to(fname)
+    _check_content(os.path.join(mock_data_access.root, fname))
 
 
-@pytest.mark.integration
-@pytest.mark.ssh
-def test_get_execute_file_from_server_type(execute_table):
-    assert isinstance(execute_table, pd.DataFrame)
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
+def test_copy_to_multi_path(mock_data_access, make_temp):
+    rel_path = Path("foo", "bar")
+    remote_path = mock_data_access.root / rel_path
+    remote_path.mkdir(parents=True)
+    fname = make_temp(remote=False)
+    mock_data_access.copy_to(fname, rel_path)
+    _check_content(os.path.join(remote_path, fname))
 
 
-@pytest.mark.integration
-@pytest.mark.ssh
-def test_get_execute_file_from_server_header(execute_table):
-    header = ["id", "status"]
-    assert_array_equal(execute_table.columns, header)
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
+def test_copy_to_rename(mock_data_access, make_temp):
+    fname = make_temp(remote=False)
+    new_fname = "new_fname"
+    mock_data_access.copy_to(fname, change_name_to=new_fname)
+    _check_content(os.path.join(mock_data_access.root, new_fname))
+
+
+def test_check_filename(mock_data_access):
+    with pytest.raises(ValueError):
+        mock_data_access.copy_from("dir/foo.txt", "dir")
+    with pytest.raises(ValueError):
+        mock_data_access.copy_to("dir/foo.txt", "asdf")

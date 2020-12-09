@@ -7,16 +7,14 @@ from powersimdata.input.input_data import InputData
 class TransformProfile(object):
     """Transforms profile according to operations listed in change table."""
 
-    def __init__(self, data_access, scenario_info, grid, ct):
+    def __init__(self, scenario_info, grid, ct):
         """Constructor
 
-        :param powersimdata.utility.transfer_data.DataAccess data_access:
-            data access object.
         :param dict scenario_info: scenario information.
         :param powersimdata.input.grid.Grid grid: a Grid object.
         :param dict ct: change table.
         """
-        self._input_data = InputData(data_access)
+        self._input_data = InputData()
         self.scenario_info = scenario_info
         self.grid = copy.deepcopy(grid)
         self.ct = copy.deepcopy(ct)

@@ -75,9 +75,14 @@ class ScenarioListManager(CsvStore):
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
 
+    _SCENARIO_LIST = "ScenarioList.csv"
+
     def __init__(self, ssh_client):
         """Constructor"""
         super().__init__(ssh_client)
+        self._server_path = posixpath.join(
+            server_setup.DATA_ROOT_DIR, self._SCENARIO_LIST
+        )
 
     def get_scenario_table(self):
         """Returns scenario table from server if possible, otherwise read local
@@ -85,7 +90,7 @@ class ScenarioListManager(CsvStore):
 
         :return: (*pandas.DataFrame*) -- scenario list as a data frame.
         """
-        return self.get_table("ScenarioList.csv", server_setup.SCENARIO_LIST)
+        return self.get_table(self._SCENARIO_LIST)
 
     def generate_scenario_id(self):
         """Generates scenario id.
@@ -97,8 +102,8 @@ class ScenarioListManager(CsvStore):
                    id=$(awk -F',' 'END{print $1+1}' %s); \
                    echo $id, >> %s; \
                    echo $id) 200>%s" % (
-            server_setup.SCENARIO_LIST,
-            server_setup.SCENARIO_LIST,
+            self._server_path,
+            self._server_path,
             posixpath.join(server_setup.DATA_ROOT_DIR, "scenario.lockfile"),
         )
 
@@ -112,7 +117,7 @@ class ScenarioListManager(CsvStore):
 
         :param collections.OrderedDict scenario_info: entry to add to scenario list.
         """
-        print("--> Adding entry in %s on server" % server_setup.SCENARIO_LIST)
+        print("--> Adding entry in %s on server" % self._SCENARIO_LIST)
         entry = ",".join(scenario_info.values())
         options = "-F, -v INPLACE_SUFFIX=.bak -i inplace"
         # AWK parses the file line-by-line. When the entry of the first column is
@@ -122,9 +127,9 @@ class ScenarioListManager(CsvStore):
             scenario_info["id"],
             entry,
         )
-        command = "awk %s %s %s" % (options, program, server_setup.SCENARIO_LIST)
+        command = "awk %s %s %s" % (options, program, self._server_path)
 
-        err_message = "Failed to add entry in %s on server" % server_setup.SCENARIO_LIST
+        err_message = "Failed to add entry in %s on server" % self._SCENARIO_LIST
         _ = self._execute_and_check_err(command, err_message)
 
     def delete_entry(self, scenario_info):
@@ -132,11 +137,9 @@ class ScenarioListManager(CsvStore):
 
         :param collections.OrderedDict scenario_info: entry to delete from scenario list.
         """
-        print("--> Deleting entry in %s on server" % server_setup.SCENARIO_LIST)
+        print("--> Deleting entry in %s on server" % self._SCENARIO_LIST)
         entry = ",".join(scenario_info.values())
-        command = "sed -i.bak '/%s/d' %s" % (entry, server_setup.SCENARIO_LIST)
+        command = "sed -i.bak '/%s/d' %s" % (entry, self._server_path)
 
-        err_message = (
-            "Failed to delete entry in %s on server" % server_setup.SCENARIO_LIST
-        )
+        err_message = "Failed to delete entry in %s on server" % self._SCENARIO_LIST
         _ = self._execute_and_check_err(command, err_message)

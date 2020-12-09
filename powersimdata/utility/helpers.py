@@ -4,6 +4,50 @@ import os
 import sys
 
 
+class CommandBuilder:
+    """
+    Wrapper class to construct unix commands that are run over ssh
+    """
+
+    @staticmethod
+    def copy(src, dest, recursive=False, update=False):
+        """Builds a cp command with some options
+
+        :param str src: The source directory or file
+        :param str dest: The desination directory or file
+        :param bool recursive: Whether to pass -R option
+        :param bool update: Whether to pass -u option
+        """
+        r_flag = "R" if recursive else ""
+        u_flag = "u" if update else ""
+        p_flag = "p"
+        flags = f"-{r_flag}{u_flag}{p_flag}"
+        return fr"\cp {flags} {src} {dest}"
+
+    @staticmethod
+    def remove(target, recursive=False, force=False):
+        """Builds a rm command with some options
+
+        :param str target: the path or file to be removed
+        :param bool recursive: whether to pass -r option
+        :param bool force: whether to pass -f option
+        """
+        r_flag = "r" if recursive else ""
+        f_flag = "f" if force else ""
+        if recursive or force:
+            flags = f"-{r_flag}{f_flag}"
+            return f"rm {flags} {target}"
+        return f"rm {target}"
+
+    @staticmethod
+    def list(path):
+        """Builds an ls command
+
+        :param str path: the path argument
+        """
+        return f"ls {path}"
+
+
 class MemoryCache:
     """Wrapper around a dict object that exposes a cache interface. Users should
     create a separate instance for each distinct use case.

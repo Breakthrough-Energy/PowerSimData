@@ -634,8 +634,7 @@ class ChangeTable(object):
         :param str scenario_id: scenario index.
         :raises IOError: if file already exists on local machine.
         """
-        if not os.path.exists(server_setup.LOCAL_DIR):
-            os.makedirs(server_setup.LOCAL_DIR)
+        os.makedirs(server_setup.LOCAL_DIR, exist_ok=True)
 
         file_name = os.path.join(server_setup.LOCAL_DIR, scenario_id + "_ct.pkl")
         if os.path.isfile(file_name) is False:

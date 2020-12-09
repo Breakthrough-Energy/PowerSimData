@@ -1,6 +1,11 @@
 import pytest
 
-from powersimdata.utility.helpers import MemoryCache, PrintManager, cache_key
+from powersimdata.utility.helpers import (
+    CommandBuilder,
+    MemoryCache,
+    PrintManager,
+    cache_key,
+)
 
 
 def test_print_is_disabled(capsys):
@@ -61,3 +66,35 @@ def test_mem_cache_get_returns_copy():
     obj = {"key1": 42}
     cache.put(key, obj)
     assert id(cache.get(key)) != id(obj)
+
+
+def test_copy_command():
+    expected = r"\cp -p source dest"
+    command = CommandBuilder.copy("source", "dest")
+    assert expected == command
+
+    expected = r"\cp -Rp source dest"
+    command = CommandBuilder.copy("source", "dest", recursive=True)
+    assert expected == command
+
+    expected = r"\cp -up source dest"
+    command = CommandBuilder.copy("source", "dest", update=True)
+    assert expected == command
+
+    expected = r"\cp -Rup source dest"
+    command = CommandBuilder.copy("source", "dest", recursive=True, update=True)
+    assert expected == command
+
+
+def test_remove_command():
+    expected = "rm target"
+    command = CommandBuilder.remove("target")
+    assert expected == command
+
+    expected = "rm -r target"
+    command = CommandBuilder.remove("target", recursive=True)
+    assert expected == command
+
+    expected = "rm -rf target"
+    command = CommandBuilder.remove("target", recursive=True, force=True)
+    assert expected == command

@@ -5,24 +5,21 @@ import numpy as np
 import pandas as pd
 from scipy.sparse import coo_matrix
 
+from powersimdata.data_access.context import Context
 from powersimdata.input.input_data import get_bus_demand
-from powersimdata.utility import backup, server_setup
+from powersimdata.utility import server_setup
 
 
 class OutputData(object):
     """Load output data.
 
-    :param powersimdata.utility.transfer_data.DataAccess data_access:
-        data access object.
     :param str data_loc: data location.
     """
 
-    def __init__(self, data_access, data_loc=None):
+    def __init__(self, data_loc=None):
         """Constructor"""
-        if not os.path.exists(server_setup.LOCAL_DIR):
-            os.makedirs(server_setup.LOCAL_DIR)
-        self._data_access = data_access
-        self.data_loc = data_loc
+        os.makedirs(server_setup.LOCAL_DIR, exist_ok=True)
+        self._data_access = Context.get_data_access(data_loc)
 
     def get_data(self, scenario_id, field_name):
         """Returns data either from server or from local directory.
@@ -38,45 +35,19 @@ class OutputData(object):
 
         print("--> Loading %s" % field_name)
         file_name = scenario_id + "_" + field_name + ".pkl"
+        from_dir = server_setup.OUTPUT_DIR
+        filepath = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
 
         try:
-            data = _read_data(file_name)
-            return data
+            return pd.read_pickle(filepath)
         except pickle.UnpicklingError:
             err_msg = f"Unable to unpickle {file_name}, possibly corrupted in download."
             raise ValueError(err_msg)
         except FileNotFoundError:
-            print(
-                "%s not found in %s on local machine"
-                % (file_name, server_setup.LOCAL_DIR)
-            )
+            print(f"{filepath} not found on local machine")
 
-        try:
-            if self.data_loc == "disk":
-                self._data_access.copy_from(
-                    file_name, backup.OUTPUT_DIR, server_setup.LOCAL_DIR
-                )
-            else:
-                self._data_access.copy_from(
-                    file_name,
-                    server_setup.OUTPUT_DIR,
-                    server_setup.LOCAL_DIR,
-                )
-            data = _read_data(file_name)
-            return data
-        except FileNotFoundError:
-            raise
-
-
-def _read_data(file_name):
-    """Reads data.
-
-    :param str file_name: file name
-    :return: (*pandas.DataFrame*) -- specified file as a data frame.
-    """
-    data = pd.read_pickle(os.path.join(server_setup.LOCAL_DIR, file_name))
-
-    return data
+        self._data_access.copy_from(file_name, from_dir)
+        return pd.read_pickle(filepath)
 
 
 def _check_field(field_name):
@@ -105,11 +76,9 @@ def _check_field(field_name):
         raise ValueError("Only %s data can be loaded" % " | ".join(possible))
 
 
-def construct_load_shed(data_access, scenario_info, grid, infeasibilities=None):
+def construct_load_shed(scenario_info, grid, infeasibilities=None):
     """Constructs load_shed dataframe from relevant scenario/grid data.
 
-    :param powersimdata.utility.transfer_data.DataAccess data_access:
-        data access object.
     :param dict scenario_info: info attribute of Scenario object.
     :param powersimdata.input.grid.Grid grid: grid to construct load_shed for.
     :param dict/None infeasibilities: dictionary of
@@ -126,7 +95,7 @@ def construct_load_shed(data_access, scenario_info, grid, infeasibilities=None):
         load_shed = pd.DataFrame.sparse.from_spmatrix(load_shed_data)
     else:
         print("Infeasibilities, constructing DataFrame")
-        bus_demand = get_bus_demand(data_access, scenario_info["id"], grid)
+        bus_demand = get_bus_demand(scenario_info["id"], grid)
         load_shed = np.zeros((len(hours), len(buses)))
         # Convert '24H' to 24
         interval = int(scenario_info["interval"][:-1])

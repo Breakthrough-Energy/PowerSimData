@@ -2,22 +2,20 @@ import os
 
 import pandas as pd
 
+from powersimdata.data_access.context import Context
 from powersimdata.scenario.helpers import interconnect2name
-from powersimdata.utility import backup, server_setup
+from powersimdata.utility import server_setup
 
 
 class InputData(object):
     """Load input data.
 
-    :param powersimdata.utility.transfer_data.DataAccess data_access:
-        data access object.
     :param str data_loc: data location.
     """
 
-    def __init__(self, data_access, data_loc=None):
+    def __init__(self, data_loc=None):
         """Constructor."""
-        if not os.path.exists(server_setup.LOCAL_DIR):
-            os.makedirs(server_setup.LOCAL_DIR)
+        os.makedirs(server_setup.LOCAL_DIR, exist_ok=True)
 
         self.file_extension = {
             "demand": "csv",
@@ -27,8 +25,7 @@ class InputData(object):
             "ct": "pkl",
             "grid": "mat",
         }
-        self._data_access = data_access
-        self.data_loc = data_loc
+        self.data_access = Context.get_data_access(data_loc)
 
     def _check_field(self, field_name):
         """Checks field name.
@@ -61,46 +58,35 @@ class InputData(object):
         if field_name in ["demand", "hydro", "solar", "wind"]:
             interconnect = interconnect2name(scenario_info["interconnect"].split("_"))
             version = scenario_info["base_" + field_name]
-            if self.data_loc == "disk":
-                from_dir = backup.BASE_PROFILE_DIR
-            else:
-                from_dir = server_setup.BASE_PROFILE_DIR
             file_name = interconnect + "_" + field_name + "_" + version + "." + ext
+            from_dir = server_setup.BASE_PROFILE_DIR
         else:
-            if self.data_loc == "disk":
-                from_dir = backup.INPUT_DIR
-            else:
-                from_dir = server_setup.INPUT_DIR
             file_name = scenario_info["id"] + "_" + field_name + "." + ext
+            from_dir = server_setup.INPUT_DIR
 
+        filepath = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
         try:
-            data = _read_data(file_name)
-            return data
+            return _read_data(filepath)
         except FileNotFoundError:
             print(
                 "%s not found in %s on local machine"
                 % (file_name, server_setup.LOCAL_DIR)
             )
 
-        try:
-            self._data_access.copy_from(file_name, from_dir, server_setup.LOCAL_DIR)
-            data = _read_data(file_name)
-            return data
-        except FileNotFoundError:
-            raise
+        self.data_access.copy_from(file_name, from_dir)
+        return _read_data(filepath)
 
 
-def _read_data(file_name):
-    """Reads data.
+def _read_data(filepath):
+    """Reads data from local machine.
 
-    :param str file_name: file name, extension either 'pkl', 'csv', or 'mat'.
+    :param str filepath: path to file, with extension either 'pkl', 'csv', or 'mat'.
     :return: (*pandas.DataFrame*, *dict*, or *str*) -- demand, hydro, solar or
         wind as a data frame, change table as a dict, or str containing a
         local path to a matfile of grid data.
     :raises ValueError: if extension is unknown.
     """
-    ext = file_name.split(".")[-1]
-    filepath = os.path.join(server_setup.LOCAL_DIR, file_name)
+    ext = os.path.basename(filepath).split(".")[-1]
     if ext == "pkl":
         data = pd.read_pickle(filepath)
     elif ext == "csv":
@@ -116,17 +102,14 @@ def _read_data(file_name):
     return data
 
 
-def get_bus_demand(data_access, scenario_id, grid):
+def get_bus_demand(scenario_id, grid):
     """Returns demand profiles by bus.
 
-    :param powersimdata.utility.transfer_data.DataAccess data_access:
-        data access object.
     :param str scenario_id: scenario id.
     :param powersimdata.input.grid.Grid grid: grid to construct bus demand for.
     :return: (*pandas.DataFrame*) -- data frame of demand.
     """
-    input = InputData(data_access)
-    demand = input.get_data(scenario_id, "demand")
+    demand = InputData().get_data(scenario_id, "demand")
     bus = grid.bus
     bus["zone_Pd"] = bus.groupby("zone_id")["Pd"].transform("sum")
     bus["zone_share"] = bus["Pd"] / bus["zone_Pd"]
