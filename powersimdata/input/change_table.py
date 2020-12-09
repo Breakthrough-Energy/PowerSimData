@@ -1,3 +1,4 @@
+import copy
 import os
 import pickle
 
@@ -24,6 +25,16 @@ _resources = (
 )
 
 _renewable_resource = {"hydro", "solar", "wind", "wind_offshore"}
+
+
+def ordinal(n):
+    """Translate a 0-based index into a 1-based ordinal, e.g. 0 -> 1st, 1 -> 2nd, etc.
+
+    :param int n: the index to be translated.
+    :return: (*str*) -- Ordinal.
+    """
+    ord_dict = {1: "st", 2: "nd", 3: "rd"}
+    return str(n + 1) + ord_dict.get((n + 1) if (n + 1) < 20 else (n + 1) % 10, "th")
 
 
 class ChangeTable(object):
@@ -480,11 +491,10 @@ class ChangeTable(object):
 
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new dcline.
+        :raises TypeError: if info is not a list.
         """
         if not isinstance(info, list):
-            print("Argument enclosing new HVDC line(s) must be a list")
-            return
-
+            raise TypeError("Argument enclosing new HVDC line(s) must be a list")
         self._add_line("new_dcline", info)
 
     def add_branch(self, info):
@@ -492,142 +502,146 @@ class ChangeTable(object):
 
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new branch.
+        :raises TypeError: if info is not a list.
         """
         if not isinstance(info, list):
-            print("Argument enclosing new AC line(s) must be a list")
-            return
-
+            raise TypeError("Argument enclosing new AC line(s) must be a list")
         self._add_line("new_branch", info)
+
+    def _check_entry_keys(self, entry, n, key, required, xor_sets=None, optional=None):
+        """Check the validity of the dict keys used to add new components to the
+        network (e.g. plants, AC lines), checking for: missing keys, extra keys, or
+        incompatible sets of keys.
+
+        :param dict entry: dict of key/value pairs for a new entry.
+        :param int n: index of the new entry (used in error messages).
+        :param str key: type of new entry (used in error messages).
+        :param set required: keys which must be specified.
+        :param set xor_sets: set of tuples, for which exactly one key must be specified.
+        :param set optional: set of acceptable keys which are not required or in an xor
+            set.
+        :raises TypeError: if entry is not a dict.
+        :raises ValueError: if any required keys are missing, the number of specified
+            keys in each xor set is not exactly one, or an unexpected key is received.
+        """
+        xor_sets = set(tuple()) if xor_sets is None else xor_sets
+        optional = set() if optional is None else optional
+        nth = ordinal(n)
+        if not isinstance(entry, dict):
+            raise TypeError(f"Each entry must be a dictionary, error on {nth} {key}")
+        if len(required - entry.keys()) > 0:
+            missing_keys = required - entry.keys()
+            raise ValueError(
+                f"Each entry of {key} requires keys of: {', '.join(sorted(required))}. "
+                f"Missing {sorted(missing_keys)} on {nth} entry, possibly others."
+            )
+        allowable_keys = required | optional | set().union(*xor_sets)
+        if not set(entry.keys()) <= allowable_keys:
+            unknown_keys = set(entry.keys()) - allowable_keys
+            err_msg = f"Got unknown keys in {nth} {key}: {', '.join(unknown_keys)}"
+            raise ValueError(err_msg)
+        for xor_set in sorted(xor_sets):
+            if len(xor_set & entry.keys()) != 1:
+                err_msg = f"For {key}, must specify one of {xor_set} but not both"
+                err_msg += f". Error on {nth} entry, possibly others"
+                raise ValueError(err_msg)
 
     def _add_line(self, key, info):
         """Handles line(s) addition in change table.
 
-        :param str key: key in change table. Either *'new_branch'* or
-            *'new_dcline'*
+        :param str key: key in change table. Either *'new_branch'* or *'new_dcline'*
         :param list info: parameters of the line.
+        :raises ValueError: if any of the new lines to be added have nonsensical values.
         """
+        info = copy.deepcopy(info)
         anticipated_bus = self._get_new_bus()
+        new_lines = []
+        required = {"from_bus_id", "to_bus_id"}
+        xor_sets = {("capacity", "Pmax"), ("capacity", "Pmin")}
+        optional = {"Pmin"}
+        for i, line in enumerate(info):
+            self._check_entry_keys(line, i, key, required, xor_sets, optional)
+            start = line["from_bus_id"]
+            end = line["to_bus_id"]
+            if start not in anticipated_bus.index:
+                raise ValueError(
+                    "No bus with the following id for line #%d: %d" % (i + 1, start)
+                )
+            if end not in anticipated_bus.index:
+                raise ValueError(
+                    "No bus with the following id for line #%d: %d" % (i + 1, end)
+                )
+            if start == end:
+                raise ValueError(f"to/from buses of line #{i + 1} must be different")
+            if "capacity" in line:
+                if not isinstance(line["capacity"], (int, float)):
+                    raise ValueError("'capacity' must be a number (int/float)")
+                if line["capacity"] < 0:
+                    raise ValueError("capacity of line #%d must be positive" % (i + 1))
+                # Everything looks good, let's translate this to Pmin/Pmax
+                line["Pmax"] = line["capacity"]
+                line["Pmin"] = -1 * line["capacity"]
+                del line["capacity"]
+            elif {"Pmin", "Pmax"} < set(line.keys()):
+                if key == "new_branch":
+                    err_msg = "Can't independently set Pmin & Pmax for AC branches"
+                    raise ValueError(err_msg)
+                for p in {"Pmin", "Pmax"}:
+                    if not isinstance(line[p], (int, float)):
+                        raise ValueError(f"'{p}' must be a number (int/float)")
+                if line["Pmin"] > line["Pmax"]:
+                    raise ValueError("Pmin cannot be greater than Pmax")
+            else:
+                raise ValueError("Must specify either 'capacity' or Pmin and Pmax")
+            if (
+                key == "new_branch"
+                and anticipated_bus.interconnect[start]
+                != anticipated_bus.interconnect[end]
+            ):
+                raise ValueError(
+                    "Buses of line #%d must be in same interconnect" % (i + 1)
+                )
+            elif (
+                anticipated_bus.lat[start] == anticipated_bus.lat[end]
+                and anticipated_bus.lon[start] == anticipated_bus.lon[end]
+            ):
+                raise ValueError("Distance between buses of line #%d is 0" % (i + 1))
+            new_lines.append(line)
+
         if key not in self.ct:
             self.ct[key] = []
-
-        required_info = ["from_bus_id", "to_bus_id"]
-        try:
-            for i, line in enumerate(info):
-                if not isinstance(line, dict):
-                    raise ValueError("Each entry must be a dictionary")
-                if set(required_info) - set(line.keys()) > set():
-                    raise ValueError(
-                        "Dictionary must have %s as keys" % " | ".join(required_info)
-                    )
-                line = line.copy()
-                start = line["from_bus_id"]
-                end = line["to_bus_id"]
-                if start not in anticipated_bus.index:
-                    raise ValueError(
-                        "No bus with the following id for line #%d: %d" % (i + 1, start)
-                    )
-                if end not in anticipated_bus.index:
-                    raise ValueError(
-                        "No bus with the following id for line #%d: %d" % (i + 1, end)
-                    )
-                if start == end:
-                    raise ValueError("buses of line #%d must be different" % (i + 1))
-                if "capacity" in line:
-                    if set(line.keys()) & {"Pmin", "Pmax"} > set():
-                        raise ValueError(
-                            "can't specify both 'capacity' & 'Pmin'/Pmax' "
-                            "for line #%d" % (i + 1)
-                        )
-                    if not isinstance(line["capacity"], (int, float)):
-                        raise ValueError("'capacity' must be a number (int/float)")
-                    if line["capacity"] < 0:
-                        err_msg = "capacity of line #%d must be positive" % (i + 1)
-                        raise ValueError(err_msg)
-                    # Everything looks good, let's translate this to Pmin/Pmax
-                    line["Pmax"] = line["capacity"]
-                    line["Pmin"] = -1 * line["capacity"]
-                    del line["capacity"]
-                elif {"Pmin", "Pmax"} < set(line.keys()):
-                    if key == "new_branch":
-                        err_msg = "Can't independently set Pmin & Pmax for AC branches"
-                        raise ValueError(err_msg)
-                    for p in {"Pmin", "Pmax"}:
-                        if not isinstance(line[p], (int, float)):
-                            raise ValueError(f"'{p}' must be a number (int/float)")
-                    if line["Pmin"] > line["Pmax"]:
-                        raise ValueError("Pmin cannot be greater than Pmax")
-                else:
-                    raise ValueError("Must specify either 'capacity' or Pmin and Pmax")
-                if (
-                    key == "new_branch"
-                    and anticipated_bus.interconnect[start]
-                    != anticipated_bus.interconnect[end]
-                ):
-                    raise ValueError(
-                        "Buses of line #%d must be in same interconnect" % (i + 1)
-                    )
-                elif (
-                    anticipated_bus.lat[start] == anticipated_bus.lat[end]
-                    and anticipated_bus.lon[start] == anticipated_bus.lon[end]
-                ):
-                    err_msg = "Distance between buses of line #%d is 0" % (i + 1)
-                    raise ValueError(err_msg)
-                self.ct[key].append(line)
-        except ValueError:
-            self.ct.pop(key)
-            raise
+        self.ct[key] += new_lines
 
     def add_plant(self, info):
         """Sets parameters of new generator(s) in change table.
 
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new generator.
+        :raises TypeError: if info is not a list.
+        :raises ValueError: if any of the new plants to be added have bad values.
         """
         if not isinstance(info, list):
-            print("Argument enclosing new plant(s) must be a list")
-            return
+            raise TypeError("Argument enclosing new plant(s) must be a list")
 
+        info = copy.deepcopy(info)
         anticipated_bus = self._get_new_bus()
-        if "new_plant" not in self.ct:
-            self.ct["new_plant"] = []
-
+        new_plants = []
+        required = {"bus_id", "Pmax", "type"}
+        optional = {"c0", "c1", "c2", "Pmin"}
         for i, plant in enumerate(info):
-            if not isinstance(plant, dict):
-                print("Each entry must be a dictionary")
-                self.ct.pop("new_plant")
-                return
-            if "type" not in plant.keys():
-                print("Missing key type for plant #%d" % (i + 1))
-                self.ct.pop("new_plant")
-                return
-            else:
-                try:
-                    self._check_resource(plant["type"])
-                except ValueError:
-                    self.ct.pop("new_plant")
-                    return
-            if "bus_id" not in plant.keys():
-                print("Missing key bus_id for plant #%d" % (i + 1))
-                self.ct.pop("new_plant")
-                return
-            elif plant["bus_id"] not in anticipated_bus.index:
-                print("No bus id %d available for plant #%d" % (plant["bus_id"], i + 1))
-                self.ct.pop("new_plant")
-                return
-            if "Pmax" not in plant.keys():
-                print("Missing key Pmax for plant #%d" % (i + 1))
-                self.ct.pop("new_plant")
-                return
-            elif plant["Pmax"] < 0:
-                print("Pmax >= 0 must be satisfied for plant #%d" % (i + 1))
-                self.ct.pop("new_plant")
-                return
+            self._check_entry_keys(plant, i, "plant", required, None, optional)
+            self._check_resource(plant["type"])
+            if plant["bus_id"] not in anticipated_bus.index:
+                raise ValueError(
+                    f"No bus id {plant['bus_id']} available for plant #{i + 1}"
+                )
+            if plant["Pmax"] < 0:
+                raise ValueError(f"Pmax >= 0 must be satisfied for plant #{i + 1}")
             if "Pmin" not in plant.keys():
                 plant["Pmin"] = 0
-            elif plant["Pmin"] < 0 or plant["Pmin"] > plant["Pmax"]:
-                print("0 <= Pmin <= Pmax must be satisfied for plant #%d" % (i + 1))
-                self.ct.pop("new_plant")
-                return
+            if plant["Pmin"] < 0 or plant["Pmin"] > plant["Pmax"]:
+                err_msg = f"0 <= Pmin <= Pmax must be satisfied for plant #{i + 1}"
+                raise ValueError(err_msg)
             if plant["type"] in _renewable_resource:
                 lon = anticipated_bus.loc[plant["bus_id"]].lon
                 lat = anticipated_bus.loc[plant["bus_id"]].lat
@@ -641,15 +655,15 @@ class ChangeTable(object):
             else:
                 for c in ["0", "1", "2"]:
                     if "c" + c not in plant.keys():
-                        print("Missing key c%s for plant #%d" % (c, i + 1))
-                        self.ct.pop("new_plant")
-                        return
+                        raise ValueError(f"Missing key c{c} for plant #{i + 1}")
                     elif plant["c" + c] < 0:
-                        print("c%s >= 0 must be satisfied for plant #%d" % (c, i + 1))
-                        self.ct.pop("new_plant")
-                        return
+                        err_msg = f"c{c} >= 0 must be satisfied for plant #{i + 1}"
+                        raise ValueError(err_msg)
+            new_plants.append(plant)
 
-            self.ct["new_plant"].append(plant)
+        if "new_plant" not in self.ct:
+            self.ct["new_plant"] = []
+        self.ct["new_plant"] += new_plants
 
     def add_bus(self, info):
         """Sets parameters of new bus(es) in change table.
@@ -657,66 +671,55 @@ class ChangeTable(object):
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new bus.
             Required keys: "lat", "lon", ["zone_id" XOR "zone_name"].
-            Optional key: "Pd".
+            Optional key: "Pd", "baseKV".
         :raises TypeError: if info is not a list.
-        :raises ValueError: if each element of info is not a dict with appropriate keys
-            and values.
+        :raises ValueError: if any new bus doesn't have appropriate keys/values.
         """
-        allowable_keys = {"lat", "lon", "zone_id", "zone_name", "Pd", "baseKV"}
-        defaults = {"Pd": 0, "baseKV": 230}
         if not isinstance(info, list):
             raise TypeError("Argument enclosing new bus(es) must be a list")
 
+        info = copy.deepcopy(info)
+        new_buses = []
+        required = {"lat", "lon"}
+        xor_sets = {("zone_id", "zone_name")}
+        defaults = {"Pd": 0, "baseKV": 230}
+        for i, new_bus in enumerate(info):
+            self._check_entry_keys(
+                new_bus, i, "new_bus", required, xor_sets, defaults.keys()
+            )
+            for l in {"lat", "lon"}:
+                if not isinstance(new_bus[l], (int, float)):
+                    raise ValueError(f"{l} must be numeric (int/float)")
+            if abs(new_bus["lat"]) > 90:
+                raise ValueError("'lat' must be between -90 and +90")
+            if abs(new_bus["lon"]) > 180:
+                raise ValueError("'lon' must be between -180 and +180")
+            if "zone_id" in new_bus and new_bus["zone_id"] not in self.grid.id2zone:
+                zone_id = new_bus["zone_id"]
+                raise ValueError(f"zone_id {zone_id} not present in Grid")
+            if "zone_name" in new_bus:
+                try:
+                    new_bus["zone_id"] = self.grid.zone2id[new_bus["zone_name"]]
+                except KeyError:
+                    zone_name = new_bus["zone_name"]
+                    raise ValueError(f"zone_name {zone_name} not present in Grid")
+                del new_bus["zone_name"]
+            if "Pd" in new_bus:
+                if not isinstance(new_bus["Pd"], (int, float)):
+                    raise ValueError("Pd must be numeric (int/float)")
+            else:
+                new_bus["Pd"] = defaults["Pd"]
+            if "baseKV" in new_bus:
+                if not isinstance(new_bus["baseKV"], (int, float)):
+                    raise ValueError("baseKV must be numeric (int/float)")
+                if new_bus["baseKV"] <= 0:
+                    raise ValueError("baseKV must be positive")
+            else:
+                new_bus["baseKV"] = defaults["baseKV"]
+            new_buses.append(new_bus)
         if "new_bus" not in self.ct:
             self.ct["new_bus"] = []
-
-        try:
-            for i, new_bus in enumerate(info):
-                if not isinstance(new_bus, dict):
-                    raise ValueError("Each entry in the list must be a dict")
-                new_bus = new_bus.copy()
-                if not set(new_bus.keys()) <= allowable_keys:
-                    unknown_keys = set(new_bus.keys()) - allowable_keys
-                    raise ValueError(f"Got unknown keys: {', '.join(unknown_keys)}")
-                for l in {"lat", "lon"}:
-                    if l not in new_bus.keys():
-                        raise ValueError(f"Each new bus needs {l} info")
-                    if not isinstance(new_bus[l], (int, float)):
-                        raise ValueError(f"{l} must be numeric (int/float)")
-                if abs(new_bus["lat"]) > 90:
-                    raise ValueError("'lat' must be between -90 and +90")
-                if abs(new_bus["lon"]) > 180:
-                    raise ValueError("'lon' must be between -180 and +180")
-                if {"zone_id", "zone_name"} <= set(new_bus.keys()):
-                    raise ValueError("Cannot specify both 'zone_id' and 'zone_name'")
-                if {"zone_id", "zone_name"} & set(new_bus.keys()) == set():
-                    raise ValueError("Must specify either 'zone_id' or 'zone_name'")
-                if "zone_id" in new_bus and new_bus["zone_id"] not in self.grid.id2zone:
-                    zone_id = new_bus["zone_id"]
-                    raise ValueError(f"zone_id {zone_id} not present in Grid")
-                if "zone_name" in new_bus:
-                    try:
-                        new_bus["zone_id"] = self.grid.zone2id[new_bus["zone_name"]]
-                    except KeyError:
-                        zone_name = new_bus["zone_name"]
-                        raise ValueError(f"zone_name {zone_name} not present in Grid")
-                    del new_bus["zone_name"]
-                if "Pd" in new_bus:
-                    if not isinstance(new_bus["Pd"], (int, float)):
-                        raise ValueError("Pd must be numeric (int/float)")
-                else:
-                    new_bus["Pd"] = defaults["Pd"]
-                if "baseKV" in new_bus:
-                    if not isinstance(new_bus["baseKV"], (int, float)):
-                        raise ValueError("baseKV must be numeric (int/float)")
-                    if new_bus["baseKV"] <= 0:
-                        raise ValueError("baseKV must be positive")
-                else:
-                    new_bus["baseKV"] = defaults["baseKV"]
-                self.ct["new_bus"].append(new_bus)
-        except ValueError:
-            self.ct.pop("new_bus")
-            raise
+        self.ct["new_bus"] += new_buses
 
     def _get_new_bus(self):
         if "new_bus" not in self.ct:
