@@ -1,4 +1,5 @@
 import os
+import sys
 import tempfile
 from pathlib import Path
 
@@ -77,12 +78,14 @@ def test_mocked_correctly(mock_data_access):
     assert isinstance(mock_data_access.ssh, MockConnection)
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
 def test_copy_from(mock_data_access, temp_fs, make_temp):
     fname = make_temp()
     mock_data_access.copy_from(fname)
     _check_content(os.path.join(temp_fs[1], fname))
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
 def test_copy_from_multi_path(mock_data_access, temp_fs, make_temp):
     rel_path = Path("foo", "bar")
     src_path = temp_fs[0] / rel_path
@@ -92,13 +95,15 @@ def test_copy_from_multi_path(mock_data_access, temp_fs, make_temp):
     _check_content(os.path.join(temp_fs[1], rel_path, fname))
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
 def test_copy_to(mock_data_access, temp_fs, make_temp):
     fname = make_temp(remote=False)
     mock_data_access.copy_to(fname, temp_fs[0])
     _check_content(os.path.join(temp_fs[0], fname))
 
 
-def test_copy_to_multi_path(mock_data_access, temp_fs, make_temp):
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
+def test_copy_to_multi_path(mock_data_access, make_temp):
     rel_path = Path("foo", "bar")
     remote_path = mock_data_access.root / rel_path
     remote_path.mkdir(parents=True)
@@ -107,6 +112,7 @@ def test_copy_to_multi_path(mock_data_access, temp_fs, make_temp):
     _check_content(os.path.join(remote_path, fname))
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
 def test_copy_to_rename(mock_data_access, make_temp):
     root = mock_data_access.root
     fname = make_temp(remote=False)
@@ -115,7 +121,7 @@ def test_copy_to_rename(mock_data_access, make_temp):
     _check_content(os.path.join(root, new_fname))
 
 
-def test_check_filename(mock_data_access, make_temp):
+def test_check_filename(mock_data_access):
     with pytest.raises(ValueError):
         mock_data_access.copy_from("dir/foo.txt", "dir")
     with pytest.raises(ValueError):
