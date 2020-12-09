@@ -387,8 +387,12 @@ class SimulationInput(object):
         """
         if profile_as is None:
             profile = TransformProfile(self._scenario_info, self.grid, self.ct)
-            if bool(profile.scale_keys[kind] & set(self.ct.keys())):
-                self._prepare_scaled_profile(kind, profile)
+            if "new_plant" in self.ct.keys():
+                new_plant_types = {plant["type"] for plant in self.ct["new_plant"]}
+            else:
+                new_plant_types = set()
+            if bool(profile.scale_keys[kind] & (new_plant_types | set(self.ct.keys()))):
+                self._prepare_transformed_profile(kind, profile)
             else:
                 self._create_link_to_base_profile(kind)
         else:
@@ -425,7 +429,7 @@ class SimulationInput(object):
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to create link to %s profile." % kind)
 
-    def _prepare_scaled_profile(self, kind, profile):
+    def _prepare_transformed_profile(self, kind, profile):
         """Loads, scales and writes on local machine a base profile.
 
         :param powersimdata.input.transform_profile.TransformProfile profile: a

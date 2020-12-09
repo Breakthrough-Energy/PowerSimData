@@ -57,6 +57,9 @@ class TransformGrid(object):
         if "dcline" in self.ct.keys():
             self._scale_dcline()
 
+        if "new_bus" in self.ct.keys():
+            self._add_bus()
+
         if "new_branch" in self.ct.keys():
             self._add_branch()
 
@@ -220,6 +223,65 @@ class TransformGrid(object):
             self.grid.branch = self.grid.branch.append(
                 pd.DataFrame(new_branch, index=new_index), sort=False
             )
+
+    def _add_bus(self):
+        bus = self.grid.bus
+        zone2interconnect = {
+            k: v[0] for k, v in bus.groupby("zone_id").interconnect.unique().items()
+        }
+        latlon2sub = self.grid.sub.groupby(["lat", "lon"]).groups
+        new_bus = {c: 0 for c in bus.columns}
+        for entry in self.ct["new_bus"]:
+            # Add to the bus dataframe
+            new_bus["type"] = 1
+            new_bus["Pd"] = entry["Pd"]
+            new_bus["zone_id"] = entry["zone_id"]
+            new_bus["Vm"] = 1
+            new_bus["baseKV"] = entry["baseKV"]
+            new_bus["loss_zone"] = 1
+            new_bus["Vmax"] = 1.1
+            new_bus["Vmin"] = 0.9
+            interconnect = zone2interconnect[entry["zone_id"]]
+            new_bus["interconnect"] = interconnect
+            lat, lon = entry["lat"], entry["lon"]
+            new_bus["lat"] = lat
+            new_bus["lon"] = lon
+            new_bus_id = [self.grid.bus.index.max() + 1]
+            self.grid.bus = self.grid.bus.append(
+                pd.DataFrame(new_bus, index=new_bus_id), sort=False
+            )
+            # Add to substation & bus2sub mapping dataframes
+            if (lat, lon) in latlon2sub:
+                # If there are multiple matching substations, arbitrarily grab the first
+                sub_id = latlon2sub[(lat, lon)][0]
+                new_row = pd.DataFrame(
+                    {"sub_id": sub_id, "interconnect": interconnect},
+                    index=[new_bus_id],
+                )
+                self.grid.bus2sub = self.grid.bus2sub.append(new_row, sort=False)
+            else:
+                # Create a new substation
+                sub = self.grid.sub
+                new_sub_id = sub.index.max() + 1
+                interconnect_sub = sub[sub.interconnect == interconnect]
+                new_interconnect_sub_id = interconnect_sub.interconnect_sub_id.max() + 1
+                new_row = pd.DataFrame(
+                    {"sub_id": new_sub_id, "interconnect": interconnect},
+                    index=[new_bus_id],
+                )
+                self.grid.bus2sub = self.grid.bus2sub.append(new_row, sort=False)
+                new_row = pd.DataFrame(
+                    {
+                        "name": f"NEW {new_sub_id}",
+                        "interconnect_sub_id": new_interconnect_sub_id,
+                        "lat": lat,
+                        "lon": lon,
+                        "interconnect": interconnect,
+                    },
+                    index=[new_sub_id],
+                )
+                self.grid.sub = sub.append(new_row, sort=False)
+                latlon2sub[(lat, lon)] = new_sub_id
 
     def _add_dcline(self):
         """Adds HVDC line(s) to the grid"""
