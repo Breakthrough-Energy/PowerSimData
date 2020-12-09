@@ -171,7 +171,7 @@ class SSHDataAccess(DataAccess):
             sftp.get(from_path, to_path, callback=cbk)
             bar.close()
 
-    def copy_to(self, file_name, to_dir, change_name_to=None):
+    def copy_to(self, file_name, to_dir=None, change_name_to=None):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
@@ -187,6 +187,7 @@ class SSHDataAccess(DataAccess):
             )
 
         file_name = file_name if change_name_to is None else change_name_to
+        to_dir = "" if to_dir is None else to_dir
         to_path = posixpath.join(self.root, to_dir, file_name)
         self.check_file_exists(to_path, should_exist=False)
 
