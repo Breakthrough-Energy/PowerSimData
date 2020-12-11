@@ -2,7 +2,8 @@ import os
 import posixpath
 from pathlib import Path
 
-SERVER_ADDRESS = "becompute01.gatesventures.com"
+SERVER_ADDRESS = os.getenv("BE_SERVER_ADDRESS", "becompute01.gatesventures.com")
+SERVER_SSH_PORT = os.getenv("BE_SERVER_SSH_PORT", 22)
 BACKUP_DATA_ROOT_DIR = "/mnt/RE-Storage/v2"
 DATA_ROOT_DIR = "/mnt/bes/pcm"
 EXECUTE_DIR = "tmp"
