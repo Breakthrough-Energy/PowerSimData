@@ -125,6 +125,7 @@ class SSHDataAccess(DataAccess):
     def _setup_server_connection(self):
         """This function setup the connection to the server."""
         client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             client.load_system_host_keys()
         except IOError:
