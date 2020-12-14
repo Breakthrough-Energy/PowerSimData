@@ -72,7 +72,7 @@ When the `Scenario` object is in the **analyze** state, the user can access vari
 ```python
 from powersimdata.scenario.scenario import Scenario
 
-scenario = Scenario(87)
+scenario = Scenario(600)
 # print name of Scenario object state
 print(scenario.state.name)
 
