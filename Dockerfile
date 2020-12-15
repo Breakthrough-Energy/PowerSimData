@@ -11,4 +11,4 @@ RUN pipenv install --dev --system; \
 COPY . .
 RUN pip install .
 
-ENTRYPOINT ["ipython"]
+CMD ["ipython"]
