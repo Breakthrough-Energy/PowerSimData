@@ -14,7 +14,6 @@ class Delete(State):
 
     def __init__(self, scenario):
         super().__init__(scenario)
-        self.path_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
 
     def print_scenario_info(self):
         """Prints scenario information.

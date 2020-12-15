@@ -1,5 +1,6 @@
 from powersimdata.data_access.execute_list import ExecuteListManager
 from powersimdata.data_access.scenario_list import ScenarioListManager
+from powersimdata.utility import server_setup
 
 
 class State(object):
@@ -21,6 +22,7 @@ class State(object):
         self._data_access = scenario.data_access
         self._scenario_list_manager = ScenarioListManager(self._data_access)
         self._execute_list_manager = ExecuteListManager(self._data_access)
+        self.path_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
 
     def switch(self, state):
         """Switches state.
