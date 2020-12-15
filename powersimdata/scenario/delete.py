@@ -66,11 +66,12 @@ class Delete(State):
         # Delete local files
         print("--> Deleting input and output data on local machine")
         local_file = glob.glob(
-            os.path.join(server_setup.LOCAL_DIR, self._scenario_info["id"] + "_*")
+            os.path.join(
+                server_setup.LOCAL_DIR, "data", "**", self._scenario_info["id"] + "_*"
+            )
         )
-        if local_file:
-            for f in local_file:
-                os.remove(f)
+        for f in local_file:
+            os.remove(f)
 
         # Delete attributes
         self._clean()

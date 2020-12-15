@@ -1,4 +1,3 @@
-import glob
 import operator
 import os
 import posixpath
@@ -93,12 +92,6 @@ class DataAccess:
     def close(self):
         """Perform any necessary cleanup for the object."""
         pass
-
-    def clear_local_cache(self):
-        """Clear the local cache folder."""
-        cached_files = glob.glob(os.path.join(server_setup.LOCAL_DIR, "*"))
-        for f in cached_files:
-            os.remove(f)
 
 
 class SSHDataAccess(DataAccess):
