@@ -14,10 +14,6 @@ class Move(State):
     name = "move"
     allowed = []
 
-    def __init__(self, scenario):
-        """Constructor"""
-        super().__init__(scenario)
-
     def print_scenario_info(self):
         """Prints scenario information."""
         print("--------------------")
