@@ -12,9 +12,6 @@ class Delete(State):
     name = "delete"
     allowed = []
 
-    def __init__(self, scenario):
-        super().__init__(scenario)
-
     def print_scenario_info(self):
         """Prints scenario information.
 
