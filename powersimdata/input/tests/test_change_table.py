@@ -11,72 +11,62 @@ def ct():
     return ChangeTable(grid)
 
 
-def test_resource_exist(capsys, ct):
+def test_resource_exist(ct):
     with pytest.raises(ValueError):
         ct.scale_plant_capacity("unknown", zone_name={"Idaho": 2})
     assert ct.ct == {}
 
 
-def test_add_dcline_argument_type(capsys, ct):
-    capsys.readouterr()
+def test_add_dcline_argument_type(ct):
     new_dcline = {"capacity": 500, "from_bus_id": 1, "to_bus_id": 2}
-    ct.add_dcline(new_dcline)
-    cap = capsys.readouterr()
-    assert cap.out == "Argument enclosing new HVDC line(s) must be a list\n"
+    with pytest.raises(TypeError) as excinfo:
+        ct.add_dcline(new_dcline)
+    assert "Argument enclosing new HVDC line(s) must be a list" in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_dcline_argument_number_of_keys(capsys, ct):
-    capsys.readouterr()
+def test_add_dcline_argument_number_of_keys(ct):
     new_dcline = [{"from_bus_id": 1, "to_bus_id": 2}]
-    ct.add_dcline(new_dcline)
-    cap = capsys.readouterr()
-    assert (
-        cap.out == "Dictionary must have capacity | from_bus_id | "
-        "to_bus_id as keys\n"
-    )
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    expected = "For new_dcline, must specify one of ('capacity', 'Pmax') but not both."
+    assert expected in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_dcline_argument_wrong_keys(capsys, ct):
-    capsys.readouterr()
+def test_add_dcline_argument_wrong_keys(ct):
     new_dcline = [{"capacity": 1000, "from_bus": 1, "to_bus": 2}]
-    ct.add_dcline(new_dcline)
-    cap = capsys.readouterr()
-    assert (
-        cap.out == "Dictionary must have capacity | from_bus_id | "
-        "to_bus_id as keys\n"
-    )
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    expected_msg = "Each entry of new_dcline requires keys of: from_bus_id, to_bus_id"
+    assert expected_msg in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_dcline_argument_wrong_bus(capsys, ct):
-    capsys.readouterr()
+def test_add_dcline_argument_wrong_bus(ct):
     new_dcline = [
         {"capacity": 2000, "from_bus_id": 300, "to_bus_id": 1000},
         {"capacity": 1000, "from_bus_id": 1, "to_bus_id": 30010010},
     ]
-    ct.add_dcline(new_dcline)
-    cap = capsys.readouterr()
-    assert cap.out == "No bus with the following id for line #2: 30010010\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    assert "No bus with the following id for line #2: 30010010" in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_dcline_argument_same_buses(capsys, ct):
-    capsys.readouterr()
+def test_add_dcline_argument_same_buses(ct):
     new_dcline = [{"capacity": 1000, "from_bus_id": 1, "to_bus_id": 1}]
-    ct.add_dcline(new_dcline)
-    cap = capsys.readouterr()
-    assert cap.out == "buses of line #1 must be different\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    assert "buses of line #1 must be different" in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_dcline_argument_negative_capacity(capsys, ct):
-    capsys.readouterr()
+def test_add_dcline_argument_negative_capacity(ct):
     new_dcline = [{"capacity": -1000, "from_bus_id": 300, "to_bus_id": 1000}]
-    ct.add_dcline(new_dcline)
-    cap = capsys.readouterr()
-    assert cap.out == "capacity of line #1 must be positive\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    assert "capacity of line #1 must be positive" in str(excinfo.value)
     assert ct.ct == {}
 
 
@@ -89,9 +79,9 @@ def test_add_dcline_output(ct):
     ct.add_dcline(new_dcline)
     expected = {
         "new_dcline": [
-            {"capacity": 2000, "from_bus_id": 200, "to_bus_id": 2000},
-            {"capacity": 1000, "from_bus_id": 9, "to_bus_id": 70042},
-            {"capacity": 8000, "from_bus_id": 2008, "to_bus_id": 5997},
+            {"Pmax": 2000, "Pmin": -2000, "from_bus_id": 200, "to_bus_id": 2000},
+            {"Pmax": 1000, "Pmin": -1000, "from_bus_id": 9, "to_bus_id": 70042},
+            {"Pmax": 8000, "Pmin": -8000, "from_bus_id": 2008, "to_bus_id": 5997},
         ]
     }
     assert ct.ct == expected
@@ -105,113 +95,138 @@ def test_add_dcline_in_different_interconnect(ct):
     ct.add_dcline(new_dcline)
     expected = {
         "new_dcline": [
-            {"capacity": 2000, "from_bus_id": 200, "to_bus_id": 2000},
-            {"capacity": 8000, "from_bus_id": 2008, "to_bus_id": 3001001},
+            {"Pmax": 2000, "Pmin": -2000, "from_bus_id": 200, "to_bus_id": 2000},
+            {"Pmax": 8000, "Pmin": -8000, "from_bus_id": 2008, "to_bus_id": 3001001},
         ]
     }
     assert ct.ct == expected
 
 
-def test_add_branch_argument_buses_in_different_interconnect(capsys, ct):
-    capsys.readouterr()
+def test_add_dcline_Pmin_and_Pmax_success(ct):
+    new_dcline = [{"Pmax": 2000, "Pmin": 0, "from_bus_id": 200, "to_bus_id": 2000}]
+    ct.add_dcline(new_dcline)
+    assert ct.ct == {"new_dcline": new_dcline}
+
+
+def test_add_dcline_Pmin_gt_Pmax(ct):
+    new_dcline = [{"Pmax": 2000, "Pmin": 3000, "from_bus_id": 200, "to_bus_id": 2000}]
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    assert "Pmin cannot be greater than Pmax" in str(excinfo.value)
+    assert ct.ct == {}
+
+
+def test_add_dcline_Pmin_and_Pmax_and_capacity(ct):
+    new_dcline = [
+        {"Pmax": 200, "Pmin": -200, "capacity": 10, "from_bus_id": 1, "to_bus_id": 2}
+    ]
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_dcline(new_dcline)
+    expected = "For new_dcline, must specify one of ('capacity', 'Pmax') but not both"
+    assert expected in str(excinfo.value)
+    assert ct.ct == {}
+
+
+def test_add_branch_argument_buses_in_different_interconnect(ct):
     new_branch = [
         {"capacity": 2000, "from_bus_id": 300, "to_bus_id": 1000},
         {"capacity": 1000, "from_bus_id": 1, "to_bus_id": 3001001},
     ]
-    ct.add_branch(new_branch)
-    cap = capsys.readouterr()
-    assert cap.out == "Buses of line #2 must be in same interconnect\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_branch(new_branch)
+    assert "Buses of line #2 must be in same interconnect" in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_branch_zero_distance_between_buses(capsys, ct):
-    capsys.readouterr()
+def test_add_branch_zero_distance_between_buses(ct):
     new_branch = [{"capacity": 75, "from_bus_id": 1, "to_bus_id": 3}]
-    ct.add_branch(new_branch)
-    cap = capsys.readouterr()
-    assert cap.out == "Distance between buses of line #1 is 0\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_branch(new_branch)
+    assert "Distance between buses of line #1 is 0" in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_plant_argument_type(capsys, ct):
-    capsys.readouterr()
+def test_add_branch_Pmin_and_Pmax(ct):
+    new_dcline = [{"Pmax": 2000, "Pmin": 0, "from_bus_id": 200, "to_bus_id": 2000}]
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_branch(new_dcline)
+    assert "Can't independently set Pmin & Pmax for AC branches" in str(excinfo.value)
+    assert ct.ct == {}
+
+
+def test_add_plant_argument_type(ct):
     new_plant = {"type": "solar", "bus_id": 1, "Pmax": 100}
-    ct.add_plant(new_plant)
-    cap = capsys.readouterr()
-    assert cap.out == "Argument enclosing new plant(s) must be a list\n"
+    with pytest.raises(TypeError) as excinfo:
+        ct.add_plant(new_plant)
+    assert "Argument enclosing new plant(s) must be a list" in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_renewable_plant_missing_key_type(capsys, ct):
-    capsys.readouterr()
+def test_add_renewable_plant_missing_key_type(ct):
     new_plant = [{"bus_id": 350, "Pmax": 35}]
-    ct.add_plant(new_plant)
-    cap = capsys.readouterr()
-    assert cap.out == "Missing key type for plant #1\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_plant(new_plant)
+    expected = (
+        "Each entry of plant requires keys of: Pmax, bus_id, type. Missing ['type']"
+    )
+    assert expected in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_renewable_plant_missing_key_bus_id(capsys, ct):
-    capsys.readouterr()
+def test_add_renewable_plant_missing_key_bus_id(ct):
     new_plant = [{"type": "solar", "Pmax": 35}]
-    ct.add_plant(new_plant)
-    cap = capsys.readouterr()
-    assert cap.out == "Missing key bus_id for plant #1\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_plant(new_plant)
+    expected = (
+        "Each entry of plant requires keys of: Pmax, bus_id, type. Missing ['bus_id']"
+    )
+    assert expected in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_renewable_plant_missing_key_pmax(capsys, ct):
-    capsys.readouterr()
+def test_add_renewable_plant_missing_key_pmax(ct):
     new_plant = [{"type": "hydro", "bus_id": 350}]
-    ct.add_plant(new_plant)
-    cap = capsys.readouterr()
-    assert cap.out == "Missing key Pmax for plant #1\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_plant(new_plant)
+    expected = (
+        "Each entry of plant requires keys of: Pmax, bus_id, type. Missing ['Pmax']"
+    )
+    assert expected in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_thermal_plant_missing_key_c0(capsys, ct):
-    capsys.readouterr()
+def test_add_thermal_plant_missing_key_c0(ct):
     new_plant = [{"type": "ng", "bus_id": 100, "Pmax": 75, "c1": 9, "c2": 0.25}]
-    ct.add_plant(new_plant)
-    cap = capsys.readouterr()
-    assert cap.out == "Missing key c0 for plant #1\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_plant(new_plant)
+    assert "Missing key c0 for plant #1" in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_thermal_plant_missing_key_c1(capsys, ct):
-    capsys.readouterr()
+def test_add_thermal_plant_missing_key_c1(ct):
     new_plant = [{"type": "ng", "bus_id": 100, "Pmax": 75, "c0": 1500, "c2": 1}]
-    ct.add_plant(new_plant)
-    cap = capsys.readouterr()
-    assert cap.out == "Missing key c1 for plant #1\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_plant(new_plant)
+    assert "Missing key c1 for plant #1" in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_thermal_plant_missing_key_c2(capsys, ct):
-    capsys.readouterr()
+def test_add_thermal_plant_missing_key_c2(ct):
     new_plant = [{"type": "ng", "bus_id": 100, "Pmax": 75, "c0": 1500, "c1": 500}]
-    ct.add_plant(new_plant)
-    cap = capsys.readouterr()
-    assert cap.out == "Missing key c2 for plant #1\n"
-    assert ct.ct == {}
-
-
-def test_add_renewable_plant_wrong_key(capsys, ct):
-    capsys.readouterr()
-    new_plant = [{"type": "wind", "bus": 150, "Pmax": 15}]
-    ct.add_plant(new_plant)
-    cap = capsys.readouterr()
-    assert cap.out == "Missing key bus_id for plant #1\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_plant(new_plant)
+    assert "Missing key c2 for plant #1" in str(excinfo.value)
     assert ct.ct == {}
 
 
 def test_add_plant_wrong_resource(ct):
-    ct.add_plant([{"type": "unknown", "bus_id": 50000, "Pmax": 1}])
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_plant([{"type": "unknown", "bus_id": 50000, "Pmax": 1}])
+    assert "Invalid resource: unknown" in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_plant_wrong_bus(capsys, ct):
-    capsys.readouterr()
+def test_add_plant_wrong_bus(ct):
     new_plant = [
         {
             "type": "nuclear",
@@ -224,14 +239,13 @@ def test_add_plant_wrong_bus(capsys, ct):
         },
         {"type": "coal", "bus_id": 5000000, "Pmax": 200, "c0": 1, "c1": 2, "c2": 3},
     ]
-    ct.add_plant(new_plant)
-    cap = capsys.readouterr()
-    assert cap.out == "No bus id 5000000 available for plant #2\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_plant(new_plant)
+    assert "No bus id 5000000 available for plant #2" in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_thermal_plant_wrong_coefficients(capsys, ct):
-    capsys.readouterr()
+def test_add_thermal_plant_wrong_coefficients(ct):
     new_plant = [
         {
             "type": "ng",
@@ -243,25 +257,23 @@ def test_add_thermal_plant_wrong_coefficients(capsys, ct):
             "c2": 0.0025,
         }
     ]
-    ct.add_plant(new_plant)
-    cap = capsys.readouterr()
-    assert cap.out == "c0 >= 0 must be satisfied for plant #1\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_plant(new_plant)
+    assert "c0 >= 0 must be satisfied for plant #1" in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_plant_negative_pmax(capsys, ct):
-    capsys.readouterr()
+def test_add_plant_negative_pmax(ct):
     new_plant = [
         {"type": "dfo", "bus_id": 300, "Pmax": -10, "c0": 1, "c1": 2, "c2": 0.3}
     ]
-    ct.add_plant(new_plant)
-    cap = capsys.readouterr()
-    assert cap.out == "Pmax >= 0 must be satisfied for plant #1\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_plant(new_plant)
+    assert "Pmax >= 0 must be satisfied for plant #1" in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_plant_negative_pmin(capsys, ct):
-    capsys.readouterr()
+def test_add_plant_negative_pmin(ct):
     new_plant = [
         {"type": "dfo", "bus_id": 300, "Pmax": 10, "c0": 100, "c1": 2, "c2": 0.1},
         {
@@ -274,14 +286,13 @@ def test_add_plant_negative_pmin(capsys, ct):
             "c2": 1,
         },
     ]
-    ct.add_plant(new_plant)
-    cap = capsys.readouterr()
-    assert cap.out == "0 <= Pmin <= Pmax must be satisfied for plant #2\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_plant(new_plant)
+    assert "0 <= Pmin <= Pmax must be satisfied for plant #2" in str(excinfo.value)
     assert ct.ct == {}
 
 
-def test_add_plant_pmin_pmax_relationship(capsys, ct):
-    capsys.readouterr()
+def test_add_plant_pmin_pmax_relationship(ct):
     new_plant = [
         {
             "type": "biomass",
@@ -293,9 +304,9 @@ def test_add_plant_pmin_pmax_relationship(capsys, ct):
             "c2": 0.1,
         }
     ]
-    ct.add_plant(new_plant)
-    cap = capsys.readouterr()
-    assert cap.out == "0 <= Pmin <= Pmax must be satisfied for plant #1\n"
+    with pytest.raises(ValueError) as excinfo:
+        ct.add_plant(new_plant)
+    assert "0 <= Pmin <= Pmax must be satisfied for plant #1" in str(excinfo.value)
     assert ct.ct == {}
 
 
