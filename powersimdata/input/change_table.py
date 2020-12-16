@@ -467,24 +467,26 @@ class ChangeTable(object):
 
         :param dict bus_id: key(s) for the id of bus(es), value(s) is (are)
             capacity of the energy storage system in MW.
+        :raises TypeError: if bus_id is not a dict.
+        :raises ValueError: if bus_id contains any bus ids not present in the grid,
+            or any non-positive values are given.
         """
+        if not isinstance(bus_id, dict):
+            raise TypeError("bus_id must be a dict")
         anticipated_bus = self._get_new_bus()
-
-        if "storage" not in self.ct:
-            self.ct["storage"] = {}
-
         diff = set(bus_id.keys()).difference(set(anticipated_bus.index))
         if len(diff) != 0:
-            print("No bus with the following id:")
-            for i in list(diff):
-                print(i)
-            self.ct.pop("storage")
-            return
-        else:
-            if "bus_id" not in self.ct["storage"]:
-                self.ct["storage"]["bus_id"] = {}
-            for i in bus_id.keys():
-                self.ct["storage"]["bus_id"][i] = bus_id[i]
+            raise ValueError(f"No bus with the following id: {', '.join(diff)}")
+        for k, v in bus_id.items():
+            if not isinstance(v, (float, int)):
+                raise ValueError(f"values must be numeric, bad type for bus {k}")
+            if v <= 0:
+                raise ValueError(f"values must be positive, bad value for bus {k}")
+        if "storage" not in self.ct:
+            self.ct["storage"] = {}
+        if "bus_id" not in self.ct["storage"]:
+            self.ct["storage"]["bus_id"] = {}
+        self.ct["storage"]["bus_id"].update(bus_id)
 
     def add_dcline(self, info):
         """Adds HVDC line(s).
