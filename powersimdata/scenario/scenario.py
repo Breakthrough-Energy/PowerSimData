@@ -8,7 +8,6 @@ from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create
 from powersimdata.scenario.execute import Execute
-from powersimdata.utility import server_setup
 
 pd.set_option("display.max_colwidth", None)
 
@@ -98,14 +97,12 @@ class Scenario(object):
         :raises Exception: if scenario not found in execute list on server.
         """
         execute_table = self._execute_list_manager.get_execute_table()
-
-        status = execute_table[execute_table.id == self.info["id"]]
-        if status.shape[0] == 0:
-            raise Exception(
-                "Scenario not found in %s on server" % server_setup.EXECUTE_LIST
-            )
-        elif status.shape[0] == 1:
-            self.status = status.status.values[0]
+        execute_table.set_index("id", inplace=True)
+        scenario_id = self.info["id"]
+        try:
+            self.status = execute_table.loc[scenario_id, "status"]
+        except KeyError:
+            raise Exception(f"Scenario not found in execute list, id = {scenario_id}")
 
     def print_scenario_info(self):
         """Prints scenario information."""
