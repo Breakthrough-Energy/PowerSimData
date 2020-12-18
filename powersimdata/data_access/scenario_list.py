@@ -98,7 +98,7 @@ class ScenarioListManager(CsvStore):
         :return: (*str*) -- new scenario id.
         """
         print("--> Generating scenario id")
-        command = "(flock -e 200; \
+        command = "(flock -x 200; \
                    id=$(awk -F',' 'END{print $1+1}' %s); \
                    echo $id, >> %s; \
                    echo $id) 200>%s" % (
@@ -108,8 +108,8 @@ class ScenarioListManager(CsvStore):
         )
 
         err_message = "Failed to generate id for new scenario"
-        stdout = self._execute_and_check_err(command, err_message)
-        scenario_id = stdout.readlines()[0].splitlines()[0]
+        command_output = self._execute_and_check_err(command, err_message)
+        scenario_id = command_output[0].splitlines()[0]
         return scenario_id
 
     def add_entry(self, scenario_info):
