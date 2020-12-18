@@ -246,9 +246,9 @@ class TransformGrid(object):
             lat, lon = entry["lat"], entry["lon"]
             new_bus["lat"] = lat
             new_bus["lon"] = lon
-            new_bus_id = [self.grid.bus.index.max() + 1]
+            new_bus_index = [self.grid.bus.index.max() + 1]
             self.grid.bus = self.grid.bus.append(
-                pd.DataFrame(new_bus, index=new_bus_id), sort=False
+                pd.DataFrame(new_bus, index=new_bus_index), sort=False
             )
             # Add to substation & bus2sub mapping dataframes
             if (lat, lon) in latlon2sub:
@@ -256,7 +256,7 @@ class TransformGrid(object):
                 sub_id = latlon2sub[(lat, lon)][0]
                 new_row = pd.DataFrame(
                     {"sub_id": sub_id, "interconnect": interconnect},
-                    index=[new_bus_id],
+                    index=new_bus_index,
                 )
                 self.grid.bus2sub = self.grid.bus2sub.append(new_row, sort=False)
             else:
@@ -267,7 +267,7 @@ class TransformGrid(object):
                 new_interconnect_sub_id = interconnect_sub.interconnect_sub_id.max() + 1
                 new_row = pd.DataFrame(
                     {"sub_id": new_sub_id, "interconnect": interconnect},
-                    index=[new_bus_id],
+                    index=new_bus_index,
                 )
                 self.grid.bus2sub = self.grid.bus2sub.append(new_row, sort=False)
                 new_row = pd.DataFrame(
