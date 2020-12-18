@@ -52,7 +52,7 @@ class CsvStore:
         :param str command: command to execute over ssh.
         :param str err_message: error message to be raised.
         :raises IOError: if command is not successfully executed.
-        :return: (*str*) -- standard output stream.
+        :return: (*list*) -- list of command output.
         """
         stdin, stdout, stderr = self.data_access.execute_command(command)
         command_output = stdout.readlines()
