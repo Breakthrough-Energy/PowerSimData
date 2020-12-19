@@ -114,6 +114,7 @@ class ScenarioGrid(AbstractGrid):
                     self.storage["StorageData"][c] = getattr(data["mdi"].Storage, c)
                 else:
                     self.storage["StorageData"][c] = [getattr(data["mdi"].Storage, c)]
+            self.storage["genfuel"] = mpc.genfuel[len(mpc.genid) :]
 
         # interconnect
         self.interconnect = self.sub.interconnect.unique().tolist()
