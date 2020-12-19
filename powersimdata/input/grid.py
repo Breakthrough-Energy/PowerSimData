@@ -65,94 +65,92 @@ class Grid(object):
         :return: (*bool*).
         """
 
-        def _univ_eq(ref, test):
+        def _univ_eq(ref, test, failure_flag=None):
             """Check for {boolean, dataframe, or column data} equality.
 
             :param object ref: one object to be tested (order does not matter).
             :param object test: another object to be tested.
-            :raises AssertionError: if no equality can be confirmed.
+            :param str failure_flag: flag to add to nonmatching_entries on failure.
+            :raises AssertionError: if no equality can be confirmed (w/o failure_flag).
             """
             try:
-                test_eq = ref == test
-                if isinstance(test_eq, (bool, dict)):
-                    assert test_eq
+                try:
+                    test_eq = ref == test
+                    if isinstance(test_eq, bool):
+                        assert test_eq
+                    else:
+                        assert test_eq.all().all()
+                except ValueError:
+                    assert set(ref.columns) == set(test.columns)
+                    for col in ref.columns:
+                        assert (ref[col] == test[col]).all()
+            except (AssertionError, ValueError):
+                if failure_flag is None:
+                    raise
                 else:
-                    assert test_eq.all().all()
-            except ValueError:
-                assert set(ref.columns) == set(test.columns)
-                for col in ref.columns:
-                    assert (ref[col] == test[col]).all()
+                    nonmatching_entries.add(failure_flag)
 
         if not isinstance(other, Grid):
             err_msg = "Unable to compare Grid & %s" % type(other).__name__
             raise NotImplementedError(err_msg)
 
-        try:
-            # compare gencost
-            # Comparing 'after' will fail if one Grid was linearized
-            self_data = self.gencost["before"]
-            other_data = other.gencost["before"]
-            _univ_eq(self_data, other_data)
+        nonmatching_entries = set()
+        # compare gencost
+        # Comparing gencost['after'] will fail if one Grid was linearized
+        _univ_eq(self.gencost["before"], other.gencost["before"], "gencost")
 
-            # compare storage
-            self_storage_num = len(self.storage["gencost"])
-            other_storage_num = len(other.storage["gencost"])
-            if self_storage_num == 0:
-                assert other_storage_num == 0
-            else:
-                # These are dicts, so we need to go one level deeper
-                self_keys = self.storage.keys()
-                other_keys = other.storage.keys()
-                assert self_keys == other_keys
-                ignored_subkeys = {
-                    "duration",
-                    "min_stor",
-                    "max_stor",
-                    "InEff",
-                    "OutEff",
-                    "energy_price",
-                }
-                for subkey in self_keys:
-                    if subkey in ignored_subkeys:
-                        continue
-                    # REISE will modify gencost and some gen columns
-                    if subkey != "gencost":
-                        self_data = self.storage[subkey]
-                        other_data = other.storage[subkey]
-                        if subkey == "gen":
-                            excluded_cols = ["ramp_10", "ramp_30"]
-                            self_data = self_data.drop(excluded_cols, axis=1)
-                            other_data = other_data.drop(excluded_cols, axis=1)
-                        _univ_eq(self_data, other_data)
+        # compare storage
+        self_storage_num = len(self.storage["gencost"])
+        other_storage_num = len(other.storage["gencost"])
+        if self_storage_num == 0:
+            _univ_eq(other_storage_num, 0, "storage")
+        else:
+            # These are dicts, so we need to go one level deeper
+            self_keys = self.storage.keys()
+            other_keys = other.storage.keys()
+            _univ_eq(self_keys, other_keys, "storage")
+            ignored_subkeys = {
+                "duration",
+                "min_stor",
+                "max_stor",
+                "InEff",
+                "OutEff",
+                "energy_price",
+            }
+            for subkey in self_keys:
+                if subkey in ignored_subkeys:
+                    continue
+                # REISE will modify gencost and some gen columns
+                if subkey != "gencost":
+                    self_data = self.storage[subkey]
+                    other_data = other.storage[subkey]
+                    if subkey == "gen":
+                        excluded_cols = ["ramp_10", "ramp_30"]
+                        self_data = self_data.drop(excluded_cols, axis=1)
+                        other_data = other_data.drop(excluded_cols, axis=1)
+                    _univ_eq(self_data, other_data, "storage")
 
-            # compare bus
-            # MOST changes BUS_TYPE for buses with DC Lines attached
-            self_df = self.bus.drop("type", axis=1)
-            other_df = other.bus.drop("type", axis=1)
-            _univ_eq(self_df, other_df)
+        # compare bus
+        # MOST changes BUS_TYPE for buses with DC Lines attached
+        _univ_eq(self.bus.drop("type", axis=1), other.bus.drop("type", axis=1), "bus")
+        # compare plant
+        # REISE does some modifications to Plant data
+        excluded_cols = ["status", "Pmin", "ramp_10", "ramp_30"]
+        self_df = self.plant.drop(excluded_cols, axis=1)
+        other_df = other.plant.drop(excluded_cols, axis=1)
+        _univ_eq(self_df, other_df, "plant")
+        # compare branch
+        _univ_eq(self.branch, other.branch, "branch")
+        # compare dcline
+        _univ_eq(self.dcline, other.dcline, "dcline")
+        # compare sub
+        _univ_eq(self.sub, other.sub, "sub")
+        # check grid helper attribute equalities
+        _univ_eq(self.zone2id, other.zone2id, "zone2id")
+        _univ_eq(self.id2zone, other.id2zone, "id2zone")
+        _univ_eq(self.bus2sub, other.bus2sub, "bus2sub")
 
-            # compare plant
-            # REISE does some modifications to Plant data
-            excluded_cols = ["status", "Pmin", "ramp_10", "ramp_30"]
-            self_df = self.plant.drop(excluded_cols, axis=1)
-            other_df = other.plant.drop(excluded_cols, axis=1)
-            _univ_eq(self_df, other_df)
-
-            # compare branch
-            _univ_eq(self.branch, other.branch)
-
-            # compare dcline
-            _univ_eq(self.dcline, other.dcline)
-
-            # compare sub
-            _univ_eq(self.sub, other.sub)
-
-            # check grid helper function equality
-            _univ_eq(self.zone2id, other.zone2id)
-            _univ_eq(self.id2zone, other.id2zone)
-            _univ_eq(self.bus2sub, other.bus2sub)
-
-        except Exception as e:
-            print(f"ERROR: could not compare grid. {str(e)}")
+        if len(nonmatching_entries) > 0:
+            print(f"non-matching entries: {', '.join(sorted(nonmatching_entries))}")
             return False
         return True
