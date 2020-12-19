@@ -40,7 +40,9 @@ class ScenarioGrid(AbstractGrid):
         data = loadmat(self.data_loc, squeeze_me=True, struct_as_record=False)
         mpc = data["mdi"].mpc
         try:
-            n_storage = mpc.iess.shape[0]
+            # The next line will fail if no iess attribute (index energy storage system)
+            # Since we use the 'squeeze_me' param, 1 storage -> an int, not an array
+            n_storage = 1 if isinstance(mpc.iess, int) else mpc.iess.shape[0]
         except AttributeError:
             n_storage = 0
 
