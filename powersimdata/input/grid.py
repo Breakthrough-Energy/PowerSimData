@@ -104,7 +104,17 @@ class Grid(object):
                 self_keys = self.storage.keys()
                 other_keys = other.storage.keys()
                 assert self_keys == other_keys
+                ignored_subkeys = {
+                    "duration",
+                    "min_stor",
+                    "max_stor",
+                    "InEff",
+                    "OutEff",
+                    "energy_price",
+                }
                 for subkey in self_keys:
+                    if subkey in ignored_subkeys:
+                        continue
                     # REISE will modify gencost and some gen columns
                     if subkey != "gencost":
                         self_data = self.storage[subkey]
