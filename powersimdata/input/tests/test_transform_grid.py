@@ -524,3 +524,6 @@ def test_add_bus(ct):
     assert len(new_grid.bus) == len(new_grid.bus2sub)
     assert len(new_grid.bus2sub.sub_id.unique()) == len(new_grid.sub)
     assert len(new_grid.sub) == prev_num_subs + 2
+    assert new_grid.bus.index.dtype == grid.bus.index.dtype
+    assert new_grid.bus2sub.index.dtype == grid.bus2sub.index.dtype
+    assert new_grid.sub.index.dtype == grid.sub.index.dtype
