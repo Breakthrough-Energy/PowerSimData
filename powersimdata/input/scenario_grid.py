@@ -110,7 +110,10 @@ class ScenarioGrid(AbstractGrid):
             self.storage["gencost"] = gencost_storage
             col_name = self.storage["StorageData"].columns
             for c in col_name:
-                self.storage["StorageData"][c] = getattr(data["mdi"].Storage, c)
+                if n_storage > 1:
+                    self.storage["StorageData"][c] = getattr(data["mdi"].Storage, c)
+                else:
+                    self.storage["StorageData"][c] = [getattr(data["mdi"].Storage, c)]
 
         # interconnect
         self.interconnect = self.sub.interconnect.unique().tolist()
