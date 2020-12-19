@@ -72,6 +72,8 @@ def storage_template():
                 "InEff",
                 "LossFactor",
                 "rho",
+                "ExpectedTerminalStorageMax",
+                "ExpectedTerminalStorageMin",
             ]
         ),
         "genfuel": [],
