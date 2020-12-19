@@ -90,6 +90,8 @@ class ScenarioGrid(AbstractGrid):
             dcline_index = np.array([mpc.dclineid])
             dcline_table = np.expand_dims(mpc.dcline, 0)
             self.dcline, _ = frame("dcline", dcline_table, dcline_index)
+        else:
+            self.dcline = pd.DataFrame(columns=column_name_provider()["dcline"])
 
         # substation
         self.sub, _ = frame("sub", mpc.sub, mpc.subid)
