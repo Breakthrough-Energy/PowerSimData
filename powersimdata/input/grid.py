@@ -100,35 +100,26 @@ class Grid(object):
         _univ_eq(self.gencost["before"], other.gencost["before"], "gencost")
 
         # compare storage
-        self_storage_num = len(self.storage["gencost"])
-        other_storage_num = len(other.storage["gencost"])
-        if self_storage_num == 0:
-            _univ_eq(other_storage_num, 0, "storage")
-        else:
-            # These are dicts, so we need to go one level deeper
-            self_keys = self.storage.keys()
-            other_keys = other.storage.keys()
-            _univ_eq(self_keys, other_keys, "storage")
-            ignored_subkeys = {
-                "duration",
-                "min_stor",
-                "max_stor",
-                "InEff",
-                "OutEff",
-                "energy_price",
-            }
-            for subkey in self_keys:
-                if subkey in ignored_subkeys:
-                    continue
-                # REISE will modify gencost and some gen columns
-                if subkey != "gencost":
-                    self_data = self.storage[subkey]
-                    other_data = other.storage[subkey]
-                    if subkey == "gen":
-                        excluded_cols = ["ramp_10", "ramp_30"]
-                        self_data = self_data.drop(excluded_cols, axis=1)
-                        other_data = other_data.drop(excluded_cols, axis=1)
-                    _univ_eq(self_data, other_data, "storage")
+        _univ_eq(len(self.storage["gen"]), len(other.storage["gen"]), "storage")
+        _univ_eq(self.storage.keys(), other.storage.keys(), "storage")
+        ignored_subkeys = {
+            "duration",
+            "min_stor",
+            "max_stor",
+            "InEff",
+            "OutEff",
+            "energy_price",
+            "gencost",
+        }
+        for subkey in set(self.storage.keys()) - ignored_subkeys:
+            # REISE will modify some gen columns
+            self_data = self.storage[subkey]
+            other_data = other.storage[subkey]
+            if subkey == "gen":
+                excluded_cols = ["ramp_10", "ramp_30"]
+                self_data = self_data.drop(excluded_cols, axis=1)
+                other_data = other_data.drop(excluded_cols, axis=1)
+            _univ_eq(self_data, other_data, "storage")
 
         # compare bus
         # MOST changes BUS_TYPE for buses with DC Lines attached
