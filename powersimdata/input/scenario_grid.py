@@ -40,7 +40,9 @@ class ScenarioGrid(AbstractGrid):
         data = loadmat(self.data_loc, squeeze_me=True, struct_as_record=False)
         mpc = data["mdi"].mpc
         try:
-            n_storage = mpc.iess.shape[0]
+            # The next line will fail if no iess attribute (index energy storage system)
+            # Since we use the 'squeeze_me' param, 1 storage -> an int, not an array
+            n_storage = 1 if isinstance(mpc.iess, int) else mpc.iess.shape[0]
         except AttributeError:
             n_storage = 0
 
@@ -88,6 +90,8 @@ class ScenarioGrid(AbstractGrid):
             dcline_index = np.array([mpc.dclineid])
             dcline_table = np.expand_dims(mpc.dcline, 0)
             self.dcline, _ = frame("dcline", dcline_table, dcline_index)
+        else:
+            self.dcline = pd.DataFrame(columns=column_name_provider()["dcline"])
 
         # substation
         self.sub, _ = frame("sub", mpc.sub, mpc.subid)
@@ -106,7 +110,11 @@ class ScenarioGrid(AbstractGrid):
             self.storage["gencost"] = gencost_storage
             col_name = self.storage["StorageData"].columns
             for c in col_name:
-                self.storage["StorageData"][c] = getattr(data["mdi"].Storage, c)
+                if n_storage > 1:
+                    self.storage["StorageData"][c] = getattr(data["mdi"].Storage, c)
+                else:
+                    self.storage["StorageData"][c] = [getattr(data["mdi"].Storage, c)]
+            self.storage["genfuel"] = mpc.genfuel[len(mpc.genid) :]
 
         # interconnect
         self.interconnect = self.sub.interconnect.unique().tolist()

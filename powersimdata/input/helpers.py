@@ -115,9 +115,8 @@ def add_interconnect_to_grid_data_frames(grid):
     add_column_to_data_frame(grid.gencost["before"], extra_col_gencost)
     add_column_to_data_frame(grid.gencost["after"], extra_col_gencost)
 
-    if not grid.dcline.empty:
-        extra_col_dcline = {
-            "from_interconnect": get_interconnect(grid.dcline.from_bus_id),
-            "to_interconnect": get_interconnect(grid.dcline.to_bus_id),
-        }
-        add_column_to_data_frame(grid.dcline, extra_col_dcline)
+    extra_col_dcline = {
+        "from_interconnect": get_interconnect(grid.dcline.from_bus_id),
+        "to_interconnect": get_interconnect(grid.dcline.to_bus_id),
+    }
+    add_column_to_data_frame(grid.dcline, extra_col_dcline)

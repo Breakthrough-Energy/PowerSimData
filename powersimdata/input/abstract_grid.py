@@ -49,6 +49,10 @@ def storage_template():
                 "ramp_30",
                 "ramp_q",
                 "apf",
+                "mu_Pmax",
+                "mu_Pmin",
+                "mu_Qmax",
+                "mu_Qmin",
             ]
         ),
         "gencost": pd.DataFrame(
@@ -68,6 +72,8 @@ def storage_template():
                 "InEff",
                 "LossFactor",
                 "rho",
+                "ExpectedTerminalStorageMax",
+                "ExpectedTerminalStorageMin",
             ]
         ),
         "genfuel": [],
