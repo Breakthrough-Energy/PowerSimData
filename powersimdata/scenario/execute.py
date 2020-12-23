@@ -1,7 +1,6 @@
 import copy
 import os
 import posixpath
-from collections import OrderedDict
 
 import numpy as np
 from scipy.io import savemat
@@ -66,18 +65,13 @@ class Execute(State):
 
     def _update_scenario_status(self):
         """Updates scenario status."""
-        execute_table = self._execute_list_manager.get_execute_table()
         scenario_id = self._scenario_info["id"]
-        self._scenario_status = execute_table[
-            execute_table.id == scenario_id
-        ].status.values[0]
+        self._scenario_status = self._execute_list_manager.get_status(scenario_id)
 
     def _update_scenario_info(self):
         """Updates scenario information."""
-        scenario_table = self._scenario_list_manager.get_scenario_table()
         scenario_id = self._scenario_info["id"]
-        scenario = scenario_table[scenario_table.id == scenario_id]
-        self._scenario_info = scenario.to_dict("records", into=OrderedDict)[0]
+        self._scenario_info = self._scenario_list_manager.get_scenario(scenario_id)
 
     def _run_script(self, script, extra_args=None):
         """Returns running process
