@@ -118,7 +118,7 @@ class ScenarioListManager(CsvStore):
 
         :param int/str descriptor: the id or name of the scenario
         :return: (*collections.OrderedDict*) -- matching entry as a dict, or
-        None if either zero or multiple matches found
+            None if either zero or multiple matches found
         """
 
         def err_message(text):
