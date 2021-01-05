@@ -141,7 +141,11 @@ class ScenarioListManager(CsvStore):
             print(f"Duplicate ids: {dupes}")
             print("Use id to access scenario")
         else:
-            return scenario.to_dict("records", into=OrderedDict)[0]
+            return (
+                scenario.reset_index()
+                .astype({"id": "str"})
+                .to_dict("records", into=OrderedDict)[0]
+            )
 
     def add_entry(self, scenario_info):
         """Adds scenario to the scenario list file on server.

@@ -43,7 +43,7 @@ class CsvStore:
         :return: (*pandas.DataFrame*) -- the specified file as a data frame.
         """
         table = pd.read_csv(file_object)
-        table.set_index("id", inplace=True, drop=False)
+        table.set_index("id", inplace=True)
         table.fillna("", inplace=True)
         return table.astype(str)
 
