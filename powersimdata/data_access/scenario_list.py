@@ -135,10 +135,12 @@ class ScenarioListManager(CsvStore):
         scenario = table.loc[matches, :]
         if scenario.shape[0] == 0:
             err_message("SCENARIO NOT FOUND")
-        if scenario.shape[0] > 1:
+        elif scenario.shape[0] > 1:
             err_message("MULTIPLE SCENARIO FOUND")
+            dupes = ",".join(str(i) for i in scenario.index)
+            print(f"Duplicate ids: {dupes}")
             print("Use id to access scenario")
-        elif scenario.shape[0] == 1:
+        else:
             return scenario.to_dict("records", into=OrderedDict)[0]
 
     def add_entry(self, scenario_info):
