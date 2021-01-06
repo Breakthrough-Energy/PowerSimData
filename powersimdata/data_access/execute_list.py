@@ -100,8 +100,8 @@ class ExecuteListManager(CsvStore):
         :raises Exception: if scenario not found in execute list on server.
         :return: (*str*) -- scenario status
         """
+        table = self.get_execute_table()
         try:
-            table = self.get_execute_table()
             return table.loc[int(scenario_id), "status"]
         except KeyError:
             raise Exception(f"Scenario not found in execute list, id = {scenario_id}")
