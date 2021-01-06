@@ -11,6 +11,9 @@ type2color = {
     "other": "xkcd:melon",
     "storage": "xkcd:orange",
     "wind_offshore": "xkcd:teal",
+    "solar_curtailment": "xkcd:amber",
+    "wind_curtailment": "xkcd:green",
+    "wind_offshore_curtailment": "xkcd:teal",
 }
 
 type2label = {
@@ -26,6 +29,14 @@ type2label = {
     "biomass": "Biomass",
     "other": "Other",
     "storage": "Storage",
+    "solar_curtailment": "Solar Curtailment",
+    "wind_curtailment": "Wind Curtailment",
+    "wind_offshore_curtailment": "Wind Offshore Curtailment",
+}
+
+type2hatchcolor = {
+    "solar_curtailment": "xkcd:grey",
+    "wind_curtailment": "xkcd:grey",
 }
 
 label2type = {value: key for key, value in type2label.items()}
