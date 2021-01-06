@@ -31,12 +31,13 @@ type2label = {
     "storage": "Storage",
     "solar_curtailment": "Solar Curtailment",
     "wind_curtailment": "Wind Curtailment",
-    "wind_offshore_curtailment": "Wind Offshore Curtailment",
+    "wind_offshore_curtailment": "Offshore Wind Curtailment",
 }
 
 type2hatchcolor = {
     "solar_curtailment": "xkcd:grey",
     "wind_curtailment": "xkcd:grey",
+    "wind_offshore_curtailment": "xkcd:grey",
 }
 
 label2type = {value: key for key, value in type2label.items()}
