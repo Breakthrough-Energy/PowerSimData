@@ -1,5 +1,5 @@
+from powersimdata.data_access.data_access import SSHDataAccess
 from powersimdata.utility import server_setup
-from powersimdata.utility.transfer_data import SSHDataAccess
 
 
 class Context:

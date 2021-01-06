@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
+from powersimdata.data_access.data_access import SSHDataAccess
 from powersimdata.tests.mock_ssh import MockConnection
 from powersimdata.utility.server_setup import get_server_user
-from powersimdata.utility.transfer_data import SSHDataAccess
 
 CONTENT = b"content"
 
