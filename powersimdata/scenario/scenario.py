@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 import pandas as pd
 
 from powersimdata.data_access.context import Context
@@ -8,7 +6,6 @@ from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create
 from powersimdata.scenario.execute import Execute
-from powersimdata.utility import server_setup
 
 pd.set_option("display.max_colwidth", None)
 
@@ -49,63 +46,14 @@ class Scenario(object):
 
         :param str descriptor: scenario descriptor.
         """
-        scenario_table = self._scenario_list_manager.get_scenario_table()
-
-        def err_message(table, text):
-            """Print message when scenario is not found or multiple matches are
-            found.
-
-            :param pandas.DataFrame table: scenario table.
-            :param str text: message to print.
-            """
-            print(
-                table.to_string(
-                    index=False,
-                    justify="center",
-                    columns=[
-                        "id",
-                        "plan",
-                        "name",
-                        "interconnect",
-                        "base_demand",
-                        "base_hydro",
-                        "base_solar",
-                        "base_wind",
-                    ],
-                )
-            )
-            print("------------------")
-            print(text)
-            print("------------------")
-
-        try:
-            int(descriptor)
-            scenario = scenario_table[scenario_table.id == descriptor]
-        except ValueError:
-            scenario = scenario_table[scenario_table.name == descriptor]
-            if scenario.shape[0] > 1:
-                err_message(scenario, "MULTIPLE SCENARIO FOUND")
-                print("Use id to access scenario")
-
-        if scenario.shape[0] == 0:
-            err_message(scenario_table, "SCENARIO NOT FOUND")
-        elif scenario.shape[0] == 1:
-            self.info = scenario.to_dict("records", into=OrderedDict)[0]
+        info = self._scenario_list_manager.get_scenario(descriptor)
+        if info is not None:
+            self.info = info
 
     def _set_status(self):
-        """Sets execution status of scenario.
-
-        :raises Exception: if scenario not found in execute list on server.
-        """
-        execute_table = self._execute_list_manager.get_execute_table()
-
-        status = execute_table[execute_table.id == self.info["id"]]
-        if status.shape[0] == 0:
-            raise Exception(
-                "Scenario not found in %s on server" % server_setup.EXECUTE_LIST
-            )
-        elif status.shape[0] == 1:
-            self.status = status.status.values[0]
+        """Sets execution status of scenario."""
+        scenario_id = self.info["id"]
+        self.status = self._execute_list_manager.get_status(scenario_id)
 
     def print_scenario_info(self):
         """Prints scenario information."""

@@ -93,6 +93,19 @@ class ExecuteListManager(CsvStore):
         """
         return self.get_table(self._EXECUTE_LIST)
 
+    def get_status(self, scenario_id):
+        """Return the status for the scenario
+
+        :param str/int scenario_id: the scenario id
+        :raises Exception: if scenario not found in execute list on server.
+        :return: (*str*) -- scenario status
+        """
+        table = self.get_execute_table()
+        try:
+            return table.loc[int(scenario_id), "status"]
+        except KeyError:
+            raise Exception(f"Scenario not found in execute list, id = {scenario_id}")
+
     def add_entry(self, scenario_info):
         """Adds scenario to the execute list file on server.
 
