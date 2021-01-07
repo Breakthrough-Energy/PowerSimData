@@ -22,11 +22,10 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def copy_to(self, file_name, from_dir, to_dir, change_name_to=None):
+    def copy_to(self, file_name, to_dir, change_name_to=None):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
-        :param str from_dir: userspace directory to copy file from.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
         """
@@ -104,7 +103,7 @@ class SSHDataAccess(DataAccess):
         self._ssh = None
         self._retry_after = 5
         self.root = server_setup.DATA_ROOT_DIR if root is None else root
-        self.dest_root = server_setup.LOCAL_DIR
+        self.local_root = server_setup.LOCAL_DIR
 
     @property
     def ssh(self):
@@ -157,7 +156,7 @@ class SSHDataAccess(DataAccess):
         """
         self.check_filename(file_name)
         from_dir = "" if from_dir is None else from_dir
-        to_dir = os.path.join(self.dest_root, from_dir)
+        to_dir = os.path.join(self.local_root, from_dir)
         os.makedirs(to_dir, exist_ok=True)
 
         from_path = posixpath.join(self.root, from_dir, file_name)
@@ -178,11 +177,11 @@ class SSHDataAccess(DataAccess):
         :param str change_name_to: new name for file when copied to data store.
         """
         self.check_filename(file_name)
-        from_path = os.path.join(self.dest_root, file_name)
+        from_path = os.path.join(self.local_root, file_name)
 
         if not os.path.isfile(from_path):
             raise FileNotFoundError(
-                f"{file_name} not found in {self.dest_root} on local machine"
+                f"{file_name} not found in {self.local_root} on local machine"
             )
 
         file_name = file_name if change_name_to is None else change_name_to

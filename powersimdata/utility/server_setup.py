@@ -2,6 +2,17 @@ import os
 import posixpath
 from pathlib import Path
 
+
+def get_local_dir():
+    mode = os.getenv("DEPLOYMENT_MODE")
+    if mode is None:
+        return os.path.join(str(Path.home()), "ScenarioData", "")
+    if mode == "1":
+        return DATA_ROOT_DIR
+    else:
+        raise ValueError(f"Unsupported mode: {mode}")
+
+
 SERVER_ADDRESS = os.getenv("BE_SERVER_ADDRESS", "becompute01.gatesventures.com")
 SERVER_SSH_PORT = os.getenv("BE_SERVER_SSH_PORT", 22)
 BACKUP_DATA_ROOT_DIR = "/mnt/RE-Storage/v2"
@@ -10,7 +21,7 @@ EXECUTE_DIR = "tmp"
 BASE_PROFILE_DIR = "raw"
 INPUT_DIR = "data/input"
 OUTPUT_DIR = "data/output"
-LOCAL_DIR = os.path.join(str(Path.home()), "ScenarioData", "")
+LOCAL_DIR = get_local_dir()
 MODEL_DIR = "/home/bes/pcm"
 
 
