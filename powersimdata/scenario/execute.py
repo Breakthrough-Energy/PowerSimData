@@ -159,6 +159,13 @@ class Execute(State):
             print("Current status: %s" % self._scenario_status)
             return
 
+    def _check_if_ready(self):
+        valid_status = ["prepared", "failed", "finished"]
+        if self._scenario_status not in valid_status:
+            raise ValueError(
+                f"Status must be one of {valid_status}, but got status={self._scenario_status}"
+            )
+
     def launch_simulation(self, threads=None, extract_data=True):
         """Launches simulation on server.
 
@@ -171,6 +178,7 @@ class Execute(State):
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
         print("--> Launching simulation on server")
+        self._check_if_ready()
 
         extra_args = []
 
