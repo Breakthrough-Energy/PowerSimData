@@ -3,6 +3,7 @@ import os
 import posixpath
 
 import numpy as np
+import requests
 from scipy.io import savemat
 
 from powersimdata.input.grid import Grid
@@ -160,14 +161,18 @@ class Execute(State):
             return
 
     def _check_if_ready(self):
+        """Check if the current scenario is ready to launch
+
+        :raises ValueError: if status is invalid
+        """
         valid_status = ["prepared", "failed", "finished"]
         if self._scenario_status not in valid_status:
             raise ValueError(
                 f"Status must be one of {valid_status}, but got status={self._scenario_status}"
             )
 
-    def launch_simulation(self, threads=None, extract_data=True):
-        """Launches simulation on server.
+    def launch_on_server(self, threads=None, extract_data=True):
+        """Launch simulation on server, via ssh.
 
         :param int/None threads: the number of threads to be used. This defaults to None,
             where None means auto.
@@ -177,9 +182,6 @@ class Execute(State):
         :raises ValueError: if threads is not a positive value
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
-        print("--> Launching simulation on server")
-        self._check_if_ready()
-
         extra_args = []
 
         if threads:
@@ -196,6 +198,32 @@ class Execute(State):
             extra_args.append("--extract-data")
 
         return self._run_script("call.py", extra_args=extra_args)
+
+    def launch_in_container(self, threads):
+        scenario_id = self._scenario_info["id"]
+        url = f"http://{server_setup.SERVER_ADDRESS}/launch/{scenario_id}"
+        resp = requests.post(url, params={"threads": threads})
+        if resp.status_code == 200:
+            print(resp.text)
+            return resp
+        raise Exception(f"Failed to launch simulation: status={resp.status_code}")
+
+    def launch_simulation(self, threads=None, extract_data=True):
+        """Launches simulation on target environment (server or container)
+
+        :param int/None threads: the number of threads to be used. This defaults to None,
+            where None means auto.
+        :param bool extract_data: whether the results of the simulation engine should
+            automatically extracted after the simulation has run. This defaults to True.
+        :return: (*subprocess.Popen*) or (*requests.Response*) - either the
+            process or http response
+        """
+        print("--> Launching simulation on server")
+        self._check_if_ready()
+        mode = os.getenv("DEPLOYMENT_MODE")
+        if mode is None:
+            return self.launch_on_server(threads, extract_data)
+        return self.launch_in_container(threads)
 
     def extract_simulation_output(self):
         """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL} on server.
