@@ -13,6 +13,10 @@ from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
+from powersimdata.utility.server_setup import (
+    DeploymentMode,
+    get_deployment_mode,
+)
 
 
 class Execute(State):
@@ -220,8 +224,7 @@ class Execute(State):
         """
         print("--> Launching simulation on server")
         self._check_if_ready()
-        mode = os.getenv("DEPLOYMENT_MODE")
-        if mode is None:
+        if get_deployment_mode() == DeploymentMode.Server:
             return self.launch_on_server(threads, extract_data)
         return self.launch_in_container(threads)
 
