@@ -13,7 +13,7 @@ from powersimdata.input.grid import Grid
 from powersimdata.utility.distance import haversine
 
 
-def calculate_ac_inv_costs(scenario):
+def calculate_ac_inv_costs(scenario, sum_results=True):
     """Given a Scenario object, calculate the total cost of building that scenario's
     upgrades of lines and transformers.
     Currently uses NEEM regions to find regional multipliers.
@@ -22,6 +22,7 @@ def calculate_ac_inv_costs(scenario):
     (some empty parts of table)
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
+    :param boolean sum_results: if True, sum dataframe for each category.
     :return: (*dict*) -- Total costs (line costs, transformer costs) (in $2010).
     """
 
@@ -35,11 +36,11 @@ def calculate_ac_inv_costs(scenario):
     grid_new.branch.rateA = grid.branch.rateA - base_grid.branch.rateA
     grid_new.branch = grid_new.branch[grid_new.branch.rateA != 0.0]
 
-    costs = _calculate_ac_inv_costs(grid_new)
+    costs = _calculate_ac_inv_costs(grid_new, sum_results)
     return costs
 
 
-def _calculate_ac_inv_costs(grid_new):
+def _calculate_ac_inv_costs(grid_new, sum_results=True):
     """Given a grid, calculate the total cost of building that grid's
     lines and transformers.
     This function is separate from calculate_ac_inv_costs() for testing purposes.
@@ -47,6 +48,7 @@ def _calculate_ac_inv_costs(grid_new):
     Currently uses NEEM regions to find regional multipliers.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
+    :param boolean sum_results: if True, sum dataframe for each category.
     :return: (*dict*) -- Total costs (line costs, transformer costs).
     """
 
@@ -191,19 +193,24 @@ def _calculate_ac_inv_costs(grid_new):
         transformers["rateA"] * transformers["per_MW_cost"] * transformers["mult"]
     )
 
-    results = {
-        "line_cost": lines.Cost.sum() * calculate_inflation(2010),
-        "transformer_cost": transformers.Cost.sum() * calculate_inflation(2020),
-    }
-    return results
+    lines.Cost *= calculate_inflation(2010)
+    transformers.Cost *= calculate_inflation(2020)
+    if sum_results:
+        return {
+            "line_cost": lines.Cost.sum(),
+            "transformer_cost": transformers.Cost.sum(),
+        }
+    else:
+        return {"line_cost": lines, "transformer_cost": transformers}
 
 
-def calculate_dc_inv_costs(scenario):
+def calculate_dc_inv_costs(scenario, sum_results=True):
     """Given a Scenario object, calculate the total cost of that grid's dc line
         investment. Currently ignores financials, but all values are in 2015 $-year.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :return: (*float*) -- Total dc line costs (in $2015).
+    :param boolean sum_results: if True, sum Series to return float.
+    :return: (*pandas.Series/float*) -- [Summed] dc line costs.
     """
     base_grid = Grid(scenario.info["interconnect"].split("_"))
     grid = scenario.state.get_grid()
@@ -215,16 +222,17 @@ def calculate_dc_inv_costs(scenario):
     grid_new.dcline.Pmax = grid.dcline.Pmax - base_grid.dcline.Pmax
     grid_new.dcline = grid_new.dcline[grid_new.dcline.Pmax != 0.0]
 
-    costs = _calculate_dc_inv_costs(grid_new)
+    costs = _calculate_dc_inv_costs(grid_new, sum_results)
     return costs
 
 
-def _calculate_dc_inv_costs(grid_new):
+def _calculate_dc_inv_costs(grid_new, sum_results=True):
     """Given a grid, calculate the total cost of that grid's dc line investment.
     This function is separate from calculate_dc_inv_costs() for testing purposes.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :return: (*float*) -- Total dc line costs.
+    :param boolean sum_results: if True, sum Series to return float.
+    :return: (*pandas.Series/float*) -- [Summed] dc line costs.
     """
 
     def _calculate_single_line_cost(line, bus):
@@ -254,12 +262,16 @@ def _calculate_dc_inv_costs(grid_new):
 
     # if any dclines, do calculations, otherwise, return 0 costs.
     if len(dcline != 0):
-        return dcline.apply(_calculate_single_line_cost, args=(bus,), axis=1).sum()
+        dcline_costs = dcline.apply(_calculate_single_line_cost, args=(bus,), axis=1)
+        if sum_results:
+            return dcline_costs.sum()
+        else:
+            return dcline_costs
     else:
         return 0.0
 
 
-def calculate_gen_inv_costs(scenario, year, cost_case):
+def calculate_gen_inv_costs(scenario, year, cost_case, sum_results=True):
     """Given a Scenario object, calculate the total cost of building that scenario's
         upgrades of generation.
     Currently only uses one (arbutrary) sub-technology. Drops the rest of the costs.
@@ -297,11 +309,11 @@ def calculate_gen_inv_costs(scenario, year, cost_case):
     # Drop small changes
     grid_new.plant = grid_new.plant[grid_new.plant.Pmax > 0.01]
 
-    costs = _calculate_gen_inv_costs(grid_new, year, cost_case)
+    costs = _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results)
     return costs
 
 
-def _calculate_gen_inv_costs(grid_new, year, cost_case):
+def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
     """Given a grid, calculate the total cost of building that generation investment.
     Computes total capital cost as CAPEX_total =
         CAPEX ($/MW) * Pmax (MW) * reg_cap_cost_mult (regional cost multiplier)
@@ -436,5 +448,8 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case):
     )
 
     # sum cost by technology
-    tech_sum = plants.groupby(["Technology"])["CAPEX_total"].sum()
-    return tech_sum * calculate_inflation(2018)
+    plants.loc[:, "CAPEX_total"] *= calculate_inflation(2018)
+    if sum_results:
+        return plants.groupby(["Technology"])["CAPEX_total"].sum()
+    else:
+        return plants
