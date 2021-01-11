@@ -13,7 +13,7 @@ from powersimdata.input.grid import Grid
 from powersimdata.utility.distance import haversine
 
 
-def calculate_ac_inv_costs(scenario, sum_results=True):
+def calculate_ac_inv_costs(scenario, sum_results=True, exclude_branches=None):
     """Given a Scenario object, calculate the total cost of building that scenario's
     upgrades of lines and transformers.
     Currently uses NEEM regions to find regional multipliers.
@@ -35,6 +35,9 @@ def calculate_ac_inv_costs(scenario, sum_results=True):
     base_grid.branch = base_grid.branch.reindex(grid_new.branch.index).fillna(0)
     grid_new.branch.rateA = grid.branch.rateA - base_grid.branch.rateA
     grid_new.branch = grid_new.branch[grid_new.branch.rateA != 0.0]
+    if exclude_branches is not None:
+        present_exclude_branches = set(exclude_branches) & set(grid_new.branch.index)
+        grid_new.branch.drop(index=present_exclude_branches, inplace=True)
 
     costs = _calculate_ac_inv_costs(grid_new, sum_results)
     return costs
