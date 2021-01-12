@@ -205,7 +205,7 @@ class Execute(State):
 
     def launch_in_container(self, threads):
         scenario_id = self._scenario_info["id"]
-        url = f"http://{server_setup.SERVER_ADDRESS}/launch/{scenario_id}"
+        url = f"http://{server_setup.SERVER_ADDRESS}:5000/launch/{scenario_id}"
         resp = requests.post(url, params={"threads": threads})
         if resp.status_code == 200:
             print(resp.text)

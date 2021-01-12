@@ -6,7 +6,8 @@ WORKDIR /app
 COPY Pipfile .
 COPY Pipfile.lock .
 RUN pipenv install --dev --system; \
-    pip install ipython;
+    pip install -U pip ipython; \
+    pip install jedi==0.17.2
 
 COPY . .
 RUN pip install .
