@@ -175,24 +175,19 @@ class Execute(State):
                 f"Status must be one of {valid_status}, but got status={self._scenario_status}"
             )
 
-    def launch_on_server(self, threads=None, extract_data=True):
+    def _launch_on_server(self, threads=None, extract_data=True):
         """Launch simulation on server, via ssh.
 
         :param int/None threads: the number of threads to be used. This defaults to None,
             where None means auto.
         :param bool extract_data: whether the results of the simulation engine should
             automatically extracted after the simulation has run. This defaults to True.
-        :raises TypeError: if threads is not an int or if extract_data is not a boolean
-        :raises ValueError: if threads is not a positive value
+        :raises TypeError: if extract_data is not a boolean
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
         extra_args = []
 
         if threads:
-            if not isinstance(threads, int):
-                raise TypeError("threads must be an int")
-            if threads < 1:
-                raise ValueError("threads must be a positive value")
             # Use the -t flag as defined in call.py in REISE.jl
             extra_args.append("--threads " + str(threads))
 
@@ -203,14 +198,21 @@ class Execute(State):
 
         return self._run_script("call.py", extra_args=extra_args)
 
-    def launch_in_container(self, threads):
+    def _launch_in_container(self, threads):
+        """Launches simulation in container via http call
+
+        :param int/None threads: the number of threads to be used. This defaults to None,
+            where None means auto.
+        :return: (*requests.Response*) -- the http response object
+        """
         scenario_id = self._scenario_info["id"]
         url = f"http://{server_setup.SERVER_ADDRESS}:5000/launch/{scenario_id}"
         resp = requests.post(url, params={"threads": threads})
-        if resp.status_code == 200:
-            print(resp.text)
-            return resp
-        raise Exception(f"Failed to launch simulation: status={resp.status_code}")
+        if resp.status_code != 200:
+            print(
+                f"Failed to launch simulation: status={resp.status_code}. See response for details"
+            )
+        return resp
 
     def launch_simulation(self, threads=None, extract_data=True):
         """Launches simulation on target environment (server or container)
@@ -219,14 +221,23 @@ class Execute(State):
             where None means auto.
         :param bool extract_data: whether the results of the simulation engine should
             automatically extracted after the simulation has run. This defaults to True.
+        :raises TypeError: if threads is not an int
+        :raises ValueError: if threads is not a positive value
         :return: (*subprocess.Popen*) or (*requests.Response*) - either the
-            process or http response
+            process (if using ssh to server) or http response (if run in container)
         """
         print("--> Launching simulation on server")
         self._check_if_ready()
+
+        if threads:
+            if not isinstance(threads, int):
+                raise TypeError("threads must be an int")
+            if threads < 1:
+                raise ValueError("threads must be a positive value")
+
         if get_deployment_mode() == DeploymentMode.Server:
-            return self.launch_on_server(threads, extract_data)
-        return self.launch_in_container(threads)
+            return self._launch_on_server(threads, extract_data)
+        return self._launch_in_container(threads)
 
     def extract_simulation_output(self):
         """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL} on server.
