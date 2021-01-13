@@ -226,7 +226,6 @@ class Execute(State):
         :return: (*subprocess.Popen*) or (*requests.Response*) - either the
             process (if using ssh to server) or http response (if run in container)
         """
-        print("--> Launching simulation on server")
         self._check_if_ready()
 
         if threads:
@@ -235,7 +234,9 @@ class Execute(State):
             if threads < 1:
                 raise ValueError("threads must be a positive value")
 
-        if get_deployment_mode() == DeploymentMode.Server:
+        mode = get_deployment_mode()
+        print(f"--> Launching simulation on {mode.lower()}")
+        if mode == DeploymentMode.Server:
             return self._launch_on_server(threads, extract_data)
         return self._launch_in_container(threads)
 
