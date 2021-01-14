@@ -53,11 +53,11 @@ class DataAccess:
         return self.execute_command(command)
 
     def check_file_exists(self, filepath, should_exist=True):
-        """
-        Check that file exists (or not) at the given path
+        """Check that file exists (or not) at the given path
 
         :param str filepath: the full path to the file
         :param bool should_exist: whether the file is expected to exist
+        :raises OSError: if the expected condition is not met
         """
         _, _, stderr = self.execute_command(CommandBuilder.list(filepath))
         compare = operator.ne if should_exist else operator.eq
@@ -66,10 +66,10 @@ class DataAccess:
             raise OSError(f"{filepath} {msg} on server")
 
     def check_filename(self, filename):
-        """
-        Check that filename is only the name part
+        """Check that filename is only the name part
 
         :param str filename: the filename to verify
+        :raises ValueError: if filename contains path segments
         """
         if len(os.path.dirname(filename)) != 0:
             raise ValueError(f"Expecting file name but got path {filename}")
@@ -107,6 +107,11 @@ class SSHDataAccess(DataAccess):
 
     @property
     def ssh(self):
+        """Get or create the ssh connection object, with attempts rate limited.
+
+        :raises IOError: if connection failed or still within retry window
+        :return: (*paramiko.SSHClient*) -- the client instance
+        """
         should_attempt = time.time() - SSHDataAccess._last_attempt > self._retry_after
 
         if self._ssh is None:
@@ -175,6 +180,7 @@ class SSHDataAccess(DataAccess):
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
+        :raises FileNotFoundError: if specified file does not exist
         """
         self.check_filename(file_name)
         from_path = os.path.join(self.local_root, file_name)
@@ -208,6 +214,7 @@ class SSHDataAccess(DataAccess):
         """Execute a command via ssh, without waiting for completion.
 
         :param list command: list of str to be passed to command line.
+        :return: (*subprocess.Popen*) -- the local ssh process
         """
         username = server_setup.get_server_user()
         cmd_ssh = ["ssh", username + "@" + server_setup.SERVER_ADDRESS]
@@ -223,8 +230,8 @@ class SSHDataAccess(DataAccess):
 def progress_bar(*args, **kwargs):
     """Creates progress bar
 
-    :param args: variable length argument list passed to the tqdm constructor.
-    :param kwargs: arbitrary keyword arguments passed to the tqdm constructor.
+    :param \\*args: variable length argument list passed to the tqdm constructor.
+    :param \\*\\*kwargs: arbitrary keyword arguments passed to the tqdm constructor.
     """
     bar = tqdm(*args, **kwargs)
     last = [0]
