@@ -33,7 +33,7 @@ def mock_data_access(monkeypatch, temp_fs):
     data_access = SSHDataAccess()
     monkeypatch.setattr(data_access, "_ssh", MockConnection())
     data_access.root = temp_fs[0]
-    data_access.dest_root = temp_fs[1]
+    data_access.local_root = temp_fs[1]
     yield data_access
     data_access.close()
 

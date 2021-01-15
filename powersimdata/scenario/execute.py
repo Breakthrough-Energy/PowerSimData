@@ -3,6 +3,7 @@ import os
 import posixpath
 
 import numpy as np
+import requests
 from scipy.io import savemat
 
 from powersimdata.input.grid import Grid
@@ -12,6 +13,10 @@ from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
+from powersimdata.utility.server_setup import (
+    DeploymentMode,
+    get_deployment_mode,
+)
 
 
 class Execute(State):
@@ -159,26 +164,30 @@ class Execute(State):
             print("Current status: %s" % self._scenario_status)
             return
 
-    def launch_simulation(self, threads=None, extract_data=True):
-        """Launches simulation on server.
+    def _check_if_ready(self):
+        """Check if the current scenario is ready to launch
+
+        :raises ValueError: if status is invalid
+        """
+        valid_status = ["prepared", "failed", "finished"]
+        if self._scenario_status not in valid_status:
+            raise ValueError(
+                f"Status must be one of {valid_status}, but got status={self._scenario_status}"
+            )
+
+    def _launch_on_server(self, threads=None, extract_data=True):
+        """Launch simulation on server, via ssh.
 
         :param int/None threads: the number of threads to be used. This defaults to None,
             where None means auto.
         :param bool extract_data: whether the results of the simulation engine should
             automatically extracted after the simulation has run. This defaults to True.
-        :raises TypeError: if threads is not an int or if extract_data is not a boolean
-        :raises ValueError: if threads is not a positive value
+        :raises TypeError: if extract_data is not a boolean
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
-        print("--> Launching simulation on server")
-
         extra_args = []
 
         if threads:
-            if not isinstance(threads, int):
-                raise TypeError("threads must be an int")
-            if threads < 1:
-                raise ValueError("threads must be a positive value")
             # Use the -t flag as defined in call.py in REISE.jl
             extra_args.append("--threads " + str(threads))
 
@@ -188,6 +197,48 @@ class Execute(State):
             extra_args.append("--extract-data")
 
         return self._run_script("call.py", extra_args=extra_args)
+
+    def _launch_in_container(self, threads):
+        """Launches simulation in container via http call
+
+        :param int/None threads: the number of threads to be used. This defaults to None,
+            where None means auto.
+        :return: (*requests.Response*) -- the http response object
+        """
+        scenario_id = self._scenario_info["id"]
+        url = f"http://{server_setup.SERVER_ADDRESS}:5000/launch/{scenario_id}"
+        resp = requests.post(url, params={"threads": threads})
+        if resp.status_code != 200:
+            print(
+                f"Failed to launch simulation: status={resp.status_code}. See response for details"
+            )
+        return resp
+
+    def launch_simulation(self, threads=None, extract_data=True):
+        """Launches simulation on target environment (server or container)
+
+        :param int/None threads: the number of threads to be used. This defaults to None,
+            where None means auto.
+        :param bool extract_data: whether the results of the simulation engine should
+            automatically extracted after the simulation has run. This defaults to True.
+        :raises TypeError: if threads is not an int
+        :raises ValueError: if threads is not a positive value
+        :return: (*subprocess.Popen*) or (*requests.Response*) - either the
+            process (if using ssh to server) or http response (if run in container)
+        """
+        self._check_if_ready()
+
+        if threads:
+            if not isinstance(threads, int):
+                raise TypeError("threads must be an int")
+            if threads < 1:
+                raise ValueError("threads must be a positive value")
+
+        mode = get_deployment_mode()
+        print(f"--> Launching simulation on {mode.lower()}")
+        if mode == DeploymentMode.Server:
+            return self._launch_on_server(threads, extract_data)
+        return self._launch_in_container(threads)
 
     def extract_simulation_output(self):
         """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL} on server.

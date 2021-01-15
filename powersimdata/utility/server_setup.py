@@ -14,6 +14,18 @@ LOCAL_DIR = os.path.join(str(Path.home()), "ScenarioData", "")
 MODEL_DIR = "/home/bes/pcm"
 
 
+class DeploymentMode:
+    Server = "SERVER"
+    Container = "CONTAINER"
+
+
+def get_deployment_mode():
+    mode = os.getenv("DEPLOYMENT_MODE")
+    if mode is None:
+        return DeploymentMode.Server
+    return DeploymentMode.Container
+
+
 class PathConfig:
     def __init__(self, root=None):
         self.root = root
