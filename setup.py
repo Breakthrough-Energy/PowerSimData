@@ -7,6 +7,7 @@ install_requires = [
     "scipy",
     "tqdm",
     "psycopg2",
+    "requests",
 ]
 
 setup(
