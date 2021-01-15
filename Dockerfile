@@ -1,12 +1,12 @@
 FROM python:3.8.3
 
-RUN apt-get update && apt-get install -y pipenv
+RUN apt-get update
 
 WORKDIR /app
 COPY Pipfile .
 COPY Pipfile.lock .
-RUN pipenv install --dev --system; \
-    pip install -U pip ipython; \
+RUN pip install -U pip pipenv ipython; \
+    pipenv sync --dev --system; \
     pip install jedi==0.17.2
 
 COPY . .
