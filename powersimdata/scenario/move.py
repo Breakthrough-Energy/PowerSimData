@@ -53,7 +53,7 @@ class Move(State):
 class BackUpDisk(object):
     """Back up scenario data to backup disk mounted on server.
 
-    :param powersimdata.utility.transfer_data.DataAccess data_access:
+    :param powersimdata.data_access.data_access.DataAccess data_access:
         data access object.
     :param dict scenario: scenario information.
     """

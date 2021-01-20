@@ -9,7 +9,7 @@ class CsvStore:
     """Base class for common functionality used to manage scenario and execute
     list stored as csv files on the server
 
-    :param powersimdata.utility.transfer_data.DataAccess: data access object
+    :param powersimdata.data_access.data_access.DataAccess: data access object
     """
 
     def __init__(self, data_access):

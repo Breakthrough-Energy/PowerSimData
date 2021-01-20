@@ -278,7 +278,7 @@ class _Builder(object):
     """Scenario Builder.
 
     :param list interconnect: list of interconnect(s) to build.
-    :param powersimdata.utility.transfer_data.DataAccess data_access:
+    :param powersimdata.data_access.data_access.DataAccess data_access:
         data access object.
     """
 
@@ -511,7 +511,7 @@ class CSV(object):
     """Profiles handler.
 
     :param list interconnect: interconnect(s)
-    :param powersimdata.utility.transfer_data.DataAccess data_access:
+    :param powersimdata.data_access.data_access.DataAccess data_access:
         data access object.
     """
 
