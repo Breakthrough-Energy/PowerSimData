@@ -59,6 +59,13 @@ class Scenario(object):
         """Prints scenario information."""
         self.state.print_scenario_info()
 
+    def get_scenario_table(self):
+        """Get scenario table
+
+        :return: (*pandas.DataFrame*) -- scenario table
+        """
+        return self._scenario_list_manager.get_scenario_table()
+
     def change(self, state):
         """Changes state.
 
