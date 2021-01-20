@@ -261,7 +261,7 @@ class Execute(State):
 class SimulationInput(object):
     """Prepares scenario for execution.
 
-    :param powersimdata.utility.transfer_data.DataAccess data_access:
+    :param powersimdata.data_access.data_access.DataAccess data_access:
         data access object.
     :param dict scenario_info: scenario information.
     :param powersimdata.input.grid.Grid grid: a Grid object.
