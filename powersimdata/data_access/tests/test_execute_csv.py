@@ -37,5 +37,6 @@ def test_get_execute_file_from_server_type(execute_table):
 @pytest.mark.integration
 @pytest.mark.ssh
 def test_get_execute_file_from_server_header(execute_table):
-    header = ["id", "status"]
+    header = ["status"]
     assert_array_equal(execute_table.columns, header)
+    assert "id" == execute_table.index.name
