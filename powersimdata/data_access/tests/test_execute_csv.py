@@ -39,3 +39,4 @@ def test_get_execute_file_from_server_type(execute_table):
 def test_get_execute_file_from_server_header(execute_table):
     header = ["status"]
     assert_array_equal(execute_table.columns, header)
+    assert "id" == execute_table.index.name

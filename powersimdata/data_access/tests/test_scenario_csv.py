@@ -47,6 +47,7 @@ def test_get_scenario_file_from_server_header(data_access, scenario_table):
         "infeasibilities",
     ]
     assert_array_equal(scenario_table.columns, header)
+    assert "id" == scenario_table.index.name
 
 
 @pytest.mark.integration
