@@ -216,7 +216,8 @@ class Analyze(State):
             load_shed = construct_load_shed(self._scenario_info, grid, infeasibilities)
 
             filename = scenario_id + "_LOAD_SHED.pkl"
-            filepath = os.path.join(server_setup.LOCAL_DIR, filename)
+            output_dir = server_setup.OUTPUT_DIR
+            filepath = os.path.join(server_setup.LOCAL_DIR, output_dir, filename)
             with open(filepath, "wb") as f:
                 pickle.dump(load_shed, f)
 
