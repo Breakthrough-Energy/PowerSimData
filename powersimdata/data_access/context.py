@@ -1,5 +1,9 @@
-from powersimdata.data_access.data_access import SSHDataAccess
+from powersimdata.data_access.data_access import LocalDataAccess, SSHDataAccess
 from powersimdata.utility import server_setup
+from powersimdata.utility.server_setup import (
+    DeploymentMode,
+    get_deployment_mode,
+)
 
 
 class Context:
@@ -8,7 +12,7 @@ class Context:
     @staticmethod
     def get_data_access(data_loc=None):
         """Return a data access instance appropriate for the current
-        environment. Currently only supports internal client server mode.
+        environment.
 
         :param str data_loc: pass "disk" if using for backups otherwise leave
             the default and the behavior will be determined by environment
@@ -18,4 +22,8 @@ class Context:
             root = server_setup.BACKUP_DATA_ROOT_DIR
         else:
             root = server_setup.DATA_ROOT_DIR
-        return SSHDataAccess(root)
+
+        mode = get_deployment_mode()
+        if mode == DeploymentMode.Server:
+            return SSHDataAccess(root)
+        return LocalDataAccess(root)

@@ -2,7 +2,7 @@ import operator
 import os
 import posixpath
 import time
-from subprocess import Popen
+from subprocess import PIPE, Popen
 
 import paramiko
 from tqdm import tqdm
@@ -91,6 +91,44 @@ class DataAccess:
     def close(self):
         """Perform any necessary cleanup for the object."""
         pass
+
+
+class LocalDataAccess(DataAccess):
+    """Interface to shared data volume"""
+
+    def __init__(self, root=None):
+        self.root = root if root else server_setup.DATA_ROOT_DIR
+
+    def copy_from(self, file_name, from_dir):
+        """Copy a file from data store to userspace.
+
+        :param str file_name: file name to copy.
+        :param str from_dir: data store directory to copy file from.
+        """
+        pass
+
+    def copy_to(self, file_name, to_dir, change_name_to=None):
+        """Copy a file from userspace to data store.
+
+        :param str file_name: file name to copy.
+        :param str to_dir: data store directory to copy file to.
+        :param str change_name_to: new name for file when copied to data store.
+        """
+        self.check_filename(file_name)
+        src = posixpath.join(server_setup.LOCAL_DIR, file_name)
+        file_name = file_name if change_name_to is None else change_name_to
+        dest = posixpath.join(self.root, to_dir, file_name)
+        self.check_file_exists(dest, should_exist=False)
+        self.copy(src, dest)
+        self.remove(src)
+
+    def execute_command(self, command):
+        """Execute a command locally at the data access.
+
+        :param list command: list of str to be passed to command line.
+        """
+        proc = Popen(command, shell=True, stderr=PIPE)
+        return proc.stdin, proc.stdout, proc.stderr
 
 
 class SSHDataAccess(DataAccess):
