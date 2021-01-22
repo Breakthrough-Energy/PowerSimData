@@ -82,15 +82,6 @@ def sjoin_nearest(left_df, right_df, search_dist=0.06):
     return result
 
 
-def make_dir(filename):
-    """
-    Check if directory already exists where trying to write file, if no, create it.
-    :param str filename: filename to create base directory for.
-    """
-    if not os.path.exists(os.path.dirname(filename)):
-        os.makedirs(os.path.dirname(filename))
-
-
 def points_to_polys(df, name, shpfile, search_dist=0.04):
     """Given a dataframe which includes 'lat' and 'lon' columns, and a shapefile of
         Polygons/Multipolygon regions, map df.index to closest regions.
@@ -198,11 +189,10 @@ def write_bus_neem_map():
     Writes out csv with bus numbers, associated NEEM region, and lat/lon of bus
         (to check if consistent with bus location in _calculate_ac_inv_costs).
     """
-    make_dir(const.bus_neem_regions_path)
-
     base_grid = Grid(["USA"])
     df_pts_bus = bus_to_neem_reg(base_grid.bus)
     df_pts_bus.sort_index(inplace=True)
+    os.makedirs(const.bus_neem_regions_path, exist_ok=True)
     df_pts_bus.to_csv(const.bus_neem_regions_path)
 
 
@@ -211,11 +201,10 @@ def write_bus_reeds_map():
     Maps the bus locations from the base USA grid to ReEDS regions.
     Writes out csv with bus numbers, associated ReEDS regions, and distances.
     """
-    make_dir(const.bus_reeds_regions_path)
-
     base_grid = Grid(["USA"])
     df_pts_bus = bus_to_reeds_reg(base_grid.bus)
     df_pts_bus.sort_index(inplace=True)
+    os.makedirs(const.bus_reeds_regions_path, exist_ok=True)
     df_pts_bus.to_csv(const.bus_reeds_regions_path)
 
 
@@ -238,7 +227,7 @@ def write_poly_shapefile():
     mapping = shapely_geometry.mapping
 
     outpath = const.reeds_wind_shapefile_path
-    make_dir(outpath)
+    os.makedirs(outpath, exist_ok=True)
 
     polys = pd.read_csv(
         const.reeds_wind_csv_path, sep=",", dtype={"id": object, "group": object}
