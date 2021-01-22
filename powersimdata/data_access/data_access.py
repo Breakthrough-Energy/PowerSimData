@@ -127,8 +127,21 @@ class LocalDataAccess(DataAccess):
 
         :param list command: list of str to be passed to command line.
         """
-        proc = Popen(command, shell=True, stderr=PIPE)
-        return proc.stdin, proc.stdout, proc.stderr
+
+        def wrap(s):
+            if s is not None:
+                return s
+            return open(os.devnull)
+
+        proc = Popen(
+            command,
+            shell=True,
+            executable="/bin/bash",
+            stdout=PIPE,
+            stderr=PIPE,
+            text=True,
+        )
+        return wrap(None), wrap(proc.stdout), wrap(proc.stderr)
 
 
 class SSHDataAccess(DataAccess):
