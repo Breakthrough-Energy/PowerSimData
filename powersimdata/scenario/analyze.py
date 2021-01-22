@@ -209,7 +209,7 @@ class Analyze(State):
             # It's either on the server or in our local ScenarioData folder
             output_data = OutputData(data_loc=self.data_loc)
             load_shed = output_data.get_data(scenario_id, "LOAD_SHED")
-        except FileNotFoundError:
+        except OSError:
             # The scenario was run without load_shed, and we must construct it
             grid = self.get_grid()
             infeasibilities = self._parse_infeasibilities()
