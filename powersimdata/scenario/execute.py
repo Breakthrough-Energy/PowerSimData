@@ -227,6 +227,7 @@ class Execute(State):
         :return: (*subprocess.Popen*) or (*requests.Response*) - either the
             process (if using ssh to server) or http response (if run in container)
         """
+        self._update_scenario_status()
         self._check_if_ready()
 
         if threads:
@@ -291,7 +292,7 @@ class SimulationInput(object):
         :raises IOError: if folder cannot be created.
         """
         print("--> Creating temporary folder on server for simulation inputs")
-        command = "mkdir %s" % self.TMP_DIR
+        command = "mkdir -p %s" % self.TMP_DIR
         stdin, stdout, stderr = self._data_access.execute_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to create %s on server" % self.TMP_DIR)
