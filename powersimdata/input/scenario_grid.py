@@ -106,7 +106,7 @@ class ScenarioGrid(AbstractGrid):
 
         # storage
         if n_storage > 0:
-            self.storage["gen"] = plant_storage
+            self.storage["gen"] = plant_storage.astype({"bus_id": int})
             self.storage["gencost"] = gencost_storage
             col_name = self.storage["StorageData"].columns
             for c in col_name:
