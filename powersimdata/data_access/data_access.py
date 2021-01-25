@@ -22,7 +22,7 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def copy_to(self, file_name, to_dir, change_name_to=None):
+    def move_to(self, file_name, to_dir, change_name_to=None):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
@@ -107,7 +107,7 @@ class LocalDataAccess(DataAccess):
         """
         pass
 
-    def copy_to(self, file_name, to_dir, change_name_to=None):
+    def move_to(self, file_name, to_dir, change_name_to=None):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
@@ -225,7 +225,7 @@ class SSHDataAccess(DataAccess):
             sftp.get(from_path, to_path, callback=cbk)
             bar.close()
 
-    def copy_to(self, file_name, to_dir=None, change_name_to=None):
+    def move_to(self, file_name, to_dir=None, change_name_to=None):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.

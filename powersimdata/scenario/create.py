@@ -94,7 +94,7 @@ class Create(State):
         print("--> Writing change table on local machine")
         self.builder.change_table.write(self._scenario_info["id"])
         file_name = self._scenario_info["id"] + "_ct.pkl"
-        self._data_access.copy_to(file_name, server_setup.INPUT_DIR)
+        self._data_access.move_to(file_name, server_setup.INPUT_DIR)
 
     def get_ct(self):
         """Returns change table.

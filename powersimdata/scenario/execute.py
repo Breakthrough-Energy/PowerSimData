@@ -227,7 +227,6 @@ class Execute(State):
         :return: (*subprocess.Popen*) or (*requests.Response*) - either the
             process (if using ssh to server) or http response (if run in container)
         """
-        self._update_scenario_status()
         self._check_if_ready()
 
         if threads:
@@ -414,7 +413,7 @@ class SimulationInput(object):
                 mpc_storage,
                 appendmat=False,
             )
-            self._data_access.copy_to(
+            self._data_access.move_to(
                 file_name, self.REL_TMP_DIR, change_name_to="case_storage.mat"
             )
 
@@ -422,7 +421,7 @@ class SimulationInput(object):
         file_name = "%s_case.mat" % self._scenario_info["id"]
         savemat(os.path.join(server_setup.LOCAL_DIR, file_name), mpc, appendmat=False)
 
-        self._data_access.copy_to(
+        self._data_access.move_to(
             file_name, self.REL_TMP_DIR, change_name_to="case.mat"
         )
 
@@ -491,6 +490,6 @@ class SimulationInput(object):
         file_name = "%s_%s.csv" % (self._scenario_info["id"], kind)
         profile.to_csv(os.path.join(server_setup.LOCAL_DIR, file_name))
 
-        self._data_access.copy_to(
+        self._data_access.move_to(
             file_name, self.REL_TMP_DIR, change_name_to=f"{kind}.csv"
         )

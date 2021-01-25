@@ -14,9 +14,8 @@ class Context:
         """Return a data access instance appropriate for the current
         environment.
 
-        :param str data_loc: pass "disk" if using for backups otherwise leave
-            the default and the behavior will be determined by environment
-            variables
+        :param str data_loc: pass "disk" if using data from backup disk,
+            otherwise leave the default.
         """
         if data_loc == "disk":
             root = server_setup.BACKUP_DATA_ROOT_DIR
