@@ -169,6 +169,7 @@ class Execute(State):
 
         :raises ValueError: if status is invalid
         """
+        self._update_scenario_status()
         valid_status = ["prepared", "failed", "finished"]
         if self._scenario_status not in valid_status:
             raise ValueError(
