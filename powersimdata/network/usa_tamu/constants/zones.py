@@ -85,7 +85,11 @@ interconnect2loadzone["USA"] = (
     | interconnect2loadzone["Western"]
     | interconnect2loadzone["Texas"]
 )
-
+# Map interconnect to load zone id
+interconnect2id = {
+    k: set(zone_df.isin(v).query("zone_name == True").index)
+    for k, v in interconnect2loadzone.items()
+}
 
 # Map load zone id to state abbreviations
 id2abv = {k: state2abv[v] for k, v in zone_df.state.to_dict().items()}
