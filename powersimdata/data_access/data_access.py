@@ -32,13 +32,14 @@ class DataAccess:
         raise NotImplementedError
 
     def copy(self, src, dest, recursive=False, update=False):
-        """Wrapper around cp command
+        """Wrapper around cp command which creates dest path if needed
 
         :param str src: path to original
         :param str dest: destination path
         :param bool recursive: create directories recursively
         :param bool update: only copy if needed
         """
+        self.makedir(posixpath.dirname(dest))
         command = CommandBuilder.copy(src, dest, recursive, update)
         return self.execute_command(command)
 
@@ -52,7 +53,7 @@ class DataAccess:
         command = CommandBuilder.remove(target, recursive, force)
         return self.execute_command(command)
 
-    def check_file_exists(self, filepath, should_exist=True):
+    def _check_file_exists(self, filepath, should_exist=True):
         """Check that file exists (or not) at the given path
 
         :param str filepath: the full path to the file
@@ -65,7 +66,7 @@ class DataAccess:
             msg = "not found" if should_exist else "already exists"
             raise OSError(f"{filepath} {msg} on server")
 
-    def check_filename(self, filename):
+    def _check_filename(self, filename):
         """Check that filename is only the name part
 
         :param str filename: the filename to verify
@@ -73,6 +74,14 @@ class DataAccess:
         """
         if len(os.path.dirname(filename)) != 0:
             raise ValueError(f"Expecting file name but got path {filename}")
+
+    def makedir(self, relative_path):
+        """Create paths relative to the instance root
+
+        :param str relative_path: the path, without filename, relative to root
+        """
+        full_path = posixpath.join(self.root, relative_path)
+        return self.execute_command(f"mkdir -p {full_path}")
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -99,7 +108,7 @@ class LocalDataAccess(DataAccess):
     def __init__(self, root=None):
         self.root = root if root else server_setup.DATA_ROOT_DIR
 
-    def copy_from(self, file_name, from_dir):
+    def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
 
         :param str file_name: file name to copy.
@@ -114,11 +123,12 @@ class LocalDataAccess(DataAccess):
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
         """
-        self.check_filename(file_name)
+        self._check_filename(file_name)
         src = posixpath.join(server_setup.LOCAL_DIR, file_name)
         file_name = file_name if change_name_to is None else change_name_to
         dest = posixpath.join(self.root, to_dir, file_name)
-        self.check_file_exists(dest, should_exist=False)
+        print(f"--> Moving file {src} to {dest}")
+        self._check_file_exists(dest, should_exist=False)
         self.copy(src, dest)
         self.remove(src)
 
@@ -210,13 +220,13 @@ class SSHDataAccess(DataAccess):
         :param str file_name: file name to copy.
         :param str from_dir: data store directory to copy file from.
         """
-        self.check_filename(file_name)
+        self._check_filename(file_name)
         from_dir = "" if from_dir is None else from_dir
         to_dir = os.path.join(self.local_root, from_dir)
         os.makedirs(to_dir, exist_ok=True)
 
         from_path = posixpath.join(self.root, from_dir, file_name)
-        self.check_file_exists(from_path, should_exist=True)
+        self._check_file_exists(from_path, should_exist=True)
 
         with self.ssh.open_sftp() as sftp:
             print(f"Transferring {file_name} from server")
@@ -233,7 +243,7 @@ class SSHDataAccess(DataAccess):
         :param str change_name_to: new name for file when copied to data store.
         :raises FileNotFoundError: if specified file does not exist
         """
-        self.check_filename(file_name)
+        self._check_filename(file_name)
         from_path = os.path.join(self.local_root, file_name)
 
         if not os.path.isfile(from_path):
@@ -244,7 +254,8 @@ class SSHDataAccess(DataAccess):
         file_name = file_name if change_name_to is None else change_name_to
         to_dir = "" if to_dir is None else to_dir
         to_path = posixpath.join(self.root, to_dir, file_name)
-        self.check_file_exists(to_path, should_exist=False)
+        self.makedir(to_dir)
+        self._check_file_exists(to_path, should_exist=False)
 
         with self.ssh.open_sftp() as sftp:
             print(f"Transferring {from_path} to server")

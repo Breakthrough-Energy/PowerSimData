@@ -291,8 +291,7 @@ class SimulationInput(object):
         :raises IOError: if folder cannot be created.
         """
         print("--> Creating temporary folder on server for simulation inputs")
-        command = "mkdir -p %s" % self.TMP_DIR
-        stdin, stdout, stderr = self._data_access.execute_command(command)
+        _, _, stderr = self._data_access.makedir(self.TMP_DIR)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to create %s on server" % self.TMP_DIR)
 
@@ -449,8 +448,7 @@ class SimulationInput(object):
             to_dir = posixpath.join(
                 self.server_config.execute_dir(), self.scenario_folder
             )
-            command = f"cp {from_dir}/{kind}.csv {to_dir}"
-            stdin, stdout, stderr = self._data_access.execute_command(command)
+            _, _, stderr = self._data_access.copy(f"{from_dir}/{kind}.csv", to_dir)
             if len(stderr.readlines()) != 0:
                 raise IOError(f"Failed to copy {kind}.csv on server")
 
