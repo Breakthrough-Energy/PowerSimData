@@ -209,14 +209,15 @@ class Analyze(State):
             # It's either on the server or in our local ScenarioData folder
             output_data = OutputData(data_loc=self.data_loc)
             load_shed = output_data.get_data(scenario_id, "LOAD_SHED")
-        except FileNotFoundError:
+        except OSError:
             # The scenario was run without load_shed, and we must construct it
             grid = self.get_grid()
             infeasibilities = self._parse_infeasibilities()
             load_shed = construct_load_shed(self._scenario_info, grid, infeasibilities)
 
             filename = scenario_id + "_LOAD_SHED.pkl"
-            filepath = os.path.join(server_setup.LOCAL_DIR, filename)
+            output_dir = server_setup.OUTPUT_DIR
+            filepath = os.path.join(server_setup.LOCAL_DIR, output_dir, filename)
             with open(filepath, "wb") as f:
                 pickle.dump(load_shed, f)
 
