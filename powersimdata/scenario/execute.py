@@ -291,8 +291,7 @@ class SimulationInput(object):
         :raises IOError: if folder cannot be created.
         """
         print("--> Creating temporary folder on server for simulation inputs")
-        command = "mkdir %s" % self.TMP_DIR
-        stdin, stdout, stderr = self._data_access.execute_command(command)
+        _, _, stderr = self._data_access.makedir(self.TMP_DIR)
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to create %s on server" % self.TMP_DIR)
 
@@ -413,7 +412,7 @@ class SimulationInput(object):
                 mpc_storage,
                 appendmat=False,
             )
-            self._data_access.copy_to(
+            self._data_access.move_to(
                 file_name, self.REL_TMP_DIR, change_name_to="case_storage.mat"
             )
 
@@ -421,7 +420,7 @@ class SimulationInput(object):
         file_name = "%s_case.mat" % self._scenario_info["id"]
         savemat(os.path.join(server_setup.LOCAL_DIR, file_name), mpc, appendmat=False)
 
-        self._data_access.copy_to(
+        self._data_access.move_to(
             file_name, self.REL_TMP_DIR, change_name_to="case.mat"
         )
 
@@ -449,8 +448,7 @@ class SimulationInput(object):
             to_dir = posixpath.join(
                 self.server_config.execute_dir(), self.scenario_folder
             )
-            command = f"cp {from_dir}/{kind}.csv {to_dir}"
-            stdin, stdout, stderr = self._data_access.execute_command(command)
+            _, _, stderr = self._data_access.copy(f"{from_dir}/{kind}.csv", to_dir)
             if len(stderr.readlines()) != 0:
                 raise IOError(f"Failed to copy {kind}.csv on server")
 
@@ -490,6 +488,6 @@ class SimulationInput(object):
         file_name = "%s_%s.csv" % (self._scenario_info["id"], kind)
         profile.to_csv(os.path.join(server_setup.LOCAL_DIR, file_name))
 
-        self._data_access.copy_to(
+        self._data_access.move_to(
             file_name, self.REL_TMP_DIR, change_name_to=f"{kind}.csv"
         )

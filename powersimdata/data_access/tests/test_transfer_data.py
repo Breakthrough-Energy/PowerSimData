@@ -96,27 +96,27 @@ def test_copy_from_multi_path(mock_data_access, temp_fs, make_temp):
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
-def test_copy_to(mock_data_access, make_temp):
+def test_move_to(mock_data_access, make_temp):
     fname = make_temp(remote=False)
-    mock_data_access.copy_to(fname)
+    mock_data_access.move_to(fname)
     _check_content(os.path.join(mock_data_access.root, fname))
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
-def test_copy_to_multi_path(mock_data_access, make_temp):
+def test_move_to_multi_path(mock_data_access, make_temp):
     rel_path = Path("foo", "bar")
     remote_path = mock_data_access.root / rel_path
     remote_path.mkdir(parents=True)
     fname = make_temp(remote=False)
-    mock_data_access.copy_to(fname, rel_path)
+    mock_data_access.move_to(fname, rel_path)
     _check_content(os.path.join(remote_path, fname))
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
-def test_copy_to_rename(mock_data_access, make_temp):
+def test_move_to_rename(mock_data_access, make_temp):
     fname = make_temp(remote=False)
     new_fname = "new_fname"
-    mock_data_access.copy_to(fname, change_name_to=new_fname)
+    mock_data_access.move_to(fname, change_name_to=new_fname)
     _check_content(os.path.join(mock_data_access.root, new_fname))
 
 
@@ -124,4 +124,4 @@ def test_check_filename(mock_data_access):
     with pytest.raises(ValueError):
         mock_data_access.copy_from("dir/foo.txt", "dir")
     with pytest.raises(ValueError):
-        mock_data_access.copy_to("dir/foo.txt", "asdf")
+        mock_data_access.move_to("dir/foo.txt", "asdf")
