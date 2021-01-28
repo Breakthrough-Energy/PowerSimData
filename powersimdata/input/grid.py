@@ -1,6 +1,7 @@
 import os
 
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
+from powersimdata.network.usa_tamu.constants import storage as tamu_storage
 from powersimdata.network.usa_tamu.usa_tamu_model import TAMU
 from powersimdata.utility.helpers import MemoryCache, cache_key
 
@@ -102,15 +103,7 @@ class Grid(object):
         # compare storage
         _univ_eq(len(self.storage["gen"]), len(other.storage["gen"]), "storage")
         _univ_eq(self.storage.keys(), other.storage.keys(), "storage")
-        ignored_subkeys = {
-            "duration",
-            "min_stor",
-            "max_stor",
-            "InEff",
-            "OutEff",
-            "energy_price",
-            "gencost",
-        }
+        ignored_subkeys = {"gencost"} | set(tamu_storage.defaults.keys())
         for subkey in set(self.storage.keys()) - ignored_subkeys:
             # REISE will modify some gen columns
             self_data = self.storage[subkey]
