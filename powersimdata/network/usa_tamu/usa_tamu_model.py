@@ -7,6 +7,7 @@ from powersimdata.input.helpers import (
     csv_to_data_frame,
 )
 from powersimdata.network.csv_reader import CSVReader
+from powersimdata.network.usa_tamu.constants.storage import defaults
 from powersimdata.network.usa_tamu.constants.zones import (
     abv2state,
     interconnect2loadzone,
@@ -41,15 +42,6 @@ class TAMU(AbstractGrid):
         else:
             self.data_loc = data_loc
 
-    def _set_storage(self):
-        """Sets storage properties."""
-        self.storage["duration"] = 4
-        self.storage["min_stor"] = 0.05
-        self.storage["max_stor"] = 0.95
-        self.storage["InEff"] = 0.9
-        self.storage["OutEff"] = 0.9
-        self.storage["energy_price"] = 20
-
     def _build_network(self):
         """Build network."""
         reader = CSVReader(self.data_loc)
@@ -59,7 +51,7 @@ class TAMU(AbstractGrid):
         self.dcline = reader.dcline
         self.gencost["after"] = self.gencost["before"] = reader.gencost
 
-        self._set_storage()
+        self.storage.update(defaults)
 
         add_information_to_model(self)
 
