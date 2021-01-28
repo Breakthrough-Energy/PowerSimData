@@ -462,31 +462,58 @@ class ChangeTable(object):
         """
         scale_congested_mesh_branches(self, ref_scenario, **kwargs)
 
-    def add_storage_capacity(self, bus_id):
+    def add_storage_capacity(self, info):
         """Sets storage parameters in change table.
 
-        :param dict bus_id: key(s) for the id of bus(es), value(s) is (are)
-            capacity of the energy storage system in MW.
-        :raises TypeError: if bus_id is not a dict.
-        :raises ValueError: if bus_id contains any bus ids not present in the grid,
-            or any non-positive values are given.
+        :param list info: each entry is a dictionary. The dictionary gathers
+            the information needed to create a new storage device.
+        :raises TypeError: if info is not a list.
+        :raises ValueError: if any of the new storages to be added have bad values.
         """
-        if not isinstance(bus_id, dict):
-            raise TypeError("bus_id must be a dict")
+        if not isinstance(info, list):
+            raise TypeError("Argument enclosing new storage(s) must be a list")
+
+        info = copy.deepcopy(info)
+        new_storages = []
+        required = {"bus_id", "capacity"}
+        optional = {
+            "duration",
+            "min_stor",
+            "max_stor",
+            "energy_value",
+            "InEff",
+            "OutEff",
+            "LossFactor",
+            "terminal_min",
+            "terminal_max",
+        }
         anticipated_bus = self._get_new_bus()
-        diff = set(bus_id.keys()).difference(set(anticipated_bus.index))
-        if len(diff) != 0:
-            raise ValueError(f"No bus with the following id: {', '.join(diff)}")
-        for k, v in bus_id.items():
-            if not isinstance(v, (float, int)):
-                raise ValueError(f"values must be numeric, bad type for bus {k}")
-            if v <= 0:
-                raise ValueError(f"values must be positive, bad value for bus {k}")
+        for i, storage in enumerate(info):
+            self._check_entry_keys(storage, i, "storage", required, None, optional)
+            if storage["bus_id"] not in anticipated_bus.index:
+                raise ValueError(
+                    f"No bus id {storage['bus_id']} available for {ordinal(i)} storage"
+                )
+            for o in optional:
+                if o not in storage:
+                    storage[o] = self.grid.storage[o]
+            for k, v in storage.items():
+                if not isinstance(v, (int, float)):
+                    err_msg = f"values must be numeric, bad type for {ordinal(i)} {k}"
+                    raise ValueError(err_msg)
+                if v < 0:
+                    raise ValueError(
+                        f"values must be non-negative, bad value for {ordinal(i)} {k}"
+                    )
+            for k in {"min_stor", "max_stor", "InEff", "OutEff", "LossFactor"}:
+                if storage[k] > 1:
+                    raise ValueError(
+                        f"value for {k} must be <=1, bad value for {ordinal(i)} storage"
+                    )
+            new_storages.append(storage)
         if "storage" not in self.ct:
-            self.ct["storage"] = {}
-        if "bus_id" not in self.ct["storage"]:
-            self.ct["storage"]["bus_id"] = {}
-        self.ct["storage"]["bus_id"].update(bus_id)
+            self.ct["storage"] = []
+        self.ct["storage"] += new_storages
 
     def add_dcline(self, info):
         """Adds HVDC line(s).
