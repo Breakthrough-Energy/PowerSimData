@@ -368,8 +368,8 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
         cost.drop(cost[cost["value"] == "#REF!"].index, inplace=True)
 
         # get rid of $s, commas
-        cost["value"] = cost["value"].str.replace("$", "")
-        cost["value"] = cost["value"].str.replace(",", "").astype("float64")
+        cost["value"] = cost["value"].str.replace("$", "", regex=True)
+        cost["value"] = cost["value"].str.replace(",", "", regex=True).astype("float64")
         # scale from $/kW to $/MW
         cost["value"] *= 1000
 
