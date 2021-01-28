@@ -489,7 +489,11 @@ def test_add_gen_add_entries_in_gencost_data_frame(ct):
 
 
 def test_add_storage(ct):
-    storage = {2021005: 116.0, 2028827: 82.5, 2028060: 82.5}
+    storage = [
+        {"bus_id": 2021005, "capacity": 116.0},
+        {"bus_id": 2028827, "capacity": 82.5},
+        {"bus_id": 2028060, "capacity": 82.5},
+    ]
     ct.add_storage_capacity(storage)
     new_grid = TransformGrid(grid, ct.ct).get_grid()
 
@@ -497,8 +501,8 @@ def test_add_storage(ct):
     pmax = new_grid.storage["gen"].Pmax.values
 
     assert new_grid.storage["gen"].shape[0] != grid.storage["gen"].shape[0]
-    assert np.array_equal(pmin, -1 * np.array(list(storage.values())))
-    assert np.array_equal(pmax, np.array(list(storage.values())))
+    assert np.array_equal(pmin, -1 * np.array([d["capacity"] for d in storage]))
+    assert np.array_equal(pmax, np.array([d["capacity"] for d in storage]))
 
 
 def test_add_bus(ct):
