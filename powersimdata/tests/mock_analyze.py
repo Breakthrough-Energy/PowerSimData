@@ -32,6 +32,7 @@ class MockAnalyze:
         demand=None,
         lmp=None,
         pg=None,
+        storage_pg=None,
         solar=None,
         wind=None,
         hydro=None,
@@ -45,6 +46,7 @@ class MockAnalyze:
         :param pandas.DataFrame demand: dummy demand
         :param pandas.DataFrame lmp: dummy lmp
         :param pandas.DataFrame pg: dummy pg
+        :param pandas.DataFrame storage_pg: dummy storage_pg
         :param pandas.DataFrame solar: dummy solar
         :param pandas.DataFrame wind: dummy wind
         :param pandas.DataFrame hydro: dummy hydro
@@ -56,6 +58,7 @@ class MockAnalyze:
         self.demand = _ensure_ts_index(demand)
         self.lmp = _ensure_ts_index(lmp)
         self.pg = _ensure_ts_index(pg)
+        self.storage_pg = _ensure_ts_index(storage_pg)
         self.solar = _ensure_ts_index(solar)
         self.wind = _ensure_ts_index(wind)
         self.hydro = _ensure_ts_index(hydro)
@@ -102,6 +105,12 @@ class MockAnalyze:
         :return: (pandas.DataFrame) -- dummy pg
         """
         return self.pg
+
+    def get_storage_pg(self):
+        """Get storage PG.
+        :return: (pandas.DataFrame) -- dummy storage_pg
+        """
+        return self.storage_pg
 
     def get_solar(self):
         """Get solar.
