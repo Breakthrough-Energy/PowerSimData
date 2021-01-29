@@ -370,7 +370,8 @@ class TransformGrid(object):
         :param int bus_id: bus identification number.
         :param dict entry: storage details, containing at least "bus_id" and "capacity".
         """
-        gen = {g: 0 for g in self.grid.storage["gen"].columns}
+        storage = self.grid.storage
+        gen = {g: 0 for g in storage["gen"].columns}
         gen["bus_id"] = entry["bus_id"]
         gen["Vg"] = 1
         gen["mBase"] = 100
@@ -379,9 +380,9 @@ class TransformGrid(object):
         gen["Pmin"] = -1 * entry["capacity"]
         gen["ramp_10"] = entry["capacity"]
         gen["ramp_30"] = entry["capacity"]
-        self.grid.storage["gen"] = self.grid.storage["gen"].append(
-            gen, ignore_index=True, sort=False
-        )
+        storage["gen"] = storage["gen"].append(gen, ignore_index=True, sort=False)
+        # Maintain int columns after the append converts them to float
+        storage["gen"] = storage["gen"].astype({"bus_id": "int", "status": "int"})
 
     def _add_storage_gencost(self):
         """Sets generation cost of storage unit."""
@@ -403,7 +404,8 @@ class TransformGrid(object):
         :param dict entry: storage details, containing at least:
             "bus_id", "capacity".
         """
-        data = {g: 0 for g in self.grid.storage["StorageData"].columns}
+        storage = self.grid.storage
+        data = {g: 0 for g in storage["StorageData"].columns}
 
         capacity = entry["capacity"]
         duration = entry["duration"]
@@ -427,9 +429,11 @@ class TransformGrid(object):
         data["InEff"] = entry["InEff"]
         data["LossFactor"] = entry["LossFactor"]
         data["rho"] = 1
-        self.grid.storage["StorageData"] = self.grid.storage["StorageData"].append(
+        storage["StorageData"] = storage["StorageData"].append(
             data, ignore_index=True, sort=False
         )
+        # Maintain int columns after the append converts them to float
+        storage["StorageData"] = storage["StorageData"].astype({"UnitIdx": "int"})
 
 
 def voltage_to_x_per_distance(grid):
