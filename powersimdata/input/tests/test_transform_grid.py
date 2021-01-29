@@ -506,13 +506,15 @@ def test_add_bus(ct):
     prev_max_bus = grid.bus.index.max()
     prev_num_subs = len(grid.sub.index)
     ct.ct["new_bus"] = [
-        # These two are buses at new locations
+        # These three are buses at new locations
         {"lat": 40, "lon": 50.5, "zone_id": 2, "Pd": 0, "baseKV": 69},
         {"lat": -40.5, "lon": -50, "zone_id": 201, "Pd": 10, "baseKV": 230},
+        # We want to test that we can add two new buses at the same lat/lon
+        {"lat": -40.5, "lon": -50, "zone_id": 201, "Pd": 5, "baseKV": 69},
         # This one is at the lat/lon of an existing substation
         {"lat": 36.0155, "lon": -114.738, "zone_id": 208, "Pd": 0, "baseKV": 345},
     ]
-    expected_interconnects = ("Eastern", "Western", "Western")
+    expected_interconnects = ("Eastern", "Western", "Western", "Western")
     new_grid = TransformGrid(grid, ct.ct).get_grid()
     assert len(new_grid.bus.index) == prev_num_buses + len(ct.ct["new_bus"])
     for i, new_bus in enumerate(ct.ct["new_bus"]):
@@ -523,6 +525,7 @@ def test_add_bus(ct):
     # Ensure that we still match with the other dataframes that matter
     assert len(new_grid.bus) == len(new_grid.bus2sub)
     assert len(new_grid.bus2sub.sub_id.unique()) == len(new_grid.sub)
+    # Even though we add three new buses, there are only two unique lat/lon pairs
     assert len(new_grid.sub) == prev_num_subs + 2
     assert new_grid.bus.index.dtype == grid.bus.index.dtype
     assert new_grid.bus2sub.index.dtype == grid.bus2sub.index.dtype
