@@ -95,7 +95,7 @@ Then all costs are summed by technology (so you can ignore the non-renewables/st
 
 ### Sources
 
-See **ATTRIBUTION.md**.
+See [ATTRIBUTION.md](../../../ATTRIBUTION.md).
 
 #### Potential improvements:
 
