@@ -9,22 +9,22 @@ There are 3 separate cost calculations: one for dclines, one for branches (AC tr
 #### branches: calculate_ac_inv_costs
 
 For all capacity added on a **line**, the investment cost is:
-`Cost ($today) = rateA (MW) * lengthMi (miles) * costMWmi ($2010/MW-mi) * mult (regional cost multiplier) * inflation(2010 to today)`
+`Cost ($today) = rateA (MW) * lengthMi (miles) * costMWmi ($2010/MW-mi) * mult (regional cost multiplier) * inflation($2010 to today)`
 Then all lines are summed.
 
 For all capacity added on a **transformer**, the investment cost is:
-`Cost ($today) = rateA (MW) * perMWcost ($2020/MW) * mult (regional cost multiplier) * inflation(2020 to today)`
+`Cost ($today) = rateA (MW) * perMWcost ($2020/MW) * mult (regional cost multiplier) * inflation($2020 to today)`
 
 #### dclines: calculate_dc_inv_costs
 
 For all capacity added on a dcline, the investment cost is:
-`Cost ($today) = Pmax (MW) * (lengthMi (miles) * costMWmi ($2015/MW-mi) * inflation(2015 to today) + 2 * terminal_cost_per_MW ($2020) * inflation(2020 to today))`
+`Cost ($today) = Pmax (MW) * (lengthMi (miles) * costMWmi ($2015/MW-mi) * inflation(2015 to today) + 2 * terminal_cost_per_MW ($2020) * inflation($2020 to today))`
 Then all line costs are summed.
 
 #### plant: calculate_gen_inv_costs
 
 For all capacity added on a plant, the investment cost is:
-`Cost ($today) = Pmax (MW) * CAPEX ($2018/MW) * reg_cap_cost_mult (regional capital cost multiplier) * inflation(2018 to today)`
+`Cost ($today) = Pmax (MW) * CAPEX ($2018/MW) * reg_cap_cost_mult (regional capital cost multiplier) * inflation($2018 to today)`
 Then all costs are summed by technology (so you can ignore the non-renewables/storage if you want).
 
 
