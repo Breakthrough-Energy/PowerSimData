@@ -101,4 +101,4 @@ See **ATTRIBUTION.md**.
 
 - If we want to have financial information other than the default ATB values, a separate financials module will be useful for CAPEX/other calculations.
 
-- Find correct wind and solar classes (based on wind speed, irradience) to map to ATB costs and ReEDS regional cost multipliers.
+- Find correct wind and solar classes (based on wind speed, irradiance) to map to ATB costs and ReEDS regional cost multipliers.
