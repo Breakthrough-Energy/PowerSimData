@@ -281,7 +281,7 @@ class TransformGrid(object):
                     index=[new_sub_id],
                 )
                 self.grid.sub = sub.append(new_row, sort=False)
-                latlon2sub[(lat, lon)] = new_sub_id
+                latlon2sub[(lat, lon)] = [new_sub_id]
 
     def _add_dcline(self):
         """Adds HVDC line(s) to the grid"""
