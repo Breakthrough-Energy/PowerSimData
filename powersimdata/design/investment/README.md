@@ -88,7 +88,7 @@ Then all costs are summed by technology (so you can ignore the non-renewables/st
 
 #### Functions used for generation/storage regional multiplier mapping
 
-`write_poly_shapefile`: Using a csv with specified geometry, creates the shapefile for ReEDS wind resource regions: rs.shp. This shp is used in `plant_to_reeds_reg`.
+`write_poly_shapefile`: using a csv with specified geometry, creates the shapefile for ReEDS wind resource regions: rs.shp. This shp is used in `plant_to_reeds_reg`.
 
 `plant_to_reeds_reg`: maps plant locations to ReEDS regions. Used in `_calculate_gen_inv_costs`.
 
