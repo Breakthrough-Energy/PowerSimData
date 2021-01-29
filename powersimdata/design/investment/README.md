@@ -67,7 +67,7 @@ Then all costs are summed by technology (so you can ignore the non-renewables/st
 - Select (arbitrary) TechDetail (sub-technology) because we can't differentiate between these yet in our plants.
 - Map base costs to plants by "Technology".
 - Map plant location to ReEDS region (for regional cost multipliers).
-- If a technology is wind or wind_offshore or csp, regions are in rs (wind resource region), so keep rs is kept as the region to map. If technology is another tech, regions are in rb (BA region), so keep rb as the region to map.
+- If a technology is wind or wind_offshore or concentrated solar power, regions are in rs (wind resource region), so keep rsas the region to map. If technology is another tech, regions are in rb (BA region), so keep rb as the region to map.
 - Map ["Technology", "r" (region)] to ReEDS regional capital cost multipliers. Keep (arbitrary) subclasses for renewables.
 - Apply inflation to scale 2018 dollars to present.
 - Final calculations.
