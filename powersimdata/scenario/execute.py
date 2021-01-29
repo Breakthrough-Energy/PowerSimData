@@ -241,6 +241,20 @@ class Execute(State):
             return self._launch_on_server(threads, extract_data)
         return self._launch_in_container(threads)
 
+    def check_progress(self):
+        """Get the lastest information from the server container
+
+        :raises NotImplementedError: if not running in container mode
+        """
+        mode = get_deployment_mode()
+        if mode != DeploymentMode.Container:
+            raise NotImplementedError("Operation only supported for container mode")
+
+        scenario_id = self._scenario_info["id"]
+        url = f"http://{server_setup.SERVER_ADDRESS}:5000/status/{scenario_id}"
+        resp = requests.get(url)
+        return resp.json()
+
     def extract_simulation_output(self):
         """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL} on server.
 
@@ -249,6 +263,11 @@ class Execute(State):
         """
         self._update_scenario_status()
         if self._scenario_status == "finished":
+            mode = get_deployment_mode()
+            if mode == DeploymentMode.Container:
+                print("WARNING: extraction not yet supported, please extract manually")
+                return
+
             print("--> Extracting output data on server")
             return self._run_script("extract_data.py")
         else:
