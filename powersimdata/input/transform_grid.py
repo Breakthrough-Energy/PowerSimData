@@ -356,7 +356,7 @@ class TransformGrid(object):
 
     def _add_storage(self):
         """Adds storage to the grid."""
-        first_storage_id = self.grid.plant.shape[0] + 1
+        first_storage_id = self.grid.plant.index.max() + 1
         for i, entry in enumerate(self.ct["storage"]):
             storage_id = first_storage_id + i
             self._add_storage_unit(entry)
