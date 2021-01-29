@@ -43,10 +43,10 @@ Then all costs are summed by technology (so you can ignore the non-renewables/st
 - Lines: Regional multiplier is then the average of the 2 buses' regional multipliers.
 - Lines: Inflation is applied to scale from 2010 dollars to present.
 - Lines: final calculations
-- Xfmrs: Find closest kV present in the corresponding cost table, for each side of the transformer, to get per-MW values.
-- Xfmrs: Multiply per-MW value by upgraded MW.
-- Xfmrs: Regional multiplier is then applied.
-- Xfmrs: Inflation is applied to scale from 2020 dollars to present.
+- Transformers: Find closest kV present in the corresponding cost table, for each side of the transformer, to get per-MW values.
+- Transformers: Multiply per-MW value by upgraded MW.
+- Transformers: Regional multiplier is then applied.
+- Transformers: Inflation is applied to scale from 2020 dollars to present.
 
 #### dcline: calculate_dc_inv_costs
 
