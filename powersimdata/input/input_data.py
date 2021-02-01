@@ -5,6 +5,9 @@ import pandas as pd
 from powersimdata.data_access.context import Context
 from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.utility import server_setup
+from powersimdata.utility.helpers import MemoryCache, cache_key
+
+_cache = MemoryCache()
 
 
 class InputData(object):
@@ -65,16 +68,21 @@ class InputData(object):
             from_dir = server_setup.INPUT_DIR
 
         filepath = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
+        key = cache_key(filepath)
+        cached = _cache.get(key)
+        if cached is not None:
+            return cached
         try:
-            return _read_data(filepath)
+            data = _read_data(filepath)
         except FileNotFoundError:
             print(
                 "%s not found in %s on local machine"
                 % (file_name, server_setup.LOCAL_DIR)
             )
-
-        self.data_access.copy_from(file_name, from_dir)
-        return _read_data(filepath)
+            self.data_access.copy_from(file_name, from_dir)
+            data = _read_data(filepath)
+        _cache.put(key, data)
+        return data
 
 
 def _read_data(filepath):
