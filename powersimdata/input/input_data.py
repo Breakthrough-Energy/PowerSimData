@@ -1,9 +1,9 @@
 import os
+import posixpath
 
 import pandas as pd
 
 from powersimdata.data_access.context import Context
-from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.utility import server_setup
 from powersimdata.utility.helpers import MemoryCache, cache_key
 
@@ -59,10 +59,11 @@ class InputData(object):
         ext = self.file_extension[field_name]
 
         if field_name in ["demand", "hydro", "solar", "wind"]:
-            interconnect = interconnect2name(scenario_info["interconnect"].split("_"))
             version = scenario_info["base_" + field_name]
-            file_name = interconnect + "_" + field_name + "_" + version + "." + ext
-            from_dir = server_setup.BASE_PROFILE_DIR
+            file_name = field_name + "_" + version + "." + ext
+            from_dir = posixpath.join(
+                server_setup.BASE_PROFILE_DIR, scenario_info["grid_model"]
+            )
         else:
             file_name = scenario_info["id"] + "_" + field_name + "." + ext
             from_dir = server_setup.INPUT_DIR
