@@ -82,6 +82,9 @@ def storage_template():
         "max_stor": None,  # ratio
         "InEff": None,
         "OutEff": None,
+        "LossFactor": None,  # stored energy fraction / hour
         "energy_price": None,  # $/MWh
+        "terminal_min": None,
+        "terminal_max": None,
     }
     return storage

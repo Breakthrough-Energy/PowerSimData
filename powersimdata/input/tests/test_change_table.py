@@ -422,7 +422,7 @@ def test_add_bus_bad_type(ct):
 
 
 def test_add_new_elements_at_new_buses(ct):
-    max_existing_index = grid.bus.index.max()
+    max_existing_index = int(grid.bus.index.max())
     new_buses = [
         {"lat": 40, "lon": 50.5, "zone_id": 2, "baseKV": 69},
         {"lat": -40.5, "lon": -50, "zone_name": "Massachusetts", "Pd": 10},
@@ -430,7 +430,7 @@ def test_add_new_elements_at_new_buses(ct):
     ct.add_bus(new_buses)
     new_bus1 = max_existing_index + 1
     new_bus2 = max_existing_index + 2
-    ct.add_storage_capacity(bus_id={new_bus1: 100})
+    ct.add_storage_capacity([{"bus_id": new_bus1, "capacity": 100}])
     ct.add_dcline([{"from_bus_id": new_bus1, "to_bus_id": new_bus2, "capacity": 200}])
     ct.add_branch([{"from_bus_id": new_bus1, "to_bus_id": new_bus2, "capacity": 300}])
     ct.add_plant([{"type": "wind", "bus_id": new_bus2, "Pmax": 400}])

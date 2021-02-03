@@ -356,32 +356,33 @@ class TransformGrid(object):
 
     def _add_storage(self):
         """Adds storage to the grid."""
-        storage_id = self.grid.plant.shape[0]
-        for bus_id, value in self.ct["storage"]["bus_id"].items():
-            storage_id += 1
-            self._add_storage_unit(bus_id, value)
+        first_storage_id = self.grid.plant.index.max() + 1
+        for i, entry in enumerate(self.ct["storage"]):
+            storage_id = first_storage_id + i
+            self._add_storage_unit(entry)
             self._add_storage_gencost()
             self._add_storage_genfuel()
-            self._add_storage_data(storage_id, value)
+            self._add_storage_data(storage_id, entry)
 
-    def _add_storage_unit(self, bus_id, value):
+    def _add_storage_unit(self, entry):
         """Add storage unit.
 
         :param int bus_id: bus identification number.
-        :param float value: storage capacity.
+        :param dict entry: storage details, containing at least "bus_id" and "capacity".
         """
-        gen = {g: 0 for g in self.grid.storage["gen"].columns}
-        gen["bus_id"] = bus_id
+        storage = self.grid.storage
+        gen = {g: 0 for g in storage["gen"].columns}
+        gen["bus_id"] = entry["bus_id"]
         gen["Vg"] = 1
         gen["mBase"] = 100
         gen["status"] = 1
-        gen["Pmax"] = value
-        gen["Pmin"] = -1 * value
-        gen["ramp_10"] = value
-        gen["ramp_30"] = value
-        self.grid.storage["gen"] = self.grid.storage["gen"].append(
-            gen, ignore_index=True, sort=False
-        )
+        gen["Pmax"] = entry["capacity"]
+        gen["Pmin"] = -1 * entry["capacity"]
+        gen["ramp_10"] = entry["capacity"]
+        gen["ramp_30"] = entry["capacity"]
+        storage["gen"] = storage["gen"].append(gen, ignore_index=True, sort=False)
+        # Maintain int columns after the append converts them to float
+        storage["gen"] = storage["gen"].astype({"bus_id": "int", "status": "int"})
 
     def _add_storage_gencost(self):
         """Sets generation cost of storage unit."""
@@ -396,37 +397,43 @@ class TransformGrid(object):
         """Sets fuel type of storage unit."""
         self.grid.storage["genfuel"].append("ess")
 
-    def _add_storage_data(self, storage_id, value):
+    def _add_storage_data(self, storage_id, entry):
         """Sets storage data.
 
         :param int storage_id: storage identification number.
-        :param float value: storage capacity.
+        :param dict entry: storage details, containing at least:
+            "bus_id", "capacity".
         """
-        data = {g: 0 for g in self.grid.storage["StorageData"].columns}
+        storage = self.grid.storage
+        data = {g: 0 for g in storage["StorageData"].columns}
 
-        duration = self.grid.storage["duration"]
-        min_stor = self.grid.storage["min_stor"]
-        max_stor = self.grid.storage["max_stor"]
-        energy_price = self.grid.storage["energy_price"]
+        capacity = entry["capacity"]
+        duration = entry["duration"]
+        min_stor = entry["min_stor"]
+        max_stor = entry["max_stor"]
+        energy_value = entry["energy_value"]
+        terminal_min = entry["terminal_min"]
+        terminal_max = entry["terminal_max"]
 
         data["UnitIdx"] = storage_id
-        data["ExpectedTerminalStorageMax"] = value * duration * max_stor
-        data["ExpectedTerminalStorageMin"] = value * duration / 2
-        data["InitialStorage"] = value * duration / 2
-        data["InitialStorageLowerBound"] = value * duration / 2
-        data["InitialStorageUpperBound"] = value * duration / 2
-        data["InitialStorageCost"] = energy_price
-        data["TerminalStoragePrice"] = energy_price
-        data["MinStorageLevel"] = value * duration * min_stor
-        data["MaxStorageLevel"] = value * duration * max_stor
-        data["OutEff"] = self.grid.storage["OutEff"]
-        data["InEff"] = self.grid.storage["InEff"]
-        data["LossFactor"] = 0
+        data["ExpectedTerminalStorageMax"] = capacity * duration * terminal_max
+        data["ExpectedTerminalStorageMin"] = capacity * duration * terminal_min
+        data["InitialStorage"] = capacity * duration / 2  # Start with half
+        data["InitialStorageLowerBound"] = capacity * duration / 2  # Start with half
+        data["InitialStorageUpperBound"] = capacity * duration / 2  # Start with half
+        data["InitialStorageCost"] = energy_value
+        data["TerminalStoragePrice"] = energy_value
+        data["MinStorageLevel"] = capacity * duration * min_stor
+        data["MaxStorageLevel"] = capacity * duration * max_stor
+        data["OutEff"] = entry["OutEff"]
+        data["InEff"] = entry["InEff"]
+        data["LossFactor"] = entry["LossFactor"]
         data["rho"] = 1
-        prev_storage_data = self.grid.storage["StorageData"]
-        self.grid.storage["StorageData"] = prev_storage_data.append(
+        storage["StorageData"] = storage["StorageData"].append(
             data, ignore_index=True, sort=False
         )
+        # Maintain int columns after the append converts them to float
+        storage["StorageData"] = storage["StorageData"].astype({"UnitIdx": "int"})
 
 
 def voltage_to_x_per_distance(grid):
