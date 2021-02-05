@@ -10,14 +10,11 @@ import pandas as pd
 from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.grid import Grid
+from powersimdata.input.input_data import get_bus_demand
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.scenario.execute import Execute
-from powersimdata.scenario.helpers import (
-    calculate_bus_demand,
-    check_interconnect,
-    interconnect2name,
-)
+from powersimdata.scenario.helpers import check_interconnect, interconnect2name
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
 
@@ -153,9 +150,8 @@ class Create(State):
 
         :return: (*pandas.DataFrame*) -- data frame of demand (hour, bus).
         """
-        demand = self.get_profile("demand")
         grid = self.get_grid()
-        return calculate_bus_demand(grid.bus, demand)
+        return get_bus_demand(self._scenario_info, grid)
 
     def get_hydro(self):
         """Returns hydro profile.
