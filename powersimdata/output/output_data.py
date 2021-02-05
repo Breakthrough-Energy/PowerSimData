@@ -95,7 +95,7 @@ def construct_load_shed(scenario_info, grid, infeasibilities=None):
         load_shed = pd.DataFrame.sparse.from_spmatrix(load_shed_data)
     else:
         print("Infeasibilities, constructing DataFrame")
-        bus_demand = get_bus_demand(scenario_info["id"], grid)
+        bus_demand = get_bus_demand(scenario_info, grid)
         load_shed = np.zeros((len(hours), len(buses)))
         # Convert '24H' to 24
         interval = int(scenario_info["interval"][:-1])
