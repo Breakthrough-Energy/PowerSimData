@@ -5,10 +5,9 @@ import pickle
 import pandas as pd
 
 from powersimdata.input.grid import Grid
-from powersimdata.input.input_data import InputData
+from powersimdata.input.input_data import InputData, get_bus_demand
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.output.output_data import OutputData, construct_load_shed
-from powersimdata.scenario.helpers import calculate_bus_demand
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
 
@@ -275,10 +274,8 @@ class Analyze(State):
 
         :return: (*pandas.DataFrame*) -- data frame of demand (hour, bus).
         """
-        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
-        demand = profile.get_profile("demand")
         grid = self.get_grid()
-        return calculate_bus_demand(grid.bus, demand)
+        return get_bus_demand(self._scenario_info, grid)
 
     def get_hydro(self):
         """Returns hydro profile
