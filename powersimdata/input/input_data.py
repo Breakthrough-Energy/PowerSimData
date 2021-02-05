@@ -102,14 +102,14 @@ def _read_data(filepath):
     return data
 
 
-def get_bus_demand(scenario_id, grid):
+def get_bus_demand(scenario_info, grid):
     """Returns demand profiles by bus.
 
-    :param str scenario_id: scenario id.
+    :param dict scenario_info: scenario information.
     :param powersimdata.input.grid.Grid grid: grid to construct bus demand for.
     :return: (*pandas.DataFrame*) -- data frame of demand.
     """
-    demand = InputData().get_data(scenario_id, "demand")
+    demand = InputData().get_data(scenario_info, "demand")
     bus = grid.bus
     bus["zone_Pd"] = bus.groupby("zone_id")["Pd"].transform("sum")
     bus["zone_share"] = bus["Pd"] / bus["zone_Pd"]
