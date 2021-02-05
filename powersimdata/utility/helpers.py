@@ -130,6 +130,12 @@ class PrintManager(object):
         """Constructor"""
         self.stdout = sys.stdout
 
+    def __enter__(self):
+        self.block_print()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.enable_print()
+
     @staticmethod
     def block_print():
         """Suppresses print"""
