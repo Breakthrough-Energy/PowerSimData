@@ -13,10 +13,7 @@ from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
-from powersimdata.utility.server_setup import (
-    DeploymentMode,
-    get_deployment_mode,
-)
+from powersimdata.utility.server_setup import DeploymentMode, get_deployment_mode
 
 
 class Execute(State):

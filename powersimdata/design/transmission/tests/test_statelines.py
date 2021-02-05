@@ -1,8 +1,6 @@
 import unittest
 
-from powersimdata.design.transmission.statelines import (
-    _classify_interstate_intrastate,
-)
+from powersimdata.design.transmission.statelines import _classify_interstate_intrastate
 from powersimdata.tests.mock_grid import MockGrid
 
 # branch_id is the index

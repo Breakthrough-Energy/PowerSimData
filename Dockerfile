@@ -6,7 +6,7 @@ RUN ln -s /mnt/bes/pcm $HOME/ScenarioData
 
 COPY powersimdata/utility/templates /mnt/bes/pcm/
 
-WORKDIR /app
+WORKDIR /PowerSimData
 COPY Pipfile .
 COPY Pipfile.lock .
 RUN pip install -U pip pipenv ipython; \
