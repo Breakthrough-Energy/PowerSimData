@@ -2,11 +2,7 @@ from math import sqrt
 
 from numpy.testing import assert_almost_equal, assert_array_almost_equal
 
-from powersimdata.utility.distance import (
-    angular_distance,
-    find_closest_neighbor,
-    ll2uv,
-)
+from powersimdata.utility.distance import angular_distance, find_closest_neighbor, ll2uv
 
 
 def test_ll2uv():
