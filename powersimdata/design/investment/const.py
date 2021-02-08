@@ -79,6 +79,7 @@ gen_inv_cost_techdetails_to_keep = {
     "LTRG1",  # Single tech for wind
     "4Hr Battery Storage",  # Single tech for storage
     "Seattle",  # Single tech for solar
+    "*",  # Single tech for nuclear
 }
 
 regional_multiplier_gen_translation = {
