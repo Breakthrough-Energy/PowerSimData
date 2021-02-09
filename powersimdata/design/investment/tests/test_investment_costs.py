@@ -39,10 +39,10 @@ mock_branch["to_lon"] = [
 ]
 
 mock_plant = {
-    "plant_id": ["A", "B", "C", "D", "E", "F", "G"],
-    "bus_id": [2010228, 2010228, 2021106, 2010319, 2010319, 2010319, 2010320],
-    "type": ["solar", "coal", "wind", "solar", "solar", "ng", "wind"],
-    "Pmax": [15, 30, 10, 12, 8, 20, 15],
+    "plant_id": ["A", "B", "C", "D", "E", "F", "G", "H"],
+    "bus_id": [2010228, 2010228, 2021106, 2010319, 2010319, 2010319, 2010320, 2021106],
+    "type": ["solar", "coal", "wind", "solar", "solar", "ng", "wind", "nuclear"],
+    "Pmax": [15, 30, 10, 12, 8, 20, 15, 1000],
 }
 mock_plant["lat"] = [
     mock_bus["lat"][mock_bus["bus_id"].index(bus)] for bus in mock_plant["bus_id"]
@@ -97,11 +97,12 @@ def test_calculate_ac_inv_costs(mock_grid):
 
 
 def test_calculate_dc_inv_costs(mock_grid):
-    expected_dc_cost = 10 * 679.1799258421203 * 457.1428571 * calculate_inflation(
-        2015
-    ) + 135e3 * 10 * 2 * calculate_inflation(  # lines
-        2020
-    )  # terminals
+    expected_dc_cost = (
+        # lines
+        10 * 679.1799258421203 * 457.1428571 * calculate_inflation(2015)
+        # terminals
+        + 135e3 * 10 * 2 * calculate_inflation(2020)
+    )
     dc_cost = _calculate_dc_inv_costs(mock_grid)
     assert dc_cost == pytest.approx(expected_dc_cost)
 
@@ -109,6 +110,7 @@ def test_calculate_dc_inv_costs(mock_grid):
 def test_calculate_gen_inv_costs_2030(mock_grid):
     gen_inv_cost = _calculate_gen_inv_costs(mock_grid, 2030, "Moderate").to_dict()
     expected_gen_inv_cost = {
+        # for each: capacity (kW) * regional multiplier * base technology cost
         "solar": sum(
             [
                 15e3 * 1.01701 * 836.3842785,
@@ -120,6 +122,7 @@ def test_calculate_gen_inv_costs_2030(mock_grid):
         "wind": 10e3 * 1.16979 * 1297.964758 + 15e3 * 1.04348 * 1297.964758,
         "ng": 20e3 * 1.050755 * 983.2351768,
         "storage": 100e3 * 1.012360 * 817 + 200e3 * 1.043730 * 817,
+        "nuclear": 1000e3 * 1.07252 * 6727.799801,
     }
     inflation = calculate_inflation(2018)
     expected_gen_inv_cost = {k: v * inflation for k, v in expected_gen_inv_cost.items()}
