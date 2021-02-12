@@ -3,7 +3,7 @@ import pandas as pd
 
 from powersimdata.design.mimic_grid import mimic_generation_capacity
 from powersimdata.input.grid import Grid
-from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
+from powersimdata.network.usa_tamu.model import area_to_loadzone
 from powersimdata.scenario.scenario import Scenario
 
 

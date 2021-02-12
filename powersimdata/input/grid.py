@@ -2,7 +2,7 @@ import os
 
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
 from powersimdata.network.usa_tamu.constants import storage as tamu_storage
-from powersimdata.network.usa_tamu.usa_tamu_model import TAMU
+from powersimdata.network.usa_tamu.model import TAMU
 from powersimdata.utility.helpers import MemoryCache, cache_key
 
 _cache = MemoryCache()

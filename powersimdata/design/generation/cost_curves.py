@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from powersimdata.input.grid import Grid
-from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
+from powersimdata.network.usa_tamu.model import area_to_loadzone
 from powersimdata.utility.helpers import _check_import
 
 
