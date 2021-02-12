@@ -12,11 +12,11 @@ install_requires = [
 
 setup(
     name="powersimdata",
-    version="0.3",
+    version="0.4",
     description="Power Simulation Data",
     url="https://github.com/Breakthrough-Energy/powersimdata",
     author="Kaspar Mueller",
-    author_email="kaspar.mueller@breakthroughenergy.org",
+    author_email="kaspar@breakthroughenergy.org",
     packages=find_packages(),
     package_data={
         "powersimdata": [
