@@ -1,6 +1,6 @@
 import warnings
 
-from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
+from powersimdata.network.usa_tamu.model import area_to_loadzone
 
 
 def _check_state(scenario):
