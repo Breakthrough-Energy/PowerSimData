@@ -1,3 +1,18 @@
+_exports = [
+    "all_resources",
+    "carbon_per_mmbtu",
+    "carbon_per_mwh",
+    "carbon_resources",
+    "clean_resources",
+    "label2type",
+    "nox_per_mwh",
+    "renewable_resources",
+    "so2_per_mwh",
+    "type2color",
+    "type2hatchcolor",
+    "type2label",
+]
+
 type2color = {
     "wind": "xkcd:green",
     "solar": "xkcd:amber",
@@ -84,3 +99,7 @@ so2_per_mwh = {
     "dfo": 2.189,
     "ng": 0.010,
 }
+
+
+def __dir__():
+    return sorted(_exports)
