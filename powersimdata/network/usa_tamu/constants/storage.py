@@ -1,3 +1,5 @@
+_exports = ["defaults"]
+
 defaults = {
     "duration": 4,
     "min_stor": 0.05,
@@ -9,3 +11,7 @@ defaults = {
     "terminal_min": 0,
     "terminal_max": 1,
 }
+
+
+def __dir__():
+    return sorted(_exports)
