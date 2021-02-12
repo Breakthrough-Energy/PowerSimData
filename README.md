@@ -6,6 +6,8 @@
 # PowerSimData
 This package has been written in order to carry out power flow study in the U.S. electrical grid. This framework allows the user to easily build extensive scenarios.
 
+PowerSimData is part of a set of packages representing Breakthrough Energy's power system model. More information regarding the installation of the model as well as the contribution guide can be found [here](https://breakthrough-energy.github.io/docs/).
+
 
 ## 1. Setup/Install
 Here are the instructions to install the **PowerSimData** package. We strongly recommend that you pick one of the following options.
