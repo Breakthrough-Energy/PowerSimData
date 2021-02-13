@@ -150,7 +150,7 @@ def get_branches_by_area(grid, area_names, method="either"):
 
     :param powersimdata.input.grid.Grid grid: Grid to query for topology.
     :param list/set/tuple area_names: an iterable of area names, used to look
-        up zone names via powersimdata.design.scenario_info.area_to_loadzone.
+        up zone names via powersimdata.network.usa_tamu.model.area_to_loadzone.
     :param str method: whether to include branches which span zones. Options:
         - 'internal': only select branches which are to/from the same area.
         - 'bridging': only select branches which connect area to another.
@@ -176,7 +176,7 @@ def get_branches_by_area(grid, area_names, method="either"):
     branch = grid.branch
     selected_branches = set()
     for a in area_names:
-        load_zone_names = area_to_loadzone(grid, a)
+        load_zone_names = area_to_loadzone(a)
         to_bus_in_area = branch.to_zone_name.isin(load_zone_names)
         from_bus_in_area = branch.from_zone_name.isin(load_zone_names)
         if method in ("internal", "either"):

@@ -221,7 +221,7 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
-    returned_zones = area_to_loadzone(grid, area, area_type)
+    returned_zones = area_to_loadzone(area, area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     data = data.loc[data.zone_name.isin(returned_zones)]
@@ -442,7 +442,7 @@ def plot_c1_vs_c2(
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
-    returned_zones = area_to_loadzone(grid, area, area_type)
+    returned_zones = area_to_loadzone(area, area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     data = data.loc[data.zone_name.isin(returned_zones)]
@@ -547,7 +547,7 @@ def plot_capacity_vs_price(
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
-    returned_zones = area_to_loadzone(grid, area, area_type)
+    returned_zones = area_to_loadzone(area, area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     data = data.loc[data.zone_name.isin(returned_zones)]

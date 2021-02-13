@@ -102,9 +102,9 @@ def _make_zonename2target(grid, targets):
         if a zone is present in more than one target area.
     """
     target_zones = {
-        target_name: area_to_loadzone(grid, target_name)
+        target_name: area_to_loadzone(target_name)
         if pd.isnull(targets.loc[target_name, "area_type"])
-        else area_to_loadzone(grid, target_name, targets.loc[target_name, "area_type"])
+        else area_to_loadzone(target_name, targets.loc[target_name, "area_type"])
         for target_name in targets.index.tolist()
     }
     # Check for any collisions
@@ -462,7 +462,7 @@ def create_change_table(input_targets, ref_scenario):
         prev_wind = input_targets.loc[region, "wind.prev_capacity"]
         next_solar = input_targets.loc[region, "solar.next_capacity"]
         next_wind = input_targets.loc[region, "wind.next_capacity"]
-        zone_names = area_to_loadzone(base_grid, region)
+        zone_names = area_to_loadzone(region)
         zone_ids = [base_grid.zone2id[n] for n in zone_names if n in grid_zones]
         if prev_solar > 0:
             scale = next_solar / prev_solar
