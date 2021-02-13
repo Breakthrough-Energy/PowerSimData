@@ -10,7 +10,7 @@ from powersimdata.design.generation.cost_curves import (
 from powersimdata.tests.mock_grid import MockGrid
 
 mock_plant = {
-    "plant_id": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+    "plant_id": range(20),
     "type": [
         "coal",
         "coal",
@@ -33,7 +33,7 @@ mock_plant = {
         "ng",
         "ng",
     ],
-    "Pmin": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "Pmin": [0] * 20,
     "Pmax": [
         50,
         20,
@@ -56,58 +56,16 @@ mock_plant = {
         20,
         100,
     ],
-    "interconnect": [
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-    ],
-    "zone_name": [
-        "A",
-        "A",
-        "A",
-        "A",
-        "B",
-        "B",
-        "B",
-        "B",
-        "B",
-        "B",
-        "C",
-        "C",
-        "C",
-        "C",
-        "C",
-        "C",
-        "C",
-        "C",
-        "C",
-        "C",
-    ],
+    "interconnect": ["Western"] * 20,
+    "zone_name": ["Utah"] * 4 + ["Colorado"] * 6 + ["Washington"] * 10,
 }
 
 mock_gencost = {
-    "plant_id": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-    "type": [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-    "startup": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    "shutdown": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    "n": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+    "plant_id": range(20),
+    "type": [2] * 20,
+    "startup": [0] * 20,
+    "shutdown": [0] * 20,
+    "n": [3] * 20,
     "c2": [
         0.025,
         0.010,
@@ -174,35 +132,14 @@ mock_gencost = {
         1200,
         1900,
     ],
-    "interconnect": [
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-        "D",
-    ],
+    "interconnect": ["Western"] * 20,
 }
 
 grid_attrs = {"plant": mock_plant, "gencost_before": mock_gencost}
 
 grid = MockGrid(grid_attrs)
-grid.interconnect = "D"
-grid.zone2id = {"A": 0, "B": 1, "C": 2}
+grid.interconnect = "Western"
+grid.zone2id = {"Utah": 210, "Colorado": 212, "Washington": 201}
 
 
 def test_get_supply_data():
@@ -238,7 +175,7 @@ def test_get_supply_data():
 
 
 def test_build_supply_curve_1seg():
-    Ptest, Ftest = build_supply_curve(grid, 1, "B", "ng", "loadzone", plot=False)
+    Ptest, Ftest = build_supply_curve(grid, 1, "Colorado", "ng", "loadzone", plot=False)
     Pexp = [0, 10, 10, 30, 30, 50, 50, 100, 100, 200]
     Fexp = [25.10, 25.10, 30.40, 30.40, 30.40, 30.40, 31.25, 31.25, 40.00, 40.00]
     assert all([Ptest[i] == Pexp[i] for i in range(len(Ptest))])
@@ -246,7 +183,7 @@ def test_build_supply_curve_1seg():
 
 
 def test_build_supply_curve_2seg():
-    Ptest, Ftest = build_supply_curve(grid, 2, "A", "coal", "loadzone", plot=False)
+    Ptest, Ftest = build_supply_curve(grid, 2, "Utah", "coal", "loadzone", plot=False)
     Pexp = [0, 10, 10, 20, 20, 45, 45, 70, 70, 120, 120, 170]
     Fexp = [
         30.100,
@@ -267,7 +204,7 @@ def test_build_supply_curve_2seg():
 
 
 def test_ks_test():
-    P1, F1 = build_supply_curve(grid, 1, "C", "coal", "loadzone", plot=False)
+    P1, F1 = build_supply_curve(grid, 1, "Washington", "coal", "loadzone", plot=False)
     P2 = [0, 15, 15, 40, 40, 75, 75, 130, 130, 190, 190, 225, 225, max(P1)]
     F2 = [
         23.00,

@@ -11,6 +11,7 @@ from powersimdata.network.usa_tamu.constants.storage import defaults
 from powersimdata.network.usa_tamu.constants.zones import (
     abv2state,
     interconnect2loadzone,
+    loadzone,
     state2loadzone,
 )
 
@@ -121,10 +122,9 @@ def add_information_to_model(model):
     add_coord_to_grid_data_frames(model)
 
 
-def area_to_loadzone(grid, area, area_type=None):
+def area_to_loadzone(area, area_type=None):
     """Map the query area to a list of loadzones
 
-    :param powersimdata.input.grid.Grid grid: grid to use for mapping.
     :param str area: one of: *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
     :param str area_type: one of: *'loadzone'*, *'state'*,
@@ -145,7 +145,7 @@ def area_to_loadzone(grid, area, area_type=None):
         raise TypeError("'area_type' should be either None or str.")
     if area_type:
         if area_type == "loadzone":
-            if area in grid.zone2id:
+            if area in loadzone:
                 loadzone_set = {area}
             else:
                 raise_invalid_area(area_type)
@@ -173,14 +173,14 @@ def area_to_loadzone(grid, area, area_type=None):
     else:
         if area in list(abv2state.values()):
             loadzone_set = state2loadzone[area]
-        elif area in grid.zone2id:
+        elif area in loadzone:
             loadzone_set = {area}
         elif area in abv2state:
             loadzone_set = state2loadzone[abv2state[area]]
         elif area in {"Texas", "Western", "Eastern"}:
             loadzone_set = interconnect2loadzone[area]
         elif area == "all":
-            loadzone_set = set(grid.zone2id.keys())
+            loadzone_set = loadzone
         else:
             print("%s is incorrect." % area)
             raise ValueError("Invalid area")
