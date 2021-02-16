@@ -1,20 +1,17 @@
 import copy
-import os
 import pickle
-import posixpath
 from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
 
-from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.grid import Grid
-from powersimdata.input.input_data import get_bus_demand
+from powersimdata.input.input_data import InputData, get_bus_demand
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
+from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.execute import Execute
-from powersimdata.scenario.helpers import check_interconnect, interconnect2name
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
 
@@ -49,6 +46,7 @@ class Create(State):
                 ("end_date", ""),
                 ("interval", ""),
                 ("engine", ""),
+                ("grid_model", ""),
             ]
         )
         super().__init__(scenario)
@@ -103,7 +101,7 @@ class Create(State):
         if self.builder is not None:
             return copy.deepcopy(self.builder.change_table.ct)
         else:
-            raise Exception("Change table does not exist yet")
+            raise Exception("change table not set")
 
     def get_grid(self):
         """Returns the Grid object.
@@ -115,33 +113,34 @@ class Create(State):
         if self.builder is not None:
             return self.builder.get_grid()
         else:
-            raise Exception("Grid object does not exist yet")
+            raise Exception("grid not set")
 
-    def get_profile(self, name):
+    def get_profile(self, kind):
         """Returns demand, hydro, solar or wind  profile.
 
-        :param str name: either *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :param str kind: either *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         :return: (*pandas.DataFrame*) -- profile.
-        :raises Exception: if :meth:`_Builder.set_base_profile` has not been called yet.
+        :raises Exception: if :attr:`builder` has not been assigned yet through
+            meth:`set_builder` or if :meth:`_Builder.set_base_profile` has not been
+            called yet.
         """
-        if getattr(self.builder, name):
+        if getattr(self.builder, kind):
             profile = TransformProfile(
                 {
-                    "interconnect": self.builder.name,
-                    "base_%s" % name: getattr(self.builder, name),
+                    "grid_model": getattr(self.builder, "grid_model"),
+                    "base_%s" % kind: getattr(self.builder, kind),
                 },
                 self.get_grid(),
                 self.get_ct(),
             )
-            return profile.get_profile(name)
+            return profile.get_profile(kind)
         else:
-            raise Exception("Set base %s profile version first" % name)
+            raise Exception("%s profile version not set" % kind)
 
     def get_demand(self):
         """Returns demand profile.
 
-        :return: (*pandas.DataFrame*) -- load with zone id as columns and UTC timestamp
-            as index.
+        :return: (*pandas.DataFrame*) -- data frame of demand (hour, zone id).
         """
         return self.get_profile("demand")
 
@@ -156,24 +155,21 @@ class Create(State):
     def get_hydro(self):
         """Returns hydro profile.
 
-        :return: (*pandas.DataFrame*) -- hydro energy output with plant id as columns
-            and UTC timestamp as index.
+        :return: (*pandas.DataFrame*) -- data frame of hydro power output (hour, plant).
         """
         return self.get_profile("hydro")
 
     def get_solar(self):
         """Returns solar profile.
 
-        :return: (*pandas.DataFrame*) -- solar energy output with plant id as columns
-            and UTC timestamp as index.
+        :return: (*pandas.DataFrame*) -- data frame of solar power output (hour, plant).
         """
         return self.get_profile("solar")
 
     def get_wind(self):
         """Returns wind profile.
 
-        :return: (*pandas.DataFrame*) -- power output with plant identification number
-            as columns and UTC timestamp as index.
+        :return: (*pandas.DataFrame*) -- data frame of wind power output (hour, plant).
         """
         return self.get_profile("wind")
 
@@ -227,32 +223,18 @@ class Create(State):
         for key, val in self._scenario_info.items():
             print("%s: %s" % (key, val))
 
-    def set_builder(self, interconnect):
+    def set_builder(self, grid_model="usa_tamu", interconnect="USA"):
         """Sets builder.
 
-        :param list interconnect: name of interconnect(s).
+        :param str grid_model: name of grid model. Default is *'usa_tamu'*.
+        :param list interconnect: name of interconnect(s). Default is *'USA'*.
         """
+        if isinstance(interconnect, str):
+            interconnect = [interconnect]
+        self.builder = _Builder(
+            grid_model, interconnect, self._scenario_list_manager.get_scenario_table()
+        )
 
-        check_interconnect(interconnect)
-        n = len(interconnect)
-        if n == 1:
-            if "Eastern" in interconnect:
-                self.builder = Eastern(self._data_access)
-            elif "Texas" in interconnect:
-                self.builder = Texas(self._data_access)
-            elif "Western" in interconnect:
-                self.builder = Western(self._data_access)
-            elif "USA" in interconnect:
-                self.builder = USA(self._data_access)
-        elif n == 2:
-            if "Western" in interconnect and "Texas" in interconnect:
-                self.builder = TexasWestern(self._data_access)
-            elif "Eastern" in interconnect and "Texas" in interconnect:
-                print("Not implemented yet")
-                return
-            elif "Eastern" in interconnect and "Western" in interconnect:
-                print("Not implemented yet")
-                return
         print("--> Summary")
         print("# Existing study")
         if self.builder.existing.empty:
@@ -267,56 +249,54 @@ class Create(State):
             if len(possible) != 0:
                 print("%s: %s" % (p, " | ".join(possible)))
 
-        self._scenario_info["interconnect"] = self.builder.name
+        self._scenario_info["grid_model"] = self.builder.grid_model
+        self._scenario_info["interconnect"] = self.builder.interconnect
 
 
 class _Builder(object):
     """Scenario Builder.
 
+    :param str grid_model: grid model.
     :param list interconnect: list of interconnect(s) to build.
-    :param powersimdata.data_access.data_access.DataAccess data_access:
-        data access object.
+    :param pandas.DataFrame table: scenario list table
     """
 
-    interconnect = None
-    base_grid = None
-    change_table = None
-    profile = None
-    existing = None
     plan_name = ""
     scenario_name = ""
     start_date = "2016-01-01 00:00:00"
     end_date = "2016-12-31 23:00:00"
-    interval = "144H"
+    interval = "24H"
     demand = ""
     hydro = ""
     solar = ""
     wind = ""
     engine = "REISE.jl"
-    name = "builder"
 
-    def __init__(self, interconnect, data_access):
+    def __init__(self, grid_model, interconnect, table):
         """Constructor."""
-        self.base_grid = Grid(interconnect)
-        self.profile = CSV(interconnect, data_access)
-        self.change_table = ChangeTable(self.base_grid)
-        self._scenario_list_manager = ScenarioListManager(data_access)
+        mi = ModelImmutables(grid_model)
+        mi.check_interconnect(interconnect)
 
-        table = self._scenario_list_manager.get_scenario_table()
-        self.existing = table[table.interconnect == self.name]
+        self.grid_model = mi.model
+        self.interconnect = mi.interconnect_to_name(interconnect)
+
+        self.base_grid = Grid(interconnect, source=grid_model)
+        self.change_table = ChangeTable(self.base_grid)
+
+        self.existing = table[table.interconnect == self.interconnect]
 
     def set_name(self, plan_name, scenario_name):
         """Sets scenario name.
 
         :param str plan_name: plan name
         :param str scenario_name: scenario name.
-        :raises Exception: if combination plan - scenario already exists
+        :raises ValueError: if combination plan - scenario already exists
         """
 
         if plan_name in self.existing.plan.tolist():
             scenario = self.existing[self.existing.plan == plan_name]
             if scenario_name in scenario.name.tolist():
-                raise Exception(
+                raise ValueError(
                     "Combination %s - %s already exists" % (plan_name, scenario_name)
                 )
         self.plan_name = plan_name
@@ -329,7 +309,7 @@ class _Builder(object):
         :param str start_date: start date.
         :param str end_date: start date.
         :param str interval: interval.
-        :raises Exception: if start date, end date or interval are not properly defined.
+        :raises ValueError: if start date, end date or interval are invalid.
         """
         min_ts = pd.Timestamp("2016-01-01 00:00:00")
         max_ts = pd.Timestamp("2016-12-31 23:00:00")
@@ -338,13 +318,13 @@ class _Builder(object):
         end_ts = pd.Timestamp(end_date)
         hours = (end_ts - start_ts) / np.timedelta64(1, "h") + 1
         if start_ts > end_ts:
-            raise Exception("start_date > end_date")
+            raise ValueError("start_date > end_date")
         elif start_ts < min_ts or start_ts >= max_ts:
-            raise Exception("start_date not in [%s,%s[" % (min_ts, max_ts))
+            raise ValueError("start_date not in [%s,%s[" % (min_ts, max_ts))
         elif end_ts <= min_ts or end_ts > max_ts:
-            raise Exception("end_date not in ]%s,%s]" % (min_ts, max_ts))
+            raise ValueError("end_date not in ]%s,%s]" % (min_ts, max_ts))
         elif hours % int(interval.split("H", 1)[0]) != 0:
-            raise Exception("Incorrect interval for start and end dates")
+            raise ValueError("Incorrect interval for start and end dates")
         else:
             self.start_date = start_date
             self.end_date = end_date
@@ -356,20 +336,18 @@ class _Builder(object):
         :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         :return: (*list*) -- available version for selected profile kind.
         """
-        return self.profile.get_base_profile(kind)
+        return InputData().get_profile_version(self.grid_model, kind)
 
     def set_base_profile(self, kind, version):
         """Sets demand profile.
 
         :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         :param str version: demand profile version.
-        :raises Exception: if no profile or selected version.
+        :raises ValueError: if no profiles are available or version is not available.
         """
         possible = self.get_base_profile(kind)
         if len(possible) == 0:
-            raise Exception(
-                "No %s profile available in %s" % (kind, " + ".join(self.interconnect))
-            )
+            raise ValueError("No %s profile available" % kind)
         elif version in possible:
             if kind == "demand":
                 self.demand = version
@@ -380,17 +358,14 @@ class _Builder(object):
             if kind == "wind":
                 self.wind = version
         else:
-            raise Exception(
-                "Available %s profiles for %s: %s"
-                % (kind, " + ".join(self.interconnect), " | ".join(possible))
-            )
+            raise ValueError("Available %s profiles: %s" % (kind, " | ".join(possible)))
 
     def set_engine(self, engine):
         """Sets simulation engine to be used for scenarion.
 
         :param str engine: simulation engine
         """
-        possible = ["REISE", "REISE.jl"]
+        possible = ["REISE.jl"]
         if engine not in possible:
             print("Available engines: %s" % " | ".join(possible))
             return
@@ -418,123 +393,3 @@ class _Builder(object):
 
     def __str__(self):
         return self.name
-
-
-class Eastern(_Builder):
-    """Builder for Eastern interconnect."""
-
-    name = "Eastern"
-
-    def __init__(self, data_access):
-        """Constructor."""
-        self.interconnect = ["Eastern"]
-        super().__init__(self.interconnect, data_access)
-
-
-class Texas(_Builder):
-    """Builder for Texas interconnect."""
-
-    name = "Texas"
-
-    def __init__(self, data_access):
-        """Constructor."""
-        self.interconnect = ["Texas"]
-        super().__init__(self.interconnect, data_access)
-
-
-class Western(_Builder):
-    """Builder for Western interconnect.
-
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
-    """
-
-    name = "Western"
-
-    def __init__(self, data_access):
-        """Constructor."""
-        self.interconnect = ["Western"]
-        super().__init__(self.interconnect, data_access)
-
-
-class TexasWestern(_Builder):
-    """Builder for Texas + Western interconnect.
-
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
-    """
-
-    name = "Texas_Western"
-
-    def __init__(self, data_access):
-        """Constructor."""
-        self.interconnect = ["Texas", "Western"]
-        super().__init__(self.interconnect, data_access)
-
-
-class TexasEastern(_Builder):
-    """Builder for Texas + Eastern interconnect."""
-
-    name = "Texas_Eastern"
-
-    def __init__(self, data_access):
-        """Constructor."""
-        self.interconnect = ["Texas", "Eastern"]
-        super().__init__(self.interconnect, data_access)
-
-
-class EasternWestern(_Builder):
-    """Builder for Eastern + Western interconnect."""
-
-    name = "Eastern_Western"
-
-    def __init__(self, data_access):
-        """Constructor."""
-        self.interconnect = ["Eastern", "Western"]
-        super().__init__(self.interconnect, data_access)
-
-
-class USA(_Builder):
-    """Builder for USA interconnect."""
-
-    name = "USA"
-
-    def __init__(self, data_access):
-        """Constructor."""
-        self.interconnect = ["USA"]
-        super().__init__(self.interconnect, data_access)
-
-
-class CSV(object):
-    """Profiles handler.
-
-    :param list interconnect: interconnect(s)
-    :param powersimdata.data_access.data_access.DataAccess data_access:
-        data access object.
-    """
-
-    def __init__(self, interconnect, data_access):
-        """Constructor."""
-        self._data_access = data_access
-        self.interconnect = interconnect
-
-    def get_base_profile(self, kind):
-        """Returns available base profiles.
-
-        :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
-        :return: (*list*) -- available version for selected profile kind.
-        """
-        possible = ["demand", "hydro", "solar", "wind"]
-        if kind not in possible:
-            raise NameError("Choose from %s" % " | ".join(possible))
-
-        available = interconnect2name(self.interconnect) + "_" + kind + "_*"
-        query = posixpath.join(
-            server_setup.DATA_ROOT_DIR, server_setup.BASE_PROFILE_DIR, available
-        )
-        stdin, stdout, stderr = self._data_access.execute_command("ls " + query)
-        if len(stderr.readlines()) != 0:
-            print("No %s profiles available." % kind)
-            possible = []
-        else:
-            filename = [os.path.basename(line.rstrip()) for line in stdout.readlines()]
-            possible = [f[f.rfind("_") + 1 : -4] for f in filename]
-        return possible
