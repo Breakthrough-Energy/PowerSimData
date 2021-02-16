@@ -84,10 +84,10 @@ class InputData(object):
         _cache.put(key, data)
         return data
 
-    def get_profile_version(self, scenario_info, kind):
+    def get_profile_version(self, grid_model, kind):
         """Returns available raw profile either from server or local directory.
 
-        :param dict scenario_info: scenario information.
+        :param str grid_model: grid model.
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
         :return: (*list*) -- available profile version.
         :raises ValueError: if kind not one of *'demand'*, *'hydro'*, *'solar'* or
@@ -99,7 +99,7 @@ class InputData(object):
         query = posixpath.join(
             server_setup.DATA_ROOT_DIR,
             server_setup.BASE_PROFILE_DIR,
-            scenario_info["grid_model"],
+            grid_model,
             kind + "_*",
         )
         stdin, stdout, stderr = self.data_access.execute_command("ls " + query)
