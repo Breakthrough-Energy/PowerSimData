@@ -9,7 +9,6 @@ from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
-from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
 from powersimdata.utility.server_setup import DeploymentMode, get_deployment_mode
@@ -355,15 +354,17 @@ class SimulationInput(object):
         :param int/str/None profile_as: if given, copy profile from this scenario.
         """
         if profile_as is None:
-            profile = TransformProfile(self._scenario_info, self.grid, self.ct)
-            if "new_plant" in self.ct.keys():
-                new_plant_types = {plant["type"] for plant in self.ct["new_plant"]}
-            else:
-                new_plant_types = set()
-            if bool(profile.scale_keys[kind] & (new_plant_types | set(self.ct.keys()))):
-                self._prepare_transformed_profile(kind, profile)
-            else:
-                self._create_link_to_base_profile(kind)
+            tp = TransformProfile(self._scenario_info, self.grid, self.ct)
+            profile = tp.get_profile(kind)
+            print(
+                f"Writing scaled {kind} profile in {server_setup.LOCAL_DIR} on local machine"
+            )
+            file_name = "%s_%s.csv" % (self._scenario_info["id"], kind)
+            profile.to_csv(os.path.join(server_setup.LOCAL_DIR, file_name))
+
+            self._data_access.move_to(
+                file_name, self.REL_TMP_DIR, change_name_to=f"{kind}.csv"
+            )
         else:
             from_dir = posixpath.join(
                 self.server_config.execute_dir(),
@@ -375,43 +376,3 @@ class SimulationInput(object):
             _, _, stderr = self._data_access.copy(f"{from_dir}/{kind}.csv", to_dir)
             if len(stderr.readlines()) != 0:
                 raise IOError(f"Failed to copy {kind}.csv on server")
-
-    def _create_link_to_base_profile(self, kind):
-        """Creates link to base profile in temporary directory on server.
-
-        :param str kind: one of *demand*, *'hydro'*, *'solar'* or *'wind'*.
-        :raises IOError: if link cannot be created.
-        """
-        print("--> Creating link to %s base profile into temporary folder" % kind)
-
-        interconnect = interconnect2name(self._scenario_info["interconnect"].split("_"))
-        version = self._scenario_info["base_" + kind]
-        source = interconnect + "_" + kind + "_" + version + ".csv"
-        target = kind + ".csv"
-
-        command = "ln -s %s %s" % (
-            posixpath.join("../../raw", source),
-            posixpath.join(self.TMP_DIR, target),
-        )
-        stdin, stdout, stderr = self._data_access.execute_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError("Failed to create link to %s profile." % kind)
-
-    def _prepare_transformed_profile(self, kind, profile):
-        """Loads, scales and writes on local machine a base profile.
-
-        :param powersimdata.input.transform_profile.TransformProfile profile: a
-            TransformProfile object.
-        :param str kind: one of *'hydro'*, *'solar'*, *'wind'* or *'demand'*.
-        """
-        profile = profile.get_profile(kind)
-
-        print(
-            f"Writing scaled {kind} profile in {server_setup.LOCAL_DIR} on local machine"
-        )
-        file_name = "%s_%s.csv" % (self._scenario_info["id"], kind)
-        profile.to_csv(os.path.join(server_setup.LOCAL_DIR, file_name))
-
-        self._data_access.move_to(
-            file_name, self.REL_TMP_DIR, change_name_to=f"{kind}.csv"
-        )
