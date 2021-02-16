@@ -103,9 +103,20 @@ def check_interconnect(interconnect):
     if n > len(set(interconnect)):
         raise ValueError("List of interconnects contains duplicate values")
     if "USA" in interconnect and n > 1:
-        raise ValueError("USA interconnect cannot be paired")
+        raise ValueError("USA cannot be paired")
+    if n == 3:
+        raise ValueError("Use USA instead")
 
     return True
+
+
+def interconnect_to_name(interconnect):
+    """Return name of interconnect or collection of interconnects..
+
+    :param list interconnect: interconnect name(s).
+    """
+    check_interconnect(interconnect)
+    return "_".join(sorted(interconnect))
 
 
 def add_information_to_model(model):
