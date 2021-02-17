@@ -1,4 +1,4 @@
-[Pull Request Etiquette doc](https://github.com/Breakthrough-Energy/REISE/wiki/Pull-Request-Etiquette)
+[Pull Request doc](https://breakthrough-energy.github.io/docs/user/git_guide.html#d-pull-request)
 
 ### Purpose
 What is the larger goal of this change?
