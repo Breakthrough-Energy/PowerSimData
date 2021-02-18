@@ -173,11 +173,13 @@ class Execute(State):
                 f"Status must be one of {valid_status}, but got status={self._scenario_status}"
             )
 
-    def _launch_on_server(self, threads=None, extract_data=True):
+    def _launch_on_server(self, threads=None, solver=None, extract_data=True):
         """Launch simulation on server, via ssh.
 
         :param int/None threads: the number of threads to be used. This defaults to None,
             where None means auto.
+        :param str solver: the solver used for optimization. This defaults to
+            None, which translates to gurobi
         :param bool extract_data: whether the results of the simulation engine should
             automatically extracted after the simulation has run. This defaults to True.
         :raises TypeError: if extract_data is not a boolean
@@ -189,6 +191,9 @@ class Execute(State):
             # Use the -t flag as defined in call.py in REISE.jl
             extra_args.append("--threads " + str(threads))
 
+        if solver:
+            extra_args.append("--solver", solver)
+
         if not isinstance(extract_data, bool):
             raise TypeError("extract_data must be a boolean: 'True' or 'False'")
         if extract_data:
@@ -196,29 +201,33 @@ class Execute(State):
 
         return self._run_script("call.py", extra_args=extra_args)
 
-    def _launch_in_container(self, threads):
+    def _launch_in_container(self, threads, solver):
         """Launches simulation in container via http call
 
         :param int/None threads: the number of threads to be used. This defaults to None,
             where None means auto.
+        :param str solver: the solver used for optimization. This defaults to
+            None, which translates to gurobi
         :return: (*requests.Response*) -- the http response object
         """
         scenario_id = self._scenario_info["id"]
         url = f"http://{server_setup.SERVER_ADDRESS}:5000/launch/{scenario_id}"
-        resp = requests.post(url, params={"threads": threads})
+        resp = requests.post(url, params={"threads": threads, "solver": solver})
         if resp.status_code != 200:
             print(
                 f"Failed to launch simulation: status={resp.status_code}. See response for details"
             )
         return resp
 
-    def launch_simulation(self, threads=None, extract_data=True):
+    def launch_simulation(self, threads=None, extract_data=True, solver=None):
         """Launches simulation on target environment (server or container)
 
         :param int/None threads: the number of threads to be used. This defaults to None,
             where None means auto.
         :param bool extract_data: whether the results of the simulation engine should
             automatically extracted after the simulation has run. This defaults to True.
+        :param str solver: the solver used for optimization. This defaults to
+            None, which translates to gurobi
         :raises TypeError: if threads is not an int
         :raises ValueError: if threads is not a positive value
         :return: (*subprocess.Popen*) or (*requests.Response*) - either the
@@ -235,8 +244,8 @@ class Execute(State):
         mode = get_deployment_mode()
         print(f"--> Launching simulation on {mode.lower()}")
         if mode == DeploymentMode.Server:
-            return self._launch_on_server(threads, extract_data)
-        return self._launch_in_container(threads)
+            return self._launch_on_server(threads, solver, extract_data)
+        return self._launch_in_container(threads, solver)
 
     def check_progress(self):
         """Get the lastest information from the server container
