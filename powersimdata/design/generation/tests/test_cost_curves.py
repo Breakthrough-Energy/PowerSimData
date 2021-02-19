@@ -140,6 +140,7 @@ grid_attrs = {"plant": mock_plant, "gencost_before": mock_gencost}
 grid = MockGrid(grid_attrs)
 grid.interconnect = "Western"
 grid.zone2id = {"Utah": 210, "Colorado": 212, "Washington": 201}
+grid.get_grid_model = lambda: "usa_tamu"
 
 
 def test_get_supply_data():

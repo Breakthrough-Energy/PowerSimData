@@ -128,6 +128,7 @@ class TestScenarioInfo(unittest.TestCase):
             wind=mock_wind,
             hydro=mock_hydro,
         )
+        scenario.state.grid.get_grid_model = lambda: "usa_tamu"
         scenario.state.grid.zone2id = {"Oregon": 202, "Arizona": 209}
         self.scenario_info = ScenarioInfo(scenario)
 

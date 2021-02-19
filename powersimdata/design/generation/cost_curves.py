@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from powersimdata.input.grid import Grid
-from powersimdata.network.usa_tamu.model import area_to_loadzone
+from powersimdata.network.model import area_to_loadzone
 from powersimdata.utility.helpers import _check_import
 
 
@@ -189,8 +189,8 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
         interconnect.
     :param str gen_type: Generation type.
     :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*,
-        *'interconnect'*. Defaults to None, which allows area_to_loadzone() to infer
-        the type.
+        *'interconnect'*. Defaults to None, which allows
+        :func:`powersimdata.network.model.area_to_loadzone` to infer the type.
     :param bool plot: If True, the supply curve plot is shown. If False, the plot is
         not shown.
     :return: (*tuple*) -- First element is a list of capacity (MW) amounts needed
@@ -221,7 +221,7 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
-    returned_zones = area_to_loadzone(area, area_type)
+    returned_zones = area_to_loadzone(grid.get_grid_model(), area, area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     data = data.loc[data.zone_name.isin(returned_zones)]
@@ -396,8 +396,8 @@ def plot_c1_vs_c2(
         interconnect.
     :param str gen_type: Generation type.
     :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*,
-        *'interconnect'*. Defaults to None, which allows area_to_loadzone() to infer
-        the type.
+        *'interconnect'*. Defaults to None, which allows
+        :func:`powersimdata.network.model.area_to_loadzone` to infer the type.
     :param bool plot: If True, the c1 vs. c2 plot is shown. If False, the plot is not
         shown.
     :param bool zoom: If True, filters out c2 outliers to enable better visualization.
@@ -442,7 +442,7 @@ def plot_c1_vs_c2(
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
-    returned_zones = area_to_loadzone(area, area_type)
+    returned_zones = area_to_loadzone(grid.get_grid_model(), area, area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     data = data.loc[data.zone_name.isin(returned_zones)]
@@ -515,8 +515,8 @@ def plot_capacity_vs_price(
         interconnect.
     :param str gen_type: Generation type.
     :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*,
-        *'interconnect'*. Defaults to None, which allows area_to_loadzone() to infer
-        the type.
+        *'interconnect'*. Defaults to None, which allows
+        :func:`powersimdata.network.model.area_to_loadzone` to infer the type.
     :param bool plot: If True, the supply curve plot is shown. If False, the plot is
         not shown.
     :return: (*None*) -- The capacity vs. price plot is displayed according to the user.
@@ -547,7 +547,7 @@ def plot_capacity_vs_price(
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
-    returned_zones = area_to_loadzone(area, area_type)
+    returned_zones = area_to_loadzone(grid.get_grid_model(), area, area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     data = data.loc[data.zone_name.isin(returned_zones)]

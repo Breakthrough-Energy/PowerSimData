@@ -1,6 +1,6 @@
 import warnings
 
-from powersimdata.network.usa_tamu.model import area_to_loadzone
+from powersimdata.network.model import area_to_loadzone
 
 
 def _check_state(scenario):
@@ -27,15 +27,15 @@ class ScenarioInfo:
         self.pg = scenario.state.get_pg()
         self.grid = scenario.state.get_grid()
         self.demand = scenario.state.get_demand()
+        self.grid_model = self.grid.get_grid_model()
         solar = scenario.state.get_solar()
         wind = scenario.state.get_wind()
         hydro = scenario.state.get_hydro()
         self.profile = {"solar": solar, "wind": wind, "hydro": hydro}
 
-    @staticmethod
-    def area_to_loadzone(area, area_type=None):
+    def area_to_loadzone(self, area, area_type=None):
         """Map the query area to a list of loadzones. For more info, see
-            powersimdata.network.usa_tamu.model.area_to_loadzone().
+            :func:`powersimdata.network.model.area_to_loadzone`.
 
         :param str area: one of: *loadzone*, *state*, *state abbreviation*,
             *interconnect*, *'all'*
@@ -43,7 +43,7 @@ class ScenarioInfo:
             *'state_abbr'*, *'interconnect'*
         :return: (*set*) -- set of loadzones associated to the query area
         """
-        return area_to_loadzone(area, area_type)
+        return area_to_loadzone(self.grid_model, area, area_type)
 
     def _check_time_range(self, start_time, end_time):
         """Check if the start_time and end_time define a valid time range of
