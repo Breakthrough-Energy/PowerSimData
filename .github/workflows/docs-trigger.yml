@@ -8,12 +8,7 @@ on:
 jobs:
   dispatch:
     runs-on: ubuntu-latest
-    env:
-      DISPATCH_API: https://api.github.com/repos/Breakthrough-Energy/docs/actions/workflows/2386877/dispatches
     steps:
-      - name: Trigger docs build
-        run: |
-          curl -XPOST -H "Authorization: token ${{ secrets.CI_TOKEN_CLONE_REPO }}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Content-Type: application/json" ${{ env.DISPATCH_API }} \
-          --data '{"ref": "refs/heads/master"}'
+      - uses: Breakthrough-Energy/actions/publish-docs@main
+        with:
+          token: ${{ secrets.CI_TOKEN_CLONE_REPO }} 
