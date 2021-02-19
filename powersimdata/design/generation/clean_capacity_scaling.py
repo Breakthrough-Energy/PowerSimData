@@ -3,7 +3,7 @@ import pandas as pd
 
 from powersimdata.design.mimic_grid import mimic_generation_capacity
 from powersimdata.input.grid import Grid
-from powersimdata.network.usa_tamu.model import area_to_loadzone
+from powersimdata.network.model import area_to_loadzone
 from powersimdata.scenario.scenario import Scenario
 
 
@@ -102,9 +102,11 @@ def _make_zonename2target(grid, targets):
         if a zone is present in more than one target area.
     """
     target_zones = {
-        target_name: area_to_loadzone(target_name)
+        target_name: area_to_loadzone(grid.get_grid_model(), target_name)
         if pd.isnull(targets.loc[target_name, "area_type"])
-        else area_to_loadzone(target_name, targets.loc[target_name, "area_type"])
+        else area_to_loadzone(
+            grid.get_grid_model(), target_name, targets.loc[target_name, "area_type"]
+        )
         for target_name in targets.index.tolist()
     }
     # Check for any collisions

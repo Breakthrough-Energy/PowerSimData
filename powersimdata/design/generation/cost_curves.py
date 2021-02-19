@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from powersimdata.input.grid import Grid
-from powersimdata.network.usa_tamu.model import area_to_loadzone
+from powersimdata.network.model import area_to_loadzone
 from powersimdata.utility.helpers import _check_import
 
 
@@ -221,7 +221,7 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
-    returned_zones = area_to_loadzone(area, area_type)
+    returned_zones = area_to_loadzone(grid.get_grid_model(), area, area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     data = data.loc[data.zone_name.isin(returned_zones)]

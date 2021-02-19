@@ -1,7 +1,7 @@
 import pandas as pd
 
 from powersimdata.input.grid import Grid
-from powersimdata.network.usa_tamu.model import area_to_loadzone
+from powersimdata.network.model import area_to_loadzone
 from powersimdata.utility.distance import haversine
 
 
@@ -176,7 +176,7 @@ def get_branches_by_area(grid, area_names, method="either"):
     branch = grid.branch
     selected_branches = set()
     for a in area_names:
-        load_zone_names = area_to_loadzone(a)
+        load_zone_names = area_to_loadzone(grid.get_grid_model(), a)
         to_bus_in_area = branch.to_zone_name.isin(load_zone_names)
         from_bus_in_area = branch.from_zone_name.isin(load_zone_names)
         if method in ("internal", "either"):
