@@ -20,11 +20,14 @@ _exports = [
     "loadzone2id",
     "loadzone2interconnect",
     "loadzone2state",
+    "mappings",
     "state",
     "state2abv",
     "state2loadzone",
     "timezone2id",
 ]
+
+mappings = {"loadzone", "state", "state_abbr", "interconnect"}
 
 # Define combinations of interconnects
 interconnect_combinations = {"USA", "Texas_Western"}
