@@ -1,5 +1,7 @@
 import os
 
+from powersimdata.data_access.context import Context
+from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
 from powersimdata.network.usa_tamu.constants import storage as tamu_storage
 from powersimdata.network.usa_tamu.model import TAMU
@@ -58,6 +60,20 @@ class Grid(object):
         self.storage = data.storage
 
         _cache.put(key, self)
+
+    def get_grid_model(self):
+        """Get the grid model.
+
+        :return: (*str*).
+        """
+        if os.path.isfile(self.data_loc):
+            # For a ScenarioGrid, extract a number from /some/path/number_grid.mat
+            scenario_number = int(os.path.basename(self.data_loc).split("_")[0])
+            slm = ScenarioListManager(Context.get_data_access())
+            return slm.get_scenario_table().loc[scenario_number, "grid_model"]
+        elif os.path.isdir(self.data_loc):
+            # For a data loc directory, extract from /some/path/grid_model/data
+            return self.data_loc.split(os.sep)[-2]
 
     def __eq__(self, other):
         """Used when 'self == other' is evaluated.
