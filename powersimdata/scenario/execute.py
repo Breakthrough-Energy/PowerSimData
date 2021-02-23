@@ -219,6 +219,18 @@ class Execute(State):
             )
         return resp
 
+    def _check_threads(self, threads):
+        if threads:
+            if not isinstance(threads, int):
+                raise TypeError("threads must be an int")
+            if threads < 1:
+                raise ValueError("threads must be a positive value")
+
+    def _check_solver(self, solver):
+        solvers = ("gurobi", "glpk")
+        if solver is not None and solver.lower() not in solvers:
+            raise ValueError(f"Invalid solver: options are {solvers}")
+
     def launch_simulation(self, threads=None, extract_data=True, solver=None):
         """Launches simulation on target environment (server or container)
 
@@ -229,17 +241,14 @@ class Execute(State):
         :param str solver: the solver used for optimization. This defaults to
             None, which translates to gurobi
         :raises TypeError: if threads is not an int
-        :raises ValueError: if threads is not a positive value
+        :raises ValueError: if threads is not a positive value or invalid
+            solver provided
         :return: (*subprocess.Popen*) or (*requests.Response*) - either the
             process (if using ssh to server) or http response (if run in container)
         """
         self._check_if_ready()
-
-        if threads:
-            if not isinstance(threads, int):
-                raise TypeError("threads must be an int")
-            if threads < 1:
-                raise ValueError("threads must be a positive value")
+        self._check_threads(threads)
+        self._check_solver(solver)
 
         mode = get_deployment_mode()
         print(f"--> Launching simulation on {mode.lower()}")
