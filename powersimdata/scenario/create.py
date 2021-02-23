@@ -227,10 +227,8 @@ class Create(State):
         """Sets builder.
 
         :param str grid_model: name of grid model. Default is *'usa_tamu'*.
-        :param list interconnect: name of interconnect(s). Default is *'USA'*.
+        :param str/list interconnect: name of interconnect(s). Default is *'USA'*.
         """
-        if isinstance(interconnect, str):
-            interconnect = [interconnect]
         self.builder = _Builder(
             grid_model, interconnect, self._scenario_list_manager.get_scenario_table()
         )
@@ -275,7 +273,6 @@ class _Builder(object):
     def __init__(self, grid_model, interconnect, table):
         """Constructor."""
         mi = ModelImmutables(grid_model)
-        mi.check_interconnect(interconnect)
 
         self.grid_model = mi.model
         self.interconnect = mi.interconnect_to_name(interconnect)

@@ -13,7 +13,7 @@ from powersimdata.network.usa_tamu.constants.storage import defaults
 class TAMU(AbstractGrid):
     """TAMU network.
 
-    :param list interconnect: interconnect name(s).
+    :param str/list interconnect: interconnect name(s).
     """
 
     def __init__(self, interconnect):
@@ -21,9 +21,8 @@ class TAMU(AbstractGrid):
         super().__init__()
         self._set_data_loc()
 
-        if check_interconnect(interconnect):
-            self.interconnect = interconnect
-            self._build_network()
+        self.interconnect = check_and_format_interconnect(interconnect)
+        self._build_network()
 
     def _set_data_loc(self):
         """Sets data location.
@@ -75,19 +74,21 @@ class TAMU(AbstractGrid):
         self.zone2id = {value: key for key, value in self.id2zone.items()}
 
 
-def check_interconnect(interconnect):
+def check_and_format_interconnect(interconnect):
     """Checks interconnect.
 
-    :param list interconnect: interconnect name(s).
+    :param str/list interconnect: interconnect name(s).
+    :return: (*list*) -- interconnect(s)
     :raises TypeError: if parameter has wrong type.
-    :raises Exception: if interconnect not found or combination of
-        interconnect is not appropriate.
-    :return: (*bool*) -- if valid
+    :raises ValueError: if interconnect not found or combination of interconnect is not
+        appropriate.
     """
-    possible = ["Eastern", "Texas", "Western", "USA"]
+    if isinstance(interconnect, str):
+        interconnect = [interconnect]
     if not isinstance(interconnect, list):
-        raise TypeError("List of string(s) is expected for interconnect")
+        raise TypeError("interconnect must be a str or list of str")
 
+    possible = ["Eastern", "Texas", "Western", "USA"]
     for i in interconnect:
         if i not in possible:
             raise ValueError(
@@ -101,7 +102,7 @@ def check_interconnect(interconnect):
     if n == 3:
         raise ValueError("Use USA instead")
 
-    return True
+    return interconnect
 
 
 def interconnect_to_name(interconnect):
@@ -109,8 +110,7 @@ def interconnect_to_name(interconnect):
 
     :param list interconnect: interconnect name(s).
     """
-    check_interconnect(interconnect)
-    return "_".join(sorted(interconnect))
+    return "_".join(sorted(check_and_format_interconnect(interconnect)))
 
 
 def add_information_to_model(model):

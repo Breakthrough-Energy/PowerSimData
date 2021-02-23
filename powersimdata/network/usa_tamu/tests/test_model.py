@@ -1,18 +1,18 @@
 import pytest
 
-from powersimdata.network.usa_tamu.model import TAMU, check_interconnect
+from powersimdata.network.usa_tamu.model import TAMU, check_and_format_interconnect
 
 
 def test_interconnect_type():
-    interconnect = "Western"
+    interconnect = {"Western", "Texas"}
     with pytest.raises(TypeError):
-        check_interconnect(interconnect)
+        check_and_format_interconnect(interconnect)
 
 
 def test_interconnect_value():
     interconnect = ["Canada"]
     with pytest.raises(ValueError):
-        check_interconnect(interconnect)
+        check_and_format_interconnect(interconnect)
 
 
 def test_interconnect_duplicate_value():
@@ -20,13 +20,20 @@ def test_interconnect_duplicate_value():
     with pytest.raises(
         ValueError, match="List of interconnects contains duplicate values"
     ):
-        check_interconnect(interconnect)
+        check_and_format_interconnect(interconnect)
 
 
 def test_interconnect_usa_is_unique():
     interconnect = ["Western", "USA"]
     with pytest.raises(ValueError, match="USA cannot be paired"):
-        check_interconnect(interconnect)
+        check_and_format_interconnect(interconnect)
+
+
+def test_interconnect():
+    arg = ("Western", ["Eastern", "Western"])
+    expected = (["Western"], ["Eastern", "Western"])
+    for a, e in zip(arg, expected):
+        assert check_and_format_interconnect(a) == e
 
 
 def test_drop_one_interconnect():

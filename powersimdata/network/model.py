@@ -8,6 +8,7 @@ class ModelImmutables:
     """
 
     def __init__(self, model):
+        """Constructor."""
         self._check_model(model)
         self.model = model
 
@@ -16,7 +17,9 @@ class ModelImmutables:
         self.zones = self._import_constants("zones")
 
         mod = import_module(f"powersimdata.network.{self.model}.model")
-        self.check_interconnect = getattr(mod, "check_interconnect")
+        self.check_and_format_interconnect = getattr(
+            mod, "check_and_format_interconnect"
+        )
         self.interconnect_to_name = getattr(mod, "interconnect_to_name")
 
     @staticmethod
@@ -33,7 +36,7 @@ class ModelImmutables:
     def _import_constants(self, kind):
         """Import constants related to the grid model.
 
-        :param str kind: either *'plants'*, *'zones'* or *'zones'*.
+        :param str kind: either *'plants'*, *'storage'* or *'zones'*.
         :return: (*dict*) -- constants of the grid model
         """
         mod = import_module(f"powersimdata.network.{self.model}.constants.{kind}")
