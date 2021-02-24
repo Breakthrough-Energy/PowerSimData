@@ -36,6 +36,7 @@ class Create(State):
                 ("plan", ""),
                 ("name", ""),
                 ("state", "create"),
+                ("grid_model", ""),
                 ("interconnect", ""),
                 ("base_demand", ""),
                 ("base_hydro", ""),
@@ -46,7 +47,6 @@ class Create(State):
                 ("end_date", ""),
                 ("interval", ""),
                 ("engine", ""),
-                ("grid_model", ""),
             ]
         )
         super().__init__(scenario)
