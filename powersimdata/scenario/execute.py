@@ -2,10 +2,9 @@ import copy
 import os
 import posixpath
 
-import numpy as np
 import requests
-from scipy.io import savemat
 
+from powersimdata.input.case_mat import export_case_mat
 from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
@@ -339,129 +338,12 @@ class SimulationInput(object):
 
     def prepare_mpc_file(self):
         """Creates MATPOWER case file."""
-        print("--> Preparing MPC file")
-        print("Scaling grid")
-        grid = copy.deepcopy(self.grid)
-
-        print("Building MPC file")
-        mpc = {"mpc": {"version": "2", "baseMVA": 100.0}}
-
-        # zone
-        mpc["mpc"]["zone"] = np.array(list(grid.id2zone.items()), dtype=object)
-
-        # sub
-        sub = grid.sub.copy()
-        subid = sub.index.values[np.newaxis].T
-        mpc["mpc"]["sub"] = sub.values
-        mpc["mpc"]["subid"] = subid
-
-        # bus
-        bus = grid.bus.copy()
-        busid = bus.index.values[np.newaxis].T
-        bus.reset_index(level=0, inplace=True)
-        bus.drop(columns=["interconnect", "lat", "lon"], inplace=True)
-        mpc["mpc"]["bus"] = bus.values
-        mpc["mpc"]["busid"] = busid
-
-        # bus2sub
-        bus2sub = grid.bus2sub.copy()
-        mpc["mpc"]["bus2sub"] = bus2sub.values
-
-        # plant
-        gen = grid.plant.copy()
-        genid = gen.index.values[np.newaxis].T
-        genfuel = gen.type.values[np.newaxis].T
-        genfuelcost = gen.GenFuelCost.values[np.newaxis].T
-        heatratecurve = gen[["GenIOB", "GenIOC", "GenIOD"]].values
-        gen.reset_index(inplace=True, drop=True)
-        gen.drop(
-            columns=[
-                "type",
-                "interconnect",
-                "lat",
-                "lon",
-                "zone_id",
-                "zone_name",
-                "GenFuelCost",
-                "GenIOB",
-                "GenIOC",
-                "GenIOD",
-            ],
-            inplace=True,
-        )
-        mpc["mpc"]["gen"] = gen.values
-        mpc["mpc"]["genid"] = genid
-        mpc["mpc"]["genfuel"] = genfuel
-        mpc["mpc"]["genfuelcost"] = genfuelcost
-        mpc["mpc"]["heatratecurve"] = heatratecurve
-        # branch
-        branch = grid.branch.copy()
-        branchid = branch.index.values[np.newaxis].T
-        branchdevicetype = branch.branch_device_type.values[np.newaxis].T
-        branch.reset_index(inplace=True, drop=True)
-        branch.drop(
-            columns=[
-                "interconnect",
-                "from_lat",
-                "from_lon",
-                "to_lat",
-                "to_lon",
-                "from_zone_id",
-                "to_zone_id",
-                "from_zone_name",
-                "to_zone_name",
-                "branch_device_type",
-            ],
-            inplace=True,
-        )
-        mpc["mpc"]["branch"] = branch.values
-        mpc["mpc"]["branchid"] = branchid
-        mpc["mpc"]["branchdevicetype"] = branchdevicetype
-
-        # generation cost
-        gencost = grid.gencost.copy()
-        gencost["before"].reset_index(inplace=True, drop=True)
-        gencost["before"].drop(columns=["interconnect"], inplace=True)
-        mpc["mpc"]["gencost"] = gencost["before"].values
-
-        # DC line
-        if len(grid.dcline) > 0:
-            dcline = grid.dcline.copy()
-            dclineid = dcline.index.values[np.newaxis].T
-            dcline.reset_index(inplace=True, drop=True)
-            dcline.drop(columns=["from_interconnect", "to_interconnect"], inplace=True)
-            mpc["mpc"]["dcline"] = dcline.values
-            mpc["mpc"]["dclineid"] = dclineid
-
-        # energy storage
-        if len(grid.storage["gen"]) > 0:
-            storage = grid.storage.copy()
-
-            mpc_storage = {
-                "storage": {
-                    "xgd_table": np.array([]),
-                    "gen": np.array(storage["gen"].values, dtype=np.float64),
-                    "sd_table": {
-                        "colnames": storage["StorageData"].columns.values[np.newaxis],
-                        "data": storage["StorageData"].values,
-                    },
-                }
-            }
-
-            file_name = "%s_case_storage.mat" % self._scenario_info["id"]
-            savemat(
-                os.path.join(server_setup.LOCAL_DIR, file_name),
-                mpc_storage,
-                appendmat=False,
-            )
-            self._data_access.move_to(
-                file_name, self.REL_TMP_DIR, change_name_to="case_storage.mat"
-            )
-
-        # MPC file
         file_name = "%s_case.mat" % self._scenario_info["id"]
-        savemat(os.path.join(server_setup.LOCAL_DIR, file_name), mpc, appendmat=False)
-
+        storage_file_name = "%s_case_storage.mat" % self._scenario_info["id"]
+        file_path = os.path.join(server_setup.LOCAL_DIR, file_name)
+        storage_file_path = os.path.join(server_setup.LOCAL_DIR, storage_file_name)
+        print("Building MPC file")
+        export_case_mat(self.grid, file_path, storage_file_path)
         self._data_access.move_to(
             file_name, self.REL_TMP_DIR, change_name_to="case.mat"
         )
