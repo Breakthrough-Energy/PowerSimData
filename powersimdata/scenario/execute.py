@@ -220,6 +220,12 @@ class Execute(State):
         return resp
 
     def _check_threads(self, threads):
+        """Validate threads argument
+
+        :param int threads: the number of threads to be used
+        :raises TypeError: if threads is not an int
+        :raises ValueError: if threads is not a positive value
+        """
         if threads:
             if not isinstance(threads, int):
                 raise TypeError("threads must be an int")
@@ -227,6 +233,11 @@ class Execute(State):
                 raise ValueError("threads must be a positive value")
 
     def _check_solver(self, solver):
+        """Validate solver argument
+
+        :param str solver: the solver used for the optimization
+        :raises ValueError: if invalid solver provided
+        """
         solvers = ("gurobi", "glpk")
         if solver is not None and solver.lower() not in solvers:
             raise ValueError(f"Invalid solver: options are {solvers}")
@@ -240,9 +251,6 @@ class Execute(State):
             automatically extracted after the simulation has run. This defaults to True.
         :param str solver: the solver used for optimization. This defaults to
             None, which translates to gurobi
-        :raises TypeError: if threads is not an int
-        :raises ValueError: if threads is not a positive value or invalid
-            solver provided
         :return: (*subprocess.Popen*) or (*requests.Response*) - either the
             process (if using ssh to server) or http response (if run in container)
         """
