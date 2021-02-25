@@ -446,6 +446,7 @@ def test_add_gen_add_entries_in_gencost_data_frame(ct):
             "c1": 50,
             "c2": 0.5,
         },
+        {"type": "solar", "bus_id": 2050363, "Pmax": 15},
     ]
     ct.add_plant(new_plant)
     new_grid = TransformGrid(grid, ct.ct).get_grid()
