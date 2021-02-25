@@ -338,8 +338,8 @@ class TransformGrid(object):
 
     def _add_gencost(self):
         """Adds generation cost curves."""
-        new_gencost = {c: 0 for c in self.grid.gencost["before"].columns}
         for entry in self.ct["new_plant"]:
+            new_gencost = {c: 0 for c in self.grid.gencost["before"].columns}
             bus_id = entry["bus_id"]
             new_gencost["type"] = 2
             new_gencost["n"] = 3
