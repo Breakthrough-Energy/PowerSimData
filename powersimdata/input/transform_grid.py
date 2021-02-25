@@ -184,9 +184,9 @@ class TransformGrid(object):
 
     def _add_branch(self):
         """Adds branch(es) to the grid."""
-        new_branch = {c: 0 for c in self.grid.branch.columns}
         v2x = voltage_to_x_per_distance(self.grid)
         for entry in self.ct["new_branch"]:
+            new_branch = {c: 0 for c in self.grid.branch.columns}
             from_bus_id = entry["from_bus_id"]
             to_bus_id = entry["to_bus_id"]
             interconnect = self.grid.bus.loc[from_bus_id].interconnect
@@ -230,9 +230,9 @@ class TransformGrid(object):
             k: v[0] for k, v in bus.groupby("zone_id").interconnect.unique().items()
         }
         latlon2sub = self.grid.sub.groupby(["lat", "lon"]).groups
-        new_bus = {c: 0 for c in bus.columns}
         for entry in self.ct["new_bus"]:
             # Add to the bus dataframe
+            new_bus = {c: 0 for c in bus.columns}
             new_bus["type"] = 1
             new_bus["Pd"] = entry["Pd"]
             new_bus["zone_id"] = entry["zone_id"]
@@ -285,8 +285,8 @@ class TransformGrid(object):
 
     def _add_dcline(self):
         """Adds HVDC line(s) to the grid"""
-        new_dcline = {c: 0 for c in self.grid.dcline.columns}
         for entry in self.ct["new_dcline"]:
+            new_dcline = {c: 0 for c in self.grid.dcline.columns}
             from_bus_id = entry["from_bus_id"]
             to_bus_id = entry["to_bus_id"]
             from_interconnect = self.grid.bus.loc[from_bus_id].interconnect
@@ -312,8 +312,8 @@ class TransformGrid(object):
 
     def _add_plant(self):
         """Adds plant to the grid"""
-        new_plant = {c: 0 for c in self.grid.plant.columns}
         for entry in self.ct["new_plant"]:
+            new_plant = {c: 0 for c in self.grid.plant.columns}
             bus_id = entry["bus_id"]
             interconnect = self.grid.bus.loc[bus_id].interconnect
             zone_id = self.grid.bus.loc[bus_id].zone_id
