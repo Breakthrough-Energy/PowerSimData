@@ -22,6 +22,7 @@ def _get_test_row(
             ("plan", ""),
             ("name", name),
             ("state", "create"),
+            ("grid_model", ""),
             ("interconnect", interconnect),
             ("base_demand", base_demand),
             ("base_hydro", base_hydro),

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS scenario_list(
   plan text not null,
   name text not null,
   state text not null,
+  grid_model text not null,
   interconnect text not null,
   base_demand text not null,
   base_hydro text not null,
