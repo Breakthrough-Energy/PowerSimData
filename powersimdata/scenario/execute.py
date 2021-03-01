@@ -40,7 +40,10 @@ class Execute(State):
 
     def _set_ct_and_grid(self):
         """Sets change table and grid."""
-        base_grid = Grid(self._scenario_info["interconnect"].split("_"))
+        base_grid = Grid(
+            self._scenario_info["interconnect"].split("_"),
+            source=self._scenario_info["grid_model"],
+        )
         if self._scenario_info["change_table"] == "Yes":
             input_data = InputData()
             self.ct = input_data.get_data(self._scenario_info, "ct")
