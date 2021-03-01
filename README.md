@@ -175,7 +175,7 @@ scenario.state.builder.change_table.add_plant(
 scenario.state.builder.change_table.add_bus(
 	[{"lat": 48, "lon": -125, "zone_id": 201, "baseKV": 138}])
 scenario.state.builder.change_table.add_dcline(
-	[{"from_bus_id": 2090023, "to_bus_id": 20090024, "Pmin": 0, "Pmax": 200}])
+	[{"from_bus_id": 2090023, "to_bus_id": 2090024, "Pmin": 0, "Pmax": 200}])
 
 # get grid used in scenario
 grid = scenario.state.get_grid()

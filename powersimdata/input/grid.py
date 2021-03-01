@@ -1,8 +1,11 @@
 import os
 
+from powersimdata.data_access.context import Context
+from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
+from powersimdata.network.model import ModelImmutables
 from powersimdata.network.usa_tamu.constants import storage as tamu_storage
-from powersimdata.network.usa_tamu.usa_tamu_model import TAMU
+from powersimdata.network.usa_tamu.model import TAMU
 from powersimdata.utility.helpers import MemoryCache, cache_key
 
 _cache = MemoryCache()
@@ -15,21 +18,24 @@ class Grid(object):
     :param str source: model used to build the network.
     :param str engine: engine used to run scenario, if using ScenarioGrid.
     :raises TypeError: if source and engine are not both strings.
-    :raises ValueError: if model or engine does not exist.
+    :raises ValueError: if source or engine does not exist.
     """
 
     def __init__(self, interconnect, source="usa_tamu", engine="REISE"):
         """Constructor."""
         if not isinstance(source, str):
-            raise TypeError("source must be a string")
+            raise TypeError("source must be a str")
         supported_engines = {"REISE", "REISE.jl"}
         if engine not in supported_engines:
             raise ValueError(f"Engine must be one of {','.join(supported_engines)}")
 
-        if isinstance(interconnect, str):
-            interconnect = [interconnect]
-        if not isinstance(interconnect, list):
-            raise TypeError("interconnect must be a str of list of str")
+        try:
+            self.model_immutables = ModelImmutables(source)
+        except ValueError:
+            self.model_immutables = ModelImmutables(
+                _get_grid_model_from_scenario_list(source)
+            )
+
         key = cache_key(interconnect, source)
         cached = _cache.get(key)
         if cached is not None:
@@ -41,8 +47,6 @@ class Grid(object):
                 data = FromREISE(source)
             elif engine == "REISE.jl":
                 data = FromREISEjl(source)
-        else:
-            raise ValueError("%s not implemented" % source)
 
         self.data_loc = data.data_loc
         self.interconnect = data.interconnect
@@ -58,6 +62,16 @@ class Grid(object):
         self.storage = data.storage
 
         _cache.put(key, self)
+
+    def get_grid_model(self):
+        """Get the grid model.
+
+        :return: (*str*).
+        """
+        if os.path.isfile(self.data_loc):
+            _get_grid_model_from_scenario_list(self.data_loc)
+        elif os.path.isdir(self.data_loc):
+            return self.data_loc.split(os.sep)[-2]
 
     def __eq__(self, other):
         """Used when 'self == other' is evaluated.
@@ -138,3 +152,14 @@ class Grid(object):
             print(f"non-matching entries: {', '.join(sorted(nonmatching_entries))}")
             return False
         return True
+
+
+def _get_grid_model_from_scenario_list(source):
+    """Get grid model for a scenario listed in the scenario list.
+
+    :param str source: path to MAT-file enclosing the grid data.
+    :return: (*str*) -- the grid model.
+    """
+    scenario_number = int(os.path.basename(source).split("_")[0])
+    slm = ScenarioListManager(Context.get_data_access())
+    return slm.get_scenario(scenario_number)["grid_model"]

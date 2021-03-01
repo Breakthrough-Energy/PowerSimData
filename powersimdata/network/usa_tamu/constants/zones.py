@@ -2,6 +2,33 @@ import os
 
 import pandas as pd
 
+_exports = [
+    "abv",
+    "abv2interconnect",
+    "abv2loadzone",
+    "abv2state",
+    "id2abv",
+    "id2loadzone",
+    "id2timezone",
+    "interconnect",
+    "interconnect2abv",
+    "interconnect2id",
+    "interconnect2loadzone",
+    "interconnect2timezone",
+    "interconnect_combinations",
+    "loadzone",
+    "loadzone2id",
+    "loadzone2interconnect",
+    "loadzone2state",
+    "mappings",
+    "state",
+    "state2abv",
+    "state2loadzone",
+    "timezone2id",
+]
+
+mappings = {"loadzone", "state", "state_abbr", "interconnect"}
+
 # Define combinations of interconnects
 interconnect_combinations = {"USA", "Texas_Western"}
 
@@ -68,6 +95,11 @@ state2abv = {value: key for key, value in abv2state.items()}
 # Map zones to higher-level aggregations using the information in zone.csv
 zone_csv_path = os.path.join(os.path.dirname(__file__), "..", "data", "zone.csv")
 zone_df = pd.read_csv(zone_csv_path, index_col=0)
+
+# load zone id to load zone name
+id2loadzone = zone_df["zone_name"].to_dict()
+# load zone name to load zone id
+loadzone2id = {v: k for k, v in id2loadzone.items()}
 # Map state name to load zone name
 state2loadzone = {
     k: set(v) for k, v in zone_df.groupby("state").zone_name.unique().to_dict().items()
@@ -211,3 +243,7 @@ id2timezone = zone_df["time_zone"].to_dict()
 
 # Map time zones to load zone IDs
 timezone2id = {k: set(v) for k, v in zone_df.groupby("time_zone").groups.items()}
+
+
+def __dir__():
+    return sorted(_exports)
