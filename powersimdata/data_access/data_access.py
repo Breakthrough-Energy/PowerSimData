@@ -1,5 +1,6 @@
 import operator
 import os
+import shutil
 import time
 from subprocess import PIPE, Popen
 
@@ -33,26 +34,23 @@ class DataAccess:
         raise NotImplementedError
 
     def copy(self, src, dest, recursive=False, update=False):
-        """Wrapper around cp command which creates dest path if needed
+        """Copy a file or tree, behavior is the same as cp command
 
         :param str src: path to original
         :param str dest: destination path
         :param bool recursive: create directories recursively
         :param bool update: only copy if needed
         """
-        self.makedir(fancy_path.dirname(dest))
-        command = CommandBuilder.copy(src, dest, recursive, update)
-        return self.execute_command(command)
+        raise NotImplementedError
 
     def remove(self, target, recursive=False, force=False):
-        """Wrapper around rm command
+        """Interpretation of rm command
 
         :param str target: path to remove
         :param bool recursive: delete directories recursively
         :param bool force: remove without confirmation
         """
-        command = CommandBuilder.remove(target, recursive, force)
-        return self.execute_command(command)
+        raise NotImplementedError
 
     def _check_file_exists(self, filepath, should_exist=True):
         """Check that file exists (or not) at the given path
@@ -81,8 +79,7 @@ class DataAccess:
 
         :param str relative_path: the path, without filename, relative to root
         """
-        full_path = fancy_path.join(self.root, relative_path)
-        return self.execute_command(f"mkdir -p {full_path}")
+        raise NotImplementedError
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -169,15 +166,43 @@ class LocalDataAccess(DataAccess):
         :param bool preserve: whether to keep the local copy
         """
         self._check_filename(file_name)
-        src = fancy_path.join(server_setup.LOCAL_DIR, file_name)
+        src = os.join(server_setup.LOCAL_DIR, file_name)
         file_name = file_name if change_name_to is None else change_name_to
-        dest = fancy_path.join(self.root, to_dir, file_name)
+        dest = os.join(self.root, to_dir, file_name)
         print(f"--> Moving file {src} to {dest}")
         self._check_file_exists(dest, should_exist=False)
         self.copy(src, dest)
         if not preserve:
             print("--> Deleting original copy")
             self.remove(src)
+
+    def copy(self, src, dest, recursive=False, update=False):
+        """Copy a file or tree, depending on recursive argument
+
+        :param str src: path to original
+        :param str dest: destination path
+        :param bool recursive: create directories recursively
+        :param bool update: only copy if needed (ignored here)
+        :return: (*str*) -- the resulting path
+        """
+        if recursive:
+            return shutil.copytree(src, dest, symlinks=True, dirs_exist_ok=True)
+        return shutil.copy(src, dest)
+
+    def remove(self, target, recursive=False, force=False):
+        """Interpretation of rm command
+
+        :param str target: path to remove
+        :param bool recursive: delete directories recursively
+        :param bool force: ignored in this subclass
+        """
+        if recursive:
+            return shutil.rmtree(target)
+        return os.remove(target)
+
+    def makedir(self, relative_path):
+        full_path = os.join(self.root, relative_path)
+        return os.makedirs(full_path, exist_ok=True)
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -323,6 +348,36 @@ class SSHDataAccess(DataAccess):
         if not preserve:
             print(f"--> Deleting {from_path} on local machine")
             os.remove(from_path)
+
+    def copy(self, src, dest, recursive=False, update=False):
+        """Wrapper around cp command which creates dest path if needed
+
+        :param str src: path to original
+        :param str dest: destination path
+        :param bool recursive: create directories recursively
+        :param bool update: only copy if needed
+        """
+        self.makedir(fancy_path.dirname(dest))
+        command = CommandBuilder.copy(src, dest, recursive, update)
+        return self.execute_command(command)
+
+    def remove(self, target, recursive=False, force=False):
+        """Wrapper around rm command
+
+        :param str target: path to remove
+        :param bool recursive: delete directories recursively
+        :param bool force: remove without confirmation
+        """
+        command = CommandBuilder.remove(target, recursive, force)
+        return self.execute_command(command)
+
+    def makedir(self, relative_path):
+        """Create paths relative to the instance root
+
+        :param str relative_path: the path, without filename, relative to root
+        """
+        full_path = fancy_path.join(self.root, relative_path)
+        return self.execute_command(f"mkdir -p {full_path}")
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
