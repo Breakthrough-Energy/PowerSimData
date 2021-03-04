@@ -59,11 +59,7 @@ class DataAccess:
         :param bool should_exist: whether the file is expected to exist
         :raises OSError: if the expected condition is not met
         """
-        _, _, stderr = self.execute_command(CommandBuilder.list(filepath))
-        compare = operator.ne if should_exist else operator.eq
-        if compare(len(stderr.readlines()), 0):
-            msg = "not found" if should_exist else "already exists"
-            raise OSError(f"{filepath} {msg} on server")
+        raise NotImplementedError
 
     def _check_filename(self, filename):
         """Check that filename is only the name part
@@ -131,6 +127,19 @@ class LocalDataAccess(DataAccess):
 
     def __init__(self, root=None):
         self.root = root if root else server_setup.DATA_ROOT_DIR
+
+    def _check_file_exists(self, filepath, should_exist=True):
+        """Check that file exists (or not) at the given path
+
+        :param str filepath: the full path to the file
+        :param bool should_exist: whether the file is expected to exist
+        :raises OSError: if the expected condition is not met
+        """
+        result = os.path.exists(filepath)
+        compare = operator.ne if should_exist else operator.eq
+        if compare(result, True):
+            msg = "not found" if should_exist else "already exists"
+            raise OSError(f"{filepath} {msg} on server")
 
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
@@ -236,6 +245,9 @@ class LocalDataAccess(DataAccess):
         local_version = ProfileHelper.get_profile_version_local(grid_model, kind)
         return list(set(blob_version + local_version))
 
+    def execute_command_async(self, command):
+        return self.execute_command(command)
+
 
 class SSHDataAccess(DataAccess):
     """Interface to a remote data store, accessed via SSH."""
@@ -296,6 +308,19 @@ class SSHDataAccess(DataAccess):
         )
 
         self._ssh = client
+
+    def _check_file_exists(self, filepath, should_exist=True):
+        """Check that file exists (or not) at the given path
+
+        :param str filepath: the full path to the file
+        :param bool should_exist: whether the file is expected to exist
+        :raises OSError: if the expected condition is not met
+        """
+        _, _, stderr = self.execute_command(CommandBuilder.list(filepath))
+        compare = operator.ne if should_exist else operator.eq
+        if compare(len(stderr.readlines()), 0):
+            msg = "not found" if should_exist else "already exists"
+            raise OSError(f"{filepath} {msg} on server")
 
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
