@@ -127,6 +127,7 @@ class LocalDataAccess(DataAccess):
 
     def __init__(self, root=None):
         self.root = root if root else server_setup.DATA_ROOT_DIR
+        self.local_root = server_setup.LOCAL_DIR
 
     def _check_file_exists(self, filepath, should_exist=True):
         """Check that file exists (or not) at the given path
@@ -175,8 +176,9 @@ class LocalDataAccess(DataAccess):
         :param bool preserve: whether to keep the local copy
         """
         self._check_filename(file_name)
-        src = os.path.join(server_setup.LOCAL_DIR, file_name)
+        src = os.path.join(self.local_root, file_name)
         file_name = file_name if change_name_to is None else change_name_to
+        to_dir = "" if to_dir is None else to_dir
         dest = os.path.join(self.root, to_dir, file_name)
         print(f"--> Moving file {src} to {dest}")
         self._check_file_exists(dest, should_exist=False)

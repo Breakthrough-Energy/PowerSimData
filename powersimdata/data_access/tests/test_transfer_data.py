@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from powersimdata.data_access.data_access import SSHDataAccess
+from powersimdata.data_access.data_access import LocalDataAccess, SSHDataAccess
 from powersimdata.tests.mock_ssh import MockConnection
 from powersimdata.utility.server_setup import get_server_user
 
@@ -13,7 +13,7 @@ CONTENT = b"content"
 
 
 @pytest.fixture
-def data_access():
+def ssh_data_access():
     data_access = SSHDataAccess()
     yield data_access
     data_access.close()
@@ -32,6 +32,15 @@ def temp_fs(tmp_path):
 def mock_data_access(monkeypatch, temp_fs):
     data_access = SSHDataAccess()
     monkeypatch.setattr(data_access, "_ssh", MockConnection())
+    data_access.root = temp_fs[0]
+    data_access.local_root = temp_fs[1]
+    yield data_access
+    data_access.close()
+
+
+@pytest.fixture
+def local_data_access(temp_fs):
+    data_access = LocalDataAccess()
     data_access.root = temp_fs[0]
     data_access.local_root = temp_fs[1]
     yield data_access
@@ -69,8 +78,8 @@ def _check_content(filepath):
 
 @pytest.mark.integration
 @pytest.mark.ssh
-def test_setup_server_connection(data_access):
-    _, stdout, _ = data_access.execute_command("whoami")
+def test_setup_server_connection(ssh_data_access):
+    _, stdout, _ = ssh_data_access.execute_command("whoami")
     assert stdout.read().decode("utf-8").strip() == get_server_user()
 
 
@@ -95,29 +104,35 @@ def test_copy_from_multi_path(mock_data_access, temp_fs, make_temp):
     _check_content(os.path.join(temp_fs[1], rel_path, fname))
 
 
+@pytest.mark.parametrize("data_access", ["mock_data_access", "local_data_access"])
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
-def test_move_to(mock_data_access, make_temp):
+def test_move_to(data_access, make_temp, request):
+    data_access = request.getfixturevalue(data_access)
     fname = make_temp(remote=False)
-    mock_data_access.move_to(fname)
-    _check_content(os.path.join(mock_data_access.root, fname))
+    data_access.move_to(fname)
+    _check_content(os.path.join(data_access.root, fname))
 
 
+@pytest.mark.parametrize("data_access", ["mock_data_access", "local_data_access"])
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
-def test_move_to_multi_path(mock_data_access, make_temp):
+def test_move_to_multi_path(data_access, make_temp, request):
+    data_access = request.getfixturevalue(data_access)
     rel_path = Path("foo", "bar")
-    remote_path = mock_data_access.root / rel_path
+    remote_path = data_access.root / rel_path
     remote_path.mkdir(parents=True)
     fname = make_temp(remote=False)
-    mock_data_access.move_to(fname, rel_path)
+    data_access.move_to(fname, rel_path)
     _check_content(os.path.join(remote_path, fname))
 
 
+@pytest.mark.parametrize("data_access", ["mock_data_access", "local_data_access"])
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")
-def test_move_to_rename(mock_data_access, make_temp):
+def test_move_to_rename(data_access, make_temp, request):
+    data_access = request.getfixturevalue(data_access)
     fname = make_temp(remote=False)
     new_fname = "new_fname"
-    mock_data_access.move_to(fname, change_name_to=new_fname)
-    _check_content(os.path.join(mock_data_access.root, new_fname))
+    data_access.move_to(fname, change_name_to=new_fname)
+    _check_content(os.path.join(data_access.root, new_fname))
 
 
 def test_check_filename(mock_data_access):
