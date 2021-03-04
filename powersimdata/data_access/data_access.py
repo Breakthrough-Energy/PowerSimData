@@ -175,9 +175,9 @@ class LocalDataAccess(DataAccess):
         :param bool preserve: whether to keep the local copy
         """
         self._check_filename(file_name)
-        src = os.join(server_setup.LOCAL_DIR, file_name)
+        src = os.path.join(server_setup.LOCAL_DIR, file_name)
         file_name = file_name if change_name_to is None else change_name_to
-        dest = os.join(self.root, to_dir, file_name)
+        dest = os.path.join(self.root, to_dir, file_name)
         print(f"--> Moving file {src} to {dest}")
         self._check_file_exists(dest, should_exist=False)
         self.copy(src, dest)
@@ -210,7 +210,11 @@ class LocalDataAccess(DataAccess):
         return os.remove(target)
 
     def makedir(self, relative_path):
-        full_path = os.join(self.root, relative_path)
+        """Create path relative to root
+
+        :param str relative_path: the path, without filename, relative to root
+        """
+        full_path = os.path.join(self.root, relative_path)
         return os.makedirs(full_path, exist_ok=True)
 
     def execute_command(self, command):
