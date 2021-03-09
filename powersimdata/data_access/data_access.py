@@ -13,7 +13,7 @@ from powersimdata.utility.helpers import CommandBuilder
 
 
 class DataAccess:
-    """Interface to a local or remote data store."""
+    """Interface to a local or remote environment"""
 
     def copy_from(self, file_name, from_dir):
         """Copy a file from data store to userspace.
@@ -44,7 +44,7 @@ class DataAccess:
         raise NotImplementedError
 
     def remove(self, target, recursive=False, force=False):
-        """Interpretation of rm command
+        """Remove file or tree, behavior mirrors rm command
 
         :param str target: path to remove
         :param bool recursive: delete directories recursively
@@ -71,21 +71,21 @@ class DataAccess:
             raise ValueError(f"Expecting file name but got path {filename}")
 
     def makedir(self, relative_path):
-        """Create paths relative to the instance root
+        """Create path relative to root, in the target environment
 
         :param str relative_path: the path, without filename, relative to root
         """
         raise NotImplementedError
 
     def execute_command(self, command):
-        """Execute a command locally at the data access.
+        """Execute a command in the target environment
 
         :param list command: list of str to be passed to command line.
         """
         raise NotImplementedError
 
     def execute_command_async(self, command):
-        """Execute a command locally at the DataAccess, without waiting for completion.
+        """Execute a command, using non-blocking mechanism
 
         :param list command: list of str to be passed to command line.
         """
@@ -118,7 +118,7 @@ class DataAccess:
         return ProfileHelper.get_profile_version_cloud(grid_model, kind)
 
     def close(self):
-        """Perform any necessary cleanup for the object."""
+        """Perform any necessary cleanup."""
         pass
 
 
@@ -188,7 +188,7 @@ class LocalDataAccess(DataAccess):
             self.remove(src)
 
     def copy(self, src, dest, recursive=False, update=False):
-        """Copy a file or tree, depending on recursive argument
+        """Copy a file or tree. Mirrors cp command but is platform independent
 
         :param str src: path to original
         :param str dest: destination path
@@ -201,7 +201,7 @@ class LocalDataAccess(DataAccess):
         return shutil.copy(src, dest)
 
     def remove(self, target, recursive=False, force=False):
-        """Interpretation of rm command
+        """Remove file or tree. Mirrors rm command but is platform independent
 
         :param str target: path to remove
         :param bool recursive: delete directories recursively
@@ -220,9 +220,10 @@ class LocalDataAccess(DataAccess):
         return os.makedirs(full_path, exist_ok=True)
 
     def execute_command(self, command):
-        """Execute a command locally at the data access.
+        """Execute a command locally
 
-        :param list command: list of str to be passed to command line.
+        :param str command: command line invocation
+        :return: (*tuple*) -- stdin, stdout, stderr of executed command.
         """
 
         def wrap(s):
@@ -403,7 +404,7 @@ class SSHDataAccess(DataAccess):
         return self.execute_command(command)
 
     def makedir(self, relative_path):
-        """Create paths relative to the instance root
+        """Create path on server, relative to the instance root
 
         :param str relative_path: the path, without filename, relative to root
         """
@@ -411,9 +412,9 @@ class SSHDataAccess(DataAccess):
         return self.execute_command(f"mkdir -p {full_path}")
 
     def execute_command(self, command):
-        """Execute a command locally at the data access.
+        """Execute a command on the server, and obtain result.
 
-        :param list command: list of str to be passed to command line.
+        :param str command: command line invocation
         :return: (*tuple*) -- stdin, stdout, stderr of executed command.
         """
         return self.ssh.exec_command(command)
@@ -478,7 +479,7 @@ class SSHDataAccess(DataAccess):
             raise IOError("Failed to push file - most likely a conflict was detected.")
 
     def close(self):
-        """Close the connection that was opened when the object was created."""
+        """Close the ssh connection (if needed)."""
         self.ssh.close()
 
 
