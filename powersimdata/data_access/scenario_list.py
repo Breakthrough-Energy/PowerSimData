@@ -100,7 +100,7 @@ class ScenarioListManager(CsvStore):
 
         :return: (*str*) -- new scenario id.
         """
-        table = self.get_table(self._SCENARIO_LIST)
+        table = self.get_scenario_table()
         return str(table.index.max() + 1)
 
     def get_scenario(self, descriptor):
@@ -149,7 +149,7 @@ class ScenarioListManager(CsvStore):
 
         :param collections.OrderedDict scenario_info: entry to add to scenario list.
         """
-        table = self.get_table(self._SCENARIO_LIST)
+        table = self.get_scenario_table()
         table.reset_index()
         table.append(scenario_info)
         self._save_file(table)
@@ -162,7 +162,7 @@ class ScenarioListManager(CsvStore):
 
         :param collections.OrderedDict scenario_info: entry to delete from scenario list.
         """
-        table = self.get_table(self._SCENARIO_LIST)
+        table = self.get_scenario_table()
         scenario_id = int(scenario_info["id"])
         table.drop(scenario_id)
         self._save_file(table)

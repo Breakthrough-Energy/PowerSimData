@@ -1,3 +1,4 @@
+import os
 import posixpath
 
 from powersimdata.data_access.csv_store import CsvStore
@@ -50,15 +51,15 @@ class ExecuteTable(SqlStore):
             ),
         )
 
-    def update_execute_list(self, status, scenario_info):
+    def set_status(self, scenario_id, status):
         """Updates status of scenario in execute list
 
+        :param int scenario_id: the scenario id
         :param str status: execution status.
-        :param collections.OrderedDict scenario_info: entry to update
         """
         self.cur.execute(
             "UPDATE execute_list SET status = %s WHERE id = %s",
-            (status, scenario_info["id"]),
+            (status, scenario_id),
         )
 
     def delete_entry(self, scenario_info):
@@ -85,6 +86,13 @@ class ExecuteListManager(CsvStore):
             server_setup.DATA_ROOT_DIR, self._EXECUTE_LIST
         )
 
+    def _save_file(self, table):
+        """Save to local directory
+
+        :param pandas.DataFrame table: the execute list data frame
+        """
+        table.to_csv(os.path.join(server_setup.LOCAL_DIR, self._EXECUTE_LIST))
+
     def get_execute_table(self):
         """Returns execute table from server if possible, otherwise read local
         copy. Updates the local copy upon successful server connection.
@@ -107,39 +115,35 @@ class ExecuteListManager(CsvStore):
             raise Exception(f"Scenario not found in execute list, id = {scenario_id}")
 
     def add_entry(self, scenario_info):
-        """Adds scenario to the execute list file on server.
+        """Add entry to execute list
 
         :param collections.OrderedDict scenario_info: entry to add
         """
-        print("--> Adding entry in execute table on server")
-        entry = "%s,created" % scenario_info["id"]
-        command = "echo %s >> %s" % (entry, self._server_path)
-        err_message = "Failed to update %s on server" % self._EXECUTE_LIST
-        _ = self._execute_and_check_err(command, err_message)
+        scenario_id = int(scenario_info["id"])
+        return self.set_status(scenario_id, "created")
 
-    def update_execute_list(self, status, scenario_info):
-        """Updates status in execute list file on server.
+    def set_status(self, scenario_id, status):
+        """Set the scenario status
 
-        :param str status: execution status.
-        :param collections.OrderedDict scenario_info: entry to update
+        :param int scenario_id: the scenario id
+        :param str status: the new status
         """
-        print("--> Updating status in execute table on server")
-        options = "-F, -v OFS=',' -v INPLACE_SUFFIX=.bak -i inplace"
-        # AWK parses the file line-by-line. When the entry of the first column is equal
-        # to the scenario identification number, the second column is replaced by the
-        # status parameter.
-        program = "'{if($1==%s) $2=\"%s\"};1'" % (scenario_info["id"], status)
-        command = "awk %s %s %s" % (options, program, self._server_path)
-        err_message = "Failed to update %s on server" % self._EXECUTE_LIST
-        _ = self._execute_and_check_err(command, err_message)
+        table = self.get_execute_table()
+        table.loc[scenario_id, "status"] = status
+        self._save_file(table)
+
+        print(f"-->  Setting status={status} in execute table on server")
+        self.data_access.move_to(self._EXECUTE_LIST)
 
     def delete_entry(self, scenario_info):
         """Deletes entry from execute list on server.
 
         :param collections.OrderedDict scenario_info: entry to delete
         """
+        table = self.get_execute_table()
+        scenario_id = int(scenario_info["id"])
+        table.drop(scenario_id)
+        self._save_file(table)
+
         print("--> Deleting entry in execute table on server")
-        entry = "^%s,extracted" % scenario_info["id"]
-        command = "sed -i.bak '/%s/d' %s" % (entry, self._server_path)
-        err_message = "Failed to delete entry in %s on server" % self._EXECUTE_LIST
-        _ = self._execute_and_check_err(command, err_message)
+        self.data_access.move_to(self._EXECUTE_LIST)

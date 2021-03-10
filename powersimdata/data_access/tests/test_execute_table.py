@@ -73,8 +73,9 @@ def test_add_entry(store):
 def test_update_entry(store):
     info = _get_test_row()
     store.add_entry(info)
-    store.update_execute_list("testing", info)
-    status = store.get_status(info["id"])
+    sid = info["id"]
+    store.set_status(sid, "testing")
+    status = store.get_status(sid)
     assert status.loc[0, "status"] == "testing"
 
 
