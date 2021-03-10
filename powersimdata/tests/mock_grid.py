@@ -1,6 +1,7 @@
 import pandas as pd
 
 from powersimdata.input.grid import Grid
+from powersimdata.network.model import ModelImmutables
 
 # The index name of each data frame attribute
 indices = {
@@ -154,7 +155,7 @@ storage_columns = {
 
 
 class MockGrid(object):
-    def __init__(self, grid_attrs=None):
+    def __init__(self, grid_attrs=None, model="usa_tamu"):
         """Constructor.
 
         :param dict grid_attrs: dictionary of {*field_name*, *data_dict*} pairs
@@ -162,6 +163,8 @@ class MockGrid(object):
             branch, bus, dcline, gencost or plant) and *data_dict* a dictionary
             in which the keys are the column name of the data frame associated
             to *field_name* and the values are a list of values.
+        :param str model: grid model. Use to access geographical information such
+            as loadzones, interconnections, etc.
         """
         if grid_attrs is None:
             grid_attrs = {}
@@ -177,6 +180,8 @@ class MockGrid(object):
         if len(extra_keys) > 0:
             raise ValueError("Got unknown key(s):" + str(extra_keys))
 
+        self.model_immutables = ModelImmutables(model)
+
         cols = {
             "sub": sub_columns,
             "bus2sub": bus2sub_columns,
@@ -188,9 +193,8 @@ class MockGrid(object):
 
         self.data_loc = None
         self.interconnect = None
-        self.zone2id = {"zone1": 1, "zone2": 2}
-        self.id2zone = {1: "zone1", 2: "zone2"}
-        self.type2color = {}
+        self.zone2id = {}
+        self.id2zone = {}
 
         # Loop through names for grid data frames, add (maybe empty) data
         # frames.
