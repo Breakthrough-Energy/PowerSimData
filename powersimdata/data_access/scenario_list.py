@@ -2,6 +2,8 @@ import os
 import posixpath
 from collections import OrderedDict
 
+import pandas as pd
+
 from powersimdata.data_access.csv_store import CsvStore
 from powersimdata.data_access.sql_store import SqlStore, to_data_frame
 from powersimdata.utility import server_setup
@@ -101,7 +103,9 @@ class ScenarioListManager(CsvStore):
         :return: (*str*) -- new scenario id.
         """
         table = self.get_scenario_table()
-        return str(table.index.max() + 1)
+        max_value = table.index.max()
+        result = 1 if pd.isna(max_value) else max_value + 1
+        return str(result)
 
     def get_scenario(self, descriptor):
         """Get information for a scenario based on id or name
@@ -150,12 +154,14 @@ class ScenarioListManager(CsvStore):
         :param collections.OrderedDict scenario_info: entry to add to scenario list.
         """
         table = self.get_scenario_table()
-        table.reset_index()
-        table.append(scenario_info)
+        table.reset_index(inplace=True)
+        entry = pd.DataFrame({k: [v] for k, v in scenario_info.items()})
+        table = table.append(entry)
+        table.set_index("id", inplace=True)
         self._save_file(table)
 
         print("--> Adding entry in %s on server" % self._SCENARIO_LIST)
-        self.data_access.move_to(self._SCENARIO_LIST)
+        self.data_access.move_to(self._SCENARIO_LIST, force=True)
 
     def delete_entry(self, scenario_info):
         """Deletes entry in scenario list.
@@ -168,4 +174,4 @@ class ScenarioListManager(CsvStore):
         self._save_file(table)
 
         print("--> Deleting entry in %s on server" % self._SCENARIO_LIST)
-        self.data_access.move_to(self._SCENARIO_LIST)
+        self.data_access.move_to(self._SCENARIO_LIST, force=True)

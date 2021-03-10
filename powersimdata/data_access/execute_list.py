@@ -125,15 +125,15 @@ class ExecuteListManager(CsvStore):
     def set_status(self, scenario_id, status):
         """Set the scenario status
 
-        :param int scenario_id: the scenario id
+        :param int/str scenario_id: the scenario id
         :param str status: the new status
         """
         table = self.get_execute_table()
-        table.loc[scenario_id, "status"] = status
+        table.loc[int(scenario_id), "status"] = status
         self._save_file(table)
 
         print(f"-->  Setting status={status} in execute table on server")
-        self.data_access.move_to(self._EXECUTE_LIST)
+        self.data_access.move_to(self._EXECUTE_LIST, force=True)
 
     def delete_entry(self, scenario_info):
         """Deletes entry from execute list on server.
@@ -146,4 +146,4 @@ class ExecuteListManager(CsvStore):
         self._save_file(table)
 
         print("--> Deleting entry in execute table on server")
-        self.data_access.move_to(self._EXECUTE_LIST)
+        self.data_access.move_to(self._EXECUTE_LIST, force=True)

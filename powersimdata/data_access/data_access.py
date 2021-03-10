@@ -116,19 +116,22 @@ class LocalDataAccess(DataAccess):
         """
         pass
 
-    def move_to(self, file_name, to_dir, change_name_to=None):
+    def move_to(self, file_name, to_dir=None, change_name_to=None, force=False):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
         """
+        if to_dir is None:  # already symlinked via dockerfile
+            return
         self._check_filename(file_name)
         src = posixpath.join(server_setup.LOCAL_DIR, file_name)
         file_name = file_name if change_name_to is None else change_name_to
         dest = posixpath.join(self.root, to_dir, file_name)
         print(f"--> Moving file {src} to {dest}")
-        self._check_file_exists(dest, should_exist=False)
+        if not force:
+            self._check_file_exists(dest, should_exist=False)
         self.copy(src, dest)
         self.remove(src)
 
@@ -235,7 +238,7 @@ class SSHDataAccess(DataAccess):
             sftp.get(from_path, to_path, callback=cbk)
             bar.close()
 
-    def move_to(self, file_name, to_dir=None, change_name_to=None):
+    def move_to(self, file_name, to_dir=None, change_name_to=None, force=False):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
@@ -255,7 +258,8 @@ class SSHDataAccess(DataAccess):
         to_dir = "" if to_dir is None else to_dir
         to_path = posixpath.join(self.root, to_dir, file_name)
         self.makedir(to_dir)
-        self._check_file_exists(to_path, should_exist=False)
+        if not force:
+            self._check_file_exists(to_path, should_exist=False)
 
         with self.ssh.open_sftp() as sftp:
             print(f"Transferring {from_path} to server")
