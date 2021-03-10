@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -47,22 +48,9 @@ class CsvStore:
         table.fillna("", inplace=True)
         return table.astype(str)
 
-    def _execute_and_check_err(self, command, err_message):
-        """Executes command and checks for error.
+    def _save_file(self, table):
+        """Save to local directory
 
-        :param str command: command to execute over ssh.
-        :param str err_message: error message to be raised.
-        :raises IOError: if command is not successfully executed.
-        :return: (*list*) -- list of command output.
+        :param pandas.DataFrame table: the data frame to save
         """
-        stdin, stdout, stderr = self.data_access.execute_command(command)
-        command_output = stdout.readlines()
-        command_error = stderr.readlines()
-        if len(command_error) != 0:
-            command_error = [
-                i.replace("\t", " ").replace("\n", "") for i in command_error
-            ]
-            for ce in command_error:
-                print(ce)
-            raise IOError(err_message)
-        return command_output
+        table.to_csv(os.path.join(server_setup.LOCAL_DIR, self._FILE_NAME))

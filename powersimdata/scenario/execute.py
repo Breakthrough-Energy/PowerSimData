@@ -27,7 +27,6 @@ class Execute(State):
         """Constructor."""
         self._scenario_info = scenario.info
         self._scenario_status = scenario.status
-
         super().__init__(scenario)
 
         print(

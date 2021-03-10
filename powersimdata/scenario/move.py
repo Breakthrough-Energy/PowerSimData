@@ -39,7 +39,7 @@ class Move(State):
         backup.move_output_data()
         backup.move_temporary_folder()
 
-        sid = int(self._scenario_info["id"])
+        sid = self._scenario_info["id"]
         self._execute_list_manager.set_status(sid, "moved")
 
         # Delete attributes

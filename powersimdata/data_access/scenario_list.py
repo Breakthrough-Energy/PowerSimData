@@ -1,4 +1,3 @@
-import os
 import posixpath
 from collections import OrderedDict
 
@@ -80,14 +79,12 @@ class ScenarioListManager(CsvStore):
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
 
-    _SCENARIO_LIST = "ScenarioList.csv"
+    _FILE_NAME = "ScenarioList.csv"
 
     def __init__(self, ssh_client):
         """Constructor"""
         super().__init__(ssh_client)
-        self._server_path = posixpath.join(
-            server_setup.DATA_ROOT_DIR, self._SCENARIO_LIST
-        )
+        self._server_path = posixpath.join(server_setup.DATA_ROOT_DIR, self._FILE_NAME)
 
     def get_scenario_table(self):
         """Returns scenario table from server if possible, otherwise read local
@@ -95,7 +92,7 @@ class ScenarioListManager(CsvStore):
 
         :return: (*pandas.DataFrame*) -- scenario list as a data frame.
         """
-        return self.get_table(self._SCENARIO_LIST)
+        return self.get_table(self._FILE_NAME)
 
     def generate_scenario_id(self):
         """Generates scenario id.
@@ -141,13 +138,6 @@ class ScenarioListManager(CsvStore):
                 .to_dict("records", into=OrderedDict)[0]
             )
 
-    def _save_file(self, table):
-        """Save to local directory
-
-        :param pandas.DataFrame table: the scenario list data frame
-        """
-        table.to_csv(os.path.join(server_setup.LOCAL_DIR, self._SCENARIO_LIST))
-
     def add_entry(self, scenario_info):
         """Adds scenario to the scenario list file on server.
 
@@ -160,8 +150,8 @@ class ScenarioListManager(CsvStore):
         table.set_index("id", inplace=True)
         self._save_file(table)
 
-        print("--> Adding entry in %s on server" % self._SCENARIO_LIST)
-        self.data_access.move_to(self._SCENARIO_LIST, force=True)
+        print("--> Adding entry in %s on server" % self._FILE_NAME)
+        self.data_access.move_to(self._FILE_NAME, force=True)
 
     def delete_entry(self, scenario_info):
         """Deletes entry in scenario list.
@@ -173,5 +163,5 @@ class ScenarioListManager(CsvStore):
         table.drop(scenario_id)
         self._save_file(table)
 
-        print("--> Deleting entry in %s on server" % self._SCENARIO_LIST)
-        self.data_access.move_to(self._SCENARIO_LIST, force=True)
+        print("--> Deleting entry in %s on server" % self._FILE_NAME)
+        self.data_access.move_to(self._FILE_NAME, force=True)

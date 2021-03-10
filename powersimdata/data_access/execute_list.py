@@ -1,4 +1,3 @@
-import os
 import posixpath
 
 from powersimdata.data_access.csv_store import CsvStore
@@ -77,21 +76,12 @@ class ExecuteListManager(CsvStore):
     :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     """
 
-    _EXECUTE_LIST = "ExecuteList.csv"
+    _FILE_NAME = "ExecuteList.csv"
 
     def __init__(self, ssh_client):
         """Constructor"""
         super().__init__(ssh_client)
-        self._server_path = posixpath.join(
-            server_setup.DATA_ROOT_DIR, self._EXECUTE_LIST
-        )
-
-    def _save_file(self, table):
-        """Save to local directory
-
-        :param pandas.DataFrame table: the execute list data frame
-        """
-        table.to_csv(os.path.join(server_setup.LOCAL_DIR, self._EXECUTE_LIST))
+        self._server_path = posixpath.join(server_setup.DATA_ROOT_DIR, self._FILE_NAME)
 
     def get_execute_table(self):
         """Returns execute table from server if possible, otherwise read local
@@ -99,7 +89,7 @@ class ExecuteListManager(CsvStore):
 
         :return: (*pandas.DataFrame*) -- execute list as a data frame.
         """
-        return self.get_table(self._EXECUTE_LIST)
+        return self.get_table(self._FILE_NAME)
 
     def get_status(self, scenario_id):
         """Return the status for the scenario
@@ -133,7 +123,7 @@ class ExecuteListManager(CsvStore):
         self._save_file(table)
 
         print(f"-->  Setting status={status} in execute table on server")
-        self.data_access.move_to(self._EXECUTE_LIST, force=True)
+        self.data_access.move_to(self._FILE_NAME, force=True)
 
     def delete_entry(self, scenario_info):
         """Deletes entry from execute list on server.
@@ -146,4 +136,4 @@ class ExecuteListManager(CsvStore):
         self._save_file(table)
 
         print("--> Deleting entry in execute table on server")
-        self.data_access.move_to(self._EXECUTE_LIST, force=True)
+        self.data_access.move_to(self._FILE_NAME, force=True)
