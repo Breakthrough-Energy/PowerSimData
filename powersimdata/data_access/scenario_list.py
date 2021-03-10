@@ -1,3 +1,4 @@
+import os
 import posixpath
 from collections import OrderedDict
 
@@ -99,20 +100,8 @@ class ScenarioListManager(CsvStore):
 
         :return: (*str*) -- new scenario id.
         """
-        print("--> Generating scenario id")
-        command = "(flock -x 200; \
-                   id=$(awk -F',' 'END{print $1+1}' %s); \
-                   echo $id, >> %s; \
-                   echo $id) 200>%s" % (
-            self._server_path,
-            self._server_path,
-            posixpath.join(server_setup.DATA_ROOT_DIR, "scenario.lockfile"),
-        )
-
-        err_message = "Failed to generate id for new scenario"
-        command_output = self._execute_and_check_err(command, err_message)
-        scenario_id = command_output[0].splitlines()[0]
-        return scenario_id
+        table = self.get_table(self._SCENARIO_LIST)
+        return str(table.index.max() + 1)
 
     def get_scenario(self, descriptor):
         """Get information for a scenario based on id or name
@@ -148,34 +137,35 @@ class ScenarioListManager(CsvStore):
                 .to_dict("records", into=OrderedDict)[0]
             )
 
+    def _save_file(self, table):
+        """Save to local directory
+
+        :param pandas.DataFrame table: the scenario list data frame
+        """
+        table.to_csv(os.path.join(server_setup.LOCAL_DIR, self._SCENARIO_LIST))
+
     def add_entry(self, scenario_info):
         """Adds scenario to the scenario list file on server.
 
         :param collections.OrderedDict scenario_info: entry to add to scenario list.
         """
-        print("--> Adding entry in %s on server" % self._SCENARIO_LIST)
-        entry = ",".join(scenario_info.values())
-        options = "-F, -v INPLACE_SUFFIX=.bak -i inplace"
-        # AWK parses the file line-by-line. When the entry of the first column is
-        # equal to the scenario identification number, the entire line is replaced
-        # by the scenaario information.
-        program = "'{if($1==%s) $0=\"%s\"};1'" % (
-            scenario_info["id"],
-            entry,
-        )
-        command = "awk %s %s %s" % (options, program, self._server_path)
+        table = self.get_table(self._SCENARIO_LIST)
+        table.reset_index()
+        table.append(scenario_info)
+        self._save_file(table)
 
-        err_message = "Failed to add entry in %s on server" % self._SCENARIO_LIST
-        _ = self._execute_and_check_err(command, err_message)
+        print("--> Adding entry in %s on server" % self._SCENARIO_LIST)
+        self.data_access.move_to(self._SCENARIO_LIST)
 
     def delete_entry(self, scenario_info):
         """Deletes entry in scenario list.
 
         :param collections.OrderedDict scenario_info: entry to delete from scenario list.
         """
-        print("--> Deleting entry in %s on server" % self._SCENARIO_LIST)
-        entry = ",".join(scenario_info.values())
-        command = "sed -i.bak '/%s/d' %s" % (entry, self._server_path)
+        table = self.get_table(self._SCENARIO_LIST)
+        scenario_id = int(scenario_info["id"])
+        table.drop(scenario_id)
+        self._save_file(table)
 
-        err_message = "Failed to delete entry in %s on server" % self._SCENARIO_LIST
-        _ = self._execute_and_check_err(command, err_message)
+        print("--> Deleting entry in %s on server" % self._SCENARIO_LIST)
+        self.data_access.move_to(self._SCENARIO_LIST)
