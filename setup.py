@@ -23,6 +23,7 @@ setup(
             "network/*/data/*.csv",
             "design/investment/data/*.csv",
             "design/investment/data/*/*",
+            "utility/templates/*.csv",
         ]
     },
     zip_safe=False,
