@@ -407,9 +407,12 @@ class SSHDataAccess(DataAccess):
         """Create path on server, relative to the instance root
 
         :param str relative_path: the path, without filename, relative to root
+        :raises IOError: if stderr is non-empty
         """
         full_path = fancy_path.join(self.root, relative_path)
-        return self.execute_command(f"mkdir -p {full_path}")
+        _, _, stderr = self.execute_command(f"mkdir -p {full_path}")
+        if len(stderr.readlines()) != 0:
+            raise IOError(f"Failed to create {full_path} on server")
 
     def execute_command(self, command):
         """Execute a command on the server, and obtain result.
