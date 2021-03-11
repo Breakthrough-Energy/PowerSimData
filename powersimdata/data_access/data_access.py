@@ -22,12 +22,13 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def move_to(self, file_name, to_dir, change_name_to=None):
+    def move_to(self, file_name, to_dir, change_name_to=None, preserve=False):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
+        :param bool preserve: whether to keep the local copy
         """
         raise NotImplementedError
 
@@ -130,12 +131,13 @@ class LocalDataAccess(DataAccess):
         """
         pass
 
-    def move_to(self, file_name, to_dir, change_name_to=None):
+    def move_to(self, file_name, to_dir, change_name_to=None, preserve=False):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
+        :param bool preserve: whether to keep the local copy
         """
         self._check_filename(file_name)
         src = posixpath.join(server_setup.LOCAL_DIR, file_name)
@@ -144,7 +146,9 @@ class LocalDataAccess(DataAccess):
         print(f"--> Moving file {src} to {dest}")
         self._check_file_exists(dest, should_exist=False)
         self.copy(src, dest)
-        self.remove(src)
+        if not preserve:
+            print("--> Deleting original copy")
+            self.remove(src)
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -249,12 +253,13 @@ class SSHDataAccess(DataAccess):
             sftp.get(from_path, to_path, callback=cbk)
             bar.close()
 
-    def move_to(self, file_name, to_dir=None, change_name_to=None):
+    def move_to(self, file_name, to_dir=None, change_name_to=None, preserve=False):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
+        :param bool preserve: whether to keep the local copy
         :raises FileNotFoundError: if specified file does not exist
         """
         self._check_filename(file_name)
@@ -275,8 +280,9 @@ class SSHDataAccess(DataAccess):
             print(f"Transferring {from_path} to server")
             sftp.put(from_path, to_path)
 
-        print(f"--> Deleting {from_path} on local machine")
-        os.remove(from_path)
+        if not preserve:
+            print(f"--> Deleting {from_path} on local machine")
+            os.remove(from_path)
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -305,7 +311,7 @@ class SSHDataAccess(DataAccess):
         :raises IOError: if command generated stderr
         """
         backup = f"{file_name}.bak"
-        self.move_to(file_name, change_name_to=backup)
+        self.move_to(file_name, change_name_to=backup, preserve=True)
 
         values = {
             "original": posixpath.join(self.root, file_name),
@@ -316,13 +322,16 @@ class SSHDataAccess(DataAccess):
         template = "(flock -x 200; \
                 conflicts=$(comm -23 {original} {updated} | wc -l); \
                 if [ $conflicts -eq 0 ]; then mv {updated} {original} -b; \
-                else echo CONFLICT_ERROR 1>&2; fi \
+                else echo CONFLICT_ERROR 1>&2; fi) \
                 200>{lockfile}"
 
         command = template.format(**values)
         _, _, stderr = self.execute_command(command)
 
-        if len(stderr.readlines()) > 0:
+        errors = stderr.readlines()
+        if len(errors) > 0:
+            for e in errors:
+                print(e)
             raise IOError("Failed to push file - most likely a conflict was detected.")
 
     def close(self):
