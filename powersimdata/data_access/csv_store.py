@@ -48,9 +48,10 @@ class CsvStore:
         table.fillna("", inplace=True)
         return table.astype(str)
 
-    def _save_file(self, table):
-        """Save to local directory
+    def commit(self, table):
+        """Save to local directory and upload if needed
 
         :param pandas.DataFrame table: the data frame to save
         """
         table.to_csv(os.path.join(server_setup.LOCAL_DIR, self._FILE_NAME))
+        self.data_access.push(self._FILE_NAME)

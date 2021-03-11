@@ -148,10 +148,9 @@ class ScenarioListManager(CsvStore):
         entry = pd.DataFrame({k: [v] for k, v in scenario_info.items()})
         table = table.append(entry)
         table.set_index("id", inplace=True)
-        self._save_file(table)
 
         print("--> Adding entry in %s on server" % self._FILE_NAME)
-        self.data_access.move_to(self._FILE_NAME, force=True)
+        self.commit(table)
 
     def delete_entry(self, scenario_info):
         """Deletes entry in scenario list.
@@ -161,7 +160,6 @@ class ScenarioListManager(CsvStore):
         table = self.get_scenario_table()
         scenario_id = int(scenario_info["id"])
         table.drop(scenario_id)
-        self._save_file(table)
 
         print("--> Deleting entry in %s on server" % self._FILE_NAME)
-        self.data_access.move_to(self._FILE_NAME, force=True)
+        self.commit(table)

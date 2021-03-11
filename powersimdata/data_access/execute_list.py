@@ -120,10 +120,9 @@ class ExecuteListManager(CsvStore):
         """
         table = self.get_execute_table()
         table.loc[int(scenario_id), "status"] = status
-        self._save_file(table)
 
         print(f"-->  Setting status={status} in execute table on server")
-        self.data_access.move_to(self._FILE_NAME, force=True)
+        self.commit(table)
 
     def delete_entry(self, scenario_info):
         """Deletes entry from execute list on server.
@@ -133,7 +132,6 @@ class ExecuteListManager(CsvStore):
         table = self.get_execute_table()
         scenario_id = int(scenario_info["id"])
         table.drop(scenario_id)
-        self._save_file(table)
 
         print("--> Deleting entry in execute table on server")
-        self.data_access.move_to(self._FILE_NAME, force=True)
+        self.commit(table)
