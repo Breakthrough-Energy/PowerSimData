@@ -69,7 +69,7 @@ class Grid(object):
         :return: (*str*).
         """
         if os.path.isfile(self.data_loc):
-            _get_grid_model_from_scenario_list(self.data_loc)
+            return _get_grid_model_from_scenario_list(self.data_loc)
         elif os.path.isdir(self.data_loc):
             return self.data_loc.split(os.sep)[-2]
 
