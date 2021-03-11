@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import pandas as pd
 
-from powersimdata.data_access.csv_store import CsvStore
+from powersimdata.data_access.csv_store import CsvStore, verify_hash
 from powersimdata.data_access.sql_store import SqlStore, to_data_frame
 from powersimdata.utility import server_setup
 
@@ -92,7 +92,7 @@ class ScenarioListManager(CsvStore):
 
         :return: (*pandas.DataFrame*) -- scenario list as a data frame.
         """
-        return self.get_table(self._FILE_NAME)
+        return self.get_table()
 
     def generate_scenario_id(self):
         """Generates scenario id.
@@ -138,10 +138,12 @@ class ScenarioListManager(CsvStore):
                 .to_dict("records", into=OrderedDict)[0]
             )
 
+    @verify_hash
     def add_entry(self, scenario_info):
         """Adds scenario to the scenario list file on server.
 
         :param collections.OrderedDict scenario_info: entry to add to scenario list.
+        :return: (*pandas.DataFrame*) -- the updated data frame
         """
         table = self.get_scenario_table()
         table.reset_index(inplace=True)
@@ -150,16 +152,18 @@ class ScenarioListManager(CsvStore):
         table.set_index("id", inplace=True)
 
         print("--> Adding entry in %s on server" % self._FILE_NAME)
-        self.commit(table)
+        return table
 
+    @verify_hash
     def delete_entry(self, scenario_info):
         """Deletes entry in scenario list.
 
         :param collections.OrderedDict scenario_info: entry to delete from scenario list.
+        :return: (*pandas.DataFrame*) -- the updated data frame
         """
         table = self.get_scenario_table()
         scenario_id = int(scenario_info["id"])
         table.drop(scenario_id)
 
         print("--> Deleting entry in %s on server" % self._FILE_NAME)
-        self.commit(table)
+        return table

@@ -1,6 +1,6 @@
 import posixpath
 
-from powersimdata.data_access.csv_store import CsvStore
+from powersimdata.data_access.csv_store import CsvStore, verify_hash
 from powersimdata.data_access.sql_store import SqlStore, to_data_frame
 from powersimdata.utility import server_setup
 
@@ -89,7 +89,7 @@ class ExecuteListManager(CsvStore):
 
         :return: (*pandas.DataFrame*) -- execute list as a data frame.
         """
-        return self.get_table(self._FILE_NAME)
+        return self.get_table()
 
     def get_status(self, scenario_id):
         """Return the status for the scenario
@@ -112,26 +112,30 @@ class ExecuteListManager(CsvStore):
         scenario_id = int(scenario_info["id"])
         return self.set_status(scenario_id, "created")
 
+    @verify_hash
     def set_status(self, scenario_id, status):
         """Set the scenario status
 
         :param int/str scenario_id: the scenario id
         :param str status: the new status
+        :return: (*pandas.DataFrame*) -- the updated data frame
         """
         table = self.get_execute_table()
         table.loc[int(scenario_id), "status"] = status
 
         print(f"-->  Setting status={status} in execute table on server")
-        self.commit(table)
+        return table
 
+    @verify_hash
     def delete_entry(self, scenario_info):
         """Deletes entry from execute list on server.
 
         :param collections.OrderedDict scenario_info: entry to delete
+        :return: (*pandas.DataFrame*) -- the updated data frame
         """
         table = self.get_execute_table()
         scenario_id = int(scenario_info["id"])
         table.drop(scenario_id)
 
         print("--> Deleting entry in execute table on server")
-        self.commit(table)
+        return table

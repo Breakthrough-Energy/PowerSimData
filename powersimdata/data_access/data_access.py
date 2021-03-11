@@ -98,10 +98,20 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def push(self, file_name):
+    def checksum(self, relative_path):
+        """Return the checksum of the file path, and write the content if the
+        server is remote
+
+        :param str relative_path: path relative to root
+        :return: (*str*) -- the checksum of the file
+        """
+        raise NotImplementedError
+
+    def push(self, file_name, checksum):
         """Push the file from local to remote root folder, ensuring integrity
 
         :param str file_name: the file name, located at the local root
+        :param str checksum: the checksum prior to download
         """
         raise NotImplementedError
 
@@ -124,12 +134,22 @@ class LocalDataAccess(DataAccess):
         """
         pass
 
-    def push(self, file_name):
+    def push(self, file_name, checksum):
         """Nothing to be done due to symlink
 
         :param str file_name: the file name, located at the local root
+        :param str checksum: the checksum prior to download
         """
         pass
+
+    def checksum(self, relative_path):
+        """Return dummy value since this is only required for remote
+        environment
+
+        :param str relative_path: path relative to root
+        :return: (*str*) -- the checksum of the file
+        """
+        return "dummy_value"
 
     def move_to(self, file_name, to_dir, change_name_to=None, preserve=False):
         """Copy a file from userspace to data store.
@@ -304,10 +324,25 @@ class SSHDataAccess(DataAccess):
         process = Popen(full_command)
         return process
 
-    def push(self, file_name):
+    def checksum(self, relative_path):
+        """Return the checksum of the file path (using sha1sum)
+
+        :param str relative_path: path relative to root
+        :return: (*str*) -- the checksum of the file
+        """
+        full_path = posixpath.join(self.root, relative_path)
+        self._check_file_exists(full_path)
+
+        command = f"sha1sum {full_path}"
+        _, stdout, _ = self.execute_command(command)
+        lines = stdout.readlines()
+        return lines[0].strip()
+
+    def push(self, file_name, checksum):
         """Push file_name to remote root
 
         :param str file_name: the file name, located at the local root
+        :param str checksum: the checksum prior to download
         :raises IOError: if command generated stderr
         """
         backup = f"{file_name}.bak"
@@ -317,11 +352,13 @@ class SSHDataAccess(DataAccess):
             "original": posixpath.join(self.root, file_name),
             "updated": posixpath.join(self.root, backup),
             "lockfile": posixpath.join(self.root, "scenario.lockfile"),
+            "checksum": checksum,
         }
 
         template = "(flock -x 200; \
-                conflicts=$(comm -23 {original} {updated} | wc -l); \
-                if [ $conflicts -eq 0 ]; then mv {updated} {original} -b; \
+                prev='{checksum}'; \
+                curr=$(sha1sum {original}); \
+                if [[ $prev == $curr ]]; then mv {updated} {original} -b; \
                 else echo CONFLICT_ERROR 1>&2; fi) \
                 200>{lockfile}"
 

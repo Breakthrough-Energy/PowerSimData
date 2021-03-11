@@ -196,7 +196,7 @@ class Execute(State):
             extra_args.append("--threads " + str(threads))
 
         if solver:
-            extra_args.append("--solver", solver)
+            extra_args.append("--solver " + solver)
 
         if not isinstance(extract_data, bool):
             raise TypeError("extract_data must be a boolean: 'True' or 'False'")
