@@ -83,7 +83,8 @@ def test_update_entry(store):
 @pytest.mark.db
 def test_delete_entry(store):
     info = _get_test_row()
+    sid = info["id"]
     store.add_entry(info)
-    store.delete_entry(info)
-    status = store.get_status(info["id"])
+    store.delete_entry(sid)
+    status = store.get_status(sid)
     assert status.shape == (0, 0)

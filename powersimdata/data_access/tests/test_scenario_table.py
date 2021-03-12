@@ -95,7 +95,8 @@ def test_add_entry_missing_required_raises():
 @pytest.mark.db
 def test_delete_entry(store):
     info = _get_test_row()
+    sid = info["id"]
     store.add_entry(info)
-    store.delete_entry(info)
-    entry = store.get_scenario_by_id(info["id"])
+    store.delete_entry(sid)
+    entry = store.get_scenario_by_id(sid)
     assert entry.shape == (0, 0)
