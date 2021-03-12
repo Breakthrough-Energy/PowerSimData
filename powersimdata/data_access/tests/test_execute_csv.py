@@ -50,8 +50,8 @@ def test_get_execute_file_from_server_header(execute_table):
 
 def clone_template():
     orig = os.path.join(templates.__path__[0], "ExecuteList.csv")
-    backup = os.path.join(server_setup.LOCAL_DIR, "ExecuteList.csv.test")
-    shutil.copy(orig, backup)
+    dest = os.path.join(server_setup.LOCAL_DIR, "ExecuteList.csv.test")
+    shutil.copy(orig, dest)
 
 
 def mock_row():
@@ -106,7 +106,7 @@ def test_delete(manager):
     table = manager.get_execute_table()
     assert table.shape == (1, 1)
 
-    table = manager.delete_entry(mock_row())
+    table = manager.delete_entry(1)
     assert table.shape == (0, 1)
 
     table = manager.get_execute_table()

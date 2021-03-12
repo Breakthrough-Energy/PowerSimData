@@ -1,10 +1,16 @@
+import os
+import shutil
+from collections import OrderedDict
+
 import pandas as pd
 import pytest
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
-from powersimdata.data_access.data_access import SSHDataAccess
+import powersimdata.utility.templates as templates
+from powersimdata.data_access.data_access import LocalDataAccess, SSHDataAccess
 from powersimdata.data_access.scenario_list import ScenarioListManager
+from powersimdata.utility import server_setup
 
 
 @pytest.fixture
@@ -57,3 +63,70 @@ def test_get_scenario_file_local(scenario_table):
     scm = ScenarioListManager(None)
     from_local = scm.get_scenario_table()
     assert_frame_equal(from_local, scenario_table)
+
+
+def clone_template():
+    orig = os.path.join(templates.__path__[0], "ScenarioList.csv")
+    dest = os.path.join(server_setup.LOCAL_DIR, "ScenarioList.csv.test")
+    shutil.copy(orig, dest)
+
+
+@pytest.fixture
+def manager():
+    clone_template()
+    data_access = LocalDataAccess()
+    manager = ScenarioListManager(data_access)
+    manager._FILE_NAME = "ScenarioList.csv.test"
+    yield manager
+    data_access.close()
+
+
+def mock_row(sid=1):
+    return OrderedDict(
+        [
+            ("id", str(sid)),
+            ("plan", "test"),
+            ("name", "dummy"),
+            ("state", "create"),
+            ("grid_model", ""),
+            ("interconnect", "Western"),
+            ("base_demand", ""),
+            ("base_hydro", ""),
+            ("base_solar", ""),
+            ("base_wind", ""),
+            ("change_table", ""),
+            ("start_date", ""),
+            ("end_date", ""),
+            ("interval", ""),
+            ("engine", ""),
+        ]
+    )
+
+
+def test_generate_id(manager):
+    new_id = manager.generate_scenario_id()
+    assert new_id == "1"
+
+
+def test_blank_csv_append(manager):
+    manager.add_entry(mock_row(1))
+    table = manager.add_entry(mock_row(2))
+    assert table.shape == (2, 16)
+
+
+def test_get_scenario(manager):
+    manager.add_entry(mock_row(1))
+    manager.add_entry(mock_row(2))
+    manager.add_entry(mock_row(3))
+    entry = manager.get_scenario(2)
+    assert entry["id"] == "2"
+    entry = manager.get_scenario("2")
+    assert entry["id"] == "2"
+
+
+def test_delete_entry(manager):
+    manager.add_entry(mock_row(1))
+    manager.add_entry(mock_row(2))
+    manager.add_entry(mock_row(3))
+    table = manager.delete_entry(2)
+    assert table.shape == (2, 16)

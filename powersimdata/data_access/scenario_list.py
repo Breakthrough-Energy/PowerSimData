@@ -64,13 +64,13 @@ class ScenarioTable(SqlStore):
         sql = self.insert(subset=scenario_info.keys())
         self.cur.execute(sql, tuple(scenario_info.values()))
 
-    def delete_entry(self, scenario_info):
+    def delete_entry(self, scenario_id):
         """Deletes entry in scenario list.
 
-        :param collections.OrderedDict scenario_info: entry to delete from scenario list.
+        :param int/str scenario_id: the id of the scenario
         """
         sql = self.delete("id")
-        self.cur.execute(sql, (scenario_info["id"],))
+        self.cur.execute(sql, (scenario_id,))
 
 
 class ScenarioListManager(CsvStore):
@@ -155,15 +155,14 @@ class ScenarioListManager(CsvStore):
         return table
 
     @verify_hash
-    def delete_entry(self, scenario_info):
+    def delete_entry(self, scenario_id):
         """Deletes entry in scenario list.
 
-        :param collections.OrderedDict scenario_info: entry to delete from scenario list.
+        :param int/str scenario_id: the id of the scenario
         :return: (*pandas.DataFrame*) -- the updated data frame
         """
         table = self.get_scenario_table()
-        scenario_id = int(scenario_info["id"])
-        table.drop(scenario_id)
+        table.drop(int(scenario_id), inplace=True)
 
         print("--> Deleting entry in %s on server" % self._FILE_NAME)
         return table

@@ -61,13 +61,13 @@ class ExecuteTable(SqlStore):
             (status, scenario_id),
         )
 
-    def delete_entry(self, scenario_info):
+    def delete_entry(self, scenario_id):
         """Deletes entry from execute list.
 
-        :param collections.OrderedDict scenario_info: entry to delete
+        :param int/str scenario_id: the id of the scenario
         """
         sql = self.delete("id")
-        self.cur.execute(sql, (scenario_info["id"],))
+        self.cur.execute(sql, (scenario_id,))
 
 
 class ExecuteListManager(CsvStore):
@@ -127,15 +127,14 @@ class ExecuteListManager(CsvStore):
         return table
 
     @verify_hash
-    def delete_entry(self, scenario_info):
+    def delete_entry(self, scenario_id):
         """Deletes entry from execute list on server.
 
-        :param collections.OrderedDict scenario_info: entry to delete
+        :param int/str scenario_id: the id of the scenario
         :return: (*pandas.DataFrame*) -- the updated data frame
         """
         table = self.get_execute_table()
-        scenario_id = int(scenario_info["id"])
-        table.drop(scenario_id, inplace=True)
+        table.drop(int(scenario_id), inplace=True)
 
         print("--> Deleting entry in execute table on server")
         return table
