@@ -135,7 +135,7 @@ class ExecuteListManager(CsvStore):
         """
         table = self.get_execute_table()
         scenario_id = int(scenario_info["id"])
-        table.drop(scenario_id)
+        table.drop(scenario_id, inplace=True)
 
         print("--> Deleting entry in execute table on server")
         return table
