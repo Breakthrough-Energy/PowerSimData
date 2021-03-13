@@ -70,16 +70,17 @@ def clone_template():
     dest = os.path.join(server_setup.LOCAL_DIR, "ScenarioList.csv.test")
     os.makedirs(server_setup.LOCAL_DIR, exist_ok=True)
     shutil.copy(orig, dest)
+    return dest
 
 
 @pytest.fixture
 def manager():
-    clone_template()
+    test_csv = clone_template()
     data_access = LocalDataAccess()
     manager = ScenarioListManager(data_access)
     manager._FILE_NAME = "ScenarioList.csv.test"
     yield manager
-    data_access.close()
+    os.remove(test_csv)
 
 
 def mock_row(sid=1):

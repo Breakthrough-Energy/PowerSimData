@@ -53,6 +53,17 @@ def clone_template():
     dest = os.path.join(server_setup.LOCAL_DIR, "ExecuteList.csv.test")
     os.makedirs(server_setup.LOCAL_DIR, exist_ok=True)
     shutil.copy(orig, dest)
+    return dest
+
+
+@pytest.fixture
+def manager():
+    test_csv = clone_template()
+    data_access = LocalDataAccess()
+    manager = ExecuteListManager(data_access)
+    manager._FILE_NAME = "ExecuteList.csv.test"
+    yield manager
+    os.remove(test_csv)
 
 
 def mock_row():
@@ -63,15 +74,6 @@ def mock_row():
             ("interconnect", "Western"),
         ]
     )
-
-
-@pytest.fixture
-def manager():
-    clone_template()
-    data_access = LocalDataAccess()
-    manager = ExecuteListManager(data_access)
-    manager._FILE_NAME = "ExecuteList.csv.test"
-    return manager
 
 
 def test_blank_csv_append(manager):
