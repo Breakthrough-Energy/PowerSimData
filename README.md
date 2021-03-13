@@ -129,7 +129,7 @@ scenario = Scenario('')
 print(scenario.state.name)
 
 # Start building a scenario
-scenario.state.set_builder(["Western"])
+scenario.state.set_builder(grid_model="usa_tamu", interconnect="Western")
 
 # set plan and scenario names
 scenario.state.builder.set_name("test", "dummy")
@@ -138,13 +138,13 @@ scenario.state.builder.set_time("2016-08-01 00:00:00",
                                 "2016-08-31 23:00:00",
                                 "24H")
 # set demand profile version
-scenario.state.builder.set_base_profile("demand", "v4")
+scenario.state.builder.set_base_profile("demand", "vJan2021")
 # set hydro profile version
-scenario.state.builder.set_base_profile("hydro", "v2")
+scenario.state.builder.set_base_profile("hydro", "vJan2021")
 # set solar profile version
-scenario.state.builder.set_base_profile("solar", "v4.1")
+scenario.state.builder.set_base_profile("solar", "vJan2021")
 # set wind profile version
-scenario.state.builder.set_base_profile("wind", "v5.2")
+scenario.state.builder.set_base_profile("wind", "vJan2021")
 
 # scale capacity of solar plants in WA and AZ by 5 and 2.5, respectively
 scenario.state.builder.change_table.scale_plant_capacity(
@@ -175,7 +175,7 @@ scenario.state.builder.change_table.add_plant(
 scenario.state.builder.change_table.add_bus(
 	[{"lat": 48, "lon": -125, "zone_id": 201, "baseKV": 138}])
 scenario.state.builder.change_table.add_dcline(
-	[{"from_bus_id": 2090023, "to_bus_id": 20090024, "Pmin": 0, "Pmax": 200}])
+	[{"from_bus_id": 2090023, "to_bus_id": 2090024, "Pmin": 0, "Pmax": 200}])
 
 # get grid used in scenario
 grid = scenario.state.get_grid()

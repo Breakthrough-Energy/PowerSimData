@@ -1,6 +1,5 @@
 import posixpath
 
-from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
 
@@ -80,14 +79,14 @@ class BackUpDisk(object):
         """Copies base profile"""
         print("--> Copying base profiles to backup disk")
         for kind in ["demand", "hydro", "solar", "wind"]:
-            interconnect = interconnect2name(
-                self._scenario_info["interconnect"].split("_")
+            src = posixpath.join(
+                self.server_config.base_profile_dir(),
+                self._scenario_info["grid_model"],
+                kind + "_" + self._scenario_info["base_" + kind] + ".csv",
             )
-            version = self._scenario_info["base_" + kind]
-            source = interconnect + "_" + kind + "_" + version + ".csv"
-
-            src = posixpath.join(self.server_config.base_profile_dir(), source)
-            dest = self.backup_config.base_profile_dir()
+            dest = posixpath.join(
+                self.backup_config.base_profile_dir(), self._scenario_info["grid_model"]
+            )
             _, stdout, stderr = self._data_access.copy(src, dest, update=True)
             print(stdout.readlines())
             print(stderr.readlines())

@@ -15,6 +15,7 @@ class ScenarioTable(SqlStore):
         "plan",
         "name",
         "state",
+        "grid_model",
         "interconnect",
         "base_demand",
         "base_hydro",

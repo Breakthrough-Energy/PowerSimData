@@ -1,10 +1,15 @@
 import os
+import posixpath
 
 import pandas as pd
 
 from powersimdata.data_access.context import Context
-from powersimdata.scenario.helpers import interconnect2name
 from powersimdata.utility import server_setup
+from powersimdata.utility.helpers import MemoryCache, cache_key
+
+_cache = MemoryCache()
+
+profile_kind = {"demand", "hydro", "solar", "wind"}
 
 
 class InputData(object):
@@ -18,13 +23,10 @@ class InputData(object):
         os.makedirs(server_setup.LOCAL_DIR, exist_ok=True)
 
         self.file_extension = {
-            "demand": "csv",
-            "hydro": "csv",
-            "solar": "csv",
-            "wind": "csv",
-            "ct": "pkl",
-            "grid": "mat",
+            **{"ct": "pkl", "grid": "mat"},
+            **{k: "csv" for k in profile_kind},
         }
+
         self.data_access = Context.get_data_access(data_loc)
 
     def _check_field(self, field_name):
@@ -55,26 +57,59 @@ class InputData(object):
         print("--> Loading %s" % field_name)
         ext = self.file_extension[field_name]
 
-        if field_name in ["demand", "hydro", "solar", "wind"]:
-            interconnect = interconnect2name(scenario_info["interconnect"].split("_"))
+        if field_name in profile_kind:
             version = scenario_info["base_" + field_name]
-            file_name = interconnect + "_" + field_name + "_" + version + "." + ext
-            from_dir = server_setup.BASE_PROFILE_DIR
+            file_name = field_name + "_" + version + "." + ext
+            from_dir = posixpath.join(
+                server_setup.BASE_PROFILE_DIR, scenario_info["grid_model"]
+            )
         else:
             file_name = scenario_info["id"] + "_" + field_name + "." + ext
             from_dir = server_setup.INPUT_DIR
 
         filepath = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
+        key = cache_key(filepath)
+        cached = _cache.get(key)
+        if cached is not None:
+            return cached
         try:
-            return _read_data(filepath)
+            data = _read_data(filepath)
         except FileNotFoundError:
             print(
                 "%s not found in %s on local machine"
                 % (file_name, server_setup.LOCAL_DIR)
             )
+            self.data_access.copy_from(file_name, from_dir)
+            data = _read_data(filepath)
+        _cache.put(key, data)
+        return data
 
-        self.data_access.copy_from(file_name, from_dir)
-        return _read_data(filepath)
+    def get_profile_version(self, grid_model, kind):
+        """Returns available raw profile either from server or local directory.
+
+        :param str grid_model: grid model.
+        :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
+        :return: (*list*) -- available profile version.
+        :raises ValueError: if kind not one of *'demand'*, *'hydro'*, *'solar'* or
+            *'wind'*.
+        """
+        if kind not in profile_kind:
+            raise ValueError("kind must be one of %s" % " | ".join(profile_kind))
+
+        query = posixpath.join(
+            server_setup.DATA_ROOT_DIR,
+            server_setup.BASE_PROFILE_DIR,
+            grid_model,
+            kind + "_*",
+        )
+        stdin, stdout, stderr = self.data_access.execute_command("ls " + query)
+        if len(stderr.readlines()) != 0:
+            print("No %s profiles available." % kind)
+            version = []
+        else:
+            filename = [os.path.basename(line.rstrip()) for line in stdout.readlines()]
+            version = [f[f.rfind("_") + 1 : -4] for f in filename]
+        return version
 
 
 def _read_data(filepath):

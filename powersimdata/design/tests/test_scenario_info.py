@@ -9,7 +9,7 @@ mock_plant = {
     "plant_id": [101, 102, 103, 104, 105, 106],
     "bus_id": [1001, 1002, 1003, 1004, 1005, 1006],
     "type": ["solar", "wind", "ng", "coal", "dfo", "hydro"],
-    "zone_name": ["zone1", "zone2", "zone2", "zone1", "zone1", "zone1"],
+    "zone_name": ["Oregon", "Arizona", "Arizona", "Oregon", "Oregon", "Oregon"],
     "GenFuelCost": [0, 0, 3.3, 4.4, 5.5, 0],
     "Pmin": [0, 0, 0, 0, 0, 0],
     "Pmax": [50, 200, 80, 100, 120, 220],
@@ -35,7 +35,7 @@ mock_demand = pd.concat(
                 for plant_id, zone_name in zip(
                     mock_plant["plant_id"], mock_plant["zone_name"]
                 )
-                if zone_name == "zone1"
+                if zone_name == "Oregon"
             ]
         ]
         .sum(axis=1)
@@ -46,7 +46,7 @@ mock_demand = pd.concat(
                 for plant_id, zone_name in zip(
                     mock_plant["plant_id"], mock_plant["zone_name"]
                 )
-                if zone_name == "zone2"
+                if zone_name == "Arizona"
             ]
         ]
         .sum(axis=1)
@@ -54,29 +54,29 @@ mock_demand = pd.concat(
     ],
     axis=1,
 )
-mock_demand.columns = [1, 2]
+mock_demand.columns = [202, 209]
 
 zone1_available_resource = [
     mock_plant["type"][i]
     for i, zone in enumerate(mock_plant["zone_name"])
-    if zone == "zone1"
+    if zone == "Oregon"
 ]
 
 zone2_available_resource = [
     mock_plant["type"][i]
     for i, zone in enumerate(mock_plant["zone_name"])
-    if zone == "zone2"
+    if zone == "Arizona"
 ]
 
 zone1_plant_id = [
     plant_id
     for i, plant_id in enumerate(mock_plant["plant_id"])
-    if mock_plant["zone_name"][i] == "zone1"
+    if mock_plant["zone_name"][i] == "Oregon"
 ]
 zone2_plant_id = [
     plant_id
     for i, plant_id in enumerate(mock_plant["plant_id"])
-    if mock_plant["zone_name"][i] == "zone2"
+    if mock_plant["zone_name"][i] == "Arizona"
 ]
 
 solar_plant_id = [
@@ -128,45 +128,47 @@ class TestScenarioInfo(unittest.TestCase):
             wind=mock_wind,
             hydro=mock_hydro,
         )
+        scenario.state.grid.get_grid_model = lambda: "usa_tamu"
+        scenario.state.grid.zone2id = {"Oregon": 202, "Arizona": 209}
         self.scenario_info = ScenarioInfo(scenario)
 
     def test_get_available_resource(self):
         assert (
-            self.scenario_info.get_available_resource("zone1")
+            self.scenario_info.get_available_resource("Oregon")
             == zone1_available_resource
         )
         assert (
-            self.scenario_info.get_available_resource("zone2")
+            self.scenario_info.get_available_resource("Arizona")
             == zone2_available_resource
         )
 
     def test_get_demand(self):
         assert (
-            self.scenario_info.get_demand("zone1", start_time, end_time)
+            self.scenario_info.get_demand("Oregon", start_time, end_time)
             == mock_pg[zone1_plant_id].sum().sum()
         )
         assert (
-            self.scenario_info.get_demand("zone2", start_time, end_time)
+            self.scenario_info.get_demand("Arizona", start_time, end_time)
             == mock_pg[zone2_plant_id].sum().sum()
         )
 
     def test_get_capacity(self):
         with self.assertWarns(UserWarning):
-            self.scenario_info.get_capacity("solar", "zone2")
-        assert self.scenario_info.get_capacity("solar", "zone1") == 50
-        assert self.scenario_info.get_capacity("wind", "zone2") == 200
+            self.scenario_info.get_capacity("solar", "Arizona")
+        assert self.scenario_info.get_capacity("solar", "Oregon") == 50
+        assert self.scenario_info.get_capacity("wind", "Arizona") == 200
         assert self.scenario_info.get_capacity("ng", "all") == 80
         assert self.scenario_info.get_capacity("coal", "all") == 100
         assert self.scenario_info.get_capacity("dfo", "all") == 120
-        assert self.scenario_info.get_capacity("hydro", "zone1") == 220
+        assert self.scenario_info.get_capacity("hydro", "Oregon") == 220
 
     def test_get_generation(self):
         assert (
-            self.scenario_info.get_generation("solar", "zone1", start_time, end_time)
+            self.scenario_info.get_generation("solar", "Oregon", start_time, end_time)
             == mock_pg[solar_plant_id].sum().sum()
         )
         assert (
-            self.scenario_info.get_generation("wind", "zone2", start_time, end_time)
+            self.scenario_info.get_generation("wind", "Arizona", start_time, end_time)
             == mock_pg[wind_plant_id].sum().sum()
         )
         assert (
@@ -182,7 +184,7 @@ class TestScenarioInfo(unittest.TestCase):
             == mock_pg[dfo_plant_id].sum().sum()
         )
         assert (
-            self.scenario_info.get_generation("hydro", "zone1", start_time, end_time)
+            self.scenario_info.get_generation("hydro", "Oregon", start_time, end_time)
             == mock_pg[hydro_plant_id].sum().sum()
         )
 

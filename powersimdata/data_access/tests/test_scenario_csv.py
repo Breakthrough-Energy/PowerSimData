@@ -33,6 +33,7 @@ def test_get_scenario_file_from_server_header(data_access, scenario_table):
         "plan",
         "name",
         "state",
+        "grid_model",
         "interconnect",
         "base_demand",
         "base_hydro",

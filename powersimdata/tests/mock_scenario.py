@@ -15,6 +15,7 @@ class MockScenario:
             "plan": None,
             "name": None,
             "state": None,
+            "grid_model": "usa_tamu",
             "interconnect": None,
             "base_demand": None,
             "base_hydro": None,

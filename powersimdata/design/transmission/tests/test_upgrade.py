@@ -39,7 +39,16 @@ mock_branch = {
 
 mock_bus = {
     "bus_id": [1, 2, 3, 4, 5, 6, 7, 8],
-    "zone_id": ["W", "E", "E", "W", "E", "W", "W", "E"],
+    "zone_id": [
+        "Washington",
+        "Oregon",
+        "Oregon",
+        "Washington",
+        "Oregon",
+        "Washington",
+        "Washington",
+        "Oregon",
+    ],
 }
 
 mock_plant = {
@@ -52,6 +61,7 @@ mock_plant = {
 mock_grid = MockGrid(
     grid_attrs={"branch": mock_branch, "bus": mock_bus, "plant": mock_plant}
 )
+mock_grid.get_grid_model = lambda: "usa_tamu"
 
 
 class TestStubTopologyHelpers(unittest.TestCase):
@@ -126,52 +136,58 @@ class TestGetBranchesByArea(unittest.TestCase):
         ]
         self.grid.branch["from_zone_name"] = from_zone_name
         self.grid.branch["to_zone_name"] = to_zone_name
-        self.grid.id2zone = {1: "W", 2: "E"}
-        self.grid.zone2id = {"W": 1, "E": 2}
+        self.grid.id2zone = {201: "Wahington", 202: "Oregon"}
+        self.grid.zone2id = {"Washington": 201, "Oregon": 202}
 
     def test_internal_W(self):
-        branch_idxs = get_branches_by_area(self.grid, {"W"}, method="internal")
+        branch_idxs = get_branches_by_area(self.grid, {"Washington"}, method="internal")
         assert branch_idxs == {106, 107, 108}
 
     def test_internal_E(self):
-        branch_idxs = get_branches_by_area(self.grid, ["E"], method="internal")
+        branch_idxs = get_branches_by_area(self.grid, ["Oregon"], method="internal")
         assert branch_idxs == {102, 103, 104}
 
     def test_internal_EW(self):
-        branch_idxs = get_branches_by_area(self.grid, ("W", "E"), "internal")
+        branch_idxs = get_branches_by_area(
+            self.grid, ("Washington", "Oregon"), "internal"
+        )
         assert branch_idxs == {102, 103, 104, 106, 107, 108}
 
     def test_bridging_W(self):
-        branch_idxs = get_branches_by_area(self.grid, ["W"], method="bridging")
+        branch_idxs = get_branches_by_area(self.grid, ["Washington"], method="bridging")
         assert branch_idxs == {101, 105}
 
     def test_bridging_E(self):
-        branch_idxs = get_branches_by_area(self.grid, {"E"}, method="bridging")
+        branch_idxs = get_branches_by_area(self.grid, {"Oregon"}, method="bridging")
         assert branch_idxs == {101, 105}
 
     def test_bridging_EW(self):
-        branch_idxs = get_branches_by_area(self.grid, ("W", "E"), "bridging")
+        branch_idxs = get_branches_by_area(
+            self.grid, ("Washington", "Oregon"), "bridging"
+        )
         assert branch_idxs == {101, 105}
 
     def test_either_W(self):
-        branch_idxs = get_branches_by_area(self.grid, ("W",), method="either")
+        branch_idxs = get_branches_by_area(self.grid, ("Washington",), method="either")
         assert branch_idxs == {101, 105, 106, 107, 108}
 
     def test_either_E(self):
-        branch_idxs = get_branches_by_area(self.grid, ("E",), method="either")
+        branch_idxs = get_branches_by_area(self.grid, ("Oregon",), method="either")
         assert branch_idxs == {101, 102, 103, 104, 105}
 
     def test_either_EW(self):
-        branch_idxs = get_branches_by_area(self.grid, ("E", "W"), "either")
+        branch_idxs = get_branches_by_area(
+            self.grid, ("Oregon", "Washington"), "either"
+        )
         assert branch_idxs == {101, 102, 103, 104, 105, 106, 107, 108}
 
     def test_bad_grid_type(self):
         with self.assertRaises(TypeError):
-            get_branches_by_area("grid", ["E"], "either")
+            get_branches_by_area("grid", ["Oregon"], "either")
 
     def test_bad_area_type(self):
         with self.assertRaises(TypeError):
-            get_branches_by_area(self.grid, "E", "either")
+            get_branches_by_area(self.grid, "Oregon", "either")
 
     def test_bad_area_name(self):
         with self.assertRaises(ValueError):
@@ -179,11 +195,11 @@ class TestGetBranchesByArea(unittest.TestCase):
 
     def test_bad_method_type(self):
         with self.assertRaises(TypeError):
-            get_branches_by_area(self.grid, ["E"], ["bridging"])
+            get_branches_by_area(self.grid, ["Oregon"], ["bridging"])
 
     def test_bad_method_name(self):
         with self.assertRaises(ValueError):
-            get_branches_by_area(self.grid, ["E"], "purple")
+            get_branches_by_area(self.grid, ["Oregon"], "purple")
 
 
 class TestIdentifyMesh(unittest.TestCase):
@@ -381,9 +397,9 @@ class TestIncrementBranch(unittest.TestCase):
     def setUp(self):
         self.ct = {
             # These data aren't used, but we make sure they don't get changed.
-            "demand": {"zone_id": {"W": 1.1, "E": 1.2}},
-            "solar": {"zone_id": {"W": 1.5, "E": 1.7}},
-            "wind": {"zone_id": {"E": 1.3, "W": 2.1}},
+            "demand": {"zone_id": {"Washington": 1.1, "Oregon": 1.2}},
+            "solar": {"zone_id": {"Washington": 1.5, "Oregon": 1.7}},
+            "wind": {"zone_id": {"Oregon": 1.3, "Washington": 2.1}},
         }
         self.ref_scenario = MockScenario(
             grid_attrs={
@@ -394,8 +410,8 @@ class TestIncrementBranch(unittest.TestCase):
             ct={
                 "branch": {"branch_id": {101: 1.5, 102: 2.5, 103: 2, 105: 4}},
                 # These shouldn't get used
-                "coal": {"zone_id": {"E": 2, "W": 0}},
-                "demand": {"zone_id": {"W": 0.9, "E": 0.8}},
+                "coal": {"zone_id": {"Oregon": 2, "Washington": 0}},
+                "demand": {"zone_id": {"Washington": 0.9, "Oregon": 0.8}},
             },
         )
         orig_ct = self.ref_scenario.state.get_ct()
@@ -504,10 +520,10 @@ class TestScaleRenewableStubs(unittest.TestCase):
         self.assertEqual(change_table.ct, expected_ct)
 
     def test_existing_ct_zone_id_wind(self):
-        ct = {"wind": {"zone_id": {"E": 2}}}
+        ct = {"wind": {"zone_id": {"Oregon": 2}}}
         change_table = MockChangeTable(mock_grid, ct=ct)
         expected_ct = {
-            "wind": {"zone_id": {"E": 2}},
+            "wind": {"zone_id": {"Oregon": 2}},
             "branch": {"branch_id": {103: (21 / 8), 104: (31 / 25), 107: (21 / 15)}},
         }
         scale_renewable_stubs(change_table, verbose=False)
@@ -515,13 +531,13 @@ class TestScaleRenewableStubs(unittest.TestCase):
 
     def test_existing_ct_zone_id_solar_wind(self):
         ct = {
-            "wind": {"zone_id": {"E": 2}},
-            "solar": {"zone_id": {"W": 3}},
+            "wind": {"zone_id": {"Oregon": 2}},
+            "solar": {"zone_id": {"Washington": 3}},
         }
         change_table = MockChangeTable(mock_grid, ct=ct)
         expected_ct = {
-            "wind": {"zone_id": {"E": 2}},
-            "solar": {"zone_id": {"W": 3}},
+            "wind": {"zone_id": {"Oregon": 2}},
+            "solar": {"zone_id": {"Washington": 3}},
             "branch": {
                 "branch_id": {
                     103: (21 / 8),
