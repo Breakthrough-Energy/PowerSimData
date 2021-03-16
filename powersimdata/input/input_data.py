@@ -2,6 +2,7 @@ import os
 import posixpath
 
 import pandas as pd
+import requests
 
 from powersimdata.data_access.context import Context
 from powersimdata.utility import server_setup
@@ -10,6 +11,8 @@ from powersimdata.utility.helpers import MemoryCache, cache_key
 _cache = MemoryCache()
 
 profile_kind = {"demand", "hydro", "solar", "wind"}
+
+BLOB_STORAGE = "https://bescienceswebsite.blob.core.windows.net/profiles"
 
 
 class InputData(object):
@@ -85,7 +88,7 @@ class InputData(object):
         return data
 
     def get_profile_version(self, grid_model, kind):
-        """Returns available raw profile either from server or local directory.
+        """Returns available raw profile from blob storage
 
         :param str grid_model: grid model.
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
@@ -96,20 +99,12 @@ class InputData(object):
         if kind not in profile_kind:
             raise ValueError("kind must be one of %s" % " | ".join(profile_kind))
 
-        query = posixpath.join(
-            server_setup.DATA_ROOT_DIR,
-            server_setup.BASE_PROFILE_DIR,
-            grid_model,
-            kind + "_*",
-        )
-        stdin, stdout, stderr = self.data_access.execute_command("ls " + query)
-        if len(stderr.readlines()) != 0:
+        resp = requests.get(f"{BLOB_STORAGE}/{grid_model}/version.json")
+        versions = resp.json()
+        if kind not in versions:
             print("No %s profiles available." % kind)
-            version = []
         else:
-            filename = [os.path.basename(line.rstrip()) for line in stdout.readlines()]
-            version = [f[f.rfind("_") + 1 : -4] for f in filename]
-        return version
+            return versions[kind]
 
 
 def _read_data(filepath):
