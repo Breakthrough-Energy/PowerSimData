@@ -1,41 +1,42 @@
-from postreise.process import const
-from postreise.process.transferdata import setup_server_connection
-from postreise.process.transferdata import get_scenario_table
-from postreise.process.transferdata import get_execute_table
+import pandas as pd
+
+from powersimdata.data_access.context import Context
+from powersimdata.data_access.execute_list import ExecuteListManager
+from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create
 from powersimdata.scenario.execute import Execute
 
-from collections import OrderedDict
-
-import pandas as pd
-pd.set_option('display.max_colwidth', -1)
+pd.set_option("display.max_colwidth", None)
 
 
 class Scenario(object):
     """Handles scenario.
 
-    :param str descriptor: scenario name or index.
+    :param int/str descriptor: scenario name or index.
     """
 
     def __init__(self, descriptor):
-        """Constructor.
-
-        """
+        """Constructor."""
+        if isinstance(descriptor, int):
+            descriptor = str(descriptor)
         if not isinstance(descriptor, str):
-            raise TypeError('Descriptor must be a string')
+            raise TypeError("Descriptor must be a string or int (for a Scenario ID)")
 
-        self.ssh = setup_server_connection()
+        self.data_access = Context.get_data_access()
+        self._scenario_list_manager = ScenarioListManager(self.data_access)
+        self._execute_list_manager = ExecuteListManager(self.data_access)
+
         if not descriptor:
             self.state = Create(self)
         else:
             self._set_info(descriptor)
             try:
-                state = self.info['state']
+                state = self.info["state"]
                 self._set_status()
-                if state == 'execute':
+                if state == "execute":
                     self.state = Execute(self)
-                elif state == 'analyze':
+                elif state == "analyze":
                     self.state = Analyze(self)
             except AttributeError:
                 return
@@ -45,68 +46,25 @@ class Scenario(object):
 
         :param str descriptor: scenario descriptor.
         """
-        scenario_table = get_scenario_table(self.ssh)
-
-        def not_found_message(table):
-            """Print message when scenario is not found.
-
-            :param pandas table: scenario table.
-            """
-            print("------------------")
-            print("SCENARIO NOT FOUND")
-            print("------------------")
-            print(table.to_string(index=False, justify='center',
-                                  columns=['id', 'plan', 'name', 'interconnect',
-                                           'base_demand', 'base_hydro',
-                                           'base_solar', 'base_wind']))
-
-        try:
-            int(descriptor)
-            scenario = scenario_table[scenario_table.id == descriptor]
-            if scenario.shape[0] == 0:
-                not_found_message(scenario_table)
-            else:
-                self.info = scenario.to_dict('records', into=OrderedDict)[0]
-            return
-        except ValueError:
-            scenario = scenario_table[scenario_table.name == descriptor]
-            if scenario.shape[0] == 0:
-                not_found_message(scenario_table)
-            elif scenario.shape[0] == 1:
-                self.info = scenario.to_dict('records', into=OrderedDict)[0]
-            elif scenario.shape[0] > 1:
-                print("-----------------------")
-                print("MULTIPLE SCENARIO FOUND")
-                print("-----------------------")
-                print('Use id to access scenario')
-                print(scenario_table.to_string(index=False, justify='center',
-                                               columns=['id', 'plan', 'name',
-                                                        'interconnect',
-                                                        'base_demand',
-                                                        'base_hydro',
-                                                        'base_solar',
-                                                        'base_wind']))
-            return
+        info = self._scenario_list_manager.get_scenario(descriptor)
+        if info is not None:
+            self.info = info
 
     def _set_status(self):
-        """Sets execution status of scenario.
-
-        :raises Exception: if scenario not found in execute list on server.
-        """
-        execute_table = get_execute_table(self.ssh)
-
-        status = execute_table[execute_table.id == self.info['id']]
-        if status.shape[0] == 0:
-            raise Exception("Scenario not found in %s on server" %
-                            const.EXECUTE_DIR)
-        elif status.shape[0] == 1:
-            self.status = status.status.values[0]
+        """Sets execution status of scenario."""
+        scenario_id = self.info["id"]
+        self.status = self._execute_list_manager.get_status(scenario_id)
 
     def print_scenario_info(self):
-        """Prints scenario information.
-
-        """
+        """Prints scenario information."""
         self.state.print_scenario_info()
+
+    def get_scenario_table(self):
+        """Get scenario table
+
+        :return: (*pandas.DataFrame*) -- scenario table
+        """
+        return self._scenario_list_manager.get_scenario_table()
 
     def change(self, state):
         """Changes state.

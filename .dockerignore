@@ -1,0 +1,9 @@
+.git
+.github
+build
+.pytest_cache
+.tox
+*.egg-info
+**/__pycache__
+.ipynb_checkpoints
+**/.ropeproject

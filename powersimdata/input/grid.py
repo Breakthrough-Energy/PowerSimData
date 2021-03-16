@@ -1,294 +1,165 @@
 import os
 
-import pandas as pd
-import seaborn as sns
+from powersimdata.data_access.context import Context
+from powersimdata.data_access.scenario_list import ScenarioListManager
+from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
+from powersimdata.network.model import ModelImmutables
+from powersimdata.network.usa_tamu.constants import storage as tamu_storage
+from powersimdata.network.usa_tamu.model import TAMU
+from powersimdata.utility.helpers import MemoryCache, cache_key
+
+_cache = MemoryCache()
 
 
 class Grid(object):
-    """Synthetic Network.
+    """Grid
 
-    :param list interconnect: name of interconnect(s).
+    :param str/list interconnect: interconnect name(s).
+    :param str source: model used to build the network.
+    :param str engine: engine used to run scenario, if using ScenarioGrid.
+    :raises TypeError: if source and engine are not both strings.
+    :raises ValueError: if source or engine does not exist.
     """
-    id2type = {0: 'wind',
-               1: 'solar',
-               2: 'hydro',
-               3: 'ng',
-               4: 'nuclear',
-               5: 'coal'}
 
-    type2id = {v: k for k, v in id2type.items()}
+    def __init__(self, interconnect, source="usa_tamu", engine="REISE"):
+        """Constructor."""
+        if not isinstance(source, str):
+            raise TypeError("source must be a str")
+        supported_engines = {"REISE", "REISE.jl"}
+        if engine not in supported_engines:
+            raise ValueError(f"Engine must be one of {','.join(supported_engines)}")
 
-    type2color = {'wind': sns.xkcd_rgb["green"],
-                  'solar': sns.xkcd_rgb["amber"],
-                  'hydro': sns.xkcd_rgb["light blue"],
-                  'ng': sns.xkcd_rgb["orchid"],
-                  'nuclear': sns.xkcd_rgb["silver"],
-                  'coal': sns.xkcd_rgb["light brown"]}
+        try:
+            self.model_immutables = ModelImmutables(source)
+        except ValueError:
+            self.model_immutables = ModelImmutables(
+                _get_grid_model_from_scenario_list(source)
+            )
 
-    def __init__(self, interconnect):
-        """Constructor.
+        key = cache_key(interconnect, source)
+        cached = _cache.get(key)
+        if cached is not None:
+            data = cached
+        elif source == "usa_tamu":
+            data = TAMU(interconnect)
+        elif os.path.splitext(source)[1] == ".mat":
+            if engine == "REISE":
+                data = FromREISE(source)
+            elif engine == "REISE.jl":
+                data = FromREISEjl(source)
 
+        self.data_loc = data.data_loc
+        self.interconnect = data.interconnect
+        self.zone2id = data.zone2id
+        self.id2zone = data.id2zone
+        self.sub = data.sub
+        self.plant = data.plant
+        self.gencost = data.gencost
+        self.dcline = data.dcline
+        self.bus2sub = data.bus2sub
+        self.bus = data.bus
+        self.branch = data.branch
+        self.storage = data.storage
+
+        _cache.put(key, self)
+
+    def get_grid_model(self):
+        """Get the grid model.
+
+        :return: (*str*).
         """
-        top_dirname = os.path.dirname(__file__)
-        data_dirname = os.path.join(top_dirname, 'data')
-        self.data_loc = os.path.join(data_dirname, 'usa', '')
+        if os.path.isfile(self.data_loc):
+            return _get_grid_model_from_scenario_list(self.data_loc)
+        elif os.path.isdir(self.data_loc):
+            return self.data_loc.split(os.sep)[-2]
 
-        self._set_interconnect(interconnect)
-        self._build_network()
-        self._add_information()
+    def __eq__(self, other):
+        """Used when 'self == other' is evaluated.
 
-    def _set_interconnect(self, interconnect):
-        """Sets interconnect.
-
-        :param list interconnect: interconnect name(s).
-        :raises TypeError: if parameter has wrong type.
-        :raises Exception: if interconnect not found or combination of
-            interconnect is not appropriate.
+        :param object other: other object to be compared against.
+        :return: (*bool*).
         """
-        possible = ['Eastern', 'Texas', 'Western', 'USA']
-        if not isinstance(interconnect, list):
-            raise TypeError("List of string(s) is expected for interconnect")
 
-        for i in interconnect:
-            if i not in possible:
-                raise Exception("Wrong interconnect. Choose from %s" %
-                                " | ".join(possible))
-        n = len(interconnect)
-        if n > len(set(interconnect)):
-            raise Exception("List of interconnects contains duplicate values")
-        if 'USA' in interconnect and n > 1:
-            raise Exception("USA interconnect cannot be paired")
+        def _univ_eq(ref, test, failure_flag=None):
+            """Check for {boolean, dataframe, or column data} equality.
 
-        self.interconnect = interconnect
-
-    def _build_network(self):
-        """Builds network.
-
-        """
-        self._read_network()
-        if 'USA' not in self.interconnect:
-            drop = {'Eastern': [1, 52],
-                    'Texas': [301, 308],
-                    'Western': [201, 216]}
-            for i in self.interconnect:
-                del drop[i]
-            for k, v in drop.items():
-                self.sub.drop(self.sub.groupby(
-                    'interconnect').get_group(k).index, inplace=True)
-                self.bus2sub.drop(self.bus2sub.groupby(
-                    'interconnect').get_group(k).index, inplace=True)
-                self.bus.drop(self.bus.groupby(
-                    'interconnect').get_group(k).index, inplace=True)
-                self.plant.drop(self.plant.groupby(
-                    'interconnect').get_group(k).index, inplace=True)
-                self.gencost.drop(self.gencost.groupby(
-                    'interconnect').get_group(k).index, inplace=True)
+            :param object ref: one object to be tested (order does not matter).
+            :param object test: another object to be tested.
+            :param str failure_flag: flag to add to nonmatching_entries on failure.
+            :raises AssertionError: if no equality can be confirmed (w/o failure_flag).
+            """
+            try:
                 try:
-                    self.dcline.drop(self.dcline.groupby(
-                        'from_interconnect').get_group(k).index, inplace=True)
-                except KeyError:
-                    pass
-                try:
-                    self.dcline.drop(self.dcline.groupby(
-                        'to_interconnect').get_group(k).index, inplace=True)
-                except KeyError:
-                    pass
-                self.branch.drop(self.branch.groupby(
-                    'interconnect').get_group(k).index, inplace=True)
-                for i in range(v[0], v[1] + 1):
-                    del self.zone2id[self.id2zone[i]]
-                    del self.id2zone[i]
+                    test_eq = ref == test
+                    if isinstance(test_eq, bool):
+                        assert test_eq
+                    else:
+                        assert test_eq.all().all()
+                except ValueError:
+                    assert set(ref.columns) == set(test.columns)
+                    for col in ref.columns:
+                        assert (ref[col] == test[col]).all()
+            except (AssertionError, ValueError):
+                if failure_flag is None:
+                    raise
+                else:
+                    nonmatching_entries.add(failure_flag)
 
-    def _add_information(self):
-        """Adds information to data frames.
+        if not isinstance(other, Grid):
+            err_msg = "Unable to compare Grid & %s" % type(other).__name__
+            raise NotImplementedError(err_msg)
 
-        """
-        bus2zone = self.bus.zone_id.to_dict()
-        bus2coord = pd.merge(self.bus2sub[['sub_id']],
-                             self.sub[['lat', 'lon']],
-                             on='sub_id').set_index(self.bus2sub.index).drop(
-            columns='sub_id').to_dict()
+        nonmatching_entries = set()
+        # compare gencost
+        # Comparing gencost['after'] will fail if one Grid was linearized
+        _univ_eq(self.gencost["before"], other.gencost["before"], "gencost")
 
-        # Coordinates
-        self.bus['lat'] = [bus2coord['lat'][i] for i in self.bus.index]
-        self.bus['lon'] = [bus2coord['lon'][i] for i in self.bus.index]
+        # compare storage
+        _univ_eq(len(self.storage["gen"]), len(other.storage["gen"]), "storage")
+        _univ_eq(self.storage.keys(), other.storage.keys(), "storage")
+        ignored_subkeys = {"gencost"} | set(tamu_storage.defaults.keys())
+        for subkey in set(self.storage.keys()) - ignored_subkeys:
+            # REISE will modify some gen columns
+            self_data = self.storage[subkey]
+            other_data = other.storage[subkey]
+            if subkey == "gen":
+                excluded_cols = ["ramp_10", "ramp_30"]
+                self_data = self_data.drop(excluded_cols, axis=1)
+                other_data = other_data.drop(excluded_cols, axis=1)
+            _univ_eq(self_data, other_data, "storage")
 
-        self.plant['lat'] = [bus2coord['lat'][i] for i in self.plant.bus_id]
-        self.plant['lon'] = [bus2coord['lon'][i] for i in self.plant.bus_id]
+        # compare bus
+        # MOST changes BUS_TYPE for buses with DC Lines attached
+        _univ_eq(self.bus.drop("type", axis=1), other.bus.drop("type", axis=1), "bus")
+        # compare plant
+        # REISE does some modifications to Plant data
+        excluded_cols = ["status", "Pmin", "ramp_10", "ramp_30"]
+        self_df = self.plant.drop(excluded_cols, axis=1)
+        other_df = other.plant.drop(excluded_cols, axis=1)
+        _univ_eq(self_df, other_df, "plant")
+        # compare branch
+        _univ_eq(self.branch, other.branch, "branch")
+        # compare dcline
+        _univ_eq(self.dcline, other.dcline, "dcline")
+        # compare sub
+        _univ_eq(self.sub, other.sub, "sub")
+        # check grid helper attribute equalities
+        _univ_eq(self.zone2id, other.zone2id, "zone2id")
+        _univ_eq(self.id2zone, other.id2zone, "id2zone")
+        _univ_eq(self.bus2sub, other.bus2sub, "bus2sub")
 
-        self.branch['from_lat'] = [bus2coord['lat'][i]
-                                   for i in self.branch.from_bus_id]
-        self.branch['from_lon'] = [bus2coord['lon'][i]
-                                   for i in self.branch.from_bus_id]
-        self.branch['to_lat'] = [bus2coord['lat'][i]
-                                 for i in self.branch.to_bus_id]
-        self.branch['to_lon'] = [bus2coord['lon'][i]
-                                 for i in self.branch.to_bus_id]
+        if len(nonmatching_entries) > 0:
+            print(f"non-matching entries: {', '.join(sorted(nonmatching_entries))}")
+            return False
+        return True
 
-        # Zoning
-        self.plant['zone_id'] = [bus2zone[i] for i in self.plant.bus_id]
-        self.plant['zone_name'] = [self.id2zone[i]
-                                   for i in self.plant.zone_id]
 
-        self.branch['from_zone_id'] = [bus2zone[i]
-                                       for i in self.branch.from_bus_id]
-        self.branch['to_zone_id'] = [bus2zone[i]
-                                     for i in self.branch.to_bus_id]
-        self.branch['from_zone_name'] = [self.id2zone[i]
-                                         for i in self.branch.from_zone_id]
-        self.branch['to_zone_name'] = [self.id2zone[i]
-                                       for i in self.branch.to_zone_id]
+def _get_grid_model_from_scenario_list(source):
+    """Get grid model for a scenario listed in the scenario list.
 
-    def _read_network(self):
-        """Reads all network file.
-
-        """
-        print("--> Loading %s interconnect" % "+".join(self.interconnect))
-        self._read_zone()
-        self._read_sub()
-        self._read_bus2sub()
-        self._read_bus()
-        self._read_plant()
-        self._read_gencost()
-        self._read_branch()
-        self._read_dcline()
-
-    def _read_sub(self):
-        """Reads the substation file.
-
-        """
-        print("Loading sub")
-
-        self.sub = pd.read_pickle(self.data_loc + 'USASubstations.pkl')
-        self.sub.rename(columns={'intercon_subID': 'interconnect_sub_id'},
-                        inplace=True)
-        self.sub.index.name = 'sub_id'
-
-    def _read_bus2sub(self):
-        """Reads bus2sub file.
-
-        """
-        print("Loading bus2sub")
-        self.bus2sub = pd.read_pickle(self.data_loc + 'USABus2sub.pkl')
-        self.bus2sub.rename(columns={'subID': 'sub_id'}, inplace=True)
-        self.bus2sub.index.name = 'bus_id'
-
-    def _read_bus(self):
-        """Reads bus file.
-
-        """
-        print("Loading bus")
-
-        # Read and format
-        self.bus = pd.read_csv(self.data_loc + 'bus_case.txt', index_col=0,
-                               sep=r'\s+')
-        self.bus.drop(columns='zone', inplace=True)
-        self.bus.rename(columns={'area': 'zone_id'}, inplace=True)
-
-        # Interconnect
-        self.bus["interconnect"] = "Eastern"
-        self.bus.loc[self.bus.index > 2000000, 'interconnect'] = 'Western'
-        self.bus.loc[self.bus.index > 3000000, 'interconnect'] = 'Texas'
-
-        self.bus.index.name = 'bus_id'
-
-    def _read_plant(self):
-        """Reads generator files.
-
-        """
-        print("Loading plant")
-        # Read and format
-        plant_type = pd.read_csv(self.data_loc + 'gentype_case.txt',
-                                 sep=r'\s+', header=None)
-        self.plant = pd.read_csv(self.data_loc + 'genbus_case.txt', sep=r'\s+')
-        self._plant_aux = pd.read_pickle(self.data_loc + 'USAGenbus_aux.pkl')
-        self.plant.rename(columns={'bus': 'bus_id'}, inplace=True)
-
-        # Combine
-        self.plant = pd.concat([self.plant,
-                                self._plant_aux.reset_index()[
-                                    ['GenMWMax', 'GenMWMin']]], axis=1)
-        self.plant['type'] = plant_type
-
-        # Interconnect
-        self.plant['interconnect'] = 'Eastern'
-        self.plant.loc[self.plant.bus_id > 2000000, 'interconnect'] = 'Western'
-        self.plant.loc[self.plant.bus_id > 3000000, 'interconnect'] = 'Texas'
-
-        self.plant.index.name = 'plant_id'
-
-    def _read_gencost(self):
-        """Reads generator cost file.
-
-        """
-        print("Loading plant cost")
-        # Read and format
-        self.gencost = pd.read_csv(self.data_loc + 'gencost_case.txt',
-                                   sep=r'\s+')
-
-        # Interconnect
-        self.gencost['interconnect'] = self.plant.interconnect
-
-        self.gencost.index.name = 'plant_id'
-
-    def _read_dcline(self):
-        """Reads DC line file.
-
-        """
-        print("Loading DC line")
-        # Read and format
-        self.dcline = pd.read_csv(self.data_loc + 'dcline_case.txt',
-                                  sep=r'\s+')
-        self.dcline.rename(columns={'fbus': 'from_bus_id',
-                                    'tbus': 'to_bus_id'}, inplace=True)
-
-        # Interconnect
-        self.dcline['from_interconnect'] = 'Eastern'
-        self.dcline['to_interconnect'] = 'Eastern'
-        self.dcline.loc[self.dcline.from_bus_id > 2000000,
-                        'from_interconnect'] = 'Western'
-        self.dcline.loc[self.dcline.to_bus_id > 2000000,
-                        'to_interconnect'] = 'Western'
-        self.dcline.loc[self.dcline.from_bus_id > 3000000,
-                        'from_interconnect'] = 'Texas'
-        self.dcline.loc[self.dcline.to_bus_id > 3000000,
-                        'to_interconnect'] = 'Texas'
-
-        self.dcline.index.name = 'dcline_id'
-
-    def _read_branch(self):
-        """Reads branch file.
-
-        """
-        print("Loading branch")
-        self.branch = pd.read_csv(self.data_loc + 'branch_case.txt',
-                                  sep=r'\s+')
-        self._branch_aux = pd.read_pickle(
-            self.data_loc + 'USABranchDeviceType.pkl')
-        self.branch.rename(columns={'fbus': 'from_bus_id',
-                                    'tbus': 'to_bus_id'}, inplace=True)
-        self.branch = pd.concat([self.branch,
-                                 self._branch_aux.reset_index()[
-                                     ['branch_device_type']]], axis=1)
-
-        # Interconnect
-        self.branch['interconnect'] = 'Eastern'
-        self.branch.loc[self.branch.from_bus_id > 2000000,
-                        'interconnect'] = 'Western'
-        self.branch.loc[self.branch.from_bus_id > 3000000,
-                        'interconnect'] = 'Texas'
-
-        self.branch.index.name = 'branch_id'
-
-    def _read_zone(self):
-        """Reads load zone files.
-
-        """
-        print("Loading zone")
-        self.id2zone = pd.read_csv(self.data_loc + 'USAArea.csv',
-                                   header=None,
-                                   index_col=0,
-                                   names=['zone_name']).zone_name.to_dict()
-        self.zone2id = {}
-        for k, v in self.id2zone.items():
-            self.zone2id[v] = k
+    :param str source: path to MAT-file enclosing the grid data.
+    :return: (*str*) -- the grid model.
+    """
+    scenario_number = int(os.path.basename(source).split("_")[0])
+    slm = ScenarioListManager(Context.get_data_access())
+    return slm.get_scenario(scenario_number)["grid_model"]

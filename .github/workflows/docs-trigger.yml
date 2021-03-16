@@ -1,0 +1,14 @@
+name: Update docs
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Breakthrough-Energy/actions/publish-docs@main
+        with:
+          token: ${{ secrets.CI_TOKEN_CLONE_REPO }} 

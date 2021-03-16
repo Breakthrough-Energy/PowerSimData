@@ -1,0 +1,761 @@
+{
+    "name": "SyntheticUSA",
+    "title": "U.S. Test System with High Spatial and Temporal Resolution for Renewable Integration Studies",
+    "format": "csv",
+    "url": "https://zenodo.org/record/3530898",
+    "licenses": [
+        {
+            "name": "CC BY 4.0",
+            "path": "https://creativecommons.org/licenses/by/4.0/legalcode",
+            "title": "Creative Commons — Attribution 4.0 International"
+        }
+    ],
+    "contributors": [
+        {
+            "title": "Yixing Xu",
+            "email": "yixing.xu@breakthroughenergy.org"
+        },
+        {
+            "title": "Nathan Myhrvold"
+        },
+        {
+            "title": "Dhileep Sivan"
+        },
+        {
+            "title": "Kaspar Mueller"
+        },
+        {
+            "title": "Daniel J. Olsen"
+        },
+        {
+            "title": "Bainan Xia"
+        },
+        {
+            "title": "Daniel Livengood"
+        },
+        {
+            "title": "Victoria Hunt"
+        },
+        {
+            "title": "Benjamin Rouillé d'Orfeuil"
+        },
+        {
+            "title": "Daniel Muldrew"
+        },
+        {
+            "title": "Merrielle Ondreicka"
+        },
+        {
+            "title": "Megan Bettilyon"
+        },
+    ],
+    "sources": [
+        {
+            "title": "Electric Grid Test Case Repository",
+            "path": "https://electricgrids.engr.tamu.edu/"
+        },
+        {
+            "name": "MATPOWER",
+            "title": "MATPOWER – Free, open-source tools for electric power system simulation and optimization",
+            "path": "https://matpower.org/"
+        }
+    ],
+    "resources": [
+        {
+            "name": "branch",
+            "format": "csv",
+            "path": "branch.csv",
+            "schema": {
+                "fields": [
+                    {
+                        "name": "branch_id",
+                        "description": "branch index",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "from_bus_id",
+                        "description": "bus index of branch 'from' end",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "to_bus_id",
+                        "description": "bus index of branch 'to' end",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "r",
+                        "description": "resistance (p.u.)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "x",
+                        "description": "reactance (p.u.)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "b",
+                        "description": "total line charging susceptance (p.u.)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "rateA",
+                        "description": "MVA rating A (long term rating), set to 0 for unlimited",
+                        "type": "float"
+                    },
+                    {
+                        "name": "rateB",
+                        "description": "MVA rating B (short term rating), set to 0 for unlimited",
+                        "type": "float"
+                    },
+                    {
+                        "name": "rateC",
+                        "description": "MVA rating C (short term rating), set to 0 for unlimited",
+                        "type": "float"
+                    },
+                    {
+                        "name": "ratio",
+                        "description": "transformer off nominal turns ratio, if non-zero. ratio of number of turns on 'from' side relative to number of turn on 'to' side",
+                        "type": "float"
+                    },
+                    {
+                        "name": "angle",
+                        "description": "transformer phase shift angle (degrees), positive indicates delay",
+                        "type": "float"
+                    },
+                    {
+                        "name": "status",
+                        "description": "initial branch status, 1 = in-service, 0 = out-of-service",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "angmin",
+                        "description": "minimum angle difference ('from' minus 'to')",
+                        "type": "float"
+                    },
+                    {
+                        "name": "angmax",
+                        "description": "maximum angle difference ('from' minus 'to')",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Pf",
+                        "description": "real power injected at 'from' bus end (MW) [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Qf",
+                        "description": "reactive power injected at 'from' bus end (MW) [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Pt",
+                        "description": "real power injected at 'to' bus end (MW) [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Qt",
+                        "description": "reactive power injected at 'to' bus end (MW) [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "mu_Sf",
+                        "description": "Kuhn-Tucker multiplier on MVA limit at 'from' bus [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "mu_St",
+                        "description": "Kuhn-Tucker multiplier on MVA limit at 'to' bus [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "mu_angmin",
+                        "description": "Kuhn-Tucker multiplier lower angle difference limit [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "mu_angmax",
+                        "description": "Kuhn-Tucker multiplier upper angle difference limit [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "branch_device_type",
+                        "description": "type of branch: 'Line', 'Transformer', 'TransformerWinding'",
+                        "type": "string"
+                    },
+                    {
+                        "name": "interconnect",
+                        "description": "name of interconnection within which the branch exists: 'Eastern', 'Western', 'Texas'",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "bus",
+            "format": "csv",
+            "path": "bus.csv",
+            "schema": {
+                "fields": [
+                    {
+                        "name": "bus_id",
+                        "description": "bus index",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "type",
+                        "description": "bus type (1 = PQ, 2 = PV, 3 = ref, 4 = isolated)",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "Pd",
+                        "description": "real power demand (MW). Zone power demand is disaggregated to buses proportional to Pd.",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Qd",
+                        "description": "reactive power demand (MVAr)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Gs",
+                        "description": "shunt conductance (MW demanded at V = 1.0 p.u.)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Bs",
+                        "description": "shunt susceptance (MVAr injected at V = 1.0 p.u.)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "zone_id",
+                        "description": "area number",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "Vm",
+                        "description": "voltage magnitude (p.u.)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Va",
+                        "description": "voltage angle (degrees)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "baseKV",
+                        "description": "base voltage (kV)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "loss_zone",
+                        "description": "loss zone",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "Vmax",
+                        "description": "maximum voltage magnitude (p.u.)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Vmin",
+                        "description": "minimum voltage magnitude (p.u.)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "lam_P",
+                        "description": "Lagrange multiplier on real power mismatch (u/MW) [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "lam_Q",
+                        "description": "Lagrange multiplier on reactive power mismatch (u/MVAr) [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "mu_Vmax",
+                        "description": "Kuhn-Tucker multiplier on upper voltage limit (u/p.u.) [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "mu_Vmin",
+                        "description": "Kuhn-Tucker multiplier on lower voltage limit (u/p.u.) [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "interconnect",
+                        "description": "name of interconnection within which the bus exists: 'Eastern', 'Western', 'Texas'",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "bus2sub",
+            "format": "csv",
+            "path": "bus2sub.csv",
+            "schema": {
+                "fields": [
+                    {
+                        "name": "bus_id",
+                        "description": "bus index",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "sub_id",
+                        "description": "substation index",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "interconnect",
+                        "description": "name of interconnection within which the bus exists: 'Eastern', 'Western', 'Texas'",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "dcline",
+            "format": "csv",
+            "path": "dcline.csv",
+            "schema": {
+                "fields": [
+                    {
+                        "name": "dcline_id",
+                        "description": "DC line index",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "from_bus_id",
+                        "description": "bus index of DC line 'from' end",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "to_bus_id",
+                        "description": "bus index of DC line 'to' end",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "status",
+                        "description": "initial branch status, 1 = in-service, 0 = out-of-service",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "Pf",
+                        "description": "real power flow at 'from' bus end (MW), power flowing 'from' to 'to' [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Pt",
+                        "description": "real power flow at 'to' bus end (MW), power flowing 'from' to 'to' [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Qf",
+                        "description": "reactive power injected into 'from' bus [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Qt",
+                        "description": "reactive power injected into 'to' bus [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Vf",
+                        "description": "voltage magnitude setpoint at 'from' bus",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Vt",
+                        "description": "voltage magnitude setpoint at 'to' bus",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Pmin",
+                        "description": "if positive [negative], lower limit on PF [PT] (MW)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Pmax",
+                        "description": "if positive [negative], upper limit on PF [PT] (MW)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "QminF",
+                        "description": "lower limit on reactive power injection into 'from' bus (MVAr)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "QmaxF",
+                        "description": "upper limit on reactive power injection into 'from' bus (MVAr)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "QminT",
+                        "description": "lower limit on reactive power injection into 'to' bus (MVAr)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "QmaxT",
+                        "description": "upper limit on reactive power injection into 'to' bus (MVAr)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "loss0",
+                        "description": "coeffcient l_{0}: constant term of linear loss function (MW)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "loss1",
+                        "description": "coeffcient l_{1} of linear term of linear loss function (MW/MW)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "muPmin",
+                        "description": "Kuhn-Tucker multiplier on lower flow limit at 'from' bus [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "muPmax",
+                        "description": "Kuhn-Tucker multiplier on upper flow limit at 'from' bus [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "muQminF",
+                        "description": "Kuhn-Tucker multiplier on lower reactive power limit at 'from' bus [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "muQmaxF",
+                        "description": "Kuhn-Tucker multiplier on upper reactive power limit at 'from' bus [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "muQminT",
+                        "description": "Kuhn-Tucker multiplier on lower reactive power limit at 'to' bus [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "muQmaxT",
+                        "description": "Kuhn-Tucker multiplier on upper reactive power limit at 'to' bus [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "from_interconnect",
+                        "description": "name of interconnection within which the 'from' bus exists: 'Eastern', 'Western', 'Texas'",
+                        "type": "string"
+                    },
+                    {
+                        "name": "to_interconnect",
+                        "description": "name of interconnection within which the 'to' bus exists: 'Eastern', 'Western', 'Texas'",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "demand",
+            "format": "csv",
+            "path": "demand.csv",
+            "description": "This table provides time-series values of demand in each zone over the course of the year. The first column is timestamps (UTC), the first row (header row) is zone IDs, values are power demand (MWh)."
+        },
+        {
+            "name": "gencost",
+            "format": "csv",
+            "path": "gencost.csv",
+            "schema": {
+                "fields": [
+                    {
+                        "name": "plant_id",
+                        "description": "plant index",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "type",
+                        "description": "cost model, 1 = piecewise linear, 2 = polynomial",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "startup",
+                        "description": "startup cost in US dollars",
+                        "type": "float"
+                    },
+                    {
+                        "name": "shutdown",
+                        "description": "shutdown cost in US dollars",
+                        "type": "float"
+                    },
+                    {
+                        "name": "n",
+                        "description": "number N = n + 1 of coeffcients defining an n-th order polynomial cost function",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "c2",
+                        "description": "quadratic component of cost function ($/(MW^2 * h))",
+                        "type": "float"
+                    },
+                    {
+                        "name": "c1",
+                        "description": "linear component of cost function ($/MW * h)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "c0",
+                        "description": "constant component of cost function ($/h)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "interconnect",
+                        "description": "name of interconnection within which the plant exists: 'Eastern', 'Western', 'Texas'",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "hydro",
+            "format": "csv",
+            "path": "hydro.csv",
+            "description": "This table provides time-series values of hydro generation for each plant over the course of the year. The first column is timestamps (UTC), the first row (header row) is plant IDs, values are generation (MWh)"
+        },
+        {
+            "name": "plant",
+            "format": "csv",
+            "path": "plant.csv",
+            "schema": {
+                "fields": [
+                    {
+                        "name": "plant_id",
+                        "description": "index of plant",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "bus_id",
+                        "description": "index of bus at which the plant is connected",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "Pg",
+                        "description": "real power output (MW) [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Qg",
+                        "description": "reactive power output (MVAr) [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Qmax",
+                        "description": "maximum reactive power output (MVAr)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Qmin",
+                        "description": "minimum reactive power output (MVAr)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Vg",
+                        "description": "voltage magnitude setpoint (p.u.)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "mBase",
+                        "description": "total MVA base of machine",
+                        "type": "float"
+                    },
+                    {
+                        "name": "status",
+                        "description": "machine status, > 0 for machine in-service, <= 0 for machine out-of-service",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "Pmax",
+                        "description": "maximum real power output (MW)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Pmin",
+                        "description": "minimum real power output (MW)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Pc1",
+                        "description": "lower real power output of PQ capability curve (MW)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Pc2",
+                        "description": "upper real power output of PQ capability curve (MW)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Qc1min",
+                        "description": "minimum reactive power output at PC1 (MVAr)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Qc1max",
+                        "description": "maximum reactive power output at PC1 (MVAr)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Qc2min",
+                        "description": "minimum reactive power output at PC2 (MVAr)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Qc2max",
+                        "description": "maximum reactive power output at PC2 (MVAr)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "ramp_agc",
+                        "description": "ramp rate for load following/AGC (MW/min)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "ramp_10",
+                        "description": "ramp rate for 10 minute reserves (MW)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "ramp_30",
+                        "description": "ramp rate for 30 minute reserves (MW)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "ramp_q",
+                        "description": "ramp rate for reactive power (2 sec timescale) (MVAr/min)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "apf",
+                        "description": "area participation factor",
+                        "type": "float"
+                    },
+                    {
+                        "name": "mu_Pmax",
+                        "description": "Kuhn-Tucker multiplier on upper Pg limit [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "mu_Pmin",
+                        "description": "Kuhn-Tucker multiplier on lower Pg limit [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "mu_Qmax",
+                        "description": "Kuhn-Tucker multiplier on upper Qg limit [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "mu_Qmin",
+                        "description": "Kuhn-Tucker multiplier on lower Qg limit [retained solely for MATPOWER compatibility]",
+                        "type": "float"
+                    },
+                    {
+                        "name": "type",
+                        "description": "plant fuel type",
+                        "type": "string"
+                    },
+                    {
+                        "name": "interconnect",
+                        "description": "name of interconnection within which the plant exists: 'Eastern', 'Western', 'Texas'",
+                        "type": "string"
+                    },
+                    {
+                        "name": "GenFuelCost",
+                        "description": "cost per MMBTu of input energy",
+                        "type": "float"
+                    },
+                    {
+                        "name": "GenIOB",
+                        "description": "linear coefficient of heat rate curve (MMBTu/MW)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "GenIOC",
+                        "description": "quadratic coefficient of heat rate curve (MMBTu/MW^2)",
+                        "type": "float"
+                    },
+                    {
+                        "name": "GenIOD",
+                        "description": "cubic coefficient of heat rate curve (MMBTu/MW^3)",
+                        "type": "float"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "solar",
+            "format": "csv",
+            "path": "solar.csv",
+            "description": "This table provides time-series values of available solar generation for each plant over the course of the year. The first column is timestamps (UTC), the first row (header row) is plant IDs, values are generation (MWh)"
+        },
+        {
+            "name": "sub",
+            "format": "csv",
+            "path": "sub.csv",
+            "schema": {
+                "fields": [
+                    {
+                        "name": "sub_id",
+                        "description": "substation index",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "name",
+                        "description": "substation name",
+                        "type": "string"
+                    },
+                    {
+                        "name": "interconnect_sub_id",
+                        "description": "index of substation within interconnection",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "lat",
+                        "description": "latitude",
+                        "type": "float"
+                    },
+                    {
+                        "name": "lon",
+                        "description": "longitude",
+                        "type": "float"
+                    },
+                    {
+                        "name": "interconnect",
+                        "description": "name of interconnection within which the substation exists: 'Eastern', 'Western', 'Texas'",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "wind",
+            "format": "csv",
+            "path": "wind.csv",
+            "description": "This table provides time-series values of available wind generation from each plant over the course of the year. The first column is timestamps (UTC), the first row (header row) is plant IDs, values are generation (MWh)"
+        },
+        {
+            "name": "zone",
+            "format": "csv",
+            "path": "zone.csv",
+            "schema": {
+                "fields": [
+                    {
+                        "name": "zone_id",
+                        "description": "index of zone",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "zone_name",
+                        "description": "name of zone",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+    ]
+}

@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  powersimdata:
+    image: powersimdata:latest
+    build: .
+    volumes:
+      - ~/ScenarioData:/root/ScenarioData
+      - ~/.ssh:/root/.ssh
+    environment:
+      - BE_SERVER_USER
