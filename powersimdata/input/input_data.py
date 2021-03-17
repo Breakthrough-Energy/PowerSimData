@@ -1,8 +1,8 @@
 import os
-import shutil
 
 import pandas as pd
 import requests
+from tqdm.auto import tqdm
 
 from powersimdata.data_access.context import Context
 from powersimdata.utility import server_setup
@@ -52,9 +52,19 @@ class ProfileHelper:
         url = f"{BLOB_STORAGE}/{from_dir}/{file_name}"
         dest = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
         os.makedirs(os.path.dirname(dest), exist_ok=True)
-        with requests.get(url, stream=True) as r:
-            with open(dest, "wb") as f:
-                shutil.copyfileobj(r.raw, f)
+        resp = requests.get(url, stream=True)
+        content_length = int(resp.headers.get("content-length", 0))
+        with open(dest, "wb") as f:
+            with tqdm(
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+                miniters=1,
+                total=content_length,
+            ) as pbar:
+                for chunk in resp.iter_content(chunk_size=4096):
+                    f.write(chunk)
+                    pbar.update(len(chunk))
 
         print("--> Done!")
         return dest
