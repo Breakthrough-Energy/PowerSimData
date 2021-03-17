@@ -42,17 +42,21 @@ class ProfileHelper:
         ext = _file_extension[field_name]
         version = scenario_info["base_" + field_name]
         file_name = field_name + "_" + version + "." + ext
-        from_dir = scenario_info["grid_model"]
+        grid_model = scenario_info["grid_model"]
+        from_dir = f"{server_setup.BASE_PROFILE_DIR}/{grid_model}"
         return file_name, from_dir
 
     @staticmethod
     def download_file(file_name, from_dir):
+        print(f"--> Downloading {file_name} from blob storage.")
         url = f"{BLOB_STORAGE}/{from_dir}/{file_name}"
-        dest = os.path.join(server_setup.LOCAL_DIR, file_name)
+        dest = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
         with requests.get(url, stream=True) as r:
             with open(dest, "wb") as f:
                 shutil.copyfileobj(r.raw, f)
 
+        print("--> Done!")
         return dest
 
 
@@ -132,7 +136,7 @@ class InputData(object):
         if kind not in profile_kind:
             raise ValueError("kind must be one of %s" % " | ".join(profile_kind))
 
-        resp = requests.get(f"{BLOB_STORAGE}/{grid_model}/version.json")
+        resp = requests.get(f"{BLOB_STORAGE}/raw/{grid_model}/version.json")
         versions = resp.json()
         if kind not in versions:
             print("No %s profiles available." % kind)
