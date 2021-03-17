@@ -334,7 +334,7 @@ class _Builder(object):
         :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         :return: (*list*) -- available version for selected profile kind.
         """
-        return InputData().get_profile_version(self.grid_model, kind)
+        return InputData.get_profile_version(self.grid_model, kind)
 
     def set_base_profile(self, kind, version):
         """Sets demand profile.

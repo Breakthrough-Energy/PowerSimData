@@ -1,5 +1,5 @@
 import os
-import posixpath
+import shutil
 
 import pandas as pd
 import requests
@@ -15,6 +15,60 @@ profile_kind = {"demand", "hydro", "solar", "wind"}
 BLOB_STORAGE = "https://bescienceswebsite.blob.core.windows.net/profiles"
 
 
+_file_extension = {
+    **{"ct": "pkl", "grid": "mat"},
+    **{k: "csv" for k in profile_kind},
+}
+
+
+class InputHelper:
+    def __init__(self, data_access):
+        self.data_access = data_access
+
+    @staticmethod
+    def get_file_components(scenario_info, field_name):
+        ext = _file_extension[field_name]
+        file_name = scenario_info["id"] + "_" + field_name + "." + ext
+        from_dir = server_setup.INPUT_DIR
+        return file_name, from_dir
+
+    def download_file(self, file_name, from_dir):
+        self.data_access.copy_from(file_name, from_dir)
+
+
+class ProfileHelper:
+    @staticmethod
+    def get_file_components(scenario_info, field_name):
+        ext = _file_extension[field_name]
+        version = scenario_info["base_" + field_name]
+        file_name = field_name + "_" + version + "." + ext
+        from_dir = scenario_info["grid_model"]
+        return file_name, from_dir
+
+    @staticmethod
+    def download_file(file_name, from_dir):
+        url = f"{BLOB_STORAGE}/{from_dir}/{file_name}"
+        dest = os.path.join(server_setup.LOCAL_DIR, file_name)
+        with requests.get(url, stream=True) as r:
+            with open(dest, "wb") as f:
+                shutil.copyfileobj(r.raw, f)
+
+        return dest
+
+
+def _check_field(field_name):
+    """Checks field name.
+
+    :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
+        *'ct'* or *'grid'*.
+    :raises ValueError: if not *'demand'*, *'hydro'*, *'solar'*, *'wind'*
+        *'ct'* or *'grid'*
+    """
+    possible = list(_file_extension.keys())
+    if field_name not in possible:
+        raise ValueError("Only %s data can be loaded" % " | ".join(possible))
+
+
 class InputData(object):
     """Load input data.
 
@@ -25,24 +79,7 @@ class InputData(object):
         """Constructor."""
         os.makedirs(server_setup.LOCAL_DIR, exist_ok=True)
 
-        self.file_extension = {
-            **{"ct": "pkl", "grid": "mat"},
-            **{k: "csv" for k in profile_kind},
-        }
-
         self.data_access = Context.get_data_access(data_loc)
-
-    def _check_field(self, field_name):
-        """Checks field name.
-
-        :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
-            *'ct'* or *'grid'*.
-        :raises ValueError: if not *'demand'*, *'hydro'*, *'solar'*, *'wind'*
-            *'ct'* or *'grid'*
-        """
-        possible = list(self.file_extension.keys())
-        if field_name not in possible:
-            raise ValueError("Only %s data can be loaded" % " | ".join(possible))
 
     def get_data(self, scenario_info, field_name):
         """Returns data either from server or local directory.
@@ -55,20 +92,15 @@ class InputData(object):
             dictionary, or the path to a matfile enclosing the grid data.
         :raises FileNotFoundError: if file not found on local machine.
         """
-        self._check_field(field_name)
-
+        _check_field(field_name)
         print("--> Loading %s" % field_name)
-        ext = self.file_extension[field_name]
 
         if field_name in profile_kind:
-            version = scenario_info["base_" + field_name]
-            file_name = field_name + "_" + version + "." + ext
-            from_dir = posixpath.join(
-                server_setup.BASE_PROFILE_DIR, scenario_info["grid_model"]
-            )
+            helper = ProfileHelper
         else:
-            file_name = scenario_info["id"] + "_" + field_name + "." + ext
-            from_dir = server_setup.INPUT_DIR
+            helper = InputHelper(self.data_access)
+
+        file_name, from_dir = helper.get_file_components(scenario_info, field_name)
 
         filepath = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
         key = cache_key(filepath)
@@ -82,12 +114,13 @@ class InputData(object):
                 "%s not found in %s on local machine"
                 % (file_name, server_setup.LOCAL_DIR)
             )
-            self.data_access.copy_from(file_name, from_dir)
+            helper.download_file(file_name, from_dir)
             data = _read_data(filepath)
         _cache.put(key, data)
         return data
 
-    def get_profile_version(self, grid_model, kind):
+    @staticmethod
+    def get_profile_version(grid_model, kind):
         """Returns available raw profile from blob storage
 
         :param str grid_model: grid model.
