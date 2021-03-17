@@ -7,10 +7,9 @@ import pytest
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
-import powersimdata.utility.templates as templates
 from powersimdata.data_access.data_access import LocalDataAccess, SSHDataAccess
 from powersimdata.data_access.execute_list import ExecuteListManager
-from powersimdata.utility import server_setup
+from powersimdata.utility import server_setup, templates
 
 
 @pytest.fixture
