@@ -345,7 +345,7 @@ class SSHDataAccess(DataAccess):
         :param str checksum: the checksum prior to download
         :raises IOError: if command generated stderr
         """
-        backup = f"{file_name}.bak"
+        backup = f"{file_name}.temp"
         self.move_to(file_name, change_name_to=backup, preserve=True)
 
         values = {
