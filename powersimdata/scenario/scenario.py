@@ -42,6 +42,18 @@ class Scenario(object):
             except AttributeError:
                 return
 
+    def __getattr__(self, name):
+        if name in self.state.exported_methods:
+            return getattr(self.state, name)
+        else:
+            raise AttributeError(
+                f"Scenario object in {self.state.name} state "
+                f"has no attribute {name}"
+            )
+
+    def __dir__(self):
+        return sorted(super().__dir__() + list(self.state.exported_methods))
+
     def _set_info(self, descriptor):
         """Sets scenario information.
 
