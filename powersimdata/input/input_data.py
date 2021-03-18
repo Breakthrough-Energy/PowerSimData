@@ -12,13 +12,14 @@ _cache = MemoryCache()
 
 profile_kind = {"demand", "hydro", "solar", "wind"}
 
-BLOB_STORAGE = "https://bescienceswebsite.blob.core.windows.net/profiles"
-
 
 _file_extension = {
     **{"ct": "pkl", "grid": "mat"},
     **{k: "csv" for k in profile_kind},
 }
+
+
+BASE_URL = "https://bescienceswebsite.blob.core.windows.net/profiles"
 
 
 class InputHelper:
@@ -49,7 +50,7 @@ class ProfileHelper:
     @staticmethod
     def download_file(file_name, from_dir):
         print(f"--> Downloading {file_name} from blob storage.")
-        url = f"{BLOB_STORAGE}/{from_dir}/{file_name}"
+        url = f"{BASE_URL}/{from_dir}/{file_name}"
         dest = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         resp = requests.get(url, stream=True)
@@ -146,12 +147,11 @@ class InputData(object):
         if kind not in profile_kind:
             raise ValueError("kind must be one of %s" % " | ".join(profile_kind))
 
-        resp = requests.get(f"{BLOB_STORAGE}/raw/{grid_model}/version.json")
-        versions = resp.json()
-        if kind not in versions:
-            print("No %s profiles available." % kind)
-        else:
-            return versions[kind]
+        resp = requests.get(f"{BASE_URL}/version.json")
+        version = resp.json()
+        if grid_model in version and kind in version[grid_model]:
+            return version[grid_model][kind]
+        print("No %s profiles available." % kind)
 
 
 def _read_data(filepath):
