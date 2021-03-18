@@ -45,6 +45,8 @@ class Scenario(object):
     def __getattr__(self, name):
         if name in self.state.exported_methods:
             return getattr(self.state, name)
+        elif hasattr(self.state, "_custom_getattr_error_message"):
+            return self.state._custom_getattr_error_message(name)
         else:
             raise AttributeError(
                 f"Scenario object in {self.state.name} state "

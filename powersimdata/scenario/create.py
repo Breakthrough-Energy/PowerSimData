@@ -15,6 +15,19 @@ from powersimdata.scenario.execute import Execute
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
 
+default_exported_methods = (
+    "create_scenario",
+    "get_ct",
+    "get_grid",
+    "get_demand",
+    "get_bus_demand",
+    "get_hydro",
+    "get_solar",
+    "get_wind",
+    "print_scenario_info",
+    "set_builder",
+)
+
 
 class Create(State):
     """Scenario is in a state of being created.
@@ -24,18 +37,6 @@ class Create(State):
 
     name = "create"
     allowed = []
-    exported_methods = {
-        "create_scenario",
-        "get_ct",
-        "get_grid",
-        "get_demand",
-        "get_bus_demand",
-        "get_hydro",
-        "get_solar",
-        "get_wind",
-        "print_scenario_info",
-        "set_builder",
-    }
 
     def __init__(self, scenario):
         """Constructor."""
@@ -61,7 +62,23 @@ class Create(State):
                 ("engine", ""),
             ]
         )
+        self.exported_methods = set(default_exported_methods)
         super().__init__(scenario)
+
+    def __getattr__(self, name):
+        if self.builder is not None:
+            if name in self.builder.exported_methods:
+                return getattr(self.builder, name)
+            else:
+                raise AttributeError(f"Create object has no attribute {name}")
+        else:
+            raise AttributeError(
+                f"Create object without a builder set has no attribute {name}. "
+                "Did you forget to run set_builder?"
+            )
+
+    def _custom_getattr_error_message(self, name):
+        return self.__getattr__(name)
 
     def _update_scenario_info(self):
         """Updates scenario information."""
@@ -245,6 +262,7 @@ class Create(State):
         self.builder = _Builder(
             grid_model, interconnect, self._scenario_list_manager.get_scenario_table()
         )
+        self.exported_methods |= _Builder.exported_methods
 
         print("--> Summary")
         print("# Existing study")
@@ -282,6 +300,13 @@ class _Builder(object):
     solar = ""
     wind = ""
     engine = "REISE.jl"
+    exported_methods = {
+        "set_name",
+        "set_time",
+        "set_base_profile",
+        "set_engine",
+        "get_grid",
+    }
 
     def __init__(self, grid_model, interconnect, table):
         """Constructor."""
