@@ -10,7 +10,7 @@ EXECUTE_DIR = "tmp"
 BASE_PROFILE_DIR = "raw"
 INPUT_DIR = "data/input"
 OUTPUT_DIR = "data/output"
-LOCAL_DIR = os.path.join(str(Path.home()), "ScenarioData", "")
+LOCAL_DIR = os.path.join(Path.home(), "ScenarioData", "")
 MODEL_DIR = "/home/bes/pcm"
 
 

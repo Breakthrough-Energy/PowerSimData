@@ -38,6 +38,9 @@ class Execute(State):
 
         self._set_ct_and_grid()
 
+    def _scenario_id(self):
+        return self._scenario_info["id"]
+
     def _set_ct_and_grid(self):
         """Sets change table and grid."""
         base_grid = Grid(
@@ -68,13 +71,15 @@ class Execute(State):
 
     def _update_scenario_status(self):
         """Updates scenario status."""
-        scenario_id = self._scenario_info["id"]
-        self._scenario_status = self._execute_list_manager.get_status(scenario_id)
+        self._scenario_status = self._execute_list_manager.get_status(
+            self._scenario_id()
+        )
 
     def _update_scenario_info(self):
         """Updates scenario information."""
-        scenario_id = self._scenario_info["id"]
-        self._scenario_info = self._scenario_list_manager.get_scenario(scenario_id)
+        self._scenario_info = self._scenario_list_manager.get_scenario(
+            self._scenario_id()
+        )
 
     def _run_script(self, script, extra_args=None):
         """Returns running process
@@ -152,9 +157,7 @@ class Execute(State):
 
             si.prepare_mpc_file()
 
-            self._execute_list_manager.update_execute_list(
-                "prepared", self._scenario_info
-            )
+            self._execute_list_manager.set_status(self._scenario_id(), "prepared")
         else:
             print("---------------------------")
             print("SCENARIO CANNOT BE PREPARED")
@@ -193,7 +196,7 @@ class Execute(State):
             extra_args.append("--threads " + str(threads))
 
         if solver:
-            extra_args.append("--solver", solver)
+            extra_args.append("--solver " + solver)
 
         if not isinstance(extract_data, bool):
             raise TypeError("extract_data must be a boolean: 'True' or 'False'")
@@ -211,7 +214,7 @@ class Execute(State):
             None, which translates to gurobi
         :return: (*requests.Response*) -- the http response object
         """
-        scenario_id = self._scenario_info["id"]
+        scenario_id = self._scenario_id()
         url = f"http://{server_setup.SERVER_ADDRESS}:5000/launch/{scenario_id}"
         resp = requests.post(url, params={"threads": threads, "solver": solver})
         if resp.status_code != 200:
@@ -274,7 +277,7 @@ class Execute(State):
         if mode != DeploymentMode.Container:
             raise NotImplementedError("Operation only supported for container mode")
 
-        scenario_id = self._scenario_info["id"]
+        scenario_id = self._scenario_id()
         url = f"http://{server_setup.SERVER_ADDRESS}:5000/status/{scenario_id}"
         resp = requests.get(url)
         return resp.json()

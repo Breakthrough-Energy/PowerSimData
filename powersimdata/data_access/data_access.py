@@ -22,12 +22,13 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def move_to(self, file_name, to_dir, change_name_to=None):
+    def move_to(self, file_name, to_dir, change_name_to=None, preserve=False):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
+        :param bool preserve: whether to keep the local copy
         """
         raise NotImplementedError
 
@@ -97,6 +98,23 @@ class DataAccess:
         """
         raise NotImplementedError
 
+    def checksum(self, relative_path):
+        """Return the checksum of the file path, and write the content if the
+        server is remote
+
+        :param str relative_path: path relative to root
+        :return: (*str*) -- the checksum of the file
+        """
+        raise NotImplementedError
+
+    def push(self, file_name, checksum):
+        """Push the file from local to remote root folder, ensuring integrity
+
+        :param str file_name: the file name, located at the local root
+        :param str checksum: the checksum prior to download
+        """
+        raise NotImplementedError
+
     def close(self):
         """Perform any necessary cleanup for the object."""
         pass
@@ -116,12 +134,30 @@ class LocalDataAccess(DataAccess):
         """
         pass
 
-    def move_to(self, file_name, to_dir, change_name_to=None):
+    def push(self, file_name, checksum):
+        """Nothing to be done due to symlink
+
+        :param str file_name: the file name, located at the local root
+        :param str checksum: the checksum prior to download
+        """
+        pass
+
+    def checksum(self, relative_path):
+        """Return dummy value since this is only required for remote
+        environment
+
+        :param str relative_path: path relative to root
+        :return: (*str*) -- the checksum of the file
+        """
+        return "dummy_value"
+
+    def move_to(self, file_name, to_dir, change_name_to=None, preserve=False):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
+        :param bool preserve: whether to keep the local copy
         """
         self._check_filename(file_name)
         src = posixpath.join(server_setup.LOCAL_DIR, file_name)
@@ -130,7 +166,9 @@ class LocalDataAccess(DataAccess):
         print(f"--> Moving file {src} to {dest}")
         self._check_file_exists(dest, should_exist=False)
         self.copy(src, dest)
-        self.remove(src)
+        if not preserve:
+            print("--> Deleting original copy")
+            self.remove(src)
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -235,12 +273,13 @@ class SSHDataAccess(DataAccess):
             sftp.get(from_path, to_path, callback=cbk)
             bar.close()
 
-    def move_to(self, file_name, to_dir=None, change_name_to=None):
+    def move_to(self, file_name, to_dir=None, change_name_to=None, preserve=False):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
+        :param bool preserve: whether to keep the local copy
         :raises FileNotFoundError: if specified file does not exist
         """
         self._check_filename(file_name)
@@ -261,8 +300,9 @@ class SSHDataAccess(DataAccess):
             print(f"Transferring {from_path} to server")
             sftp.put(from_path, to_path)
 
-        print(f"--> Deleting {from_path} on local machine")
-        os.remove(from_path)
+        if not preserve:
+            print(f"--> Deleting {from_path} on local machine")
+            os.remove(from_path)
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -283,6 +323,53 @@ class SSHDataAccess(DataAccess):
         full_command = cmd_ssh + command
         process = Popen(full_command)
         return process
+
+    def checksum(self, relative_path):
+        """Return the checksum of the file path (using sha1sum)
+
+        :param str relative_path: path relative to root
+        :return: (*str*) -- the checksum of the file
+        """
+        full_path = posixpath.join(self.root, relative_path)
+        self._check_file_exists(full_path)
+
+        command = f"sha1sum {full_path}"
+        _, stdout, _ = self.execute_command(command)
+        lines = stdout.readlines()
+        return lines[0].strip()
+
+    def push(self, file_name, checksum):
+        """Push file_name to remote root
+
+        :param str file_name: the file name, located at the local root
+        :param str checksum: the checksum prior to download
+        :raises IOError: if command generated stderr
+        """
+        backup = f"{file_name}.temp"
+        self.move_to(file_name, change_name_to=backup, preserve=True)
+
+        values = {
+            "original": posixpath.join(self.root, file_name),
+            "updated": posixpath.join(self.root, backup),
+            "lockfile": posixpath.join(self.root, "scenario.lockfile"),
+            "checksum": checksum,
+        }
+
+        template = "(flock -x 200; \
+                prev='{checksum}'; \
+                curr=$(sha1sum {original}); \
+                if [[ $prev == $curr ]]; then mv {updated} {original} -b; \
+                else echo CONFLICT_ERROR 1>&2; fi) \
+                200>{lockfile}"
+
+        command = template.format(**values)
+        _, _, stderr = self.execute_command(command)
+
+        errors = stderr.readlines()
+        if len(errors) > 0:
+            for e in errors:
+                print(e)
+            raise IOError("Failed to push file - most likely a conflict was detected.")
 
     def close(self):
         """Close the connection that was opened when the object was created."""
