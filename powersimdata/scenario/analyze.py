@@ -20,6 +20,27 @@ class Analyze(State):
 
     name = "analyze"
     allowed = []
+    exported_methods = {
+        "get_averaged_cong",
+        "get_bus_demand",
+        "get_congl",
+        "get_congu",
+        "get_ct",
+        "get_demand",
+        "get_hydro",
+        "get_grid",
+        "get_dcline_pf",
+        "get_lmp",
+        "get_load_shed",
+        "get_pf",
+        "get_pg",
+        "get_solar",
+        "get_storage_e",
+        "get_storage_pg",
+        "get_wind",
+        "print_infeasibilities",
+        "print_scenario_info",
+    }
 
     def __init__(self, scenario):
         """Constructor."""

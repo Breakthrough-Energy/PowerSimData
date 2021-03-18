@@ -11,6 +11,10 @@ class Delete(State):
 
     name = "delete"
     allowed = []
+    exported_methods = {
+        "delete_scenario",
+        "print_scenario_info",
+    }
 
     def print_scenario_info(self):
         """Prints scenario information.

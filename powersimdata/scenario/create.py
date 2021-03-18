@@ -24,6 +24,18 @@ class Create(State):
 
     name = "create"
     allowed = []
+    exported_methods = {
+        "create_scenario",
+        "get_ct",
+        "get_grid",
+        "get_demand",
+        "get_bus_demand",
+        "get_hydro",
+        "get_solar",
+        "get_wind",
+        "print_scenario_info",
+        "set_builder",
+    }
 
     def __init__(self, scenario):
         """Constructor."""

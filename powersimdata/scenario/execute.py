@@ -22,6 +22,16 @@ class Execute(State):
 
     name = "execute"
     allowed = []
+    exported_methods = {
+        "check_progress",
+        "extract_simulation_output",
+        "get_ct",
+        "get_grid",
+        "launch_simulation",
+        "prepare_simulation_input",
+        "print_scenario_info",
+        "print_scenario_status",
+    }
 
     def __init__(self, scenario):
         """Constructor."""
