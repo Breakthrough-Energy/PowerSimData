@@ -13,14 +13,15 @@ pd.set_option("display.max_colwidth", None)
 class Scenario(object):
     """Handles scenario.
 
-    :param int/str descriptor: scenario name or index.
+    :param int/str descriptor: scenario name or index. If None, default to a Scenario
+        in Create state.
     """
 
-    def __init__(self, descriptor):
+    def __init__(self, descriptor=None):
         """Constructor."""
         if isinstance(descriptor, int):
             descriptor = str(descriptor)
-        if not isinstance(descriptor, str):
+        if descriptor is not None and not isinstance(descriptor, str):
             raise TypeError("Descriptor must be a string or int (for a Scenario ID)")
 
         self.data_access = Context.get_data_access()
