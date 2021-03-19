@@ -44,7 +44,7 @@ class ProfileHelper:
         version = scenario_info["base_" + field_name]
         file_name = field_name + "_" + version + "." + ext
         grid_model = scenario_info["grid_model"]
-        from_dir = f"{server_setup.BASE_PROFILE_DIR}/{grid_model}"
+        from_dir = f"raw/{grid_model}"
         return file_name, from_dir
 
     @staticmethod
