@@ -1,5 +1,6 @@
 import copy
 import pickle
+import warnings
 from collections import OrderedDict
 
 import numpy as np
@@ -20,6 +21,7 @@ default_exported_methods = (
     "get_bus_demand",
     "print_scenario_info",
     "set_builder",
+    "set_grid",
 )
 
 
@@ -173,8 +175,15 @@ class Create(State):
         for key, val in self._scenario_info.items():
             print("%s: %s" % (key, val))
 
-    def set_builder(self, grid_model="usa_tamu", interconnect="USA"):
-        """Sets builder.
+    def set_builder(self, *args, **kwargs):
+        """Alias to set_grid."""
+        warnings.warn(
+            "set_builder is deprecated, use set_grid instead", DeprecationWarning
+        )
+        self.set_grid(*args, **kwargs)
+
+    def set_grid(self, grid_model="usa_tamu", interconnect="USA"):
+        """Sets grid builder.
 
         :param str grid_model: name of grid model. Default is *'usa_tamu'*.
         :param str/list interconnect: name of interconnect(s). Default is *'USA'*.
