@@ -144,8 +144,8 @@ def get_bus_demand(scenario_info, grid):
     :param powersimdata.input.grid.Grid grid: grid to construct bus demand for.
     :return: (*pandas.DataFrame*) -- data frame of demand.
     """
-    demand = InputData().get_data(scenario_info, "demand")
     bus = grid.bus
+    demand = InputData().get_data(scenario_info, "demand")[bus.zone_id.unique()]
     bus["zone_Pd"] = bus.groupby("zone_id")["Pd"].transform("sum")
     bus["zone_share"] = bus["Pd"] / bus["zone_Pd"]
     zone_bus_shares = pd.DataFrame(
