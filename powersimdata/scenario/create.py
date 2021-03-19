@@ -149,6 +149,7 @@ class Create(State):
 
         :return: (*pandas.DataFrame*) -- data frame of demand (hour, bus).
         """
+        self._update_scenario_info()
         grid = self.get_grid()
         return get_bus_demand(self._scenario_info, grid)
 
