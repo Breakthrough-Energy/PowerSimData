@@ -62,19 +62,12 @@ class Create(State):
         super().__init__(scenario)
 
     def __getattr__(self, name):
-        if self.builder is not None:
-            if name in self.builder.exported_methods:
-                return getattr(self.builder, name)
-            else:
-                raise AttributeError(f"Create object has no attribute {name}")
+        if self.builder is not None and name in self.builder.exported_methods:
+            return getattr(self.builder, name)
+        if self.builder is None and name in _Builder.exported_methods:
+            raise AttributeError(f"Call set_grid first to access {name} attribute")
         else:
-            raise AttributeError(
-                f"Create object without a builder set has no attribute {name}. "
-                "Did you forget to run set_builder?"
-            )
-
-    def _custom_getattr_error_message(self, name):
-        return self.__getattr__(name)
+            raise AttributeError(f"Create object has no attribute {name}")
 
     def _update_scenario_info(self):
         """Updates scenario information."""
