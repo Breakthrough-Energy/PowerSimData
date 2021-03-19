@@ -4,7 +4,7 @@ from powersimdata.data_access.context import Context
 from powersimdata.data_access.execute_list import ExecuteListManager
 from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.scenario.analyze import Analyze
-from powersimdata.scenario.create import Create
+from powersimdata.scenario.create import Create, _Builder
 from powersimdata.scenario.execute import Execute
 
 pd.set_option("display.max_colwidth", None)
@@ -16,6 +16,15 @@ class Scenario(object):
     :param int/str descriptor: scenario name or index. If None, default to a Scenario
         in Create state.
     """
+
+    _setattr_allowlist = {
+        "data_access",
+        "state",
+        "status",
+        "info",
+        "_scenario_list_manager",
+        "_execute_list_manager",
+    }
 
     def __init__(self, descriptor=None):
         """Constructor."""
@@ -52,6 +61,20 @@ class Scenario(object):
                 f"Scenario object in {self.state.name} state "
                 f"has no attribute {name}"
             )
+
+    def __setattr__(self, name, value):
+        if name in self._setattr_allowlist:
+            super().__setattr__(name, value)
+        elif isinstance(self.state, Create) and name in _Builder.exported_methods:
+            raise AttributeError(
+                f"{name} is exported from Scenario.state.builder, "
+                "edit it there if necessary"
+            )
+        elif name in self.state.exported_methods:
+            raise AttributeError(
+                f"{name} is exported from Scenario.state, edit it there if necessary"
+            )
+        super().__setattr__(name, value)
 
     def __dir__(self):
         return sorted(super().__dir__() + list(self.state.exported_methods))

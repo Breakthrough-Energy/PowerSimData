@@ -69,6 +69,13 @@ class Create(State):
         else:
             raise AttributeError(f"Create object has no attribute {name}")
 
+    def __setattr__(self, name, value):
+        if name in _Builder.exported_methods:
+            raise AttributeError(
+                f"{name} is exported from Create.builder, edit it there if necessary"
+            )
+        super().__setattr__(name, value)
+
     def _update_scenario_info(self):
         """Updates scenario information."""
         if self.builder is not None:
