@@ -1,10 +1,9 @@
 import os
 
 import pandas as pd
-import requests
-from tqdm.auto import tqdm
 
 from powersimdata.data_access.context import Context
+from powersimdata.data_access.profile_helper import ProfileHelper
 from powersimdata.utility import server_setup
 from powersimdata.utility.helpers import MemoryCache, cache_key
 
@@ -17,9 +16,6 @@ _file_extension = {
     **{"ct": "pkl", "grid": "mat"},
     **{k: "csv" for k in profile_kind},
 }
-
-
-BASE_URL = "https://bescienceswebsite.blob.core.windows.net/profiles"
 
 
 class InputHelper:
@@ -35,40 +31,6 @@ class InputHelper:
 
     def download_file(self, file_name, from_dir):
         self.data_access.copy_from(file_name, from_dir)
-
-
-class ProfileHelper:
-    @staticmethod
-    def get_file_components(scenario_info, field_name):
-        ext = _file_extension[field_name]
-        version = scenario_info["base_" + field_name]
-        file_name = field_name + "_" + version + "." + ext
-        grid_model = scenario_info["grid_model"]
-        from_dir = f"raw/{grid_model}"
-        return file_name, from_dir
-
-    @staticmethod
-    def download_file(file_name, from_dir):
-        print(f"--> Downloading {file_name} from blob storage.")
-        url = f"{BASE_URL}/{from_dir}/{file_name}"
-        dest = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
-        os.makedirs(os.path.dirname(dest), exist_ok=True)
-        resp = requests.get(url, stream=True)
-        content_length = int(resp.headers.get("content-length", 0))
-        with open(dest, "wb") as f:
-            with tqdm(
-                unit="B",
-                unit_scale=True,
-                unit_divisor=1024,
-                miniters=1,
-                total=content_length,
-            ) as pbar:
-                for chunk in resp.iter_content(chunk_size=4096):
-                    f.write(chunk)
-                    pbar.update(len(chunk))
-
-        print("--> Done!")
-        return dest
 
 
 def _check_field(field_name):
@@ -134,24 +96,14 @@ class InputData(object):
         _cache.put(key, data)
         return data
 
-    @staticmethod
-    def get_profile_version(grid_model, kind):
-        """Returns available raw profile from blob storage
+    def get_profile_version(self, grid_model, kind):
+        """Returns available raw profile from blob storage or local disk
 
         :param str grid_model: grid model.
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
         :return: (*list*) -- available profile version.
-        :raises ValueError: if kind not one of *'demand'*, *'hydro'*, *'solar'* or
-            *'wind'*.
         """
-        if kind not in profile_kind:
-            raise ValueError("kind must be one of %s" % " | ".join(profile_kind))
-
-        resp = requests.get(f"{BASE_URL}/version.json")
-        version = resp.json()
-        if grid_model in version and kind in version[grid_model]:
-            return version[grid_model][kind]
-        print("No %s profiles available." % kind)
+        return self.data_access.get_profile_version(grid_model, kind)
 
 
 def _read_data(filepath):

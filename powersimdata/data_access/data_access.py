@@ -1,3 +1,4 @@
+import json
 import operator
 import os
 import posixpath
@@ -7,6 +8,7 @@ from subprocess import PIPE, Popen
 import paramiko
 from tqdm import tqdm
 
+from powersimdata.data_access.profile_helper import ProfileHelper
 from powersimdata.utility import server_setup
 from powersimdata.utility.helpers import CommandBuilder
 
@@ -115,6 +117,9 @@ class DataAccess:
         """
         raise NotImplementedError
 
+    def get_profile_version(self, grid_model, kind):
+        return ProfileHelper.get_profile_version(grid_model, kind)
+
     def close(self):
         """Perform any necessary cleanup for the object."""
         pass
@@ -190,6 +195,26 @@ class LocalDataAccess(DataAccess):
             text=True,
         )
         return wrap(None), wrap(proc.stdout), wrap(proc.stderr)
+
+    def get_profile_version(self, grid_model, kind):
+        """Returns available raw profile from blob storage or local disk
+
+        :param str grid_model: grid model.
+        :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
+        :return: (*list*) -- available profile version.
+        """
+        blob_versions = super().get_profile_version(grid_model, kind)
+        version_file = os.path.join(server_setup.LOCAL_DIR, "version.json")
+        if not os.path.exists(version_file):
+            return blob_versions
+        with open(version_file) as f:
+            version = json.load(f)
+            return list(
+                set(
+                    blob_versions
+                    + ProfileHelper.parse_version(grid_model, kind, version)
+                )
+            )
 
 
 class SSHDataAccess(DataAccess):
