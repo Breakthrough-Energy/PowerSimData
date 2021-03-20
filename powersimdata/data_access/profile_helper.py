@@ -48,13 +48,7 @@ class ProfileHelper:
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
         :param dict version: json response
         :return: (*list*) -- available profile version.
-        :raises ValueError: if kind not one of *'demand'*, *'hydro'*, *'solar'* or
-            *'wind'*.
         """
-        profile_kind = {"demand", "hydro", "solar", "wind"}
-        if kind not in profile_kind:
-            raise ValueError("kind must be one of %s" % " | ".join(profile_kind))
-
         if grid_model in version and kind in version[grid_model]:
             return version[grid_model][kind]
         print("No %s profiles available." % kind)
