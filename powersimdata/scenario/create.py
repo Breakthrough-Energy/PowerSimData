@@ -16,14 +16,6 @@ from powersimdata.scenario.execute import Execute
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
 
-default_exported_methods = (
-    "create_scenario",
-    "get_bus_demand",
-    "print_scenario_info",
-    "set_builder",
-    "set_grid",
-)
-
 
 class Create(State):
     """Scenario is in a state of being created.
@@ -33,6 +25,13 @@ class Create(State):
 
     name = "create"
     allowed = []
+    default_exported_methods = (
+        "create_scenario",
+        "get_bus_demand",
+        "print_scenario_info",
+        "set_builder",
+        "set_grid",
+    )
 
     def __init__(self, scenario):
         """Constructor."""
@@ -58,7 +57,7 @@ class Create(State):
                 ("engine", ""),
             ]
         )
-        self.exported_methods = set(default_exported_methods)
+        self.exported_methods = set(self.default_exported_methods)
         super().__init__(scenario)
 
     def __getattr__(self, name):
