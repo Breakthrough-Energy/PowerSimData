@@ -1,4 +1,3 @@
-import json
 import operator
 import os
 import posixpath
@@ -203,18 +202,9 @@ class LocalDataAccess(DataAccess):
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
         :return: (*list*) -- available profile version.
         """
-        blob_versions = super().get_profile_version(grid_model, kind)
-        version_file = os.path.join(server_setup.LOCAL_DIR, "version.json")
-        if not os.path.exists(version_file):
-            return blob_versions
-        with open(version_file) as f:
-            version = json.load(f)
-            return list(
-                set(
-                    blob_versions
-                    + ProfileHelper.parse_version(grid_model, kind, version)
-                )
-            )
+        blob_version = super().get_profile_version(grid_model, kind)
+        local_version = ProfileHelper.get_profile_version_local(grid_model, kind)
+        return list(set(blob_version + local_version))
 
 
 class SSHDataAccess(DataAccess):

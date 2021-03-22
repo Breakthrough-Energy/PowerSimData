@@ -1,3 +1,4 @@
+import json
 import os
 
 import requests
@@ -46,12 +47,13 @@ class ProfileHelper:
 
         :param str grid_model: grid model.
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
-        :param dict version: json response
+        :param dict version: version information per grid model
         :return: (*list*) -- available profile version.
         """
         if grid_model in version and kind in version[grid_model]:
             return version[grid_model][kind]
         print("No %s profiles available." % kind)
+        return []
 
     @staticmethod
     def get_profile_version(grid_model, kind):
@@ -64,3 +66,19 @@ class ProfileHelper:
 
         resp = requests.get(f"{ProfileHelper.BASE_URL}/version.json")
         return ProfileHelper.parse_version(grid_model, kind, resp.json())
+
+    @staticmethod
+    def get_profile_version_local(grid_model, kind):
+        """Returns available raw profile from local file
+
+        :param str grid_model: grid model.
+        :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
+        :return: (*list*) -- available profile version.
+        """
+
+        version_file = os.path.join(server_setup.LOCAL_DIR, "version.json")
+        if not os.path.exists(version_file):
+            return []
+        with open(version_file) as f:
+            version = json.load(f)
+            return ProfileHelper.parse_version(grid_model, kind, version)
