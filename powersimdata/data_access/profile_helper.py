@@ -12,6 +12,13 @@ class ProfileHelper:
 
     @staticmethod
     def get_file_components(scenario_info, field_name):
+        """Get the file name and relative path for the given profile and
+        scenario.
+
+        :param dict scenario_info: a ScenarioInfo instance
+        :param str field_name: the kind of profile
+        :return: (*tuple*) -- file name and path
+        """
         version = scenario_info["base_" + field_name]
         file_name = field_name + "_" + version + ".csv"
         grid_model = scenario_info["grid_model"]
@@ -20,6 +27,12 @@ class ProfileHelper:
 
     @staticmethod
     def download_file(file_name, from_dir):
+        """Download the profile from blob storage at the given path
+
+        :param str file_name: profile csv
+        :param str from_dir: the path relative to the blob container
+        :return: (*str*) -- path to downloaded file
+        """
         print(f"--> Downloading {file_name} from blob storage.")
         url = f"{ProfileHelper.BASE_URL}/{from_dir}/{file_name}"
         dest = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)

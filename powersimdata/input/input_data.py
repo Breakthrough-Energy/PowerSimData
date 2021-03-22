@@ -24,12 +24,23 @@ class InputHelper:
 
     @staticmethod
     def get_file_components(scenario_info, field_name):
+        """Get the file name and relative path for either ct or grid
+
+        :param dict scenario_info: a ScenarioInfo instance
+        :param str field_name: the input file type
+        :return: (*tuple*) -- file name and path
+        """
         ext = _file_extension[field_name]
         file_name = scenario_info["id"] + "_" + field_name + "." + ext
         from_dir = server_setup.INPUT_DIR
         return file_name, from_dir
 
     def download_file(self, file_name, from_dir):
+        """Download the file if using server, otherwise no-op
+
+        :param str file_name: either grid or ct file name
+        :param str from_dir: the path relative to the root dir
+        """
         self.data_access.copy_from(file_name, from_dir)
 
 

@@ -117,6 +117,12 @@ class DataAccess:
         raise NotImplementedError
 
     def get_profile_version(self, grid_model, kind):
+        """Returns available raw profile from blob storage
+
+        :param str grid_model: grid model.
+        :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
+        :return: (*list*) -- available profile version.
+        """
         return ProfileHelper.get_profile_version_cloud(grid_model, kind)
 
     def close(self):
