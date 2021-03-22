@@ -56,7 +56,7 @@ class ProfileHelper:
         return []
 
     @staticmethod
-    def get_profile_version(grid_model, kind):
+    def get_profile_version_cloud(grid_model, kind):
         """Returns available raw profile from blob storage
 
         :param str grid_model: grid model.

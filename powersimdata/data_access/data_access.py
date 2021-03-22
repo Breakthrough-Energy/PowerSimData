@@ -117,7 +117,7 @@ class DataAccess:
         raise NotImplementedError
 
     def get_profile_version(self, grid_model, kind):
-        return ProfileHelper.get_profile_version(grid_model, kind)
+        return ProfileHelper.get_profile_version_cloud(grid_model, kind)
 
     def close(self):
         """Perform any necessary cleanup for the object."""
