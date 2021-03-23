@@ -35,7 +35,6 @@ class Move(State):
         backup = BackUpDisk(self._data_access, self._scenario_info)
 
         backup.move_input_data()
-        backup.copy_base_profile()
         backup.move_output_data()
         backup.move_temporary_folder()
 
@@ -75,22 +74,6 @@ class BackUpDisk(object):
         target = self.backup_config.input_dir()
         self._data_access.copy(source, target, update=True)
         self._data_access.remove(source, recursive=True, force=True)
-
-    def copy_base_profile(self):
-        """Copies base profile"""
-        print("--> Copying base profiles to backup disk")
-        for kind in ["demand", "hydro", "solar", "wind"]:
-            src = posixpath.join(
-                self.server_config.base_profile_dir(),
-                self._scenario_info["grid_model"],
-                kind + "_" + self._scenario_info["base_" + kind] + ".csv",
-            )
-            dest = posixpath.join(
-                self.backup_config.base_profile_dir(), self._scenario_info["grid_model"]
-            )
-            _, stdout, stderr = self._data_access.copy(src, dest, update=True)
-            print(stdout.readlines())
-            print(stderr.readlines())
 
     def move_output_data(self):
         """Moves output data"""

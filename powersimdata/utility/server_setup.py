@@ -7,7 +7,6 @@ SERVER_SSH_PORT = os.getenv("BE_SERVER_SSH_PORT", 22)
 BACKUP_DATA_ROOT_DIR = "/mnt/RE-Storage/v2"
 DATA_ROOT_DIR = "/mnt/bes/pcm"
 EXECUTE_DIR = "tmp"
-BASE_PROFILE_DIR = "raw"
 INPUT_DIR = "data/input"
 OUTPUT_DIR = "data/output"
 LOCAL_DIR = os.path.join(Path.home(), "ScenarioData", "")
@@ -35,9 +34,6 @@ class PathConfig:
 
     def execute_dir(self):
         return self._join(EXECUTE_DIR)
-
-    def base_profile_dir(self):
-        return self._join(BASE_PROFILE_DIR)
 
     def input_dir(self):
         return self._join(INPUT_DIR)
