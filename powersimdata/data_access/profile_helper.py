@@ -22,7 +22,7 @@ class ProfileHelper:
         version = scenario_info["base_" + field_name]
         file_name = field_name + "_" + version + ".csv"
         grid_model = scenario_info["grid_model"]
-        from_dir = f"raw/{grid_model}"
+        from_dir = os.path.join("raw", grid_model)
         return file_name, from_dir
 
     @staticmethod
@@ -34,7 +34,8 @@ class ProfileHelper:
         :return: (*str*) -- path to downloaded file
         """
         print(f"--> Downloading {file_name} from blob storage.")
-        url = f"{ProfileHelper.BASE_URL}/{from_dir}/{file_name}"
+        url_path = "/".join(os.path.split(from_dir))
+        url = f"{ProfileHelper.BASE_URL}/{url_path}/{file_name}"
         dest = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         resp = requests.get(url, stream=True)
