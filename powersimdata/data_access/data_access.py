@@ -1,6 +1,5 @@
 import operator
 import os
-import posixpath
 import time
 from subprocess import PIPE, Popen
 
@@ -8,7 +7,7 @@ import paramiko
 from tqdm import tqdm
 
 from powersimdata.data_access.profile_helper import ProfileHelper
-from powersimdata.utility import server_setup
+from powersimdata.utility import fancy_path, server_setup
 from powersimdata.utility.helpers import CommandBuilder
 
 
@@ -41,7 +40,7 @@ class DataAccess:
         :param bool recursive: create directories recursively
         :param bool update: only copy if needed
         """
-        self.makedir(posixpath.dirname(dest))
+        self.makedir(fancy_path.dirname(dest))
         command = CommandBuilder.copy(src, dest, recursive, update)
         return self.execute_command(command)
 
@@ -82,7 +81,7 @@ class DataAccess:
 
         :param str relative_path: the path, without filename, relative to root
         """
-        full_path = posixpath.join(self.root, relative_path)
+        full_path = fancy_path.join(self.root, relative_path)
         return self.execute_command(f"mkdir -p {full_path}")
 
     def execute_command(self, command):
@@ -170,9 +169,9 @@ class LocalDataAccess(DataAccess):
         :param bool preserve: whether to keep the local copy
         """
         self._check_filename(file_name)
-        src = posixpath.join(server_setup.LOCAL_DIR, file_name)
+        src = fancy_path.join(server_setup.LOCAL_DIR, file_name)
         file_name = file_name if change_name_to is None else change_name_to
-        dest = posixpath.join(self.root, to_dir, file_name)
+        dest = fancy_path.join(self.root, to_dir, file_name)
         print(f"--> Moving file {src} to {dest}")
         self._check_file_exists(dest, should_exist=False)
         self.copy(src, dest)
@@ -284,7 +283,7 @@ class SSHDataAccess(DataAccess):
         to_dir = os.path.join(self.local_root, from_dir)
         os.makedirs(to_dir, exist_ok=True)
 
-        from_path = posixpath.join(self.root, from_dir, file_name)
+        from_path = fancy_path.join(self.root, from_dir, file_name)
         self._check_file_exists(from_path, should_exist=True)
 
         with self.ssh.open_sftp() as sftp:
@@ -313,7 +312,7 @@ class SSHDataAccess(DataAccess):
 
         file_name = file_name if change_name_to is None else change_name_to
         to_dir = "" if to_dir is None else to_dir
-        to_path = posixpath.join(self.root, to_dir, file_name)
+        to_path = fancy_path.join(self.root, to_dir, file_name)
         self.makedir(to_dir)
         self._check_file_exists(to_path, should_exist=False)
 

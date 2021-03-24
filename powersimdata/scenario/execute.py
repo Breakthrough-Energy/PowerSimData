@@ -1,6 +1,5 @@
 import copy
 import os
-import posixpath
 
 import requests
 
@@ -10,7 +9,7 @@ from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.scenario.state import State
-from powersimdata.utility import server_setup
+from powersimdata.utility import fancy_path, server_setup
 from powersimdata.utility.server_setup import DeploymentMode, get_deployment_mode
 
 
@@ -102,7 +101,7 @@ class Execute(State):
         if not extra_args:
             extra_args = []
 
-        path_to_package = posixpath.join(
+        path_to_package = fancy_path.join(
             server_setup.MODEL_DIR, self._scenario_info["engine"]
         )
 
@@ -111,7 +110,7 @@ class Execute(State):
         else:
             folder = "pyreisejl"
 
-        path_to_script = posixpath.join(path_to_package, folder, "utility", script)
+        path_to_script = fancy_path.join(path_to_package, folder, "utility", script)
         cmd_pythonpath = [f'export PYTHONPATH="{path_to_package}:$PYTHONPATH";']
         cmd_pythoncall = [
             "nohup",
@@ -334,10 +333,10 @@ class SimulationInput(object):
         self.server_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
         self.scenario_folder = "scenario_%s" % scenario_info["id"]
 
-        self.TMP_DIR = posixpath.join(
+        self.TMP_DIR = fancy_path.join(
             self.server_config.execute_dir(), self.scenario_folder
         )
-        self.REL_TMP_DIR = posixpath.join(
+        self.REL_TMP_DIR = fancy_path.join(
             server_setup.EXECUTE_DIR, self.scenario_folder
         )
 
@@ -386,11 +385,11 @@ class SimulationInput(object):
                 file_name, self.REL_TMP_DIR, change_name_to=f"{kind}.csv"
             )
         else:
-            from_dir = posixpath.join(
+            from_dir = fancy_path.join(
                 self.server_config.execute_dir(),
                 f"scenario_{profile_as}",
             )
-            to_dir = posixpath.join(
+            to_dir = fancy_path.join(
                 self.server_config.execute_dir(), self.scenario_folder
             )
             _, _, stderr = self._data_access.copy(f"{from_dir}/{kind}.csv", to_dir)

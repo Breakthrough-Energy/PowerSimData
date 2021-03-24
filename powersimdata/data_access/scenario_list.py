@@ -1,11 +1,10 @@
-import posixpath
 from collections import OrderedDict
 
 import pandas as pd
 
 from powersimdata.data_access.csv_store import CsvStore, verify_hash
 from powersimdata.data_access.sql_store import SqlStore, to_data_frame
-from powersimdata.utility import server_setup
+from powersimdata.utility import fancy_path, server_setup
 
 
 class ScenarioTable(SqlStore):
@@ -84,7 +83,7 @@ class ScenarioListManager(CsvStore):
     def __init__(self, ssh_client):
         """Constructor"""
         super().__init__(ssh_client)
-        self._server_path = posixpath.join(server_setup.DATA_ROOT_DIR, self._FILE_NAME)
+        self._server_path = fancy_path.join(server_setup.DATA_ROOT_DIR, self._FILE_NAME)
 
     def get_scenario_table(self):
         """Returns scenario table from server if possible, otherwise read local

@@ -14,7 +14,7 @@ from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.execute import Execute
 from powersimdata.scenario.state import State
-from powersimdata.utility import server_setup
+from powersimdata.utility import fancy_path, server_setup
 
 
 class Create(State):

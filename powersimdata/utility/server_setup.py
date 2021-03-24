@@ -1,6 +1,7 @@
 import os
-import posixpath
 from pathlib import Path
+
+from powersimdata.utility import fancy_path
 
 SERVER_ADDRESS = os.getenv("BE_SERVER_ADDRESS", "becompute01.gatesventures.com")
 SERVER_SSH_PORT = os.getenv("BE_SERVER_SSH_PORT", 22)
@@ -30,7 +31,7 @@ class PathConfig:
         self.root = root
 
     def _join(self, rel_path):
-        return posixpath.join(self.root, rel_path)
+        return fancy_path.join(self.root, rel_path)
 
     def execute_dir(self):
         return self._join(EXECUTE_DIR)

@@ -1,7 +1,5 @@
-import posixpath
-
 from powersimdata.scenario.state import State
-from powersimdata.utility import server_setup
+from powersimdata.utility import fancy_path, server_setup
 
 
 class Move(State):
@@ -71,7 +69,7 @@ class BackUpDisk(object):
     def move_input_data(self):
         """Moves input data."""
         print("--> Moving scenario input data to backup disk")
-        source = posixpath.join(
+        source = fancy_path.join(
             self.server_config.input_dir(),
             self._scenario_info["id"] + "_*",
         )
@@ -82,7 +80,7 @@ class BackUpDisk(object):
     def move_output_data(self):
         """Moves output data"""
         print("--> Moving scenario output data to backup disk")
-        source = posixpath.join(
+        source = fancy_path.join(
             self.server_config.output_dir(),
             self._scenario_info["id"] + "_*",
         )
@@ -93,7 +91,7 @@ class BackUpDisk(object):
     def move_temporary_folder(self):
         """Moves temporary folder."""
         print("--> Moving temporary folder to backup disk")
-        source = posixpath.join(
+        source = fancy_path.join(
             self.server_config.execute_dir(),
             "scenario_" + self._scenario_info["id"],
         )
