@@ -1,5 +1,6 @@
 import copy
 import pickle
+import warnings
 from collections import OrderedDict
 
 import numpy as np
@@ -24,6 +25,13 @@ class Create(State):
 
     name = "create"
     allowed = []
+    default_exported_methods = (
+        "create_scenario",
+        "get_bus_demand",
+        "print_scenario_info",
+        "set_builder",
+        "set_grid",
+    )
 
     def __init__(self, scenario):
         """Constructor."""
@@ -49,7 +57,23 @@ class Create(State):
                 ("engine", ""),
             ]
         )
+        self.exported_methods = set(self.default_exported_methods)
         super().__init__(scenario)
+
+    def __getattr__(self, name):
+        if self.builder is not None and name in self.builder.exported_methods:
+            return getattr(self.builder, name)
+        if self.builder is None and name in _Builder.exported_methods:
+            raise AttributeError(f"Call set_grid first to access {name} attribute")
+        else:
+            raise AttributeError(f"Create object has no attribute {name}")
+
+    def __setattr__(self, name, value):
+        if name in _Builder.exported_methods:
+            raise AttributeError(
+                f"{name} is exported from Create.builder, edit it there if necessary"
+            )
+        super().__setattr__(name, value)
 
     def _update_scenario_info(self):
         """Updates scenario information."""
@@ -91,59 +115,6 @@ class Create(State):
         file_name = self._scenario_info["id"] + "_ct.pkl"
         self._data_access.move_to(file_name, server_setup.INPUT_DIR)
 
-    def get_ct(self):
-        """Returns change table.
-
-        :return: (*dict*) -- change table.
-        :raises Exception: if :attr:`builder` has not been assigned yet through
-            meth:`set_builder`.
-        """
-        if self.builder is not None:
-            return copy.deepcopy(self.builder.change_table.ct)
-        else:
-            raise Exception("change table not set")
-
-    def get_grid(self):
-        """Returns the Grid object.
-
-        :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
-        :raises Exception: if :attr:`builder` has not been assigned yet through
-            meth:`set_builder`.
-        """
-        if self.builder is not None:
-            return self.builder.get_grid()
-        else:
-            raise Exception("grid not set")
-
-    def get_profile(self, kind):
-        """Returns demand, hydro, solar or wind  profile.
-
-        :param str kind: either *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
-        :return: (*pandas.DataFrame*) -- profile.
-        :raises Exception: if :attr:`builder` has not been assigned yet through
-            meth:`set_builder` or if :meth:`_Builder.set_base_profile` has not been
-            called yet.
-        """
-        if getattr(self.builder, kind):
-            profile = TransformProfile(
-                {
-                    "grid_model": getattr(self.builder, "grid_model"),
-                    "base_%s" % kind: getattr(self.builder, kind),
-                },
-                self.get_grid(),
-                self.get_ct(),
-            )
-            return profile.get_profile(kind)
-        else:
-            raise Exception("%s profile version not set" % kind)
-
-    def get_demand(self):
-        """Returns demand profile.
-
-        :return: (*pandas.DataFrame*) -- data frame of demand (hour, zone id).
-        """
-        return self.get_profile("demand")
-
     def get_bus_demand(self):
         """Returns demand profiles, by bus.
 
@@ -152,27 +123,6 @@ class Create(State):
         self._update_scenario_info()
         grid = self.get_grid()
         return get_bus_demand(self._scenario_info, grid)
-
-    def get_hydro(self):
-        """Returns hydro profile.
-
-        :return: (*pandas.DataFrame*) -- data frame of hydro power output (hour, plant).
-        """
-        return self.get_profile("hydro")
-
-    def get_solar(self):
-        """Returns solar profile.
-
-        :return: (*pandas.DataFrame*) -- data frame of solar power output (hour, plant).
-        """
-        return self.get_profile("solar")
-
-    def get_wind(self):
-        """Returns wind profile.
-
-        :return: (*pandas.DataFrame*) -- data frame of wind power output (hour, plant).
-        """
-        return self.get_profile("wind")
 
     def create_scenario(self):
         """Creates scenario."""
@@ -224,8 +174,15 @@ class Create(State):
         for key, val in self._scenario_info.items():
             print("%s: %s" % (key, val))
 
-    def set_builder(self, grid_model="usa_tamu", interconnect="USA"):
-        """Sets builder.
+    def set_builder(self, *args, **kwargs):
+        """Alias to set_grid."""
+        warnings.warn(
+            "set_builder is deprecated, use set_grid instead", DeprecationWarning
+        )
+        self.set_grid(*args, **kwargs)
+
+    def set_grid(self, grid_model="usa_tamu", interconnect="USA"):
+        """Sets grid builder.
 
         :param str grid_model: name of grid model. Default is *'usa_tamu'*.
         :param str/list interconnect: name of interconnect(s). Default is *'USA'*.
@@ -233,6 +190,7 @@ class Create(State):
         self.builder = _Builder(
             grid_model, interconnect, self._scenario_list_manager.get_scenario_table()
         )
+        self.exported_methods |= _Builder.exported_methods
 
         print("--> Summary")
         print("# Existing study")
@@ -270,6 +228,19 @@ class _Builder(object):
     solar = ""
     wind = ""
     engine = "REISE.jl"
+    exported_methods = {
+        "set_base_profile",
+        "set_engine",
+        "set_name",
+        "set_time",
+        "get_ct",
+        "get_grid",
+        "get_demand",
+        "get_hydro",
+        "get_solar",
+        "get_wind",
+        "change_table",
+    }
 
     def __init__(self, grid_model, interconnect, table):
         """Constructor."""
@@ -282,6 +253,60 @@ class _Builder(object):
         self.change_table = ChangeTable(self.base_grid)
 
         self.existing = table[table.interconnect == self.interconnect]
+
+    def get_ct(self):
+        """Returns change table.
+
+        :return: (*dict*) -- change table.
+        """
+        return copy.deepcopy(self.change_table.ct)
+
+    def get_profile(self, kind):
+        """Returns demand, hydro, solar or wind  profile.
+
+        :param str kind: either *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :return: (*pandas.DataFrame*) -- profile.
+        """
+        if getattr(self, kind):
+            profile = TransformProfile(
+                {
+                    "grid_model": self.grid_model,
+                    "base_%s" % kind: getattr(self, kind),
+                },
+                self.get_grid(),
+                self.get_ct(),
+            )
+            return profile.get_profile(kind)
+        else:
+            raise Exception("%s profile version not set" % kind)
+
+    def get_demand(self):
+        """Returns demand profile.
+
+        :return: (*pandas.DataFrame*) -- data frame of demand (hour, zone id).
+        """
+        return self.get_profile("demand")
+
+    def get_hydro(self):
+        """Returns hydro profile.
+
+        :return: (*pandas.DataFrame*) -- data frame of hydro power output (hour, plant).
+        """
+        return self.get_profile("hydro")
+
+    def get_solar(self):
+        """Returns solar profile.
+
+        :return: (*pandas.DataFrame*) -- data frame of solar power output (hour, plant).
+        """
+        return self.get_profile("solar")
+
+    def get_wind(self):
+        """Returns wind profile.
+
+        :return: (*pandas.DataFrame*) -- data frame of wind power output (hour, plant).
+        """
+        return self.get_profile("wind")
 
     def set_name(self, plan_name, scenario_name):
         """Sets scenario name.

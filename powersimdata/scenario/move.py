@@ -12,6 +12,10 @@ class Move(State):
 
     name = "move"
     allowed = []
+    exported_methods = {
+        "move_scenario",
+        "print_scenario_info",
+    }
 
     def print_scenario_info(self):
         """Prints scenario information."""
