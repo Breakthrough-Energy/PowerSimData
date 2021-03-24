@@ -21,7 +21,7 @@ hvdc_line_cost = {
 }
 
 # 2020 USD, from MISO cost estimations
-hvdc_terminal_cost_per_MW = 135e3
+hvdc_terminal_cost_per_MW = 135e3  # noqa: N816
 
 ac_line_cost = {
     "kV": [229, 230, 230, 230, 345, 345, 345, 345, 500, 765],
