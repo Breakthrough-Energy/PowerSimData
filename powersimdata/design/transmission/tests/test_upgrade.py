@@ -139,43 +139,43 @@ class TestGetBranchesByArea(unittest.TestCase):
         self.grid.id2zone = {201: "Wahington", 202: "Oregon"}
         self.grid.zone2id = {"Washington": 201, "Oregon": 202}
 
-    def test_internal_W(self):
+    def test_internal_W(self):  # noqa: N802
         branch_idxs = get_branches_by_area(self.grid, {"Washington"}, method="internal")
         assert branch_idxs == {106, 107, 108}
 
-    def test_internal_E(self):
+    def test_internal_E(self):  # noqa: N802
         branch_idxs = get_branches_by_area(self.grid, ["Oregon"], method="internal")
         assert branch_idxs == {102, 103, 104}
 
-    def test_internal_EW(self):
+    def test_internal_EW(self):  # noqa: N802
         branch_idxs = get_branches_by_area(
             self.grid, ("Washington", "Oregon"), "internal"
         )
         assert branch_idxs == {102, 103, 104, 106, 107, 108}
 
-    def test_bridging_W(self):
+    def test_bridging_W(self):  # noqa: N802
         branch_idxs = get_branches_by_area(self.grid, ["Washington"], method="bridging")
         assert branch_idxs == {101, 105}
 
-    def test_bridging_E(self):
+    def test_bridging_E(self):  # noqa: N802
         branch_idxs = get_branches_by_area(self.grid, {"Oregon"}, method="bridging")
         assert branch_idxs == {101, 105}
 
-    def test_bridging_EW(self):
+    def test_bridging_EW(self):  # noqa: N802
         branch_idxs = get_branches_by_area(
             self.grid, ("Washington", "Oregon"), "bridging"
         )
         assert branch_idxs == {101, 105}
 
-    def test_either_W(self):
+    def test_either_W(self):  # noqa: N802
         branch_idxs = get_branches_by_area(self.grid, ("Washington",), method="either")
         assert branch_idxs == {101, 105, 106, 107, 108}
 
-    def test_either_E(self):
+    def test_either_E(self):  # noqa: N802
         branch_idxs = get_branches_by_area(self.grid, ("Oregon",), method="either")
         assert branch_idxs == {101, 102, 103, 104, 105}
 
-    def test_either_EW(self):
+    def test_either_EW(self):  # noqa: N802
         branch_idxs = get_branches_by_area(
             self.grid, ("Oregon", "Washington"), "either"
         )
@@ -267,21 +267,21 @@ class TestIdentifyMesh(unittest.TestCase):
 
     # These tests use the 'MW' ranking: [102, 101, 103]
     # This happens because 101 is very small, 102 is small (compared to 103)
-    def test_identify_mesh_MW_n_3(self):
+    def test_identify_mesh_MW_n_3(self):  # noqa: N802
         expected_return = {101, 102, 103}
         branches = _identify_mesh_branch_upgrades(
             self.mock_scenario, upgrade_n=3, method="MW"
         )
         self.assertEqual(branches, expected_return)
 
-    def test_identify_mesh_MW_n_2(self):
+    def test_identify_mesh_MW_n_2(self):  # noqa: N802
         expected_return = {101, 102}
         branches = _identify_mesh_branch_upgrades(
             self.mock_scenario, upgrade_n=2, method="MW"
         )
         self.assertEqual(branches, expected_return)
 
-    def test_identify_mesh_MW_n_2_allow_list(self):
+    def test_identify_mesh_MW_n_2_allow_list(self):  # noqa: N802
         expected_return = {102, 103}
         allow_list = {102, 103, 104}
         branches = _identify_mesh_branch_upgrades(
@@ -289,7 +289,7 @@ class TestIdentifyMesh(unittest.TestCase):
         )
         self.assertEqual(branches, expected_return)
 
-    def test_identify_mesh_MW_n_2_deny_list(self):
+    def test_identify_mesh_MW_n_2_deny_list(self):  # noqa: N802
         expected_return = {101, 103}
         deny_list = [102, 105]
         branches = _identify_mesh_branch_upgrades(
@@ -297,7 +297,7 @@ class TestIdentifyMesh(unittest.TestCase):
         )
         self.assertEqual(branches, expected_return)
 
-    def test_identify_mesh_MW_n_1(self):
+    def test_identify_mesh_MW_n_1(self):  # noqa: N802
         expected_return = {102}
         branches = _identify_mesh_branch_upgrades(
             self.mock_scenario, upgrade_n=1, method="MW"
@@ -306,21 +306,21 @@ class TestIdentifyMesh(unittest.TestCase):
 
     # These tests use the 'MWmiles' ranking: [101, 102, 103]
     # This happens because 101 is zero-distance, 102 is short (compared to 103)
-    def test_identify_mesh_MWmiles_n_3(self):
+    def test_identify_mesh_MWmiles_n_3(self):  # noqa: N802
         expected_return = {101, 102, 103}
         branches = _identify_mesh_branch_upgrades(
             self.mock_scenario, upgrade_n=3, method="MWmiles"
         )
         self.assertEqual(branches, expected_return)
 
-    def test_identify_mesh_MWmiles_n_2(self):
+    def test_identify_mesh_MWmiles_n_2(self):  # noqa: N802
         expected_return = {101, 102}
         branches = _identify_mesh_branch_upgrades(
             self.mock_scenario, upgrade_n=2, method="MWmiles"
         )
         self.assertEqual(branches, expected_return)
 
-    def test_identify_mesh_MWmiles_n_1(self):
+    def test_identify_mesh_MWmiles_n_1(self):  # noqa: N802
         expected_return = {101}
         branches = _identify_mesh_branch_upgrades(
             self.mock_scenario, upgrade_n=1, method="MWmiles"

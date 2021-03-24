@@ -82,20 +82,25 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
             a message has already been printed that this lookup was not found.
         :return: (*float*) -- regional multiplier.
         """
-        max_kV = bus.loc[[x.from_bus_id, x.to_bus_id], "baseKV"].max()
+        max_kV = bus.loc[[x.from_bus_id, x.to_bus_id], "baseKV"].max()  # noqa: N806
         region = bus_reg.loc[x.from_bus_id, "name_abbr"]
         region_mults = ac_reg_mult.loc[ac_reg_mult.name_abbr == region]
 
-        mult_lookup_kV = region_mults.loc[(region_mults.kV - max_kV).abs().idxmin()].kV
-        region_kV_mults = region_mults[region_mults.kV == mult_lookup_kV]
-        region_kV_mults = region_kV_mults.loc[~region_kV_mults.mult.isnull()]
+        mult_lookup_kV = region_mults.loc[  # noqa: N806
+            (region_mults.kV - max_kV).abs().idxmin()
+        ].kV
+        region_kV_mults = region_mults[region_mults.kV == mult_lookup_kV]  # noqa: N806
+        region_kV_mults = region_kV_mults.loc[  # noqa: N806
+            ~region_kV_mults.mult.isnull()
+        ]
         if len(region_kV_mults) == 0:
             mult = 1
             if (mult_lookup_kV, region) not in xfmr_lookup_alerted:
                 print(f"No multiplier for voltage {mult_lookup_kV} in {region}")
                 xfmr_lookup_alerted.add((mult_lookup_kV, region))
         else:
-            mult_lookup_MW = region_kV_mults.loc[
+
+            mult_lookup_MW = region_kV_mults.loc[  # noqa: N806
                 (region_kV_mults.MW - x.rateA).abs().idxmin(), "MW"
             ]
             mult = (

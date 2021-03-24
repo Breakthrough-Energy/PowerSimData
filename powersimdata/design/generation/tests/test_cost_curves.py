@@ -176,17 +176,32 @@ def test_get_supply_data():
 
 
 def test_build_supply_curve_1seg():
-    Ptest, Ftest = build_supply_curve(grid, 1, "Colorado", "ng", "loadzone", plot=False)
-    Pexp = [0, 10, 10, 30, 30, 50, 50, 100, 100, 200]
-    Fexp = [25.10, 25.10, 30.40, 30.40, 30.40, 30.40, 31.25, 31.25, 40.00, 40.00]
+    Ptest, Ftest = build_supply_curve(  # noqa: N806
+        grid, 1, "Colorado", "ng", "loadzone", plot=False
+    )
+    Pexp = [0, 10, 10, 30, 30, 50, 50, 100, 100, 200]  # noqa: N806
+    Fexp = [  # noqa: N806
+        25.10,
+        25.10,
+        30.40,
+        30.40,
+        30.40,
+        30.40,
+        31.25,
+        31.25,
+        40.00,
+        40.00,
+    ]
     assert all([Ptest[i] == Pexp[i] for i in range(len(Ptest))])
     assert all([Ftest[i] == Fexp[i] for i in range(len(Ptest))])
 
 
 def test_build_supply_curve_2seg():
-    Ptest, Ftest = build_supply_curve(grid, 2, "Utah", "coal", "loadzone", plot=False)
-    Pexp = [0, 10, 10, 20, 20, 45, 45, 70, 70, 120, 120, 170]
-    Fexp = [
+    Ptest, Ftest = build_supply_curve(  # noqa: N806
+        grid, 2, "Utah", "coal", "loadzone", plot=False
+    )
+    Pexp = [0, 10, 10, 20, 20, 45, 45, 70, 70, 120, 120, 170]  # noqa: N806
+    Fexp = [  # noqa: N806
         30.100,
         30.100,
         30.300,
@@ -205,9 +220,26 @@ def test_build_supply_curve_2seg():
 
 
 def test_ks_test():
-    P1, F1 = build_supply_curve(grid, 1, "Washington", "coal", "loadzone", plot=False)
-    P2 = [0, 15, 15, 40, 40, 75, 75, 130, 130, 190, 190, 225, 225, max(P1)]
-    F2 = [
+    P1, F1 = build_supply_curve(  # noqa: N806
+        grid, 1, "Washington", "coal", "loadzone", plot=False
+    )
+    P2 = [  # noqa: N806
+        0,
+        15,
+        15,
+        40,
+        40,
+        75,
+        75,
+        130,
+        130,
+        190,
+        190,
+        225,
+        225,
+        max(P1),
+    ]
+    F2 = [  # noqa: N806
         23.00,
         23.00,
         27.00,
