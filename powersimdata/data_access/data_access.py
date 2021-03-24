@@ -1,5 +1,6 @@
 import operator
 import os
+import posixpath
 import shutil
 import time
 from subprocess import PIPE, Popen
@@ -167,7 +168,7 @@ class LocalDataAccess(DataAccess):
         """
         return "dummy_value"
 
-    def move_to(self, file_name, to_dir, change_name_to=None, preserve=False):
+    def move_to(self, file_name, to_dir=None, change_name_to=None, preserve=False):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
