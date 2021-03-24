@@ -14,16 +14,12 @@ from powersimdata.utility.distance import haversine
 
 
 def calculate_ac_inv_costs(scenario, sum_results=True, exclude_branches=None):
-    """Given a Scenario object, calculate the total cost of building that scenario's
-    upgrades of lines and transformers.
-    Currently uses NEEM regions to find regional multipliers.
-    Currently ignores financials, but all values are in 2010 $-year.
-    Need to test that there aren't any na values in regional multipliers
-    (some empty parts of table)
+    """Calculate cost of upgrading AC lines and/or transformers in a scenario.
+    NEEM regions are used to find regional multipliers.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param boolean sum_results: if True, sum dataframe for each category.
-    :return: (*dict*) -- Total costs (line costs, transformer costs) (in $2010).
+    :param bool sum_results: sum data frame for each branch type.
+    :return: (*dict*) -- cost of upgrading branches in $2010.
     """
 
     base_grid = Grid(scenario.info["interconnect"].split("_"))
@@ -44,25 +40,24 @@ def calculate_ac_inv_costs(scenario, sum_results=True, exclude_branches=None):
 
 
 def _calculate_ac_inv_costs(grid_new, sum_results=True):
-    """Given a grid, calculate the total cost of building that grid's
-    lines and transformers.
-    This function is separate from calculate_ac_inv_costs() for testing purposes.
-    Currently counts Transformer and TransformerWinding as transformers.
-    Currently uses NEEM regions to find regional multipliers.
+    """Calculate cost of upgrading AC lines and/or transformers. NEEM regions are
+    used to find regional multipliers. Note that a transformer winding is considered
+    as a transformer.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :param boolean sum_results: if True, sum dataframe for each category.
-    :return: (*dict*) -- Total costs (line costs, transformer costs).
+    :param bool sum_results: sum data frame for each branch type.
+    :return: (*dict*) -- cost of upgrading branches in $2010.
     """
 
     def select_mw(x, cost_df):
-        """Given a single branch, determine the closest kV/MW combination and return
-        the corresponding cost $/MW-mi.
+        """Determine the closest kV/MW combination for a single branch and return
+        the corresponding cost (in $/MW-mi).
 
-        :param pandas.core.series.Series x: data for a single branch
-        :param pandas.core.frame.DataFrame cost_df: DataFrame with kV, MW, cost columns
-        :return: (*pandas.core.series.Series*) -- series of ['MW', 'costMWmi'] to be
-            assigned to given branch
+        :param pandas.Series x: data for a single branch
+        :param pandas.DataFrame cost_df: data frame with *'kV'*, *'MW'*, *'costMWmi'*
+            as columns
+        :return: (*pandas.Series*) -- series of [*'MW'*, *'costMWmi'*] to be assigned
+            to branch.
         """
 
         # select corresponding cost table of selected kV
@@ -75,9 +70,9 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     def get_transformer_mult(x, bus_reg, ac_reg_mult, xfmr_lookup_alerted=set()):
         """Determine the regional multiplier based on kV and power (closest).
 
-        :param pandas.core.series.Series x: data for a single transformer.
-        :param pandas.core.frame.DataFrame bus_reg: data frame with bus regions
-        :param pandas.core.frame.DataFrame ac_reg_mult: data frame with regional mults.
+        :param pandas.Series x: data for a single transformer.
+        :param pandas.DataFrame bus_reg: data frame with bus regions.
+        :param pandas.DataFrame ac_reg_mult: data frame with regional multipliers.
         :param set xfmr_lookup_alerted: set of (voltage, region) tuples for which
             a message has already been printed that this lookup was not found.
         :return: (*float*) -- regional multiplier.
@@ -140,8 +135,8 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
 
     # check that all buses included in this file and lat/long values match,
-    #   otherwise re-run mapping script on mis-matching buses.
-    # these buses are missing in region file
+    # otherwise re-run mapping script on mis-matching buses. These buses are missing
+    # in region file
     bus_fix_index = bus[~bus.index.isin(bus_reg.index)].index
     bus_mask = bus[~bus.index.isin(bus_fix_index)]
     bus_mask = bus_mask.merge(bus_reg, how="left", on="bus_id")
@@ -213,12 +208,11 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
 
 
 def calculate_dc_inv_costs(scenario, sum_results=True):
-    """Given a Scenario object, calculate the total cost of that grid's dc line
-        investment. Currently ignores financials, but all values are in 2015 $-year.
+    """Calculate cost of upgrading HVDC lines in a scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param boolean sum_results: if True, sum Series to return float.
-    :return: (*pandas.Series/float*) -- [Summed] dc line costs.
+    :param bool sum_results: sum series to return total cost.
+    :return: (*pandas.Series/float*) -- cost of upgrading HVDC lines in $2015.
     """
     base_grid = Grid(scenario.info["interconnect"].split("_"))
     grid = scenario.state.get_grid()
@@ -235,22 +229,20 @@ def calculate_dc_inv_costs(scenario, sum_results=True):
 
 
 def _calculate_dc_inv_costs(grid_new, sum_results=True):
-    """Given a grid, calculate the total cost of that grid's dc line investment.
-    This function is separate from calculate_dc_inv_costs() for testing purposes.
+    """Calculate cost of upgrading HVDC lines.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :param boolean sum_results: if True, sum Series to return float.
-    :return: (*pandas.Series/float*) -- [Summed] dc line costs.
+    :param bool sum_results: sum series to return total cost.
+    :return: (*pandas.Series/float*) -- cost of upgrading HVDC lines in $2015.
     """
 
     def _calculate_single_line_cost(line, bus):
-        """Given a series representing a DC line upgrade/addition, and a dataframe of
-        bus locations, calculate this line's upgrade cost.
+        """Calculate cost of upgrading a single HVDC line.
 
-        :param pandas.Series line: DC line series featuring:
-            {"from_bus_id", "to_bus_id", "Pmax"}.
-        :param pandas.Dataframe bus: Bus data frame featuring {"lat", "lon"}.
-        :return: (*float*) -- DC line upgrade cost (in $2015).
+        :param pandas.Series line: HVDC line series featuring *'from_bus_id'*',
+            *'to_bus_id'* and *'Pmax'*.
+        :param pandas.Dataframe bus: bus data frame featuring *'lat'*, *'lon'*.
+        :return: (*float*) -- HVDC line upgrade cost in $2015.
         """
         # Calculate distance
         from_lat = bus.loc[line.from_bus_id, "lat"]
@@ -280,20 +272,19 @@ def _calculate_dc_inv_costs(grid_new, sum_results=True):
 
 
 def calculate_gen_inv_costs(scenario, year, cost_case, sum_results=True):
-    """Given a Scenario object, calculate the total cost of building that scenario's
-        upgrades of generation.
-    Currently only uses one (arbutrary) sub-technology. Drops the rest of the costs.
-        Will want to fix for wind/solar (based on resource supply curves).
-    Currently uses ReEDS regions to find regional multipliers.
+    """Calculate cost of upgrading generators in a scenario. ReEDS regions are used to
+    find regional multipliers.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param int/str year: year of builds.
-    :param str cost_case: the ATB cost case of data:
-        'Moderate': mid cost case,
-        'Conservative': generally higher costs,
-        'Advanced': generally lower costs
-    :return: (*pandas.DataFrame*) -- Total generation investment cost summed by
+    :param int/str year: building year.
+    :param str cost_case: ATB cost case of data. *'Moderate'*: mid cost case,
+        *'Conservative'*: generally higher costs, *'Advanced'*: generally lower costs
+    :return: (*pandas.DataFrame*) -- total generation investment cost summed by
         technology.
+
+    .. todo:: it currently uses one (arbitrary) sub-technology. The rest of the costs
+        are dropped. Wind and solar will need to be fixed based on the resource supply
+        curves.
     """
 
     base_grid = Grid(scenario.info["interconnect"].split("_"))
@@ -322,38 +313,33 @@ def calculate_gen_inv_costs(scenario, year, cost_case, sum_results=True):
 
 
 def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
-    """Given a grid, calculate the total cost of building that generation investment.
-    Computes total capital cost as CAPEX_total =
-        CAPEX ($/MW) * Pmax (MW) * reg_cap_cost_mult (regional cost multiplier)
-    This function is separate from calculate_gen_inv_costs() for testing purposes.
-    Currently only uses one (arbutrary) sub-technology. Drops the rest of the costs.
-        Will want to fix for wind/solar (based on resource supply curves).
-    Currently uses ReEDS regions to find regional multipliers.
+    """Calculate cost of upgrading generators. ReEDS regions are used to find
+    regional multipliers.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :param int/str year: year of builds (used in financials).
-    :param str cost_case: the ATB cost case of data:
-        'Moderate': mid cost case
-        'Conservative': generally higher costs
-        'Advanced': generally lower costs
+    :param int/str year: year of builds.
+    :param str cost_case: ATB cost case of data. *'Moderate'*: mid cost case
+        *'Conservative'*: generally higher costs, *'Advanced'*: generally lower costs.
     :raises ValueError: if year not 2020 - 2050, or cost case not an allowed option.
-    :raises TypeError: if year gets the wrong type, or if cost_case is not str.
-    :return: (*pandas.Series*) -- Total generation investment cost,
-        summed by technology.
+    :raises TypeError: if year not int/str or cost_case not str.
+    :return: (*pandas.Series*) -- total generation investment cost, summed by
+        technology.
+
+    .. note:: the function computes the total capital cost as:
+        CAPEX_total = CAPEX ($/MW) * Pmax (MW) * regional multiplier
     """
 
     def load_cost(year, cost_case):
-        """
-        Load in base costs from NREL's 2020 ATB for generation technologies (CAPEX).
-            Can be adapted in the future for FOM, VOM, & CAPEX.
-        This data is pulled from the ATB xlsx file Summary pages (saved as csv's).
-        Therefore, currently uses default financials, but will want to create custom
-            financial functions in the future.
+        """Load in base costs from NREL's 2020 ATB for generation technologies (CAPEX).
 
         :param int/str year: year of cost projections.
-        :param str cost_case: the ATB cost case of data
-            (see :py:func:`write_poly_shapefile` for details).
-        :return: (*pandas.DataFrame*) -- Cost by technology/subtype (in $2018).
+        :param str cost_case: ATB cost case of data (see
+        :return: (*pandas.DataFrame*) -- cost by technology/subtype in $2018.
+
+        .. todo:: it can be adapted in the future for FOM, VOM, & CAPEX. This data is
+            pulled from the ATB xlsx file summary pages. Therefore, it currently uses
+            default financials, but will want to create custom financial functions in
+            the future.
         """
         cost = pd.read_csv(const.gen_inv_cost_path)
         cost = cost.dropna(axis=0, how="all")

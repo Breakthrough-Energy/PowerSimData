@@ -88,10 +88,10 @@ class Analyze(State):
             print("%s: %s" % (key, val))
 
     def _parse_infeasibilities(self):
-        """Parses infeasibilities. When the optimizer cannot find a solution in
-            a time interval, the remedy is to decrease demand by some amount
-            until a solution is found. The purpose of this function is to get
-            the interval number(s) and the associated decrease(s).
+        """Parses infeasibilities. When the optimizer cannot find a solution in a time
+        interval, the remedy is to decrease demand by some amount until a solution is
+        found. The purpose of this function is to get the interval number(s) and the
+        associated decrease(s).
 
         :return: (*dict*) -- keys are the interval number and the values are
             the decrease in percent (%) applied to the original demand profile.

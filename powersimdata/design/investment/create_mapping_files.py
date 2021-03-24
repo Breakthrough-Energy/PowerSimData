@@ -8,25 +8,23 @@ from powersimdata.utility.helpers import _check_import
 
 
 def sjoin_nearest(left_df, right_df, search_dist=0.06):
-    """
-    Perform a spatial join between two input layers.
-    If a geometry in left_df falls outside (all) geometries in right_df, the data from
-        nearest Polygon will be used as a result.
-    To make queries faster, change "search_dist."
+    """Perform a spatial join between two input layers.
+
     :param geopandas.GeoDataFrame left_df: A dataframe of Points.
-    :param geopandas.GeoDataFrame right_df: A dataframe of Polygons/Multipolygons
-    :param float/int search_dist: parameter (specified in map units) is used to limit
-        the search area for geometries around source points. Smaller -> faster runtime.
-    :return: (*geopandas.GeoDataFrame*) -- A dataframe of Points mapped to each polygon
-        in right_df.
+    :param geopandas.GeoDataFrame right_df: A dataframe of Polygons/Multipolygons.
+    :param float/int search_dist: radius (in map units) around point to detect polygons.
+    :return: (*geopandas.GeoDataFrame*) -- data frame of Points mapped to each Polygon.
+
+    .. note:: data from nearest Polygon/Multipolygon will be used as a result if a
+        Point falls outside all available Polygon/Multipolygons.
     """
 
     def _find_nearest(series, polygons, search_dist):
-        """Given a row with a bus id and a Point, find the closest polygon.
+        """Find the closest polygon.
 
         :param pandas.Series series: point to map.
         :param geopandas.geodataframe.GeoDataFrame polygons: polygons to select from.
-        :param float search_dist: radius around point to detect polygons in.
+        :param float search_dist: radius around point to detect polygons.
         """
         geom = series[left_df.geometry.name]
         # Get geometries within search distance
@@ -83,17 +81,16 @@ def sjoin_nearest(left_df, right_df, search_dist=0.06):
 
 
 def points_to_polys(df, name, shpfile, search_dist=0.04):
-    """Given a dataframe which includes 'lat' and 'lon' columns, and a shapefile of
-        Polygons/Multipolygon regions, map df.index to closest regions.
+    """Map node to closest region.
 
-    :param pandas.DataFrame df: includes an index, and 'lat' and 'lon' columns.
-    :param str name: what to name the id (bus, plant, substation, etc)
-    :param str shpfile: name of shapefile containing a collection Polygon/Multipolygon
-        shapes with region IDs.
-    :param float/int search_dist: distance to search from point for nearest polygon.
-    :raises ValueError: if some points are dropped because too far away from polys.
-    :return: (*geopandas.GeoDataFrame*) --
-        columns: index id, (point) geometry, [region, other properties of region]
+    :param pandas.DataFrame df: data frame with node id as index and *'lat'* and
+        *'lon'* as columns.
+    :param str name: name of node, e.g., bus, plant, substation, etc.
+    :param str shpfile: shapefile enclosing Polygon/Multipolygon with region id.
+    :param float/int search_dist: radius around point to detect polygons.
+    :raises ValueError: if some points are dropped because too far away from polygons.
+    :return: (*geopandas.GeoDataFrame*) -- columns: id name, (point) geometry,
+        region and properties of region.
     """
     gpd = _check_import("geopandas")
     polys = gpd.read_file(shpfile)
@@ -123,7 +120,7 @@ def points_to_polys(df, name, shpfile, search_dist=0.04):
         err_msg = (
             "Some points dropped because could not be mapped to regions. "
             "Check your lat/lon values to be sure it's in the US. "
-            f"Or increase search_dist if close. Problem ids: {dropped}"
+            f"Or increase search_dist. ids dropped: {dropped}"
         )
         raise ValueError(err_msg)
 
@@ -131,14 +128,11 @@ def points_to_polys(df, name, shpfile, search_dist=0.04):
 
 
 def bus_to_reeds_reg(df):
-    """Given a dataframe of buses, return a dataframe of bus_id's with associated
-        ReEDS regions (wind resource regions (rs) and BA regions (rb)).
-    Used to map regional generation investment cost multipliers.
-    region_map.csv is from: "/bokehpivot/in/reeds2/region_map.csv".
-    rs/rs.shp is created with :py:func:`write_poly_shapefile`.
+    """Map bus to ReEDS regions.
 
-    :param pandas.DataFrame df: grid bus dataframe.
-    :return: (*pandas.DataFrame*) -- bus_id map. columns: bus_id, rs, rb
+    :param pandas.DataFrame df: bus data frame.
+    :return: (*pandas.DataFrame*) -- index: bus id, columns rs (wind resource region)
+        and rb (BA region).
     """
     pts_poly = points_to_polys(
         df, "bus", const.reeds_wind_shapefile_path, search_dist=2
@@ -156,18 +150,15 @@ def bus_to_reeds_reg(df):
 
 
 def bus_to_neem_reg(df):
-    """Given a dataframe of buses, return a dataframe of bus_id's with associated
-        NEEM region, lat, and lon of bus.
-    Used to map regional transmission investment cost multipliers.
-    Shapefile used to map is 'data/NEEM/NEEMregions.shp' which is pulled from Energy
-        Zones `Mapping tool <http://ezmt.anl.gov>`_. This map is overly detailed, so I
-        simplified the shapes using 1 km distance (Douglas-Peucker) method in QGIS.
+    """Map bus to NEEM regions.
 
-    :param pandas.DataFrame df: grid.bus instance.
-    :return: (*pandas.DataFrame*) -- bus_id map.
-        columns: bus_id, lat, lon, name_abbr (NEEM region)
+    :param pandas.DataFrame df: bus data frame.
+    :return: (*pandas.DataFrame*) -- index: bus id, columns: lat, lon, name_abbr
+        (NEEM region)
 
-    Note: mapping may take a while, especially for many points.
+    .. note:: the shapefile used for mapping is pulled from the Energy Zones `Mapping
+        tool <http://ezmt.anl.gov>`_. This map is overly detailed, so the shapes are
+        simplified using 1 km distance (Douglas-Peucker) method in QGIS.
     """
 
     pts_poly = points_to_polys(df, "bus", const.neem_shapefile_path, search_dist=1)
@@ -184,11 +175,7 @@ def bus_to_neem_reg(df):
 
 
 def write_bus_neem_map():
-    """
-    Maps the bus locations from the base USA grid to NEEM regions.
-    Writes out csv with bus numbers, associated NEEM region, and lat/lon of bus
-        (to check if consistent with bus location in _calculate_ac_inv_costs).
-    """
+    """Write bus location to NEEM region mapping to file"""
     base_grid = Grid(["USA"])
     df_pts_bus = bus_to_neem_reg(base_grid.bus)
     df_pts_bus.sort_index(inplace=True)
@@ -197,10 +184,7 @@ def write_bus_neem_map():
 
 
 def write_bus_reeds_map():
-    """
-    Maps the bus locations from the base USA grid to ReEDS regions.
-    Writes out csv with bus numbers, associated ReEDS regions, and distances.
-    """
+    """Write bus location to ReEDS region mapping to file."""
     base_grid = Grid(["USA"])
     df_pts_bus = bus_to_reeds_reg(base_grid.bus)
     df_pts_bus.sort_index(inplace=True)
@@ -209,17 +193,10 @@ def write_bus_reeds_map():
 
 
 def write_poly_shapefile():
-    """
-    Converts a ReEDS csv-format file to a shapefile. Shouldn't need to run again
-        unless new source data.
-    Right now, hard-coded read ReEDS wind resource regions (labelled rs).
-    gis_rs.csv is from ReEDS open-source: "/bokehpivot/in/gis_rs.csv"
-    hierarchy.csv is from: "/bokehpivot/in/reeds2/hierarchy.csv"
-    writes out the shapefile in "rs/rs.shp"
+    """Convert ReEDS wind resource csv-format file to a shapefile.
 
-    Note: These ReEDS wind resource region shapes are approximate. Thus, there are
-        probably some mistakes, but this is currently only used for mapping plant
-        regional multipliers, which are approximate anyway, so it should be fine.
+    .. note:: *gis_rs.csv* is from ReEDS open-source: */bokehpivot/in/gis_rs.csv*,
+        *hierarchy.csv* is from: */bokehpivot/in/reeds2/hierarchy.csv*.
     """
     fiona = _check_import("fiona")
     shapely_geometry = _check_import("shapely.geometry")
