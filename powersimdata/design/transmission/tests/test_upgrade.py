@@ -139,43 +139,43 @@ class TestGetBranchesByArea(unittest.TestCase):
         self.grid.id2zone = {201: "Wahington", 202: "Oregon"}
         self.grid.zone2id = {"Washington": 201, "Oregon": 202}
 
-    def test_internal_W(self):  # noqa: N802
+    def test_internal_washington(self):
         branch_idxs = get_branches_by_area(self.grid, {"Washington"}, method="internal")
         assert branch_idxs == {106, 107, 108}
 
-    def test_internal_E(self):  # noqa: N802
+    def test_internal_oregon(self):
         branch_idxs = get_branches_by_area(self.grid, ["Oregon"], method="internal")
         assert branch_idxs == {102, 103, 104}
 
-    def test_internal_EW(self):  # noqa: N802
+    def test_internal_multi_state(self):
         branch_idxs = get_branches_by_area(
             self.grid, ("Washington", "Oregon"), "internal"
         )
         assert branch_idxs == {102, 103, 104, 106, 107, 108}
 
-    def test_bridging_W(self):  # noqa: N802
+    def test_bridging_washington(self):
         branch_idxs = get_branches_by_area(self.grid, ["Washington"], method="bridging")
         assert branch_idxs == {101, 105}
 
-    def test_bridging_E(self):  # noqa: N802
+    def test_bridging_oregon(self):
         branch_idxs = get_branches_by_area(self.grid, {"Oregon"}, method="bridging")
         assert branch_idxs == {101, 105}
 
-    def test_bridging_EW(self):  # noqa: N802
+    def test_bridging_multi_state(self):
         branch_idxs = get_branches_by_area(
             self.grid, ("Washington", "Oregon"), "bridging"
         )
         assert branch_idxs == {101, 105}
 
-    def test_either_W(self):  # noqa: N802
+    def test_either_washington(self):
         branch_idxs = get_branches_by_area(self.grid, ("Washington",), method="either")
         assert branch_idxs == {101, 105, 106, 107, 108}
 
-    def test_either_E(self):  # noqa: N802
+    def test_either_oregon(self):
         branch_idxs = get_branches_by_area(self.grid, ("Oregon",), method="either")
         assert branch_idxs == {101, 102, 103, 104, 105}
 
-    def test_either_EW(self):  # noqa: N802
+    def test_either_multi_state(self):
         branch_idxs = get_branches_by_area(
             self.grid, ("Oregon", "Washington"), "either"
         )

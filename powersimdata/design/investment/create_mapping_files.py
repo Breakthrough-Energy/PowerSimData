@@ -223,7 +223,7 @@ def write_poly_shapefile():
     """
     fiona = _check_import("fiona")
     shapely_geometry = _check_import("shapely.geometry")
-    polygon = shapely_geometry.Polygon
+    Polygon = shapely_geometry.Polygon  # noqa: N806
     mapping = shapely_geometry.mapping
 
     outpath = const.reeds_wind_shapefile_path
@@ -258,7 +258,7 @@ def write_poly_shapefile():
             for j in poly_df.index:
                 ls += [(poly_df.loc[j, "long"], poly_df.loc[j, "lat"])]
 
-            poly = polygon(ls)
+            poly = Polygon(ls)
             c.write(
                 {
                     "geometry": mapping(poly),
