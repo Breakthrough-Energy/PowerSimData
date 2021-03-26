@@ -82,10 +82,9 @@ def manager():
     os.remove(test_csv)
 
 
-def mock_row(sid=1):
+def mock_row():
     return OrderedDict(
         [
-            ("id", str(sid)),
             ("plan", "test"),
             ("name", "dummy"),
             ("state", "create"),
@@ -104,21 +103,17 @@ def mock_row(sid=1):
     )
 
 
-def test_generate_id(manager):
-    new_id = manager.generate_scenario_id()
-    assert new_id == "1"
-
-
 def test_blank_csv_append(manager):
-    manager.add_entry(mock_row(1))
-    table = manager.add_entry(mock_row(2))
-    assert table.shape == (2, 16)
+    entry = mock_row()
+    table = manager.add_entry(entry)
+    assert entry["id"] == "1"
+    assert table.shape == (1, 16)
 
 
 def test_get_scenario(manager):
-    manager.add_entry(mock_row(1))
-    manager.add_entry(mock_row(2))
-    manager.add_entry(mock_row(3))
+    manager.add_entry(mock_row())
+    manager.add_entry(mock_row())
+    manager.add_entry(mock_row())
     entry = manager.get_scenario(2)
     assert entry["id"] == "2"
     entry = manager.get_scenario("2")
@@ -126,8 +121,8 @@ def test_get_scenario(manager):
 
 
 def test_delete_entry(manager):
-    manager.add_entry(mock_row(1))
-    manager.add_entry(mock_row(2))
-    manager.add_entry(mock_row(3))
+    manager.add_entry(mock_row())
+    manager.add_entry(mock_row())
+    manager.add_entry(mock_row())
     table = manager.delete_entry(2)
     assert table.shape == (2, 16)

@@ -94,12 +94,12 @@ class ScenarioListManager(CsvStore):
         """
         return self.get_table()
 
-    def generate_scenario_id(self):
+    def _generate_scenario_id(self, table):
         """Generates scenario id.
 
+        :param pandas.DataFrame table: the current scenario list
         :return: (*str*) -- new scenario id.
         """
-        table = self.get_scenario_table()
         max_value = table.index.max()
         result = 1 if pd.isna(max_value) else max_value + 1
         return str(result)
@@ -146,6 +146,9 @@ class ScenarioListManager(CsvStore):
         :return: (*pandas.DataFrame*) -- the updated data frame
         """
         table = self.get_scenario_table()
+        scenario_id = self._generate_scenario_id(table)
+        scenario_info["id"] = scenario_id
+        scenario_info.move_to_end("id", last=False)
         table.reset_index(inplace=True)
         entry = pd.DataFrame({k: [v] for k, v in scenario_info.items()})
         table = table.append(entry)

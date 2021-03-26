@@ -93,12 +93,6 @@ class Create(State):
             else:
                 self._scenario_info["change_table"] = "No"
 
-    def _generate_and_set_scenario_id(self):
-        """Generates scenario id."""
-        scenario_id = self._scenario_list_manager.generate_scenario_id()
-        self._scenario_info["id"] = scenario_id
-        self._scenario_info.move_to_end("id", last=False)
-
     def _add_entry_in_execute_list(self):
         """Adds scenario to the execute list file on server and update status
         information.
@@ -144,8 +138,6 @@ class Create(State):
                 % (self._scenario_info["plan"], self._scenario_info["name"])
             )
 
-            # Generate scenario id
-            self._generate_and_set_scenario_id()
             # Add missing information
             self._scenario_info["state"] = "execute"
             self._scenario_info["runtime"] = ""
