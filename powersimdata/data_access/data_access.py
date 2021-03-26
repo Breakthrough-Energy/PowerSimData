@@ -1,6 +1,8 @@
 import operator
 import os
 import posixpath
+import shutil
+import tempfile
 import time
 from subprocess import PIPE, Popen
 
@@ -285,13 +287,15 @@ class SSHDataAccess(DataAccess):
         os.makedirs(to_dir, exist_ok=True)
 
         from_path = posixpath.join(self.root, from_dir, file_name)
+        to_path = os.path.join(to_dir, file_name)
         self._check_file_exists(from_path, should_exist=True)
 
         with self.ssh.open_sftp() as sftp:
             print(f"Transferring {file_name} from server")
             cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
-            to_path = os.path.join(to_dir, file_name)
-            sftp.get(from_path, to_path, callback=cbk)
+            _, tmp_path = tempfile.mkstemp()
+            sftp.get(from_path, tmp_path, callback=cbk)
+            shutil.move(tmp_path, to_path)
             bar.close()
 
     def move_to(self, file_name, to_dir=None, change_name_to=None, preserve=False):
