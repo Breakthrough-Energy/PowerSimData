@@ -176,11 +176,11 @@ def test_get_supply_data():
 
 
 def test_build_supply_curve_1seg():
-    Ptest, Ftest = build_supply_curve(  # noqa: N806
+    capacity_test, price_test = build_supply_curve(  # noqa: N806
         grid, 1, "Colorado", "ng", "loadzone", plot=False
     )
-    Pexp = [0, 10, 10, 30, 30, 50, 50, 100, 100, 200]  # noqa: N806
-    Fexp = [  # noqa: N806
+    capacity_exp = [0, 10, 10, 30, 30, 50, 50, 100, 100, 200]  # noqa: N806
+    price_exp = [  # noqa: N806
         25.10,
         25.10,
         30.40,
@@ -192,16 +192,16 @@ def test_build_supply_curve_1seg():
         40.00,
         40.00,
     ]
-    assert all([Ptest[i] == Pexp[i] for i in range(len(Ptest))])
-    assert all([Ftest[i] == Fexp[i] for i in range(len(Ptest))])
+    assert all([capacity_test[i] == capacity_exp[i] for i in range(len(capacity_test))])
+    assert all([price_test[i] == price_exp[i] for i in range(len(capacity_test))])
 
 
 def test_build_supply_curve_2seg():
-    Ptest, Ftest = build_supply_curve(  # noqa: N806
+    capacity_test, price_test = build_supply_curve(  # noqa: N806
         grid, 2, "Utah", "coal", "loadzone", plot=False
     )
-    Pexp = [0, 10, 10, 20, 20, 45, 45, 70, 70, 120, 120, 170]  # noqa: N806
-    Fexp = [  # noqa: N806
+    capacity_exp = [0, 10, 10, 20, 20, 45, 45, 70, 70, 120, 120, 170]  # noqa: N806
+    price_exp = [  # noqa: N806
         30.100,
         30.100,
         30.300,
@@ -215,15 +215,15 @@ def test_build_supply_curve_2seg():
         42.500,
         42.500,
     ]
-    assert all([Ptest[i] == Pexp[i] for i in range(len(Ptest))])
-    assert all([Ftest[i] == Fexp[i] for i in range(len(Ptest))])
+    assert all([capacity_test[i] == capacity_exp[i] for i in range(len(capacity_test))])
+    assert all([price_test[i] == price_exp[i] for i in range(len(capacity_test))])
 
 
 def test_ks_test():
-    P1, F1 = build_supply_curve(  # noqa: N806
+    capacity_data1, price_data1 = build_supply_curve(  # noqa: N806
         grid, 1, "Washington", "coal", "loadzone", plot=False
     )
-    P2 = [  # noqa: N806
+    capacity_data2 = [  # noqa: N806
         0,
         15,
         15,
@@ -237,9 +237,9 @@ def test_ks_test():
         190,
         225,
         225,
-        max(P1),
+        max(capacity_data1),
     ]
-    F2 = [  # noqa: N806
+    price_data2 = [  # noqa: N806
         23.00,
         23.00,
         27.00,
@@ -255,14 +255,16 @@ def test_ks_test():
         38.00,
         38.00,
     ]
-    test_diff = ks_test(P1, F1, P2, F2, plot=False)
+    test_diff = ks_test(
+        capacity_data1, price_data1, capacity_data2, price_data2, plot=False
+    )
     exp_diff = 4.5
     assert test_diff == exp_diff
 
 
 def test_lower_bound_index():
-    x = 10
-    l = [0, 5, 5, 9, 9, 12, 12, 18]
-    ind_test = lower_bound_index(x, l)
+    desired_capacity = 10
+    capacity_data = [0, 5, 5, 9, 9, 12, 12, 18]
+    ind_test = lower_bound_index(desired_capacity, capacity_data)
     ind_exp = 4
     assert ind_test == ind_exp
