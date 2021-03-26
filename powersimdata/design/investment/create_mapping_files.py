@@ -223,7 +223,7 @@ def write_poly_shapefile():
     """
     fiona = _check_import("fiona")
     shapely_geometry = _check_import("shapely.geometry")
-    Polygon = shapely_geometry.Polygon
+    Polygon = shapely_geometry.Polygon  # noqa: N806
     mapping = shapely_geometry.mapping
 
     outpath = const.reeds_wind_shapefile_path

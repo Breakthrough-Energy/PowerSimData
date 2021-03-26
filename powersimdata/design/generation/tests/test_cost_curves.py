@@ -176,17 +176,32 @@ def test_get_supply_data():
 
 
 def test_build_supply_curve_1seg():
-    Ptest, Ftest = build_supply_curve(grid, 1, "Colorado", "ng", "loadzone", plot=False)
-    Pexp = [0, 10, 10, 30, 30, 50, 50, 100, 100, 200]
-    Fexp = [25.10, 25.10, 30.40, 30.40, 30.40, 30.40, 31.25, 31.25, 40.00, 40.00]
-    assert all([Ptest[i] == Pexp[i] for i in range(len(Ptest))])
-    assert all([Ftest[i] == Fexp[i] for i in range(len(Ptest))])
+    capacity_test, price_test = build_supply_curve(
+        grid, 1, "Colorado", "ng", "loadzone", plot=False
+    )
+    capacity_exp = [0, 10, 10, 30, 30, 50, 50, 100, 100, 200]
+    price_exp = [
+        25.10,
+        25.10,
+        30.40,
+        30.40,
+        30.40,
+        30.40,
+        31.25,
+        31.25,
+        40.00,
+        40.00,
+    ]
+    assert all([capacity_test[i] == capacity_exp[i] for i in range(len(capacity_test))])
+    assert all([price_test[i] == price_exp[i] for i in range(len(capacity_test))])
 
 
 def test_build_supply_curve_2seg():
-    Ptest, Ftest = build_supply_curve(grid, 2, "Utah", "coal", "loadzone", plot=False)
-    Pexp = [0, 10, 10, 20, 20, 45, 45, 70, 70, 120, 120, 170]
-    Fexp = [
+    capacity_test, price_test = build_supply_curve(
+        grid, 2, "Utah", "coal", "loadzone", plot=False
+    )
+    capacity_exp = [0, 10, 10, 20, 20, 45, 45, 70, 70, 120, 120, 170]
+    price_exp = [
         30.100,
         30.100,
         30.300,
@@ -200,14 +215,31 @@ def test_build_supply_curve_2seg():
         42.500,
         42.500,
     ]
-    assert all([Ptest[i] == Pexp[i] for i in range(len(Ptest))])
-    assert all([Ftest[i] == Fexp[i] for i in range(len(Ptest))])
+    assert all([capacity_test[i] == capacity_exp[i] for i in range(len(capacity_test))])
+    assert all([price_test[i] == price_exp[i] for i in range(len(capacity_test))])
 
 
 def test_ks_test():
-    P1, F1 = build_supply_curve(grid, 1, "Washington", "coal", "loadzone", plot=False)
-    P2 = [0, 15, 15, 40, 40, 75, 75, 130, 130, 190, 190, 225, 225, max(P1)]
-    F2 = [
+    capacity_data1, price_data1 = build_supply_curve(
+        grid, 1, "Washington", "coal", "loadzone", plot=False
+    )
+    capacity_data2 = [
+        0,
+        15,
+        15,
+        40,
+        40,
+        75,
+        75,
+        130,
+        130,
+        190,
+        190,
+        225,
+        225,
+        max(capacity_data1),
+    ]
+    price_data2 = [
         23.00,
         23.00,
         27.00,
@@ -223,14 +255,16 @@ def test_ks_test():
         38.00,
         38.00,
     ]
-    test_diff = ks_test(P1, F1, P2, F2, plot=False)
+    test_diff = ks_test(
+        capacity_data1, price_data1, capacity_data2, price_data2, plot=False
+    )
     exp_diff = 4.5
     assert test_diff == exp_diff
 
 
 def test_lower_bound_index():
-    x = 10
-    l = [0, 5, 5, 9, 9, 12, 12, 18]
-    ind_test = lower_bound_index(x, l)
+    desired_capacity = 10
+    capacity_data = [0, 5, 5, 9, 9, 12, 12, 18]
+    ind_test = lower_bound_index(desired_capacity, capacity_data)
     ind_exp = 4
     assert ind_test == ind_exp
