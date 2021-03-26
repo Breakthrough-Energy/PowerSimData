@@ -175,7 +175,7 @@ class Create(State):
             print("%s: %s" % (key, val))
 
     def set_builder(self, *args, **kwargs):
-        """Alias to set_grid."""
+        """Alias to :func:`~powersimdata.scenario.create.Create.set_grid`"""
         warnings.warn(
             "set_builder is deprecated, use set_grid instead", DeprecationWarning
         )
@@ -327,7 +327,7 @@ class _Builder(object):
 
     def set_time(self, start_date, end_date, interval):
         """Sets scenario start and end dates as well as the interval that will
-            be used to split the date range.
+        be used to split the date range.
 
         :param str start_date: start date.
         :param str end_date: start date.
