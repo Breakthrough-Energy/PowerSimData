@@ -176,11 +176,11 @@ def test_get_supply_data():
 
 
 def test_build_supply_curve_1seg():
-    capacity_test, price_test = build_supply_curve(  # noqa: N806
+    capacity_test, price_test = build_supply_curve(
         grid, 1, "Colorado", "ng", "loadzone", plot=False
     )
-    capacity_exp = [0, 10, 10, 30, 30, 50, 50, 100, 100, 200]  # noqa: N806
-    price_exp = [  # noqa: N806
+    capacity_exp = [0, 10, 10, 30, 30, 50, 50, 100, 100, 200]
+    price_exp = [
         25.10,
         25.10,
         30.40,
@@ -197,11 +197,11 @@ def test_build_supply_curve_1seg():
 
 
 def test_build_supply_curve_2seg():
-    capacity_test, price_test = build_supply_curve(  # noqa: N806
+    capacity_test, price_test = build_supply_curve(
         grid, 2, "Utah", "coal", "loadzone", plot=False
     )
-    capacity_exp = [0, 10, 10, 20, 20, 45, 45, 70, 70, 120, 120, 170]  # noqa: N806
-    price_exp = [  # noqa: N806
+    capacity_exp = [0, 10, 10, 20, 20, 45, 45, 70, 70, 120, 120, 170]
+    price_exp = [
         30.100,
         30.100,
         30.300,
@@ -220,10 +220,10 @@ def test_build_supply_curve_2seg():
 
 
 def test_ks_test():
-    capacity_data1, price_data1 = build_supply_curve(  # noqa: N806
+    capacity_data1, price_data1 = build_supply_curve(
         grid, 1, "Washington", "coal", "loadzone", plot=False
     )
-    capacity_data2 = [  # noqa: N806
+    capacity_data2 = [
         0,
         15,
         15,
@@ -239,7 +239,7 @@ def test_ks_test():
         225,
         max(capacity_data1),
     ]
-    price_data2 = [  # noqa: N806
+    price_data2 = [
         23.00,
         23.00,
         27.00,

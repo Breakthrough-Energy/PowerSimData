@@ -259,8 +259,8 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
     supply_df = supply_df.reset_index(drop=True)
 
     # Determine the points that comprise the supply curve
-    capacity_data = []  # noqa: N806
-    price_data = []  # noqa: N806
+    capacity_data = []
+    price_data = []
     capacity_diff_sum = 0
     for i in supply_df.index:
         capacity_data.append(capacity_diff_sum)
@@ -315,7 +315,7 @@ def ks_test(
     area=None,
     gen_type=None,
     plot=True,
-):  # noqa: N803
+):
     """Runs a test that is similar to the Kolmogorov-Smirnov test. This function takes
     two supply curves as inputs and returns the greatest difference in price between
     the two supply curves. This function requires that the supply curves offer the same
@@ -349,11 +349,11 @@ def ks_test(
         )
 
     # Create a list that has every capacity value in which either supply curve steps up
-    capacity_data_all = list(set(capacity_data1) | set(capacity_data2))  # noqa: N806
+    capacity_data_all = list(set(capacity_data1) | set(capacity_data2))
     capacity_data_all.sort()
 
     # For each capacity value, associate the two corresponding price values
-    price_data_all = []  # noqa: N806
+    price_data_all = []
     for i in range(len(capacity_data_all)):
         # Determine the correpsonding price from the first supply curve
         if capacity_data_all[i] == capacity_data1[-1]:
@@ -374,7 +374,7 @@ def ks_test(
     price_data_diff = [
         abs(price_data_all[i][0] - price_data_all[i][1])
         for i in range(len(price_data_all))
-    ]  # noqa: N806
+    ]
 
     # Determine the maximum price difference
     max_diff = max(price_data_diff)
