@@ -362,6 +362,10 @@ class SimulationInput(object):
         self._data_access.move_to(
             file_name, self.REL_TMP_DIR, change_name_to="case.mat"
         )
+        if len(self.grid.storage["gen"]) > 0:
+            self._data_access.move_to(
+                storage_file_name, self.REL_TMP_DIR, change_name_to="case_storage.mat"
+            )
 
     def prepare_profile(self, kind, profile_as=None):
         """Prepares profile for simulation.
