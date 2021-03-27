@@ -25,13 +25,12 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def move_to(self, file_name, to_dir, change_name_to=None, preserve=False):
+    def move_to(self, file_name, to_dir, change_name_to=None):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
-        :param bool preserve: whether to keep the local copy
         """
         raise NotImplementedError
 
@@ -163,13 +162,12 @@ class LocalDataAccess(DataAccess):
         """
         return "dummy_value"
 
-    def move_to(self, file_name, to_dir, change_name_to=None, preserve=False):
+    def move_to(self, file_name, to_dir, change_name_to=None):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
-        :param bool preserve: whether to keep the local copy
         """
         self._check_filename(file_name)
         src = posixpath.join(server_setup.LOCAL_DIR, file_name)
@@ -178,9 +176,8 @@ class LocalDataAccess(DataAccess):
         print(f"--> Moving file {src} to {dest}")
         self._check_file_exists(dest, should_exist=False)
         self.copy(src, dest)
-        if not preserve:
-            print("--> Deleting original copy")
-            self.remove(src)
+        print("--> Deleting original copy")
+        self.remove(src)
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -304,7 +301,6 @@ class SSHDataAccess(DataAccess):
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
-        :param bool preserve: whether to keep the local copy
         :raises FileNotFoundError: if specified file does not exist
         """
         self._check_filename(file_name)
