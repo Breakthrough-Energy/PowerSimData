@@ -367,7 +367,7 @@ class SSHDataAccess(DataAccess):
         """
         backup = f"{file_name}.temp"
         _, tmp_path = mkstemp(dir=self.local_root)
-        shutil.copy(posixpath.join(self.local_root, file_name), tmp_path)
+        shutil.copy(os.path.join(self.local_root, file_name), tmp_path)
         temp_name = os.path.basename(tmp_path)
         self.move_to(temp_name, change_name_to=backup)
 
