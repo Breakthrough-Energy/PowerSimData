@@ -2,9 +2,9 @@ import operator
 import os
 import posixpath
 import shutil
-import tempfile
 import time
 from subprocess import PIPE, Popen
+from tempfile import mkstemp
 
 import paramiko
 from tqdm import tqdm
@@ -293,12 +293,12 @@ class SSHDataAccess(DataAccess):
         with self.ssh.open_sftp() as sftp:
             print(f"Transferring {file_name} from server")
             cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
-            _, tmp_path = tempfile.mkstemp()
+            _, tmp_path = mkstemp()
             sftp.get(from_path, tmp_path, callback=cbk)
             shutil.move(tmp_path, to_path)
             bar.close()
 
-    def move_to(self, file_name, to_dir=None, change_name_to=None, preserve=False):
+    def move_to(self, file_name, to_dir=None, change_name_to=None):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
@@ -325,9 +325,8 @@ class SSHDataAccess(DataAccess):
             print(f"Transferring {from_path} to server")
             sftp.put(from_path, to_path)
 
-        if not preserve:
-            print(f"--> Deleting {from_path} on local machine")
-            os.remove(from_path)
+        print(f"--> Deleting {from_path} on local machine")
+        os.remove(from_path)
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -371,7 +370,10 @@ class SSHDataAccess(DataAccess):
         :raises IOError: if command generated stderr
         """
         backup = f"{file_name}.temp"
-        self.move_to(file_name, change_name_to=backup, preserve=True)
+        _, tmp_path = mkstemp(dir=self.local_root)
+        shutil.copy(posixpath.join(self.local_root, file_name), tmp_path)
+        temp_name = os.path.basename(tmp_path)
+        self.move_to(temp_name, change_name_to=backup)
 
         values = {
             "original": posixpath.join(self.root, file_name),
