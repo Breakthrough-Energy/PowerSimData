@@ -359,7 +359,7 @@ class SSHDataAccess(DataAccess):
         return lines[0].strip()
 
     def push(self, file_name, checksum, change_name_to=None):
-        """Push file_name to remote root
+        """Push file to server and verify the checksum matches a prior value
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
