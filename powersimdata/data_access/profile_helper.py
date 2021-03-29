@@ -52,7 +52,6 @@ class ProfileHelper:
                     f.write(chunk)
                     pbar.update(len(chunk))
 
-        print("--> Done!")
         return dest
 
     @staticmethod

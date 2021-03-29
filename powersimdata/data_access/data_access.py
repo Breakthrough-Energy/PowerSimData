@@ -319,7 +319,7 @@ class SSHDataAccess(DataAccess):
         self._check_file_exists(to_path, should_exist=False)
 
         with self.ssh.open_sftp() as sftp:
-            print(f"Transferring {from_path} to server")
+            print(f"Transferring {file_name} to server")
             sftp.put(from_path, to_path)
 
         os.remove(from_path)
