@@ -109,11 +109,12 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def push(self, file_name, checksum):
+    def push(self, file_name, checksum, change_name_to=None):
         """Push the file from local to remote root folder, ensuring integrity
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
+        :param str change_name_to: new name for file when copied to data store.
         """
         raise NotImplementedError
 
@@ -145,11 +146,12 @@ class LocalDataAccess(DataAccess):
         """
         pass
 
-    def push(self, file_name, checksum):
+    def push(self, file_name, checksum, change_name_to=None):
         """Nothing to be done due to symlink
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
+        :param str change_name_to: new name for file when copied to data store.
         """
         pass
 
@@ -176,7 +178,6 @@ class LocalDataAccess(DataAccess):
         print(f"--> Moving file {src} to {dest}")
         self._check_file_exists(dest, should_exist=False)
         self.copy(src, dest)
-        print("--> Deleting original copy")
         self.remove(src)
 
     def execute_command(self, command):
@@ -321,7 +322,6 @@ class SSHDataAccess(DataAccess):
             print(f"Transferring {from_path} to server")
             sftp.put(from_path, to_path)
 
-        print(f"--> Deleting {from_path} on local machine")
         os.remove(from_path)
 
     def execute_command(self, command):
@@ -358,21 +358,20 @@ class SSHDataAccess(DataAccess):
         lines = stdout.readlines()
         return lines[0].strip()
 
-    def push(self, file_name, checksum):
+    def push(self, file_name, checksum, change_name_to=None):
         """Push file_name to remote root
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
+        :param str change_name_to: new name for file when copied to data store.
         :raises IOError: if command generated stderr
         """
-        backup = f"{file_name}.temp"
-        _, tmp_path = mkstemp(dir=self.local_root)
-        shutil.copy(os.path.join(self.local_root, file_name), tmp_path)
-        temp_name = os.path.basename(tmp_path)
-        self.move_to(temp_name, change_name_to=backup)
+        new_name = file_name if change_name_to is None else change_name_to
+        backup = f"{new_name}.temp"
+        self.move_to(file_name, change_name_to=backup)
 
         values = {
-            "original": posixpath.join(self.root, file_name),
+            "original": posixpath.join(self.root, new_name),
             "updated": posixpath.join(self.root, backup),
             "lockfile": posixpath.join(self.root, "scenario.lockfile"),
             "checksum": checksum,

@@ -1,6 +1,8 @@
 import functools
 import os
+import shutil
 from pathlib import Path
+from tempfile import mkstemp
 
 import pandas as pd
 
@@ -72,5 +74,8 @@ class CsvStore:
         :param pandas.DataFrame table: the data frame to save
         :param str checksum: the checksum prior to download
         """
-        table.to_csv(os.path.join(server_setup.LOCAL_DIR, self._FILE_NAME))
-        self.data_access.push(self._FILE_NAME, checksum)
+        _, tmp_path = mkstemp(dir=server_setup.LOCAL_DIR)
+        table.to_csv(tmp_path)
+        shutil.copy(tmp_path, os.path.join(server_setup.LOCAL_DIR, self._FILE_NAME))
+        tmp_name = os.path.basename(tmp_path)
+        self.data_access.push(tmp_name, checksum, change_name_to=self._FILE_NAME)
