@@ -14,7 +14,9 @@ _cache = MemoryCache()
 class Grid(object):
     """Grid
 
-    :param str/list interconnect: interconnect name(s).
+    :param str/list interconnect: geographical region covered. Either *'USA'*, one of
+        the three interconnections, i.e., *'Eastern'*, *'Western'* or *'Texas'* or a
+        combination of two interconnections.
     :param str source: model used to build the network.
     :param str engine: engine used to run scenario, if using ScenarioGrid.
     :raises TypeError: if source and engine are not both strings.
