@@ -85,8 +85,12 @@ class Scenario(object):
         :param str descriptor: scenario descriptor.
         """
         info = self._scenario_list_manager.get_scenario(descriptor)
-        if info is not None:
-            self.info = info
+        if info is None:
+            raise ValueError(
+                f"{descriptor} not found in Scenario List. "
+                "See available scenarios with Scenario().get_scenario_table()"
+            )
+        self.info = info
 
     def _set_status(self):
         """Sets execution status of scenario."""
