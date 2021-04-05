@@ -1,8 +1,10 @@
 import operator
 import os
 import posixpath
+import shutil
 import time
 from subprocess import PIPE, Popen
+from tempfile import mkstemp
 
 import paramiko
 from tqdm import tqdm
@@ -23,13 +25,12 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def move_to(self, file_name, to_dir, change_name_to=None, preserve=False):
+    def move_to(self, file_name, to_dir, change_name_to=None):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
-        :param bool preserve: whether to keep the local copy
         """
         raise NotImplementedError
 
@@ -108,11 +109,12 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def push(self, file_name, checksum):
+    def push(self, file_name, checksum, change_name_to=None):
         """Push the file from local to remote root folder, ensuring integrity
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
+        :param str change_name_to: new name for file when copied to data store.
         """
         raise NotImplementedError
 
@@ -144,11 +146,12 @@ class LocalDataAccess(DataAccess):
         """
         pass
 
-    def push(self, file_name, checksum):
+    def push(self, file_name, checksum, change_name_to=None):
         """Nothing to be done due to symlink
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
+        :param str change_name_to: new name for file when copied to data store.
         """
         pass
 
@@ -161,13 +164,12 @@ class LocalDataAccess(DataAccess):
         """
         return "dummy_value"
 
-    def move_to(self, file_name, to_dir, change_name_to=None, preserve=False):
+    def move_to(self, file_name, to_dir, change_name_to=None):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
-        :param bool preserve: whether to keep the local copy
         """
         self._check_filename(file_name)
         src = posixpath.join(server_setup.LOCAL_DIR, file_name)
@@ -176,9 +178,7 @@ class LocalDataAccess(DataAccess):
         print(f"--> Moving file {src} to {dest}")
         self._check_file_exists(dest, should_exist=False)
         self.copy(src, dest)
-        if not preserve:
-            print("--> Deleting original copy")
-            self.remove(src)
+        self.remove(src)
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -285,22 +285,23 @@ class SSHDataAccess(DataAccess):
         os.makedirs(to_dir, exist_ok=True)
 
         from_path = posixpath.join(self.root, from_dir, file_name)
+        to_path = os.path.join(to_dir, file_name)
         self._check_file_exists(from_path, should_exist=True)
 
         with self.ssh.open_sftp() as sftp:
             print(f"Transferring {file_name} from server")
             cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
-            to_path = os.path.join(to_dir, file_name)
-            sftp.get(from_path, to_path, callback=cbk)
+            _, tmp_path = mkstemp()
+            sftp.get(from_path, tmp_path, callback=cbk)
+            shutil.move(tmp_path, to_path)
             bar.close()
 
-    def move_to(self, file_name, to_dir=None, change_name_to=None, preserve=False):
+    def move_to(self, file_name, to_dir=None, change_name_to=None):
         """Copy a file from userspace to data store.
 
         :param str file_name: file name to copy.
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
-        :param bool preserve: whether to keep the local copy
         :raises FileNotFoundError: if specified file does not exist
         """
         self._check_filename(file_name)
@@ -318,12 +319,10 @@ class SSHDataAccess(DataAccess):
         self._check_file_exists(to_path, should_exist=False)
 
         with self.ssh.open_sftp() as sftp:
-            print(f"Transferring {from_path} to server")
+            print(f"Transferring {file_name} to server")
             sftp.put(from_path, to_path)
 
-        if not preserve:
-            print(f"--> Deleting {from_path} on local machine")
-            os.remove(from_path)
+        os.remove(from_path)
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -359,18 +358,20 @@ class SSHDataAccess(DataAccess):
         lines = stdout.readlines()
         return lines[0].strip()
 
-    def push(self, file_name, checksum):
-        """Push file_name to remote root
+    def push(self, file_name, checksum, change_name_to=None):
+        """Push file to server and verify the checksum matches a prior value
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
+        :param str change_name_to: new name for file when copied to data store.
         :raises IOError: if command generated stderr
         """
-        backup = f"{file_name}.temp"
-        self.move_to(file_name, change_name_to=backup, preserve=True)
+        new_name = file_name if change_name_to is None else change_name_to
+        backup = f"{new_name}.temp"
+        self.move_to(file_name, change_name_to=backup)
 
         values = {
-            "original": posixpath.join(self.root, file_name),
+            "original": posixpath.join(self.root, new_name),
             "updated": posixpath.join(self.root, backup),
             "lockfile": posixpath.join(self.root, "scenario.lockfile"),
             "checksum": checksum,

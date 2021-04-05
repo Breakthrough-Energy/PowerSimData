@@ -93,21 +93,6 @@ class Create(State):
             else:
                 self._scenario_info["change_table"] = "No"
 
-    def _generate_and_set_scenario_id(self):
-        """Generates scenario id."""
-        scenario_id = self._scenario_list_manager.generate_scenario_id()
-        self._scenario_info["id"] = scenario_id
-        self._scenario_info.move_to_end("id", last=False)
-
-    def _add_entry_in_execute_list(self):
-        """Adds scenario to the execute list file on server and update status
-        information.
-
-        """
-        self._execute_list_manager.add_entry(self._scenario_info)
-        self._scenario_status = "created"
-        self.allowed.append("execute")
-
     def _upload_change_table(self):
         """Uploads change table to server."""
         print("--> Writing change table on local machine")
@@ -144,21 +129,20 @@ class Create(State):
                 % (self._scenario_info["plan"], self._scenario_info["name"])
             )
 
-            # Generate scenario id
-            self._generate_and_set_scenario_id()
             # Add missing information
             self._scenario_info["state"] = "execute"
             self._scenario_info["runtime"] = ""
             self._scenario_info["infeasibilities"] = ""
             self.grid = self.builder.get_grid()
             self.ct = self.builder.change_table.ct
-            # Add scenario to scenario list file on server
+            # Add to scenario list and set the id in scenario_info
             self._scenario_list_manager.add_entry(self._scenario_info)
-            # Upload change table to server
+
             if bool(self.builder.change_table.ct):
                 self._upload_change_table()
-            # Add scenario to execute list file on server
-            self._add_entry_in_execute_list()
+            self._execute_list_manager.add_entry(self._scenario_info)
+            self._scenario_status = "created"
+            self.allowed.append("execute")
 
             print(
                 "SCENARIO SUCCESSFULLY CREATED WITH ID #%s" % self._scenario_info["id"]

@@ -1,8 +1,5 @@
-import posixpath
-
 from powersimdata.data_access.csv_store import CsvStore, verify_hash
 from powersimdata.data_access.sql_store import SqlStore, to_data_frame
-from powersimdata.utility import server_setup
 
 
 class ExecuteTable(SqlStore):
@@ -71,17 +68,9 @@ class ExecuteTable(SqlStore):
 
 
 class ExecuteListManager(CsvStore):
-    """Storage abstraction for execute list using a csv file on the server.
-
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
-    """
+    """Storage abstraction for execute list using a csv file."""
 
     _FILE_NAME = "ExecuteList.csv"
-
-    def __init__(self, ssh_client):
-        """Constructor"""
-        super().__init__(ssh_client)
-        self._server_path = posixpath.join(server_setup.DATA_ROOT_DIR, self._FILE_NAME)
 
     def get_execute_table(self):
         """Returns execute table from server if possible, otherwise read local
