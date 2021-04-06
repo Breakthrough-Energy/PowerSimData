@@ -2,14 +2,12 @@ import json
 import os
 
 import requests
-from tqdm.auto import tqdm
 
+from powersimdata.data_access.blob_storage import BASE_URL, BlobClient
 from powersimdata.utility import server_setup
 
 
 class ProfileHelper:
-    BASE_URL = "https://bescienceswebsite.blob.core.windows.net/profiles"
-
     @staticmethod
     def get_file_components(scenario_info, field_name):
         """Get the file name and relative path for the given profile and
@@ -33,26 +31,9 @@ class ProfileHelper:
         :param str from_dir: the path relative to the blob container
         :return: (*str*) -- path to downloaded file
         """
-        print(f"--> Downloading {file_name} from blob storage.")
-        url_path = "/".join(os.path.split(from_dir))
-        url = f"{ProfileHelper.BASE_URL}/{url_path}/{file_name}"
+        url_path = "/".join(os.path.split(from_dir)) + f"/{file_name}"
         dest = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
-        os.makedirs(os.path.dirname(dest), exist_ok=True)
-        resp = requests.get(url, stream=True)
-        content_length = int(resp.headers.get("content-length", 0))
-        with open(dest, "wb") as f:
-            with tqdm(
-                unit="B",
-                unit_scale=True,
-                unit_divisor=1024,
-                miniters=1,
-                total=content_length,
-            ) as pbar:
-                for chunk in resp.iter_content(chunk_size=4096):
-                    f.write(chunk)
-                    pbar.update(len(chunk))
-
-        return dest
+        return BlobClient("profiles").download(url_path, dest)
 
     @staticmethod
     def parse_version(grid_model, kind, version):
@@ -76,8 +57,8 @@ class ProfileHelper:
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
         :return: (*list*) -- available profile version.
         """
-
-        resp = requests.get(f"{ProfileHelper.BASE_URL}/version.json")
+        blob_container = f"{BASE_URL}/profiles"
+        resp = requests.get(f"{blob_container}/version.json")
         return ProfileHelper.parse_version(grid_model, kind, resp.json())
 
     @staticmethod

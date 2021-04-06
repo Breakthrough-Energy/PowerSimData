@@ -3,6 +3,7 @@ import pytest
 from powersimdata.scenario.scenario import Scenario
 
 
+@pytest.mark.integration
 @pytest.mark.ssh
 def test_get_bus_demand():
     scenario = Scenario("")
