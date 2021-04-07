@@ -63,7 +63,7 @@ class MemoryCache:
         :param tuple key: a tuple used to lookup the cached value
         :param Any obj: the object to cache
         """
-        self._cache[key] = obj
+        self._cache[key] = copy.deepcopy(obj)
 
     def get(self, key):
         """Retrieve the value associated with key if it exists.
