@@ -79,3 +79,5 @@ class CsvStore:
         shutil.copy(tmp_path, os.path.join(server_setup.LOCAL_DIR, self._FILE_NAME))
         tmp_name = os.path.basename(tmp_path)
         self.data_access.push(tmp_name, checksum, change_name_to=self._FILE_NAME)
+        if os.path.exists(tmp_path):  # only required if data_access is LocalDataAccess
+            os.remove(tmp_path)
