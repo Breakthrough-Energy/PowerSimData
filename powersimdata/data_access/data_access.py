@@ -293,8 +293,9 @@ class SSHDataAccess(DataAccess):
             cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
             _, tmp_path = mkstemp()
             sftp.get(from_path, tmp_path, callback=cbk)
-            shutil.move(tmp_path, to_path)
             bar.close()
+        # wait for file handle to be available
+        shutil.move(tmp_path, to_path)
 
     def move_to(self, file_name, to_dir=None, change_name_to=None):
         """Copy a file from userspace to data store.
