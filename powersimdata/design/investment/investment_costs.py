@@ -13,6 +13,17 @@ from powersimdata.input.grid import Grid
 from powersimdata.utility.distance import haversine
 
 
+def merge_keep_index(df1, df2, **kwargs):
+    """Execute a pandas DataFrame merge, preserving the index of the first dataframe.
+
+    :param pandas.DataFrame df1: first data frame, to call pandas merge from.
+    :param pandas.DataFrame df2: second data frame, argument to pandas merge.
+    :param \\*\\*kwargs: arbitrary keyword arguments passed to pandas merge call.
+    :return: (*pandas.DataFrame*) -- df1 merged with df2 with indices preserved.
+    """
+    return df1.reset_index().merge(df2, **kwargs).set_index(df1.index.names)
+
+
 def calculate_ac_inv_costs(scenario, sum_results=True, exclude_branches=None):
     """Calculate cost of upgrading AC lines and/or transformers in a scenario.
     NEEM regions are used to find regional multipliers.
@@ -139,7 +150,7 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     # in region file
     bus_fix_index = bus[~bus.index.isin(bus_reg.index)].index
     bus_mask = bus[~bus.index.isin(bus_fix_index)]
-    bus_mask = bus_mask.merge(bus_reg, how="left", on="bus_id")
+    bus_mask = merge_keep_index(bus_mask, bus_reg, how="left", on="bus_id")
     # these buses have incorrect lat/lon values in the region mapping file.
     #   re-running the region mapping script on those buses only.
     bus_fix_index2 = bus_mask[
@@ -160,12 +171,20 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         id_vars=["kV", "MW"], var_name="name_abbr", value_name="mult"
     )
 
-    lines = lines.merge(bus_reg, left_on="to_bus_id", right_on="bus_id", how="inner")
-    lines = lines.merge(ac_reg_mult, on=["name_abbr", "kV", "MW"], how="left")
+    lines = merge_keep_index(
+        lines, bus_reg, left_on="to_bus_id", right_on="bus_id", how="inner"
+    )
+    lines = merge_keep_index(
+        lines, ac_reg_mult, on=["name_abbr", "kV", "MW"], how="left"
+    )
     lines.rename(columns={"name_abbr": "reg_to", "mult": "mult_to"}, inplace=True)
 
-    lines = lines.merge(bus_reg, left_on="from_bus_id", right_on="bus_id", how="inner")
-    lines = lines.merge(ac_reg_mult, on=["name_abbr", "kV", "MW"], how="left")
+    lines = merge_keep_index(
+        lines, bus_reg, left_on="from_bus_id", right_on="bus_id", how="inner"
+    )
+    lines = merge_keep_index(
+        lines, ac_reg_mult, on=["name_abbr", "kV", "MW"], how="left"
+    )
     lines.rename(columns={"name_abbr": "reg_from", "mult": "mult_from"}, inplace=True)
 
     # take average between 2 buses' region multipliers
@@ -402,7 +421,9 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
     gen_costs.replace(const.gen_inv_cost_translation, inplace=True)
     gen_costs.drop(["Key", "FinancialCase", "CRPYears"], axis=1, inplace=True)
     # ATB technology costs merge
-    plants = plants.merge(gen_costs, right_on="Technology", left_on="type", how="left")
+    plants = merge_keep_index(
+        plants, gen_costs, right_on="Technology", left_on="type", how="left"
+    )
 
     # REGIONAL COST MULTIPLIER
 
@@ -417,7 +438,9 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
     except FileNotFoundError:
         bus_reg = bus_to_reeds_reg(grid_new.bus.loc[plant_buses])
         bus_reg.sort_index().to_csv(const.bus_reeds_regions_path)
-    plants = plants.merge(bus_reg, left_on="bus_id", right_index=True, how="left")
+    plants = merge_keep_index(
+        plants, bus_reg, left_on="bus_id", right_index=True, how="left"
+    )
 
     # Determine one region 'r' for each plant, based on one of two mappings
     plants.loc[:, "r"] = ""
@@ -432,8 +455,12 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
     # merge regional multipliers with plants
     region_multiplier = pd.read_csv(const.regional_multiplier_path)
     region_multiplier.replace(const.regional_multiplier_gen_translation, inplace=True)
-    plants = plants.merge(
-        region_multiplier, left_on=["r", "Technology"], right_on=["r", "i"], how="left"
+    plants = merge_keep_index(
+        plants,
+        region_multiplier,
+        left_on=["r", "Technology"],
+        right_on=["r", "i"],
+        how="left",
     )
 
     # multiply all together to get summed CAPEX ($)
