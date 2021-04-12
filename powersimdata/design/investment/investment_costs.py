@@ -24,6 +24,21 @@ def merge_keep_index(df1, df2, **kwargs):
     return df1.reset_index().merge(df2, **kwargs).set_index(df1.index.names)
 
 
+def append_keep_index_name(df1, other, *args, **kwargs):
+    """Execute a pandas DataFrame append, preserving the index name of the dataframe.
+
+    :param pandas.DataFrame df1: first data frame, to call pandas append from.
+    :param pandas.DataFrame/pandas.Series/list: first argument to pandas append method.
+    :param \\*args: arbitrary positional arguments passed to pandas append call.
+    :param \\*\\*kwargs: arbitrary keyword arguments passed to pandas append call.
+    :return: (*pandas.DataFrame*) -- df1 appended with other with index name preserved.
+    """
+    original_index_name = df1.index.name
+    new_df = df1.append(other, *args, **kwargs)
+    new_df.index.name = original_index_name
+    return new_df
+
+
 def calculate_ac_inv_costs(scenario, sum_results=True, exclude_branches=None):
     """Calculate cost of upgrading AC lines and/or transformers in a scenario.
     NEEM regions are used to find regional multipliers.
@@ -404,7 +419,7 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
     else:
         raise TypeError("cost_case must be str.")
 
-    plants = grid_new.plant.append(grid_new.storage["gen"])
+    plants = append_keep_index_name(grid_new.plant, grid_new.storage["gen"])
     plants = plants[
         ~plants.type.isin(["dfo", "other"])
     ]  # drop these technologies, no cost data
