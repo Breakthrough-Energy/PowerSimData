@@ -74,9 +74,10 @@ class CsvStore:
         :param pandas.DataFrame table: the data frame to save
         :param str checksum: the checksum prior to download
         """
-        _, tmp_path = mkstemp(dir=server_setup.LOCAL_DIR)
+        tmp_file, tmp_path = mkstemp(dir=server_setup.LOCAL_DIR)
         table.to_csv(tmp_path)
         shutil.copy(tmp_path, os.path.join(server_setup.LOCAL_DIR, self._FILE_NAME))
+        os.close(tmp_file)
         tmp_name = os.path.basename(tmp_path)
         self.data_access.push(tmp_name, checksum, change_name_to=self._FILE_NAME)
         if os.path.exists(tmp_path):  # only required if data_access is LocalDataAccess
