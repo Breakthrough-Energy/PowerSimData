@@ -93,19 +93,22 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         # find closest MW & corresponding cost
         return tmp.iloc[np.argmin(np.abs(tmp["MW"] - x.rateA))][["MW", "costMWmi"]]
 
-    def get_transformer_mult(x, bus_reg, ac_reg_mult, xfmr_lookup_alerted=set()):
+    def get_branch_mult(x, bus_reg, ac_reg_mult, branch_lookup_alerted=set()):
         """Determine the regional multiplier based on kV and power (closest).
 
-        :param pandas.Series x: data for a single transformer.
+        :param pandas.Series x: data for a single branch.
         :param pandas.DataFrame bus_reg: data frame with bus regions.
         :param pandas.DataFrame ac_reg_mult: data frame with regional multipliers.
-        :param set xfmr_lookup_alerted: set of (voltage, region) tuples for which
+        :param set branch_lookup_alerted: set of (voltage, region) tuples for which
             a message has already been printed that this lookup was not found.
         :return: (*float*) -- regional multiplier.
         """
+        # Select the highest voltage for transformers (branch end voltages should match)
         max_kV = bus.loc[[x.from_bus_id, x.to_bus_id], "baseKV"].max()  # noqa: N806
-        region = bus_reg.loc[x.from_bus_id, "name_abbr"]
-        region_mults = ac_reg_mult.loc[ac_reg_mult.name_abbr == region]
+        # Average the multipliers for branches (transformer regions should match)
+        regions = tuple(bus_reg.loc[[x.from_bus_id, x.to_bus_id], "name_abbr"])
+        region_mults = ac_reg_mult.loc[ac_reg_mult.name_abbr.isin(regions)]
+        region_mults = region_mults.groupby(["kV", "MW"]).mean().reset_index()
 
         mult_lookup_kV = region_mults.loc[  # noqa: N806
             (region_mults.kV - max_kV).abs().idxmin()
@@ -116,11 +119,10 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         ]
         if len(region_kV_mults) == 0:
             mult = 1
-            if (mult_lookup_kV, region) not in xfmr_lookup_alerted:
-                print(f"No multiplier for voltage {mult_lookup_kV} in {region}")
-                xfmr_lookup_alerted.add((mult_lookup_kV, region))
+            if (mult_lookup_kV, regions) not in branch_lookup_alerted:
+                print(f"No multiplier for voltage {mult_lookup_kV} in {regions}")
+                branch_lookup_alerted.add((mult_lookup_kV, regions))
         else:
-
             mult_lookup_MW = region_kV_mults.loc[  # noqa: N806
                 (region_kV_mults.MW - x.rateA).abs().idxmin(), "MW"
             ]
@@ -186,24 +188,9 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         id_vars=["kV", "MW"], var_name="name_abbr", value_name="mult"
     )
 
-    lines = merge_keep_index(
-        lines, bus_reg, left_on="to_bus_id", right_on="bus_id", how="inner"
+    lines["mult"] = lines.apply(
+        lambda x: get_branch_mult(x, bus_reg, ac_reg_mult), axis=1
     )
-    lines = merge_keep_index(
-        lines, ac_reg_mult, on=["name_abbr", "kV", "MW"], how="left"
-    )
-    lines.rename(columns={"name_abbr": "reg_to", "mult": "mult_to"}, inplace=True)
-
-    lines = merge_keep_index(
-        lines, bus_reg, left_on="from_bus_id", right_on="bus_id", how="inner"
-    )
-    lines = merge_keep_index(
-        lines, ac_reg_mult, on=["name_abbr", "kV", "MW"], how="left"
-    )
-    lines.rename(columns={"name_abbr": "reg_from", "mult": "mult_from"}, inplace=True)
-
-    # take average between 2 buses' region multipliers
-    lines.loc[:, "mult"] = (lines["mult_to"] + lines["mult_from"]) / 2.0
 
     # calculate MWmi
     lines.loc[:, "lengthMi"] = lines.apply(
@@ -223,7 +210,7 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         axis=1,
     )
     transformers["mult"] = transformers.apply(
-        lambda x: get_transformer_mult(x, bus_reg, ac_reg_mult), axis=1
+        lambda x: get_branch_mult(x, bus_reg, ac_reg_mult), axis=1
     )
 
     transformers["Cost"] = (
