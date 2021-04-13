@@ -98,6 +98,29 @@ def test_calculate_ac_inv_costs(mock_grid):
         assert ac_cost[k] == pytest.approx(expected_ac_cost[k])
 
 
+def test_calculate_ac_inv_costs_not_summed(mock_grid):
+    inflation_2010 = calculate_inflation(2010)
+    inflation_2020 = calculate_inflation(2020)
+    expected_ac_cost = {
+        # ((reg_mult1 + reg_mult2) / 2) * sum(basecost * rateA * miles)
+        "line_cost": {
+            10: 0,  # This branch would normally be dropped by calculate_ac_inv_costs
+            11: ((1 + 2.25) / 2) * 3666.67 * 10 * 679.179925842 * inflation_2010,
+            12: ((1 + 2.25) / 2) * 1500 * 1100 * 680.986501516 * inflation_2010,
+        },
+        # for each: rateA * basecost * regional multiplier
+        "transformer_cost": {
+            13: (30 * 7670 * 1) * inflation_2020,
+            14: (40 * 8880 * 2.25) * inflation_2020,
+        },
+    }
+    ac_cost = _calculate_ac_inv_costs(mock_grid, sum_results=False)
+    for branch_type, upgrade_costs in expected_ac_cost.items():
+        assert set(upgrade_costs.keys()) == set(ac_cost[branch_type].index)
+        for branch, cost in upgrade_costs.items():
+            assert cost == pytest.approx(ac_cost[branch_type].loc[branch, "Cost"])
+
+
 def test_calculate_dc_inv_costs(mock_grid):
     expected_dc_cost = (
         # lines
