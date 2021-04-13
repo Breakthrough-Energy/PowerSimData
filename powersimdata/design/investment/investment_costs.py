@@ -1,4 +1,5 @@
 import copy as cp
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -388,6 +389,17 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
         cost.rename(columns={"value": "CAPEX"}, inplace=True)
 
         # select scenario of interest
+        if cost_case != "Moderate":
+            # The 2020 ATB only has "Moderate" for nuclear, so we need to make due.
+            warnings.warn(
+                f"No cost data available for Nuclear for {cost_case} cost case, "
+                "using Moderate cost case data instead"
+            )
+            new_nuclear = cost.query(
+                "Technology == 'Nuclear' and CostCase == 'Moderate'"
+            ).copy()
+            new_nuclear.CostCase = cost_case
+            cost = cost.append(new_nuclear, ignore_index=True)
         cost = cost[cost["CostCase"] == cost_case]
         cost.drop(["CostCase"], axis=1, inplace=True)
 
