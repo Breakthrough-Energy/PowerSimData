@@ -39,7 +39,7 @@ mock_branch["to_lon"] = [
 ]
 
 mock_plant = {
-    "plant_id": ["A", "B", "C", "D", "E", "F", "G", "H"],
+    "plant_id": [3, 5, 6, 7, 8, 9, 10, 11],
     "bus_id": [2010228, 2010228, 2021106, 2010319, 2010319, 2010319, 2010320, 2021106],
     "type": ["solar", "coal", "wind", "solar", "solar", "ng", "wind", "nuclear"],
     "Pmax": [15, 30, 10, 12, 8, 20, 15, 1000],
@@ -63,6 +63,7 @@ mock_storage_gen = {
     "bus_id": [2010228, 2021106],
     "type": ["storage"] * 2,
 }
+mock_storage_data = {"UnitIdx": [12, 13]}
 
 grid_attrs = {
     "plant": mock_plant,
@@ -70,6 +71,7 @@ grid_attrs = {
     "branch": mock_branch,
     "dcline": mock_dcline,
     "storage_gen": mock_storage_gen,
+    "storage_StorageData": mock_storage_data,
 }
 
 
@@ -129,3 +131,29 @@ def test_calculate_gen_inv_costs_2030(mock_grid):
     assert gen_inv_cost.keys() == expected_gen_inv_cost.keys()
     for k in gen_inv_cost.keys():
         assert gen_inv_cost[k] == pytest.approx(expected_gen_inv_cost[k])
+
+
+def test_calculate_gen_inv_costs_not_summed(mock_grid):
+    gen_inv_cost = _calculate_gen_inv_costs(
+        mock_grid, 2025, "Advanced", sum_results=False
+    )
+    expected_gen_inv_cost = {
+        # for each: capacity (kW) * regional multiplier * base technology cost
+        3: 15e3 * 1.01701 * 1013.912846,
+        5: 30e3 * 1.05221 * 4099.115851,
+        6: 10e3 * 1.16979 * 1301.120135,
+        7: 12e3 * 1.01701 * 1013.912846,
+        8: 8e3 * 1.01701 * 1013.912846,
+        9: 20e3 * 1.050755 * 1008.001936,
+        10: 15e3 * 1.04348 * 1301.120135,
+        11: 1000e3 * 1.07252 * 6928.866991,
+        12: 100e3 * 1.012360 * 779,
+        13: 200e3 * 1.043730 * 779,
+    }
+    inflation = calculate_inflation(2018)
+    expected_gen_inv_cost = {k: v * inflation for k, v in expected_gen_inv_cost.items()}
+    assert set(gen_inv_cost.index) == set(expected_gen_inv_cost.keys())
+    for k in gen_inv_cost.index:
+        assert gen_inv_cost.loc[k, "CAPEX_total"] == pytest.approx(
+            expected_gen_inv_cost[k]
+        )
