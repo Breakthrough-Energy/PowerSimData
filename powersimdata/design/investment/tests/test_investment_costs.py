@@ -10,20 +10,21 @@ from powersimdata.tests.mock_grid import MockGrid
 
 # bus_id is the index
 mock_bus = {
-    "bus_id": [2010228, 2021106, 2010319, 2010320],
-    "lat": [47.6146, 37.7849, 47.6408, 47.6408],
-    "lon": [-122.326, -122.407, -122.339, -122.339],
-    "baseKV": [100, 346, 230, 800],
+    "bus_id": [2010228, 2021106, 2010319, 2010320, 29409, 30778],
+    "lat": [47.6146, 37.7849, 47.6408, 47.6408, 30.7252, 30.5581],
+    "lon": [-122.326, -122.407, -122.339, -122.339, -88.2648, -88.5396],
+    "baseKV": [100, 346, 230, 800, 345, 345],
 }
 
 # branch 10-12 from Seattle (s3, p1, NWPP Coal) to San Francisco (s25, p9, NP15) (~679 miles)
 # branch 13-14 are transformers (0 miles)
+# branch 15 is in Southern Company territory (testing for no multiplier in data)
 mock_branch = {
-    "branch_id": [10, 11, 12, 13, 14],
-    "rateA": [0, 10, 1100, 30, 40],
-    "from_bus_id": [2010228, 2010228, 2010319, 2010319, 2021106],
-    "to_bus_id": [2021106, 2021106, 2021106, 2010320, 2021106],
-    "branch_device_type": 3 * ["Line"] + 2 * ["Transformer"],
+    "branch_id": [10, 11, 12, 13, 14, 15],
+    "rateA": [0, 10, 1100, 30, 40, 50],
+    "from_bus_id": [2010228, 2010228, 2010319, 2010319, 2021106, 29409],
+    "to_bus_id": [2021106, 2021106, 2021106, 2010320, 2021106, 30778],
+    "branch_device_type": 3 * ["Line"] + 2 * ["Transformer"] + ["Line"],
 }
 mock_branch["from_lat"] = [
     mock_bus["lat"][mock_bus["bus_id"].index(bus)] for bus in mock_branch["from_bus_id"]
@@ -84,9 +85,14 @@ def test_calculate_ac_inv_costs(mock_grid):
     expected_ac_cost = {
         # ((reg_mult1 + reg_mult2) / 2) * sum(basecost * rateA * miles)
         "line_cost": (
-            ((1 + 2.25) / 2)
-            * (3666.67 * 10 * 679.179925842 + 1500 * 1100 * 680.986501516)
-            * calculate_inflation(2010)
+            calculate_inflation(2010)
+            * (
+                (
+                    ((1 + 2.25) / 2)
+                    * (3666.67 * 10 * 679.179925842 + 1500 * 1100 * 680.986501516)
+                )
+                + ((1 + 1) / 2) * 2333.33 * 50 * 20.003889808
+            )
         ),
         # for each: rateA * basecost * regional multiplier
         "transformer_cost": ((30 * 7670 * 1) + (40 * 8880 * 2.25))
@@ -107,6 +113,7 @@ def test_calculate_ac_inv_costs_not_summed(mock_grid):
             10: 0,  # This branch would normally be dropped by calculate_ac_inv_costs
             11: ((1 + 2.25) / 2) * 3666.67 * 10 * 679.179925842 * inflation_2010,
             12: ((1 + 2.25) / 2) * 1500 * 1100 * 680.986501516 * inflation_2010,
+            15: ((1 + 1) / 2) * 2333.33 * 50 * 20.003889808 * inflation_2010,
         },
         # for each: rateA * basecost * regional multiplier
         "transformer_cost": {
