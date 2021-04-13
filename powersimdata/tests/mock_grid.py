@@ -14,7 +14,7 @@ indices = {
 }
 
 gencost_names = {"gencost_before": "before", "gencost_after": "after"}
-storage_names = {"storage_gen": "gen"}
+storage_names = {"storage_gen": "gen", "storage_StorageData": "StorageData"}
 acceptable_keys = (
     set(indices.keys()) | set(gencost_names.keys()) | set(storage_names.keys())
 )
@@ -151,6 +151,22 @@ plant_columns = [
 storage_columns = {
     # The first 21 columns of plant are all that's necessary
     "gen": plant_columns[:21],
+    "StorageData": [
+        "UnitIdx",
+        "InitialStorage",
+        "InitialStorageLowerBound",
+        "InitialStorageUpperBound",
+        "InitialStorageCost",
+        "TerminalStoragePrice",
+        "MinStorageLevel",
+        "MaxStorageLevel",
+        "OutEff",
+        "InEff",
+        "LossFactor",
+        "rho",
+        "ExpectedTerminalStorageMax",
+        "ExpectedTerminalStorageMin",
+    ],
 }
 
 
