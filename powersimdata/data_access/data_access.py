@@ -291,9 +291,10 @@ class SSHDataAccess(DataAccess):
         with self.ssh.open_sftp() as sftp:
             print(f"Transferring {file_name} from server")
             cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
-            _, tmp_path = mkstemp()
+            tmp_file, tmp_path = mkstemp()
             sftp.get(from_path, tmp_path, callback=cbk)
             bar.close()
+            os.close(tmp_file)
         # wait for file handle to be available
         shutil.move(tmp_path, to_path)
 
