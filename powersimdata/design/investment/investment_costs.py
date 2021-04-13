@@ -86,13 +86,20 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         :return: (*pandas.Series*) -- series of [*'MW'*, *'costMWmi'*] to be assigned
             to branch.
         """
-
+        underground_regions = ("NEISO", "NYISO J-K")
+        filtered_cost_df = cost_df.copy()
+        # Unless we are entirely within an underground region, drop this cost class
+        if not (x.from_region == x.to_region and x.from_region in underground_regions):
+            filtered_cost_df = filtered_cost_df.query("kV != 345 or MW != 500")
         # select corresponding cost table of selected kV
-        tmp = cost_df[cost_df["kV"] == x.kV]
+        filtered_cost_df = filtered_cost_df[filtered_cost_df["kV"] == x.kV]
         # get rid of NaN values in this kV table
-        tmp = tmp[~tmp["MW"].isna()]
+        filtered_cost_df = filtered_cost_df[~filtered_cost_df["MW"].isna()]
         # find closest MW & corresponding cost
-        return tmp.iloc[np.argmin(np.abs(tmp["MW"] - x.rateA))][["MW", "costMWmi"]]
+        filtered_cost_df = filtered_cost_df.iloc[
+            np.argmin(np.abs(filtered_cost_df["MW"] - x.rateA))
+        ]
+        return filtered_cost_df.loc[["MW", "costMWmi"]]
 
     def get_branch_mult(x, bus_reg, ac_reg_mult, branch_lookup_alerted=set()):
         """Determine the regional multiplier based on kV and power (closest).
@@ -107,7 +114,7 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         # Select the highest voltage for transformers (branch end voltages should match)
         max_kV = bus.loc[[x.from_bus_id, x.to_bus_id], "baseKV"].max()  # noqa: N806
         # Average the multipliers for branches (transformer regions should match)
-        regions = tuple(bus_reg.loc[[x.from_bus_id, x.to_bus_id], "name_abbr"])
+        regions = (x.from_region, x.to_region)
         region_mults = ac_reg_mult.loc[ac_reg_mult.name_abbr.isin(regions)]
         region_mults = region_mults.groupby(["kV", "MW"]).mean().reset_index()
 
@@ -145,27 +152,10 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     # Mirror across diagonal
     xfmr_cost += xfmr_cost.to_numpy().T - np.diag(np.diag(xfmr_cost.to_numpy()))
 
-    # map line kV
-    bus = grid_new.bus
-    branch = grid_new.branch
-    branch.loc[:, "kV"] = branch.apply(
-        lambda x: bus.loc[x.from_bus_id, "baseKV"], axis=1
-    )
-
-    # separate transformers and lines
-    t_mask = branch["branch_device_type"].isin(["Transformer", "TransformerWinding"])
-    transformers = branch[t_mask].copy()
-    lines = branch[~t_mask].copy()
-    # Find closest kV rating
-    lines.loc[:, "kV"] = lines.apply(
-        lambda x: ac_cost.loc[(ac_cost["kV"] - x.kV).abs().idxmin(), "kV"],
-        axis=1,
-    )
-    lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
-
     # check that all buses included in this file and lat/long values match,
     # otherwise re-run mapping script on mis-matching buses. These buses are missing
     # in region file
+    bus = grid_new.bus
     bus_fix_index = bus[~bus.index.isin(bus_reg.index)].index
     bus_mask = bus[~bus.index.isin(bus_fix_index)]
     bus_mask = merge_keep_index(bus_mask, bus_reg, how="left", on="bus_id")
@@ -183,6 +173,22 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         bus_reg.loc[bus_reg.index.isin(bus_fix.index), fix_cols] = bus_fix[fix_cols]
 
     bus_reg.drop(["lat", "lon"], axis=1, inplace=True)
+
+    # Add extra information to branch data frame
+    branch = grid_new.branch
+    branch.loc[:, "kV"] = bus.loc[branch.from_bus_id, "baseKV"].tolist()
+    branch.loc[:, "from_region"] = bus_reg.loc[branch.from_bus_id, "name_abbr"].tolist()
+    branch.loc[:, "to_region"] = bus_reg.loc[branch.to_bus_id, "name_abbr"].tolist()
+    # separate transformers and lines
+    t_mask = branch["branch_device_type"].isin(["Transformer", "TransformerWinding"])
+    transformers = branch[t_mask].copy()
+    lines = branch[~t_mask].copy()
+    # Find closest kV rating
+    lines.loc[:, "kV"] = lines.apply(
+        lambda x: ac_cost.loc[(ac_cost["kV"] - x.kV).abs().idxmin(), "kV"],
+        axis=1,
+    )
+    lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
 
     # map region multipliers onto lines
     ac_reg_mult = ac_reg_mult.melt(
