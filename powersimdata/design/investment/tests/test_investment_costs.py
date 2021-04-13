@@ -53,10 +53,10 @@ mock_plant["lon"] = [
 ]
 
 mock_dcline = {
-    "dcline_id": [5],
-    "Pmax": [10],
-    "from_bus_id": [2010228],
-    "to_bus_id": [2021106],
+    "dcline_id": [5, 14],
+    "Pmax": [10, 200],
+    "from_bus_id": [2010228, 29409],
+    "to_bus_id": [2021106, 30778],
 }
 
 mock_storage_gen = {
@@ -131,12 +131,30 @@ def test_calculate_ac_inv_costs_not_summed(mock_grid):
 def test_calculate_dc_inv_costs(mock_grid):
     expected_dc_cost = (
         # lines
-        10 * 679.1799258421203 * 457.1428571 * calculate_inflation(2015)
+        calculate_inflation(2015)
+        * 457.1428571
+        * (10 * 679.1799258421203 + 200 * 20.003889808)
         # terminals
-        + 135e3 * 10 * 2 * calculate_inflation(2020)
+        + 135e3 * (10 + 200) * 2 * calculate_inflation(2020)
     )
     dc_cost = _calculate_dc_inv_costs(mock_grid)
     assert dc_cost == pytest.approx(expected_dc_cost)
+
+
+def test_calculate_dc_inv_costs_not_summed(mock_grid):
+    expected_dc_cost = {
+        5: (
+            457.1428571 * 10 * 679.1799258421203 * calculate_inflation(2015)
+            + 135e3 * 10 * 2 * calculate_inflation(2020)
+        ),
+        14: (
+            457.1428571 * 200 * 20.003889808 * calculate_inflation(2015)
+            + 135e3 * 200 * 2 * calculate_inflation(2020)
+        ),
+    }
+    dc_cost = _calculate_dc_inv_costs(mock_grid, sum_results=False)
+    for dcline_id, expected_cost in expected_dc_cost.items():
+        assert expected_cost == pytest.approx(dc_cost.loc[dcline_id])
 
 
 def test_calculate_gen_inv_costs_2030(mock_grid):
