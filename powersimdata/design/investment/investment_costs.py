@@ -406,7 +406,10 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
     else:
         raise TypeError("cost_case must be str.")
 
-    plants = append_keep_index_name(grid_new.plant, grid_new.storage["gen"])
+    storage_plants = grid_new.storage["gen"].set_index(
+        grid_new.storage["StorageData"].UnitIdx.astype(int)
+    )
+    plants = append_keep_index_name(grid_new.plant, storage_plants)
     plants = plants[
         ~plants.type.isin(["dfo", "other"])
     ]  # drop these technologies, no cost data
