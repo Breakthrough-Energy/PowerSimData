@@ -546,7 +546,7 @@ class ChangeTable(object):
             "Pmin" denotes a limit on power flowing from 'from' end to 'to' end.
             Either "capacity" XOR ("Pmax" and "Pmin") must be provided.
             `capacity: 200` is equivalent to `Pmax: 200, Pmin: -200`.
-        :raises TypeError: if info is not a list.
+        :raises TypeError: if ``info`` is not a list.
         """
         if not isinstance(info, list):
             raise TypeError("Argument enclosing new HVDC line(s) must be a list")
