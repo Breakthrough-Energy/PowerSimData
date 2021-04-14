@@ -734,7 +734,7 @@ class ChangeTable(object):
             the information needed to create a new bus.
             Required keys: "lat", "lon", ["zone_id" XOR "zone_name"].
             Optional key: "Pd", "baseKV".
-        :raises TypeError: if info is not a list.
+        :raises TypeError: if ``info`` is not a list.
         :raises ValueError: if any new bus doesn't have appropriate keys/values.
         """
         if not isinstance(info, list):
