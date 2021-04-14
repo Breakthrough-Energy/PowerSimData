@@ -486,7 +486,7 @@ class ChangeTable(object):
             e.g. 0.5 means that the storage must end the interval with at least 50%.
             "terminal_max" denotes the maximum state of charge at interval end,
             e.g. 0.9 means that the storage must end the interval with no more than 90%.
-        :raises TypeError: if info is not a list.
+        :raises TypeError: if ``info`` is not a list.
         :raises ValueError: if any of the new storages to be added have bad values.
         """
         if not isinstance(info, list):
