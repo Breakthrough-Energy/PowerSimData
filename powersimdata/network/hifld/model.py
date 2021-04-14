@@ -1,15 +1,10 @@
 import os
 
 from powersimdata.input.abstract_grid import AbstractGrid
-from powersimdata.network.usa_tamu.constants.storage import defaults
+from powersimdata.network.hifld.constants.storage import defaults
 
 
-class TAMU(AbstractGrid):
-    """TAMU network.
-
-    :param str/list interconnect: interconnect name(s).
-    """
-
+class HIFLD(AbstractGrid):
     def __init__(self, interconnect):
         """Constructor."""
         self.top_dirname = os.path.dirname(__file__)
@@ -35,21 +30,21 @@ def check_and_format_interconnect(interconnect):
     except:  # noqa
         raise TypeError("interconnect must be either str or an iterable of str")
 
-    possible = ["Eastern", "Texas", "Western", "USA"]
+    possible = ["Eastern", "Western", "ERCOT", "USA"]
     if any(i for i in interconnect if i not in possible):
         raise ValueError("Wrong interconnect. Choose from %s" % " | ".join(possible))
     n = len(interconnect)
     if "USA" in interconnect and n > 1:
-        raise ValueError("USA cannot be paired")
+        raise ValueError("'USA' cannot be paired")
     if n == 3:
-        raise ValueError("Use USA instead")
+        raise ValueError("Use 'USA' instead")
 
     return interconnect
 
 
 def interconnect_to_name(interconnect):
-    """Return name of interconnect or collection of interconnects..
+    """Return name of interconnect or collection of interconnects.
 
-    :param list interconnect: interconnect name(s).
+    :param iterable interconnect: interconnect name(s).
     """
     return "_".join(sorted(check_and_format_interconnect(interconnect)))
