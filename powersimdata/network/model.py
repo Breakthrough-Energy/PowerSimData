@@ -29,7 +29,7 @@ class ModelImmutables:
         :param str model: grid model name
         :raises ValueError: if grid model does not exist.
         """
-        possible = {"usa_tamu"}
+        possible = {"usa_tamu", "hifld"}
         if model not in possible:
             raise ValueError("model must be one of %s" % " | ".join(possible))
 
