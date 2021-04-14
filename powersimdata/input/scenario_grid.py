@@ -21,21 +21,19 @@ class ScenarioGrid(AbstractGrid):
 
         :param str filename: path to file.
         """
+        self.filename = filename
         super().__init__()
-        self._set_data_loc(filename)
 
-        self._build_network()
-
-    def _set_data_loc(self, filename):
+    def _set_data_loc(self):
         """Sets data location.
 
         :param str filename: path to file
         :raises FileNotFoundError: if file does not exist.
         """
-        if os.path.isfile(filename) is False:
-            raise FileNotFoundError("%s file not found" % filename)
+        if os.path.isfile(self.filename) is False:
+            raise FileNotFoundError("%s file not found" % self.filename)
         else:
-            self.data_loc = filename
+            self.data_loc = self.filename
 
     def _read_network(self):
         data = loadmat(self.data_loc, squeeze_me=True, struct_as_record=False)
