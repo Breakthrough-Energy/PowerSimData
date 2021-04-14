@@ -42,6 +42,27 @@ class HIFLD(AbstractGrid):
         if "USA" not in self.interconnect:
             self._drop_interconnect()
 
+    def _drop_interconnect(self):
+        """Trim data frames to only keep information pertaining to the user
+        defined interconnect(s).
+
+        """
+        for key, value in self.__dict__.items():
+            if key in ["sub", "bus2sub", "bus", "plant", "branch"]:
+                value.query("interconnect == @self.interconnect", inplace=True)
+            elif key == "gencost":
+                value["before"].query(
+                    "interconnect == @self.interconnect", inplace=True
+                )
+            elif key == "dcline":
+                value.query(
+                    "from_interconnect == @self.interconnect &"
+                    "to_interconnect == @self.interconnect",
+                    inplace=True,
+                )
+        self.id2zone = {k: self.id2zone[k] for k in self.bus.zone_id.unique()}
+        self.zone2id = {value: key for key, value in self.id2zone.items()}
+
 
 def check_and_format_interconnect(interconnect):
     # Placeholder for now
