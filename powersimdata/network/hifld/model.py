@@ -1,6 +1,11 @@
 import os
 
 from powersimdata.input.abstract_grid import AbstractGrid
+from powersimdata.input.helpers import (
+    add_coord_to_grid_data_frames,
+    add_zone_to_grid_data_frames,
+    csv_to_data_frame,
+)
 from powersimdata.network.csv_reader import CSVReader
 from powersimdata.network.usa_tamu.constants.storage import defaults
 
@@ -72,3 +77,17 @@ def check_and_format_interconnect(interconnect):
 def interconnect_to_name(interconnect):
     # Placeholder for now
     return interconnect
+
+
+def add_information_to_model(model):
+    """Adds information to TAMU model. This is done inplace.
+
+    :param powersimdata.input.TAMU model: TAMU instance.
+    """
+    model.sub = csv_to_data_frame(model.data_loc, "sub.csv")
+    model.bus2sub = csv_to_data_frame(model.data_loc, "bus2sub.csv")
+    model.id2zone = csv_to_data_frame(model.data_loc, "zone.csv").zone_name.to_dict()
+    model.zone2id = {v: k for k, v in model.id2zone.items()}
+
+    add_zone_to_grid_data_frames(model)
+    add_coord_to_grid_data_frames(model)
