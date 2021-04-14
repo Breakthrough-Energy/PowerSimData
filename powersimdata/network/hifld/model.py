@@ -1,6 +1,8 @@
 import os
 
 from powersimdata.input.abstract_grid import AbstractGrid
+from powersimdata.network.csv_reader import CSVReader
+from powersimdata.network.usa_tamu.constants.storage import defaults
 
 
 class HIFLD(AbstractGrid):
@@ -23,6 +25,22 @@ class HIFLD(AbstractGrid):
             raise IOError("%s directory not found" % data_loc)
         else:
             self.data_loc = data_loc
+
+    def _build_network(self):
+        """Build network."""
+        reader = CSVReader(self.data_loc)
+        self.bus = reader.bus
+        self.plant = reader.plant
+        self.branch = reader.branch
+        self.dcline = reader.dcline
+        self.gencost["after"] = self.gencost["before"] = reader.gencost
+
+        self.storage.update(defaults)
+
+        add_information_to_model(self)
+
+        if "USA" not in self.interconnect:
+            self._drop_interconnect()
 
 
 def check_and_format_interconnect(interconnect):
