@@ -3,6 +3,7 @@ import os
 from powersimdata.data_access.context import Context
 from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
+from powersimdata.network.hifld.model import HIFLD
 from powersimdata.network.model import ModelImmutables
 from powersimdata.network.usa_tamu.constants import storage as tamu_storage
 from powersimdata.network.usa_tamu.model import TAMU
@@ -44,6 +45,8 @@ class Grid(object):
             data = cached
         elif source == "usa_tamu":
             data = TAMU(interconnect)
+        elif source == "hifld":
+            data = HIFLD(interconnect)
         elif os.path.splitext(source)[1] == ".mat":
             if engine == "REISE":
                 data = FromREISE(source)
