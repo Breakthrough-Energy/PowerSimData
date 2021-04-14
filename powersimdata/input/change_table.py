@@ -536,6 +536,13 @@ class ChangeTable(object):
 
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new dcline.
+            Required keys: "from_bus_id", "to_bus_id".
+            Optional keys: "capacity", "Pmax", "Pmin".
+            "capacity" denotes a bidirectional power limit (MW).
+            "Pmax" denotes a limit on power flowing from 'to' end to 'from' end.
+            "Pmin" denotes a limit on power flowing from 'to' end to 'from' end.
+            Either "capacity" XOR ("Pmax" and "Pmin") must be provided.
+            `capacity: 200` is equivalent to `Pmax: 200, Pmin: -200`.
         :raises TypeError: if info is not a list.
         """
         if not isinstance(info, list):
