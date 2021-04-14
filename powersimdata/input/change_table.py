@@ -91,8 +91,11 @@ class ChangeTable(object):
         the and the scaling factor for the increase/decrease in capacity
         of the line as value.
     * *'storage'*:
-        value is a dictionary. The latter has *'bus_id'* as keys and the
-        capacity of storage (in MW) to add as value.
+        value is a list. Each entry in this list is a dictionary enclosing all the
+        information needed to add a new storage device to the grid. The keys in the
+        dictionary are: *'bus_id'*, *'capacity'*, "duration", "min_stor", "max_stor",
+        "energy_value", "InEff", "OutEff", "LossFactor", "terminal_min",
+        and "terminal_max". See the `add_storage_capacity` method for more details.
     * *'new_dcline'*:
         value is a list. Each entry in this list is a dictionary enclosing
         all the information needed to add a new dcline to the grid. The
