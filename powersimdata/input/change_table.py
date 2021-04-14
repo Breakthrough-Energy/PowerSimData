@@ -542,8 +542,8 @@ class ChangeTable(object):
             Required keys: "from_bus_id", "to_bus_id".
             Optional keys: "capacity", "Pmax", "Pmin".
             "capacity" denotes a bidirectional power limit (MW).
-            "Pmax" denotes a limit on power flowing from 'to' end to 'from' end.
-            "Pmin" denotes a limit on power flowing from 'to' end to 'from' end.
+            "Pmax" denotes a limit on power flowing from 'from' end to 'to' end.
+            "Pmin" denotes a limit on power flowing from 'from' end to 'to' end.
             Either "capacity" XOR ("Pmax" and "Pmin") must be provided.
             `capacity: 200` is equivalent to `Pmax: 200, Pmin: -200`.
         :raises TypeError: if info is not a list.
