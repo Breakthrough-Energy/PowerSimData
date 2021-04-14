@@ -52,6 +52,8 @@ class Grid(object):
                 data = FromREISE(source)
             elif engine == "REISE.jl":
                 data = FromREISEjl(source)
+        else:
+            raise ValueError(f"Unknown source: {source}")
 
         self.data_loc = data.data_loc
         self.interconnect = data.interconnect
