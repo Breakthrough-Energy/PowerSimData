@@ -676,7 +676,8 @@ class ChangeTable(object):
             Required keys: "bus_id", "Pmax", "type".
             Optional keys: "c0", "c1", "c2", "Pmin".
             "c0", "c1", and "c2" are the coefficients for the cost curve, representing
-            the fixed cost ($/hour), linear cost ($/MWh), and quadratic cost ($/MW^2*h).
+            the fixed cost ($/hour), linear cost ($/MWh),
+            and quadratic cost ($/:math:`\rm{MW}^2 \rm{h}`).
             These are optional for hydro, solar, and wind, and required for other types.
         :raises TypeError: if info is not a list.
         :raises ValueError: if any of the new plants to be added have bad values.
