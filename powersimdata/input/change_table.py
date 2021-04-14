@@ -91,8 +91,11 @@ class ChangeTable(object):
         the and the scaling factor for the increase/decrease in capacity
         of the line as value.
     * *'storage'*:
-        value is a dictionary. The latter has *'bus_id'* as keys and the
-        capacity of storage (in MW) to add as value.
+        value is a list. Each entry in this list is a dictionary enclosing all the
+        information needed to add a new storage device to the grid. The keys in the
+        dictionary are: *'bus_id'*, *'capacity'*, "duration", "min_stor", "max_stor",
+        "energy_value", "InEff", "OutEff", "LossFactor", "terminal_min",
+        and "terminal_max". See the :meth:`add_storage_capacity` method for details.
     * *'new_dcline'*:
         value is a list. Each entry in this list is a dictionary enclosing
         all the information needed to add a new dcline to the grid. The
@@ -467,7 +470,23 @@ class ChangeTable(object):
 
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new storage device.
-        :raises TypeError: if info is not a list.
+            Required keys: "bus_id", "capacity".
+            "capacity" denotes the symmetric input and output power limits (MW).
+            Optional keys: "duration", "min_stor", "max_stor", "energy_value", "InEff",
+                "OutEff", "LossFactor", "terminal_min", "terminal_max".
+            "duration" denotes the energy to power ratio (hours).
+            "min_stor" denotes the minimum energy limit (unitless), e.g. 0.05 = 5%.
+            "max_stor" denotes the maximum energy limit (unitless), e.g. 0.95 = 95%.
+            "energy_value" denotes the value of stored energy at interval end ($/MWh).
+            "InEff" denotes the input efficiency (unitless), e.g. 0.95 = 95%.
+            "OutEff" denotes the output efficiency (unitless), e.g. 0.95 = 95%.
+            "LossFactor" denotes the per-hour relative losses,
+            e.g. 0.01 means that 1% of the current state of charge is lost per hour).
+            "terminal_min" denotes the minimum state of charge at interval end,
+            e.g. 0.5 means that the storage must end the interval with at least 50%.
+            "terminal_max" denotes the maximum state of charge at interval end,
+            e.g. 0.9 means that the storage must end the interval with no more than 90%.
+        :raises TypeError: if ``info`` is not a list.
         :raises ValueError: if any of the new storages to be added have bad values.
         """
         if not isinstance(info, list):
@@ -520,7 +539,14 @@ class ChangeTable(object):
 
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new dcline.
-        :raises TypeError: if info is not a list.
+            Required keys: "from_bus_id", "to_bus_id".
+            Optional keys: "capacity", "Pmax", "Pmin".
+            "capacity" denotes a bidirectional power limit (MW).
+            "Pmax" denotes a limit on power flowing from 'from' end to 'to' end.
+            "Pmin" denotes a limit on power flowing from 'from' end to 'to' end.
+            Either "capacity" XOR ("Pmax" and "Pmin") must be provided.
+            `capacity: 200` is equivalent to `Pmax: 200, Pmin: -200`.
+        :raises TypeError: if ``info`` is not a list.
         """
         if not isinstance(info, list):
             raise TypeError("Argument enclosing new HVDC line(s) must be a list")
@@ -531,7 +557,8 @@ class ChangeTable(object):
 
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new branch.
-        :raises TypeError: if info is not a list.
+            Required keys: "from_bus_id", "to_bus_id", "capacity".
+        :raises TypeError: if ``info`` is not a list.
         """
         if not isinstance(info, list):
             raise TypeError("Argument enclosing new AC line(s) must be a list")
@@ -646,7 +673,13 @@ class ChangeTable(object):
 
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new generator.
-        :raises TypeError: if info is not a list.
+            Required keys: "bus_id", "Pmax", "type".
+            Optional keys: "c0", "c1", "c2", "Pmin".
+            "c0", "c1", and "c2" are the coefficients for the cost curve, representing
+            the fixed cost ($/hour), linear cost ($/MWh),
+            and quadratic cost ($/:math:`\rm{MW}^2 \rm{h}`).
+            These are optional for hydro, solar, and wind, and required for other types.
+        :raises TypeError: if ``info`` is not a list.
         :raises ValueError: if any of the new plants to be added have bad values.
         """
         if not isinstance(info, list):
@@ -701,7 +734,7 @@ class ChangeTable(object):
             the information needed to create a new bus.
             Required keys: "lat", "lon", ["zone_id" XOR "zone_name"].
             Optional key: "Pd", "baseKV".
-        :raises TypeError: if info is not a list.
+        :raises TypeError: if ``info`` is not a list.
         :raises ValueError: if any new bus doesn't have appropriate keys/values.
         """
         if not isinstance(info, list):
