@@ -1,4 +1,7 @@
-class HIFLD:
+from powersimdata.input.abstract_grid import AbstractGrid
+
+
+class HIFLD(AbstractGrid):
     def __init__(self, interconnect):
         # Placeholder for now
         pass
