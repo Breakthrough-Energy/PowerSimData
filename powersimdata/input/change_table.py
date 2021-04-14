@@ -554,6 +554,7 @@ class ChangeTable(object):
 
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new branch.
+            Required keys: "from_bus_id", "to_bus_id", "capacity".
         :raises TypeError: if info is not a list.
         """
         if not isinstance(info, list):
