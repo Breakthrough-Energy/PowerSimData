@@ -95,7 +95,7 @@ class ChangeTable(object):
         information needed to add a new storage device to the grid. The keys in the
         dictionary are: *'bus_id'*, *'capacity'*, "duration", "min_stor", "max_stor",
         "energy_value", "InEff", "OutEff", "LossFactor", "terminal_min",
-        and "terminal_max". See the `add_storage_capacity` method for more details.
+        and "terminal_max". See the :meth:`add_storage_capacity` method for details.
     * *'new_dcline'*:
         value is a list. Each entry in this list is a dictionary enclosing
         all the information needed to add a new dcline to the grid. The
