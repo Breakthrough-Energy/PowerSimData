@@ -679,7 +679,7 @@ class ChangeTable(object):
             the fixed cost ($/hour), linear cost ($/MWh),
             and quadratic cost ($/:math:`\rm{MW}^2 \rm{h}`).
             These are optional for hydro, solar, and wind, and required for other types.
-        :raises TypeError: if info is not a list.
+        :raises TypeError: if ``info`` is not a list.
         :raises ValueError: if any of the new plants to be added have bad values.
         """
         if not isinstance(info, list):
