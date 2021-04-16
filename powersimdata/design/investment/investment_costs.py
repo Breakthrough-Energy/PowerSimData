@@ -142,6 +142,9 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     # import data
     ac_cost = pd.DataFrame(const.ac_line_cost)
     ac_reg_mult = pd.read_csv(const.ac_reg_mult_path)
+    ac_reg_mult = ac_reg_mult.melt(
+        id_vars=["kV", "MW"], var_name="name_abbr", value_name="mult"
+    )
     try:
         bus_reg = pd.read_csv(const.bus_neem_regions_path, index_col="bus_id")
     except FileNotFoundError:
@@ -183,26 +186,25 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     t_mask = branch["branch_device_type"].isin(["Transformer", "TransformerWinding"])
     transformers = branch[t_mask].copy()
     lines = branch[~t_mask].copy()
-    # Find closest kV rating
-    lines.loc[:, "kV"] = lines.apply(
-        lambda x: ac_cost.loc[(ac_cost["kV"] - x.kV).abs().idxmin(), "kV"],
-        axis=1,
-    )
-    lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
+    if len(lines) > 0:
+        # Find closest kV rating
+        lines.loc[:, "kV"] = lines.apply(
+            lambda x: ac_cost.loc[(ac_cost["kV"] - x.kV).abs().idxmin(), "kV"],
+            axis=1,
+        )
+        lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
 
-    # map region multipliers onto lines
-    ac_reg_mult = ac_reg_mult.melt(
-        id_vars=["kV", "MW"], var_name="name_abbr", value_name="mult"
-    )
+        lines["mult"] = lines.apply(
+            lambda x: get_branch_mult(x, bus_reg, ac_reg_mult), axis=1
+        )
 
-    lines["mult"] = lines.apply(
-        lambda x: get_branch_mult(x, bus_reg, ac_reg_mult), axis=1
-    )
-
-    # calculate MWmi
-    lines.loc[:, "lengthMi"] = lines.apply(
-        lambda x: haversine((x.from_lat, x.from_lon), (x.to_lat, x.to_lon)), axis=1
-    )
+        # calculate MWmi
+        lines.loc[:, "lengthMi"] = lines.apply(
+            lambda x: haversine((x.from_lat, x.from_lon), (x.to_lat, x.to_lon)), axis=1
+        )
+    else:
+        new_columns = ["kV", "MW", "costMWmi", "mult", "lengthMi"]
+        lines = lines.reindex(columns=[*lines.columns.tolist(), *new_columns])
     lines.loc[:, "MWmi"] = lines["lengthMi"] * lines["rateA"]
 
     # calculate cost of each line
