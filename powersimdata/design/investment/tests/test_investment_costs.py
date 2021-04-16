@@ -1,3 +1,5 @@
+import copy
+
 import pytest
 
 from powersimdata.design.investment.inflation import calculate_inflation
@@ -99,6 +101,30 @@ def test_calculate_ac_inv_costs(mock_grid):
         * calculate_inflation(2020),
     }
     ac_cost = _calculate_ac_inv_costs(mock_grid)
+    assert ac_cost.keys() == expected_ac_cost.keys()
+    for k in ac_cost.keys():
+        assert ac_cost[k] == pytest.approx(expected_ac_cost[k])
+
+
+def test_calculate_ac_inv_costs_lines_only(mock_grid):
+    expected_ac_cost = {
+        # ((reg_mult1 + reg_mult2) / 2) * sum(basecost * rateA * miles)
+        "line_cost": (
+            calculate_inflation(2010)
+            * (
+                (
+                    ((1 + 2.25) / 2)
+                    * (3666.67 * 10 * 679.179925842 + 1500 * 1100 * 680.986501516)
+                )
+                + ((1 + 1) / 2) * 2333.33 * 50 * 20.003889808
+            )
+        ),
+        # for each: rateA * basecost * regional multiplier
+        "transformer_cost": 0,
+    }
+    this_grid = copy.deepcopy(mock_grid)
+    this_grid.branch = this_grid.branch.query("branch_device_type == 'Line'")
+    ac_cost = _calculate_ac_inv_costs(this_grid)
     assert ac_cost.keys() == expected_ac_cost.keys()
     for k in ac_cost.keys():
         assert ac_cost[k] == pytest.approx(expected_ac_cost[k])
