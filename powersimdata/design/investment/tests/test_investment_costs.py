@@ -130,6 +130,22 @@ def test_calculate_ac_inv_costs_lines_only(mock_grid):
         assert ac_cost[k] == pytest.approx(expected_ac_cost[k])
 
 
+def test_calculate_ac_inv_costs_transformers_only(mock_grid):
+    expected_ac_cost = {
+        # ((reg_mult1 + reg_mult2) / 2) * sum(basecost * rateA * miles)
+        "line_cost": 0,
+        # for each: rateA * basecost * regional multiplier
+        "transformer_cost": ((30 * 7670 * 1) + (40 * 8880 * 2.25))
+        * calculate_inflation(2020),
+    }
+    this_grid = copy.deepcopy(mock_grid)
+    this_grid.branch = this_grid.branch.query("branch_device_type == 'Transformer'")
+    ac_cost = _calculate_ac_inv_costs(this_grid)
+    assert ac_cost.keys() == expected_ac_cost.keys()
+    for k in ac_cost.keys():
+        assert ac_cost[k] == pytest.approx(expected_ac_cost[k])
+
+
 def test_calculate_ac_inv_costs_not_summed(mock_grid):
     inflation_2010 = calculate_inflation(2010)
     inflation_2020 = calculate_inflation(2020)
