@@ -1,4 +1,5 @@
 import copy as cp
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -11,6 +12,32 @@ from powersimdata.design.investment.create_mapping_files import (
 from powersimdata.design.investment.inflation import calculate_inflation
 from powersimdata.input.grid import Grid
 from powersimdata.utility.distance import haversine
+
+
+def merge_keep_index(df1, df2, **kwargs):
+    """Execute a pandas DataFrame merge, preserving the index of the first dataframe.
+
+    :param pandas.DataFrame df1: first data frame, to call pandas merge from.
+    :param pandas.DataFrame df2: second data frame, argument to pandas merge.
+    :param \\*\\*kwargs: arbitrary keyword arguments passed to pandas merge call.
+    :return: (*pandas.DataFrame*) -- df1 merged with df2 with indices preserved.
+    """
+    return df1.reset_index().merge(df2, **kwargs).set_index(df1.index.names)
+
+
+def append_keep_index_name(df1, other, *args, **kwargs):
+    """Execute a pandas DataFrame append, preserving the index name of the dataframe.
+
+    :param pandas.DataFrame df1: first data frame, to call pandas append from.
+    :param pandas.DataFrame/pandas.Series/list: first argument to pandas append method.
+    :param \\*args: arbitrary positional arguments passed to pandas append call.
+    :param \\*\\*kwargs: arbitrary keyword arguments passed to pandas append call.
+    :return: (*pandas.DataFrame*) -- df1 appended with other with index name preserved.
+    """
+    original_index_name = df1.index.name
+    new_df = df1.append(other, *args, **kwargs)
+    new_df.index.name = original_index_name
+    return new_df
 
 
 def calculate_ac_inv_costs(scenario, sum_results=True, exclude_branches=None):
@@ -59,27 +86,37 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         :return: (*pandas.Series*) -- series of [*'MW'*, *'costMWmi'*] to be assigned
             to branch.
         """
-
+        underground_regions = ("NEISO", "NYISO J-K")
+        filtered_cost_df = cost_df.copy()
+        # Unless we are entirely within an underground region, drop this cost class
+        if not (x.from_region == x.to_region and x.from_region in underground_regions):
+            filtered_cost_df = filtered_cost_df.query("kV != 345 or MW != 500")
         # select corresponding cost table of selected kV
-        tmp = cost_df[cost_df["kV"] == x.kV]
+        filtered_cost_df = filtered_cost_df[filtered_cost_df["kV"] == x.kV]
         # get rid of NaN values in this kV table
-        tmp = tmp[~tmp["MW"].isna()]
+        filtered_cost_df = filtered_cost_df[~filtered_cost_df["MW"].isna()]
         # find closest MW & corresponding cost
-        return tmp.iloc[np.argmin(np.abs(tmp["MW"] - x.rateA))][["MW", "costMWmi"]]
+        filtered_cost_df = filtered_cost_df.iloc[
+            np.argmin(np.abs(filtered_cost_df["MW"] - x.rateA))
+        ]
+        return filtered_cost_df.loc[["MW", "costMWmi"]]
 
-    def get_transformer_mult(x, bus_reg, ac_reg_mult, xfmr_lookup_alerted=set()):
+    def get_branch_mult(x, bus_reg, ac_reg_mult, branch_lookup_alerted=set()):
         """Determine the regional multiplier based on kV and power (closest).
 
-        :param pandas.Series x: data for a single transformer.
+        :param pandas.Series x: data for a single branch.
         :param pandas.DataFrame bus_reg: data frame with bus regions.
         :param pandas.DataFrame ac_reg_mult: data frame with regional multipliers.
-        :param set xfmr_lookup_alerted: set of (voltage, region) tuples for which
+        :param set branch_lookup_alerted: set of (voltage, region) tuples for which
             a message has already been printed that this lookup was not found.
         :return: (*float*) -- regional multiplier.
         """
+        # Select the highest voltage for transformers (branch end voltages should match)
         max_kV = bus.loc[[x.from_bus_id, x.to_bus_id], "baseKV"].max()  # noqa: N806
-        region = bus_reg.loc[x.from_bus_id, "name_abbr"]
-        region_mults = ac_reg_mult.loc[ac_reg_mult.name_abbr == region]
+        # Average the multipliers for branches (transformer regions should match)
+        regions = (x.from_region, x.to_region)
+        region_mults = ac_reg_mult.loc[ac_reg_mult.name_abbr.isin(regions)]
+        region_mults = region_mults.groupby(["kV", "MW"]).mean().reset_index()
 
         mult_lookup_kV = region_mults.loc[  # noqa: N806
             (region_mults.kV - max_kV).abs().idxmin()
@@ -90,11 +127,10 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         ]
         if len(region_kV_mults) == 0:
             mult = 1
-            if (mult_lookup_kV, region) not in xfmr_lookup_alerted:
-                print(f"No multiplier for voltage {mult_lookup_kV} in {region}")
-                xfmr_lookup_alerted.add((mult_lookup_kV, region))
+            if (mult_lookup_kV, regions) not in branch_lookup_alerted:
+                print(f"No multiplier for voltage {mult_lookup_kV} in {regions}")
+                branch_lookup_alerted.add((mult_lookup_kV, regions))
         else:
-
             mult_lookup_MW = region_kV_mults.loc[  # noqa: N806
                 (region_kV_mults.MW - x.rateA).abs().idxmin(), "MW"
             ]
@@ -106,6 +142,9 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     # import data
     ac_cost = pd.DataFrame(const.ac_line_cost)
     ac_reg_mult = pd.read_csv(const.ac_reg_mult_path)
+    ac_reg_mult = ac_reg_mult.melt(
+        id_vars=["kV", "MW"], var_name="name_abbr", value_name="mult"
+    )
     try:
         bus_reg = pd.read_csv(const.bus_neem_regions_path, index_col="bus_id")
     except FileNotFoundError:
@@ -116,30 +155,13 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     # Mirror across diagonal
     xfmr_cost += xfmr_cost.to_numpy().T - np.diag(np.diag(xfmr_cost.to_numpy()))
 
-    # map line kV
-    bus = grid_new.bus
-    branch = grid_new.branch
-    branch.loc[:, "kV"] = branch.apply(
-        lambda x: bus.loc[x.from_bus_id, "baseKV"], axis=1
-    )
-
-    # separate transformers and lines
-    t_mask = branch["branch_device_type"].isin(["Transformer", "TransformerWinding"])
-    transformers = branch[t_mask].copy()
-    lines = branch[~t_mask].copy()
-    # Find closest kV rating
-    lines.loc[:, "kV"] = lines.apply(
-        lambda x: ac_cost.loc[(ac_cost["kV"] - x.kV).abs().idxmin(), "kV"],
-        axis=1,
-    )
-    lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
-
     # check that all buses included in this file and lat/long values match,
     # otherwise re-run mapping script on mis-matching buses. These buses are missing
     # in region file
+    bus = grid_new.bus
     bus_fix_index = bus[~bus.index.isin(bus_reg.index)].index
     bus_mask = bus[~bus.index.isin(bus_fix_index)]
-    bus_mask = bus_mask.merge(bus_reg, how="left", on="bus_id")
+    bus_mask = merge_keep_index(bus_mask, bus_reg, how="left", on="bus_id")
     # these buses have incorrect lat/lon values in the region mapping file.
     #   re-running the region mapping script on those buses only.
     bus_fix_index2 = bus_mask[
@@ -155,42 +177,59 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
 
     bus_reg.drop(["lat", "lon"], axis=1, inplace=True)
 
-    # map region multipliers onto lines
-    ac_reg_mult = ac_reg_mult.melt(
-        id_vars=["kV", "MW"], var_name="name_abbr", value_name="mult"
-    )
+    # Add extra information to branch data frame
+    branch = grid_new.branch
+    branch.loc[:, "kV"] = bus.loc[branch.from_bus_id, "baseKV"].tolist()
+    branch.loc[:, "from_region"] = bus_reg.loc[branch.from_bus_id, "name_abbr"].tolist()
+    branch.loc[:, "to_region"] = bus_reg.loc[branch.to_bus_id, "name_abbr"].tolist()
+    # separate transformers and lines
+    t_mask = branch["branch_device_type"].isin(["Transformer", "TransformerWinding"])
+    transformers = branch[t_mask].copy()
+    lines = branch[~t_mask].copy()
+    if len(lines) > 0:
+        # Find closest kV rating
+        lines.loc[:, "kV"] = lines.apply(
+            lambda x: ac_cost.loc[(ac_cost["kV"] - x.kV).abs().idxmin(), "kV"],
+            axis=1,
+        )
+        lines[["MW", "costMWmi"]] = lines.apply(lambda x: select_mw(x, ac_cost), axis=1)
 
-    lines = lines.merge(bus_reg, left_on="to_bus_id", right_on="bus_id", how="inner")
-    lines = lines.merge(ac_reg_mult, on=["name_abbr", "kV", "MW"], how="left")
-    lines.rename(columns={"name_abbr": "reg_to", "mult": "mult_to"}, inplace=True)
+        lines["mult"] = lines.apply(
+            lambda x: get_branch_mult(x, bus_reg, ac_reg_mult), axis=1
+        )
 
-    lines = lines.merge(bus_reg, left_on="from_bus_id", right_on="bus_id", how="inner")
-    lines = lines.merge(ac_reg_mult, on=["name_abbr", "kV", "MW"], how="left")
-    lines.rename(columns={"name_abbr": "reg_from", "mult": "mult_from"}, inplace=True)
-
-    # take average between 2 buses' region multipliers
-    lines.loc[:, "mult"] = (lines["mult_to"] + lines["mult_from"]) / 2.0
-
-    # calculate MWmi
-    lines.loc[:, "lengthMi"] = lines.apply(
-        lambda x: haversine((x.from_lat, x.from_lon), (x.to_lat, x.to_lon)), axis=1
-    )
+        # calculate MWmi
+        lines.loc[:, "lengthMi"] = lines.apply(
+            lambda x: haversine((x.from_lat, x.from_lon), (x.to_lat, x.to_lon)), axis=1
+        )
+    else:
+        new_columns = ["kV", "MW", "costMWmi", "mult", "lengthMi"]
+        lines = lines.reindex(columns=[*lines.columns.tolist(), *new_columns])
     lines.loc[:, "MWmi"] = lines["lengthMi"] * lines["rateA"]
 
     # calculate cost of each line
     lines.loc[:, "Cost"] = lines["MWmi"] * lines["costMWmi"] * lines["mult"]
 
     # calculate transformer costs
-    transformers["per_MW_cost"] = transformers.apply(
-        lambda x: xfmr_cost.iloc[
-            xfmr_cost.index.get_loc(bus.loc[x.from_bus_id, "baseKV"], method="nearest"),
-            xfmr_cost.columns.get_loc(bus.loc[x.to_bus_id, "baseKV"], method="nearest"),
-        ],
-        axis=1,
-    )
-    transformers["mult"] = transformers.apply(
-        lambda x: get_transformer_mult(x, bus_reg, ac_reg_mult), axis=1
-    )
+    if len(transformers) > 0:
+        transformers["per_MW_cost"] = transformers.apply(
+            lambda x: xfmr_cost.iloc[
+                xfmr_cost.index.get_loc(
+                    bus.loc[x.from_bus_id, "baseKV"], method="nearest"
+                ),
+                xfmr_cost.columns.get_loc(
+                    bus.loc[x.to_bus_id, "baseKV"], method="nearest"
+                ),
+            ],
+            axis=1,
+        )
+        transformers["mult"] = transformers.apply(
+            lambda x: get_branch_mult(x, bus_reg, ac_reg_mult), axis=1
+        )
+    else:
+        # Properly handle case with no transformers, where apply returns wrong dims
+        transformers["per_MW_cost"] = []
+        transformers["mult"] = []
 
     transformers["Cost"] = (
         transformers["rateA"] * transformers["per_MW_cost"] * transformers["mult"]
@@ -367,6 +406,17 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
         cost.rename(columns={"value": "CAPEX"}, inplace=True)
 
         # select scenario of interest
+        if cost_case != "Moderate":
+            # The 2020 ATB only has "Moderate" for nuclear, so we need to make due.
+            warnings.warn(
+                f"No cost data available for Nuclear for {cost_case} cost case, "
+                "using Moderate cost case data instead"
+            )
+            new_nuclear = cost.query(
+                "Technology == 'Nuclear' and CostCase == 'Moderate'"
+            ).copy()
+            new_nuclear.CostCase = cost_case
+            cost = cost.append(new_nuclear, ignore_index=True)
         cost = cost[cost["CostCase"] == cost_case]
         cost.drop(["CostCase"], axis=1, inplace=True)
 
@@ -385,7 +435,10 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
     else:
         raise TypeError("cost_case must be str.")
 
-    plants = grid_new.plant.append(grid_new.storage["gen"])
+    storage_plants = grid_new.storage["gen"].set_index(
+        grid_new.storage["StorageData"].UnitIdx.astype(int)
+    )
+    plants = append_keep_index_name(grid_new.plant, storage_plants)
     plants = plants[
         ~plants.type.isin(["dfo", "other"])
     ]  # drop these technologies, no cost data
@@ -402,7 +455,9 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
     gen_costs.replace(const.gen_inv_cost_translation, inplace=True)
     gen_costs.drop(["Key", "FinancialCase", "CRPYears"], axis=1, inplace=True)
     # ATB technology costs merge
-    plants = plants.merge(gen_costs, right_on="Technology", left_on="type", how="left")
+    plants = merge_keep_index(
+        plants, gen_costs, right_on="Technology", left_on="type", how="left"
+    )
 
     # REGIONAL COST MULTIPLIER
 
@@ -417,7 +472,9 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
     except FileNotFoundError:
         bus_reg = bus_to_reeds_reg(grid_new.bus.loc[plant_buses])
         bus_reg.sort_index().to_csv(const.bus_reeds_regions_path)
-    plants = plants.merge(bus_reg, left_on="bus_id", right_index=True, how="left")
+    plants = merge_keep_index(
+        plants, bus_reg, left_on="bus_id", right_index=True, how="left"
+    )
 
     # Determine one region 'r' for each plant, based on one of two mappings
     plants.loc[:, "r"] = ""
@@ -432,8 +489,12 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
     # merge regional multipliers with plants
     region_multiplier = pd.read_csv(const.regional_multiplier_path)
     region_multiplier.replace(const.regional_multiplier_gen_translation, inplace=True)
-    plants = plants.merge(
-        region_multiplier, left_on=["r", "Technology"], right_on=["r", "i"], how="left"
+    plants = merge_keep_index(
+        plants,
+        region_multiplier,
+        left_on=["r", "Technology"],
+        right_on=["r", "i"],
+        how="left",
     )
 
     # multiply all together to get summed CAPEX ($)
