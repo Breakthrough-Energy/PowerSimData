@@ -209,16 +209,25 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     lines.loc[:, "Cost"] = lines["MWmi"] * lines["costMWmi"] * lines["mult"]
 
     # calculate transformer costs
-    transformers["per_MW_cost"] = transformers.apply(
-        lambda x: xfmr_cost.iloc[
-            xfmr_cost.index.get_loc(bus.loc[x.from_bus_id, "baseKV"], method="nearest"),
-            xfmr_cost.columns.get_loc(bus.loc[x.to_bus_id, "baseKV"], method="nearest"),
-        ],
-        axis=1,
-    )
-    transformers["mult"] = transformers.apply(
-        lambda x: get_branch_mult(x, bus_reg, ac_reg_mult), axis=1
-    )
+    if len(transformers) > 0:
+        transformers["per_MW_cost"] = transformers.apply(
+            lambda x: xfmr_cost.iloc[
+                xfmr_cost.index.get_loc(
+                    bus.loc[x.from_bus_id, "baseKV"], method="nearest"
+                ),
+                xfmr_cost.columns.get_loc(
+                    bus.loc[x.to_bus_id, "baseKV"], method="nearest"
+                ),
+            ],
+            axis=1,
+        )
+        transformers["mult"] = transformers.apply(
+            lambda x: get_branch_mult(x, bus_reg, ac_reg_mult), axis=1
+        )
+    else:
+        # Properly handle case with no transformers, where apply returns wrong dims
+        transformers["per_MW_cost"] = []
+        transformers["mult"] = []
 
     transformers["Cost"] = (
         transformers["rateA"] * transformers["per_MW_cost"] * transformers["mult"]
