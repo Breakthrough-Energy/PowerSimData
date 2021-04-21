@@ -342,14 +342,9 @@ class SimulationInput(object):
         )
 
     def create_folder(self):
-        """Creates folder on server that will enclose simulation inputs.
-
-        :raises IOError: if folder cannot be created.
-        """
+        """Creates folder on server that will enclose simulation inputs."""
         print("--> Creating temporary folder on server for simulation inputs")
-        _, _, stderr = self._data_access.makedir(self.TMP_DIR)
-        if len(stderr.readlines()) != 0:
-            raise IOError("Failed to create %s on server" % self.TMP_DIR)
+        self._data_access.makedir(self.REL_TMP_DIR)
 
     def prepare_mpc_file(self):
         """Creates MATPOWER case file."""

@@ -83,8 +83,7 @@ class DataAccess:
 
         :param str relative_path: the path, without filename, relative to root
         """
-        full_path = posixpath.join(self.root, relative_path)
-        return self.execute_command(f"mkdir -p {full_path}")
+        raise NotImplementedError
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -179,6 +178,14 @@ class LocalDataAccess(DataAccess):
         self._check_file_exists(dest, should_exist=False)
         self.copy(src, dest)
         self.remove(src)
+
+    def makedir(self, relative_path):
+        """Create paths relative to the instance root
+
+        :param str relative_path: the path, without filename, relative to root
+        """
+        target = os.path.join(self.root, relative_path)
+        os.makedirs(target, exist_ok=True)
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -394,6 +401,17 @@ class SSHDataAccess(DataAccess):
             for e in errors:
                 print(e)
             raise IOError("Failed to push file - most likely a conflict was detected.")
+
+    def makedir(self, relative_path):
+        """Create paths relative to the instance root
+
+        :param str relative_path: the path, without filename, relative to root
+        :raises IOError: if command generated stderr
+        """
+        full_path = posixpath.join(self.root, relative_path)
+        _, _, stderr = self.execute_command(f"mkdir -p {full_path}")
+        if len(stderr.readlines()) != 0:
+            raise IOError("Failed to create %s on server" % full_path)
 
     def close(self):
         """Close the connection that was opened when the object was created."""
