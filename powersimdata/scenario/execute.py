@@ -334,9 +334,6 @@ class SimulationInput(object):
         self.server_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
         self.scenario_folder = "scenario_%s" % scenario_info["id"]
 
-        self.TMP_DIR = posixpath.join(
-            self.server_config.execute_dir(), self.scenario_folder
-        )
         self.REL_TMP_DIR = posixpath.join(
             server_setup.EXECUTE_DIR, self.scenario_folder
         )
