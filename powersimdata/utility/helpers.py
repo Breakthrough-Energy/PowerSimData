@@ -39,14 +39,6 @@ class CommandBuilder:
             return f"rm {flags} {target}"
         return f"rm {target}"
 
-    @staticmethod
-    def list(path):
-        """Builds an ls command
-
-        :param str path: the path argument
-        """
-        return f"ls {path}"
-
 
 class MemoryCache:
     """Wrapper around a dict object that exposes a cache interface. Users should
