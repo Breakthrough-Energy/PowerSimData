@@ -1,7 +1,6 @@
 import copy
 import pickle
 import warnings
-from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
@@ -39,24 +38,7 @@ class Create(State):
         self.grid = None
         self.ct = None
         self._scenario_status = None
-        self._scenario_info = OrderedDict(
-            [
-                ("plan", ""),
-                ("name", ""),
-                ("state", "create"),
-                ("grid_model", ""),
-                ("interconnect", ""),
-                ("base_demand", ""),
-                ("base_hydro", ""),
-                ("base_solar", ""),
-                ("base_wind", ""),
-                ("change_table", ""),
-                ("start_date", ""),
-                ("end_date", ""),
-                ("interval", ""),
-                ("engine", ""),
-            ]
-        )
+        self._scenario_info = scenario.info
         self.exported_methods = set(self.default_exported_methods)
         super().__init__(scenario)
 
