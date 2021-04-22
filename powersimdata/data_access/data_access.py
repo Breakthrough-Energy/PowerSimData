@@ -56,6 +56,14 @@ class DataAccess:
         command = CommandBuilder.remove(target, recursive, force)
         return self.execute_command(command)
 
+    def _exists(self, filepath):
+        """Return whether the file exists
+
+        :param str filepath: the path to the file
+        :return: (*bool*) -- whether the file exists
+        """
+        raise NotImplementedError
+
     def _check_file_exists(self, filepath, should_exist=True):
         """Check that file exists (or not) at the given path
 
@@ -63,11 +71,11 @@ class DataAccess:
         :param bool should_exist: whether the file is expected to exist
         :raises OSError: if the expected condition is not met
         """
-        _, _, stderr = self.execute_command(CommandBuilder.list(filepath))
+        result = self._exists(filepath)
         compare = operator.ne if should_exist else operator.eq
-        if compare(len(stderr.readlines()), 0):
+        if compare(result, True):
             msg = "not found" if should_exist else "already exists"
-            raise OSError(f"{filepath} {msg} on server")
+            raise OSError(f"{filepath} {msg} on {self.description}")
 
     def _check_filename(self, filename):
         """Check that filename is only the name part
@@ -136,6 +144,7 @@ class LocalDataAccess(DataAccess):
 
     def __init__(self, root=None):
         self.root = root if root else server_setup.DATA_ROOT_DIR
+        self.description = "local machine"
 
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
@@ -219,6 +228,14 @@ class LocalDataAccess(DataAccess):
         local_version = ProfileHelper.get_profile_version_local(grid_model, kind)
         return list(set(blob_version + local_version))
 
+    def _exists(self, filepath):
+        """Return whether the file exists
+
+        :param str filepath: the path to the file
+        :return: (*bool*) -- whether the file exists
+        """
+        return os.path.exists(filepath)
+
 
 class SSHDataAccess(DataAccess):
     """Interface to a remote data store, accessed via SSH."""
@@ -231,6 +248,7 @@ class SSHDataAccess(DataAccess):
         self._retry_after = 5
         self.root = server_setup.DATA_ROOT_DIR if root is None else root
         self.local_root = server_setup.LOCAL_DIR
+        self.description = "server"
 
     @property
     def ssh(self):
@@ -412,6 +430,15 @@ class SSHDataAccess(DataAccess):
         _, _, stderr = self.execute_command(f"mkdir -p {full_path}")
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to create %s on server" % full_path)
+
+    def _exists(self, filepath):
+        """Return whether the file exists
+
+        :param str filepath: the path to the file
+        :return: (*bool*) -- whether the file exists
+        """
+        _, _, stderr = self.execute_command(f"ls {filepath}")
+        return len(stderr.readlines()) == 0
 
     def close(self):
         """Close the connection that was opened when the object was created."""
