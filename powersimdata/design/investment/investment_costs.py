@@ -172,8 +172,11 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     # fix the identified buses, if necessary
     if len(bus_fix_index_all) > 0:
         bus_fix = bus_to_neem_reg(bus[bus.index.isin(bus_fix_index_all)])
+        corrected_buses = set(bus_fix.index) & set(bus_reg.index)
+        new_buses = set(bus_fix.index) - set(bus_reg.index)
         fix_cols = ["name_abbr", "lat", "lon"]
-        bus_reg.loc[bus_reg.index.isin(bus_fix.index), fix_cols] = bus_fix[fix_cols]
+        bus_reg.loc[corrected_buses, fix_cols] = bus_fix.loc[corrected_buses, fix_cols]
+        bus_reg = bus_reg.append(bus_fix.loc[new_buses, fix_cols])
 
     bus_reg.drop(["lat", "lon"], axis=1, inplace=True)
 
