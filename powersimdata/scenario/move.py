@@ -67,36 +67,37 @@ class BackUpDisk(object):
         self._scenario_info = scenario_info
         self.backup_config = server_setup.PathConfig(server_setup.BACKUP_DATA_ROOT_DIR)
         self.server_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
+        self.scenario_id = self._scenario_info["id"]
+        self.wildcard = f"{self.scenario_id}_*"
 
     def move_input_data(self):
         """Moves input data."""
         print("--> Moving scenario input data to backup disk")
         source = posixpath.join(
             self.server_config.input_dir(),
-            self._scenario_info["id"] + "_*",
+            self.wildcard,
         )
         target = self.backup_config.input_dir()
         self._data_access.copy(source, target, update=True)
-        self._data_access.remove(source, recursive=True, force=True)
+        self._data_access.remove(source, recursive=False)
 
     def move_output_data(self):
         """Moves output data"""
         print("--> Moving scenario output data to backup disk")
         source = posixpath.join(
             self.server_config.output_dir(),
-            self._scenario_info["id"] + "_*",
+            self.wildcard,
         )
         target = self.backup_config.output_dir()
         self._data_access.copy(source, target, update=True)
-        self._data_access.remove(source, recursive=True, force=True)
+        self._data_access.remove(source, recursive=False)
 
     def move_temporary_folder(self):
         """Moves temporary folder."""
         print("--> Moving temporary folder to backup disk")
         source = posixpath.join(
-            self.server_config.execute_dir(),
-            "scenario_" + self._scenario_info["id"],
+            self.server_config.execute_dir(), "scenario_" + self.scenario_id
         )
         target = self.backup_config.execute_dir()
         self._data_access.copy(source, target, recursive=True, update=True)
-        self._data_access.remove(source, recursive=True, force=True)
+        self._data_access.remove(source, recursive=True)

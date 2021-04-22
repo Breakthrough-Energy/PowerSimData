@@ -25,19 +25,15 @@ class CommandBuilder:
         return fr"\cp {flags} {src} {dest}"
 
     @staticmethod
-    def remove(target, recursive=False, force=False):
+    def remove(target, recursive=False):
         """Builds a rm command with some options
 
         :param str target: the path or file to be removed
         :param bool recursive: whether to pass -r option
-        :param bool force: whether to pass -f option
         """
-        r_flag = "r" if recursive else ""
-        f_flag = "f" if force else ""
-        if recursive or force:
-            flags = f"-{r_flag}{f_flag}"
-            return f"rm {flags} {target}"
-        return f"rm {target}"
+        if recursive:
+            return f"rm -rf {target}"
+        return f"rm -f {target}"
 
 
 class MemoryCache:
