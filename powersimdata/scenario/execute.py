@@ -332,21 +332,25 @@ class SimulationInput(object):
         self.grid = grid
         self.ct = ct
         self.server_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
-        self.scenario_folder = "scenario_%s" % scenario_info["id"]
+        self.scenario_id = scenario_info["id"]
+        self.scenario_folder = "scenario_%s" % self.scenario_id
 
         self.REL_TMP_DIR = posixpath.join(
             server_setup.EXECUTE_DIR, self.scenario_folder
+        )
+        self.TMP_DIR = posixpath.join(
+            self.server_config.execute_dir(), self.scenario_folder
         )
 
     def create_folder(self):
         """Creates folder on server that will enclose simulation inputs."""
         print("--> Creating temporary folder on server for simulation inputs")
-        self._data_access.makedir(self.REL_TMP_DIR)
+        self._data_access.makedir(self.TMP_DIR)
 
     def prepare_mpc_file(self):
         """Creates MATPOWER case file."""
-        file_name = "%s_case.mat" % self._scenario_info["id"]
-        storage_file_name = "%s_case_storage.mat" % self._scenario_info["id"]
+        file_name = f"{self.scenario_id}_case.mat"
+        storage_file_name = f"{self.scenario_id}_case_storage.mat"
         file_path = os.path.join(server_setup.LOCAL_DIR, file_name)
         storage_file_path = os.path.join(server_setup.LOCAL_DIR, storage_file_name)
         print("Building MPC file")
@@ -371,7 +375,7 @@ class SimulationInput(object):
             print(
                 f"Writing scaled {kind} profile in {server_setup.LOCAL_DIR} on local machine"
             )
-            file_name = "%s_%s.csv" % (self._scenario_info["id"], kind)
+            file_name = "%s_%s.csv" % (self.scenario_id, kind)
             profile.to_csv(os.path.join(server_setup.LOCAL_DIR, file_name))
 
             self._data_access.move_to(
@@ -382,9 +386,5 @@ class SimulationInput(object):
                 self.server_config.execute_dir(),
                 f"scenario_{profile_as}",
             )
-            to_dir = posixpath.join(
-                self.server_config.execute_dir(), self.scenario_folder
-            )
-            _, _, stderr = self._data_access.copy(f"{from_dir}/{kind}.csv", to_dir)
-            if len(stderr.readlines()) != 0:
-                raise IOError(f"Failed to copy {kind}.csv on server")
+            to_dir = self.TMP_DIR
+            self._data_access.copy(f"{from_dir}/{kind}.csv", to_dir)

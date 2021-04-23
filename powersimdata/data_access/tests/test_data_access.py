@@ -108,7 +108,7 @@ def test_move_to_multi_path(mock_data_access, make_temp):
     remote_path = mock_data_access.root / rel_path
     remote_path.mkdir(parents=True)
     fname = make_temp(remote=False)
-    mock_data_access.move_to(fname, rel_path)
+    mock_data_access.move_to(fname, str(rel_path))
     _check_content(os.path.join(remote_path, fname))
 
 

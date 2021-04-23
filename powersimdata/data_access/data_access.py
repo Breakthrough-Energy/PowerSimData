@@ -4,7 +4,7 @@ import os
 import posixpath
 import shutil
 import time
-from subprocess import PIPE, Popen
+from subprocess import Popen
 from tempfile import mkstemp
 
 import paramiko
@@ -43,9 +43,7 @@ class DataAccess:
         :param bool recursive: create directories recursively
         :param bool update: only copy if needed
         """
-        self.makedir(posixpath.dirname(dest))
-        command = CommandBuilder.copy(src, dest, recursive, update)
-        return self.execute_command(command)
+        raise NotImplementedError
 
     def remove(self, target, recursive=False, confirm=True):
         """Wrapper around rm command
@@ -86,10 +84,10 @@ class DataAccess:
         if len(os.path.dirname(filename)) != 0:
             raise ValueError(f"Expecting file name but got path {filename}")
 
-    def makedir(self, relative_path):
-        """Create paths relative to the instance root
+    def makedir(self, full_path):
+        """Create path, including parents
 
-        :param str relative_path: the path, without filename, relative to root
+        :param str full_path: the path, excluding filename
         """
         raise NotImplementedError
 
@@ -180,21 +178,41 @@ class LocalDataAccess(DataAccess):
         :param str change_name_to: new name for file when copied to data store.
         """
         self._check_filename(file_name)
-        src = posixpath.join(server_setup.LOCAL_DIR, file_name)
+        src = os.path.join(server_setup.LOCAL_DIR, file_name)
         file_name = file_name if change_name_to is None else change_name_to
-        dest = posixpath.join(self.root, to_dir, file_name)
+        dest = os.path.join(self.root, to_dir, file_name)
         print(f"--> Moving file {src} to {dest}")
         self._check_file_exists(dest, should_exist=False)
-        self.copy(src, dest)
-        self.remove(src)
+        self.makedir(os.path.dirname(dest))
+        shutil.move(src, dest)
 
-    def makedir(self, relative_path):
-        """Create paths relative to the instance root
+    def makedir(self, full_path):
+        """Create path on local machine
 
-        :param str relative_path: the path, without filename, relative to root
+        :param str full_path: the path, excluding filename
         """
-        target = os.path.join(self.root, relative_path)
-        os.makedirs(target, exist_ok=True)
+        os.makedirs(full_path, exist_ok=True)
+
+    @staticmethod
+    def _fapply(func, pattern):
+        files = [f for f in glob.glob(pattern) if os.path.isfile(f)]
+        for f in files:
+            func(f)
+
+    def copy(self, src, dest, recursive=False, update=False):
+        """Wrapper around cp command which creates dest path if needed
+
+        :param str src: path to original
+        :param str dest: destination path
+        :param bool recursive: create directories recursively
+        :param bool update: ignored
+        """
+        self.makedir(dest)
+        if recursive:
+            shutil.copytree(src, dest)
+        else:
+            func = lambda s: shutil.copy(s, dest)  # noqa: E731
+            LocalDataAccess._fapply(func, src)
 
     def remove(self, target, recursive=False, confirm=True):
         """Remove target using rm semantics
@@ -211,31 +229,8 @@ class LocalDataAccess(DataAccess):
         if recursive:
             shutil.rmtree(target)
         else:
-            files = [f for f in glob.glob(target) if os.path.isfile(f)]
-            for f in files:
-                os.remove(f)
+            LocalDataAccess._fapply(os.remove, target)
         print("--> Done!")
-
-    def execute_command(self, command):
-        """Execute a command locally at the data access.
-
-        :param list command: list of str to be passed to command line.
-        """
-
-        def wrap(s):
-            if s is not None:
-                return s
-            return open(os.devnull)
-
-        proc = Popen(
-            command,
-            shell=True,
-            executable="/bin/bash",
-            stdout=PIPE,
-            stderr=PIPE,
-            text=True,
-        )
-        return wrap(None), wrap(proc.stdout), wrap(proc.stderr)
 
     def get_profile_version(self, grid_model, kind):
         """Returns available raw profile from blob storage or local disk
@@ -360,8 +355,8 @@ class SSHDataAccess(DataAccess):
             )
 
         file_name = file_name if change_name_to is None else change_name_to
-        to_dir = "" if to_dir is None else to_dir
-        to_path = posixpath.join(self.root, to_dir, file_name)
+        to_dir = posixpath.join(self.root, "" if to_dir is None else to_dir)
+        to_path = posixpath.join(to_dir, file_name)
         self.makedir(to_dir)
         self._check_file_exists(to_path, should_exist=False)
 
@@ -440,16 +435,31 @@ class SSHDataAccess(DataAccess):
                 print(e)
             raise IOError("Failed to push file - most likely a conflict was detected.")
 
-    def makedir(self, relative_path):
-        """Create paths relative to the instance root
+    def makedir(self, full_path):
+        """Create path on server
 
-        :param str relative_path: the path, without filename, relative to root
+        :param str full_path: the path, excluding filename
         :raises IOError: if command generated stderr
         """
-        full_path = posixpath.join(self.root, relative_path)
         _, _, stderr = self.execute_command(f"mkdir -p {full_path}")
+        errors = stderr.readlines()
+        if len(errors) > 0:
+            raise IOError(f"Failed to create {full_path} on server")
+
+    def copy(self, src, dest, recursive=False, update=False):
+        """Wrapper around cp command which creates dest path if needed
+
+        :param str src: path to original
+        :param str dest: destination path
+        :param bool recursive: create directories recursively
+        :param bool update: only copy if needed
+        :raises IOError: if command generated stderr
+        """
+        self.makedir(dest)
+        command = CommandBuilder.copy(src, dest, recursive, update)
+        _, _, stderr = self.execute_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to create %s on server" % full_path)
+            raise IOError(f"Failed to execute {command}")
 
     def remove(self, target, recursive=False, confirm=True):
         """Run rm command on server
