@@ -176,7 +176,7 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         corrected_bus_mappings = bus_fix.loc[misaligned_bus_indices, fix_cols]
         new_bus_mappings = bus_fix.loc[missing_bus_indices, fix_cols]
         bus_reg.loc[misaligned_bus_indices, fix_cols] = corrected_bus_mappings
-        bus_reg = bus_reg.append(new_bus_mappings)
+        bus_reg = append_keep_index_name(bus_reg, new_bus_mappings)
 
     bus_reg.drop(["lat", "lon"], axis=1, inplace=True)
 
