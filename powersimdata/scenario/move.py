@@ -25,10 +25,11 @@ class Move(State):
         for key, val in self._scenario_info.items():
             print("%s: %s" % (key, val))
 
-    def move_scenario(self, target="disk"):
+    def move_scenario(self, target="disk", confirm=True):
         """Move scenario.
 
         :param str target: optional argument specifying the backup system.
+        :param bool confirm: prompt before deleting each batch of files
         """
         if not isinstance(target, str):
             raise TypeError("string is expected for optional argument target")
@@ -38,9 +39,9 @@ class Move(State):
 
         backup = BackUpDisk(self._data_access, self._scenario_info)
 
-        backup.move_input_data()
-        backup.move_output_data()
-        backup.move_temporary_folder()
+        backup.move_input_data(confirm=confirm)
+        backup.move_output_data(confirm=confirm)
+        backup.move_temporary_folder(confirm=confirm)
 
         sid = self._scenario_info["id"]
         self._execute_list_manager.set_status(sid, "moved")
@@ -70,7 +71,7 @@ class BackUpDisk(object):
         self.scenario_id = self._scenario_info["id"]
         self.wildcard = f"{self.scenario_id}_*"
 
-    def move_input_data(self):
+    def move_input_data(self, confirm=True):
         """Moves input data."""
         print("--> Moving scenario input data to backup disk")
         source = posixpath.join(
@@ -79,9 +80,9 @@ class BackUpDisk(object):
         )
         target = self.backup_config.input_dir()
         self._data_access.copy(source, target, update=True)
-        self._data_access.remove(source, recursive=False)
+        self._data_access.remove(source, recursive=False, confirm=confirm)
 
-    def move_output_data(self):
+    def move_output_data(self, confirm=True):
         """Moves output data"""
         print("--> Moving scenario output data to backup disk")
         source = posixpath.join(
@@ -90,9 +91,9 @@ class BackUpDisk(object):
         )
         target = self.backup_config.output_dir()
         self._data_access.copy(source, target, update=True)
-        self._data_access.remove(source, recursive=False)
+        self._data_access.remove(source, recursive=False, confirm=confirm)
 
-    def move_temporary_folder(self):
+    def move_temporary_folder(self, confirm=True):
         """Moves temporary folder."""
         print("--> Moving temporary folder to backup disk")
         source = posixpath.join(
@@ -100,4 +101,4 @@ class BackUpDisk(object):
         )
         target = self.backup_config.execute_dir()
         self._data_access.copy(source, target, recursive=True, update=True)
-        self._data_access.remove(source, recursive=True)
+        self._data_access.remove(source, recursive=True, confirm=confirm)
