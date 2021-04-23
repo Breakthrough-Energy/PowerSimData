@@ -14,6 +14,7 @@ mock_branch = {
     "to_lat": [37.78, 47.66, 47.61, 47.61, 47.61],
     "to_lon": [-122.42, -117.43, -122.33, -122.33, -122.33],
     "branch_device_type": 2 * ["Line"] + 3 * ["Transformer"],
+    "x": 5 * [1],
 }
 
 expected_keys = {"mw_miles", "transformer_mw", "num_lines", "num_transformers"}
