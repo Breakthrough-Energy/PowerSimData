@@ -203,18 +203,17 @@ class LocalDataAccess(DataAccess):
         :param bool recursive: delete directories recursively
         :param bool confirm: prompt before executing command
         """
-        if recursive and "**" not in target:
-            target = os.path.join(target, "**")
-        files = glob.glob(target, recursive=recursive)
         if confirm:
-            print("This will delete the following files:")
-            print(files)
-            confirmed = input("Proceed? [y/n] (default is 'n')")
+            confirmed = input(f"Delete {target}? [y/n] (default is 'n')")
             if confirmed.lower() != "y":
                 print("Operation cancelled.")
                 return
-        for f in files:
-            os.remove(f)
+        if recursive:
+            shutil.rmtree(target)
+        else:
+            files = [f for f in glob.glob(target) if os.path.isfile(f)]
+            for f in files:
+                os.remove(f)
         print("--> Done!")
 
     def execute_command(self, command):

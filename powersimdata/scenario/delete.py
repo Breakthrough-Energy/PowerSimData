@@ -63,7 +63,7 @@ class Delete(State):
         # Delete local files
         print("--> Deleting input and output data on local machine")
         target = os.path.join(server_setup.LOCAL_DIR, "data", "**", wildcard)
-        LocalDataAccess().remove(target, recursive=True, confirm=confirm)
+        LocalDataAccess().remove(target, recursive=False, confirm=confirm)
 
         # Delete attributes
         self._clean()
