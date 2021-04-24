@@ -159,21 +159,24 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     # otherwise re-run mapping script on mis-matching buses. These buses are missing
     # in region file
     bus = grid_new.bus
-    bus_fix_index = bus[~bus.index.isin(bus_reg.index)].index
-    bus_mask = bus[~bus.index.isin(bus_fix_index)]
-    bus_mask = merge_keep_index(bus_mask, bus_reg, how="left", on="bus_id")
+    mapped_buses = bus.query("index in @bus_reg.index")
+    missing_bus_indices = set(bus.index) - set(bus_reg.index)
+    mapped_buses = merge_keep_index(mapped_buses, bus_reg, how="left", on="bus_id")
     # these buses have incorrect lat/lon values in the region mapping file.
     #   re-running the region mapping script on those buses only.
-    bus_fix_index2 = bus_mask[
-        ~np.isclose(bus_mask.lat_x, bus_mask.lat_y)
-        | ~np.isclose(bus_mask.lon_x, bus_mask.lon_y)
+    misaligned_bus_indices = mapped_buses[
+        ~np.isclose(mapped_buses.lat_x, mapped_buses.lat_y)
+        | ~np.isclose(mapped_buses.lon_x, mapped_buses.lon_y)
     ].index
-    bus_fix_index_all = bus_fix_index.tolist() + bus_fix_index2.tolist()
+    all_buses_to_fix = set(missing_bus_indices) | set(misaligned_bus_indices)
     # fix the identified buses, if necessary
-    if len(bus_fix_index_all) > 0:
-        bus_fix = bus_to_neem_reg(bus[bus.index.isin(bus_fix_index_all)])
+    if len(all_buses_to_fix) > 0:
+        bus_fix = bus_to_neem_reg(bus.query("index in @all_buses_to_fix"))
         fix_cols = ["name_abbr", "lat", "lon"]
-        bus_reg.loc[bus_reg.index.isin(bus_fix.index), fix_cols] = bus_fix[fix_cols]
+        corrected_bus_mappings = bus_fix.loc[misaligned_bus_indices, fix_cols]
+        new_bus_mappings = bus_fix.loc[missing_bus_indices, fix_cols]
+        bus_reg.loc[misaligned_bus_indices, fix_cols] = corrected_bus_mappings
+        bus_reg = append_keep_index_name(bus_reg, new_bus_mappings)
 
     bus_reg.drop(["lat", "lon"], axis=1, inplace=True)
 
