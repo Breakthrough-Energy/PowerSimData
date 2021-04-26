@@ -45,8 +45,10 @@ def calculate_ac_inv_costs(scenario, sum_results=True, exclude_branches=None):
     NEEM regions are used to find regional multipliers.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param bool sum_results: sum data frame for each branch type.
-    :return: (*dict*) -- cost of upgrading branches in $2010.
+    :param bool sum_results: whether to sum data frame for each branch type.
+    :return: (*dict*) -- keys are {'line_cost', 'transformer_cost'}, values are either
+        float if sum_results, or data frames indexed by branch ID, with a 'Cost' column
+        (float). Whether summed or not, values are $USD, inflation-adjusted to today.
     """
 
     base_grid = Grid(scenario.info["interconnect"].split("_"))
@@ -72,8 +74,10 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     as a transformer.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :param bool sum_results: sum data frame for each branch type.
-    :return: (*dict*) -- cost of upgrading branches in $2010.
+    :param bool sum_results: whether to sum data frame for each branch type.
+    :return: (*dict*) -- keys are {'line_cost', 'transformer_cost'}, values are either
+        float if sum_results, or data frames indexed by branch ID, with a 'Cost' column
+        (float). Whether summed or not, values are $USD, inflation-adjusted to today.
     """
 
     def select_mw(x, cost_df):
