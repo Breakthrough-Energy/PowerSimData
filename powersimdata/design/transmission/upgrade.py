@@ -301,7 +301,7 @@ def _identify_mesh_branch_upgrades(
         base_grid.branch = base_grid.branch.filter(items=congested_indices, axis=0)
         upgrade_costs = _calculate_ac_inv_costs(base_grid, sum_results=False)
         # Merge the individual line/transformer data into a single Series
-        merged_upgrade_costs = pd.concat([v.Cost for v in upgrade_costs.values()])
+        merged_upgrade_costs = pd.concat([v for v in upgrade_costs.values()])
     if method in ("MW", "MWmiles"):
         ref_grid = ref_scenario.state.get_grid()
         branch_ratings = ref_grid.branch.loc[congested_indices, "rateA"]
