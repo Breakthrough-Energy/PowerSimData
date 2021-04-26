@@ -215,7 +215,7 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     lines.loc[:, "MWmi"] = lines["lengthMi"] * lines["rateA"]
 
     # calculate cost of each line
-    lines.loc[:, "Cost"] = lines["MWmi"] * lines["costMWmi"] * lines["mult"]
+    lines.loc[:, "cost"] = lines["MWmi"] * lines["costMWmi"] * lines["mult"]
 
     # calculate transformer costs
     if len(transformers) > 0:
@@ -238,19 +238,19 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         transformers["per_MW_cost"] = []
         transformers["mult"] = []
 
-    transformers["Cost"] = (
+    transformers["cost"] = (
         transformers["rateA"] * transformers["per_MW_cost"] * transformers["mult"]
     )
 
-    lines.Cost *= calculate_inflation(2010)
-    transformers.Cost *= calculate_inflation(2020)
+    lines.cost *= calculate_inflation(2010)
+    transformers.cost *= calculate_inflation(2020)
     if sum_results:
         return {
-            "line_cost": lines.Cost.sum(),
-            "transformer_cost": transformers.Cost.sum(),
+            "line_cost": lines.cost.sum(),
+            "transformer_cost": transformers.cost.sum(),
         }
     else:
-        return {"line_cost": lines, "transformer_cost": transformers}
+        return {"line_cost": lines.cost, "transformer_cost": transformers.cost}
 
 
 def calculate_dc_inv_costs(scenario, sum_results=True):
