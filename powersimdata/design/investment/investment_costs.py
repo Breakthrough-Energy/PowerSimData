@@ -514,13 +514,13 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
     )
 
     # multiply all together to get summed CAPEX ($)
-    plants.loc[:, "CAPEX_total"] = (
+    plants.loc[:, "cost"] = (
         plants["CAPEX"] * plants["Pmax"] * plants["reg_cap_cost_mult"]
     )
 
     # sum cost by technology
-    plants.loc[:, "CAPEX_total"] *= calculate_inflation(2018)
+    plants.loc[:, "cost"] *= calculate_inflation(2018)
     if sum_results:
-        return plants.groupby(["Technology"])["CAPEX_total"].sum()
+        return plants.groupby(["Technology"])["cost"].sum()
     else:
-        return plants
+        return plants["cost"]
