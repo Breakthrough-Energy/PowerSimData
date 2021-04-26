@@ -259,9 +259,11 @@ def calculate_dc_inv_costs(scenario, sum_results=True):
     """Calculate cost of upgrading HVDC lines in a scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param bool sum_results: whether to sum series to return total cost.
+    :param bool sum_results: whether to sum series to return total cost. Defaults to
+        True.
     :return: (*pandas.Series/float*) -- cost of upgrading HVDC lines, in $USD,
-        inflation-adjusted to today.
+        inflation-adjusted to today. If ``sum_results``, a float is returned, otherwise
+        a Series.
     """
     base_grid = Grid(scenario.info["interconnect"].split("_"))
     grid = scenario.state.get_grid()
@@ -281,9 +283,11 @@ def _calculate_dc_inv_costs(grid_new, sum_results=True):
     """Calculate cost of upgrading HVDC lines.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :param bool sum_results: whether to sum series to return total cost.
+    :param bool sum_results: whether to sum series to return total cost. Defaults to
+        True.
     :return: (*pandas.Series/float*) -- cost of upgrading HVDC lines, in $USD,
-        inflation-adjusted to today.
+        inflation-adjusted to today. If ``sum_results``, a float is returned, otherwise
+        a Series.
     """
 
     def _calculate_single_line_cost(line, bus):
