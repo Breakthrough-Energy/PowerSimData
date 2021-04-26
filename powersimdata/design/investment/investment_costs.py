@@ -327,8 +327,12 @@ def calculate_gen_inv_costs(scenario, year, cost_case, sum_results=True):
     :param int/str year: building year.
     :param str cost_case: ATB cost case of data. *'Moderate'*: mid cost case,
         *'Conservative'*: generally higher costs, *'Advanced'*: generally lower costs
-    :return: (*pandas.DataFrame*) -- total generation investment cost summed by
-        technology.
+    :param bool sum_results: whether to sum data frame for plant costs.
+    :return: (*pandas.Series*) -- Overnight generation investment cost. If sum_results,
+        indices are technologies and values are total cost. Otherwise, indices are IDs
+        of plants (including storage, which is given pseudo-plant-IDs), and values are
+        individual generator costs. Whether summed or not, values are $USD,
+        inflation-adjusted to today.
 
     .. todo:: it currently uses one (arbitrary) sub-technology. The rest of the costs
         are dropped. Wind and solar will need to be fixed based on the resource supply
@@ -370,11 +374,14 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
         *'Conservative'*: generally higher costs, *'Advanced'*: generally lower costs.
     :raises ValueError: if year not 2020 - 2050, or cost case not an allowed option.
     :raises TypeError: if year not int/str or cost_case not str.
-    :return: (*pandas.Series*) -- total generation investment cost, summed by
-        technology.
+    :return: (*pandas.Series*) -- Overnight generation investment cost. If sum_results,
+        indices are technologies and values are total cost. Otherwise, indices are IDs
+        of plants (including storage, which is given pseudo-plant-IDs), and values are
+        individual generator costs. Whether summed or not, values are $USD,
+        inflation-adjusted to today.
 
     .. note:: the function computes the total capital cost as:
-        CAPEX_total = CAPEX ($/MW) * Pmax (MW) * regional multiplier
+        CAPEX_total = overnight CAPEX ($/MW) * Power capacity (MW) * regional multiplier
     """
 
     def load_cost(year, cost_case):
