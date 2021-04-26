@@ -1,3 +1,4 @@
+import glob
 import operator
 import os
 import posixpath
@@ -46,15 +47,14 @@ class DataAccess:
         command = CommandBuilder.copy(src, dest, recursive, update)
         return self.execute_command(command)
 
-    def remove(self, target, recursive=False, force=False):
+    def remove(self, target, recursive=False, confirm=True):
         """Wrapper around rm command
 
         :param str target: path to remove
         :param bool recursive: delete directories recursively
-        :param bool force: remove without confirmation
+        :param bool confirm: prompt before executing command
         """
-        command = CommandBuilder.remove(target, recursive, force)
-        return self.execute_command(command)
+        raise NotImplementedError
 
     def _exists(self, filepath):
         """Return whether the file exists
@@ -195,6 +195,26 @@ class LocalDataAccess(DataAccess):
         """
         target = os.path.join(self.root, relative_path)
         os.makedirs(target, exist_ok=True)
+
+    def remove(self, target, recursive=False, confirm=True):
+        """Remove target using rm semantics
+
+        :param str target: path to remove
+        :param bool recursive: delete directories recursively
+        :param bool confirm: prompt before executing command
+        """
+        if confirm:
+            confirmed = input(f"Delete {target}? [y/n] (default is 'n')")
+            if confirmed.lower() != "y":
+                print("Operation cancelled.")
+                return
+        if recursive:
+            shutil.rmtree(target)
+        else:
+            files = [f for f in glob.glob(target) if os.path.isfile(f)]
+            for f in files:
+                os.remove(f)
+        print("--> Done!")
 
     def execute_command(self, command):
         """Execute a command locally at the data access.
@@ -430,6 +450,25 @@ class SSHDataAccess(DataAccess):
         _, _, stderr = self.execute_command(f"mkdir -p {full_path}")
         if len(stderr.readlines()) != 0:
             raise IOError("Failed to create %s on server" % full_path)
+
+    def remove(self, target, recursive=False, confirm=True):
+        """Run rm command on server
+
+        :param str target: path to remove
+        :param bool recursive: delete directories recursively
+        :param bool confirm: prompt before executing command
+        :raises IOError: if command generated stderr
+        """
+        command = CommandBuilder.remove(target, recursive)
+        if confirm:
+            confirmed = input(f"Execute '{command}'? [y/n] (default is 'n')")
+            if confirmed.lower() != "y":
+                print("Operation cancelled.")
+                return
+        _, _, stderr = self.execute_command(command)
+        if len(stderr.readlines()) != 0:
+            raise IOError(f"Failed to delete target={target} on server")
+        print("--> Done!")
 
     def _exists(self, filepath):
         """Return whether the file exists

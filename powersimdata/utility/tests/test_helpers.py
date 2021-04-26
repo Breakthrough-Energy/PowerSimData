@@ -98,14 +98,10 @@ def test_copy_command():
 
 
 def test_remove_command():
-    expected = "rm target"
+    expected = "rm -f target"
     command = CommandBuilder.remove("target")
     assert expected == command
 
-    expected = "rm -r target"
-    command = CommandBuilder.remove("target", recursive=True)
-    assert expected == command
-
     expected = "rm -rf target"
-    command = CommandBuilder.remove("target", recursive=True, force=True)
+    command = CommandBuilder.remove("target", recursive=True)
     assert expected == command
