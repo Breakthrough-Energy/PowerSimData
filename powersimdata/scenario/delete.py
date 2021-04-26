@@ -43,12 +43,10 @@ class Delete(State):
 
         wildcard = f"{scenario_id}_*"
 
-        # Delete links to base profiles on server
         print("--> Deleting scenario input data on server")
         target = posixpath.join(self.path_config.input_dir(), wildcard)
         self._data_access.remove(target, recursive=False, confirm=confirm)
 
-        # Delete output profiles
         print("--> Deleting scenario output data on server")
         target = posixpath.join(self.path_config.output_dir(), wildcard)
         self._data_access.remove(target, recursive=False, confirm=confirm)
@@ -60,7 +58,6 @@ class Delete(State):
         )
         self._data_access.remove(tmp_dir, recursive=True, confirm=confirm)
 
-        # Delete local files
         print("--> Deleting input and output data on local machine")
         target = os.path.join(server_setup.LOCAL_DIR, "data", "**", wildcard)
         LocalDataAccess().remove(target, recursive=False, confirm=confirm)

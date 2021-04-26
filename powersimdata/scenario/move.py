@@ -30,6 +30,8 @@ class Move(State):
 
         :param str target: optional argument specifying the backup system.
         :param bool confirm: prompt before deleting each batch of files
+        :raises TypeError: if target is not a str
+        :raises ValueError: if target is unknown (only "disk" is supported)
         """
         if not isinstance(target, str):
             raise TypeError("string is expected for optional argument target")
@@ -59,7 +61,7 @@ class BackUpDisk(object):
 
     :param powersimdata.data_access.data_access.DataAccess data_access:
         data access object.
-    :param dict scenario: scenario information.
+    :param dict scenario_info: scenario information.
     """
 
     def __init__(self, data_access, scenario_info):
