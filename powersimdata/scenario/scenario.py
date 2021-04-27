@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import pandas as pd
 
 from powersimdata.data_access.context import Context
@@ -25,6 +27,22 @@ class Scenario(object):
         "_scenario_list_manager",
         "_execute_list_manager",
     }
+    _default_info = [
+        ("plan", ""),
+        ("name", ""),
+        ("state", "create"),
+        ("grid_model", ""),
+        ("interconnect", ""),
+        ("base_demand", ""),
+        ("base_hydro", ""),
+        ("base_solar", ""),
+        ("base_wind", ""),
+        ("change_table", ""),
+        ("start_date", ""),
+        ("end_date", ""),
+        ("interval", ""),
+        ("engine", ""),
+    ]
 
     def __init__(self, descriptor=None):
         """Constructor."""
@@ -38,6 +56,7 @@ class Scenario(object):
         self._execute_list_manager = ExecuteListManager(self.data_access)
 
         if not descriptor:
+            self.info = OrderedDict(self._default_info)
             self.state = Create(self)
         else:
             self._set_info(descriptor)
