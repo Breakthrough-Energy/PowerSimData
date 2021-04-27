@@ -45,8 +45,11 @@ def calculate_ac_inv_costs(scenario, sum_results=True, exclude_branches=None):
     NEEM regions are used to find regional multipliers.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param bool sum_results: sum data frame for each branch type.
-    :return: (*dict*) -- cost of upgrading branches in $2010.
+    :param bool sum_results: whether to sum data frame for each branch type. Defaults to
+        True.
+    :return: (*dict*) -- keys are {'line_cost', 'transformer_cost'}, values are either
+        float if ``sum_results``, or pandas Series indexed by branch ID.
+        Whether summed or not, values are $USD, inflation-adjusted to today.
     """
 
     base_grid = Grid(scenario.info["interconnect"].split("_"))
@@ -72,8 +75,11 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     as a transformer.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :param bool sum_results: sum data frame for each branch type.
-    :return: (*dict*) -- cost of upgrading branches in $2010.
+    :param bool sum_results: whether to sum data frame for each branch type. Defaults to
+        True.
+    :return: (*dict*) -- keys are {'line_cost', 'transformer_cost'}, values are either
+        float if ``sum_results``, or pandas Series indexed by branch ID.
+        Whether summed or not, values are $USD, inflation-adjusted to today.
     """
 
     def select_mw(x, cost_df):
@@ -211,7 +217,7 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
     lines.loc[:, "MWmi"] = lines["lengthMi"] * lines["rateA"]
 
     # calculate cost of each line
-    lines.loc[:, "Cost"] = lines["MWmi"] * lines["costMWmi"] * lines["mult"]
+    lines.loc[:, "cost"] = lines["MWmi"] * lines["costMWmi"] * lines["mult"]
 
     # calculate transformer costs
     if len(transformers) > 0:
@@ -234,27 +240,30 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         transformers["per_MW_cost"] = []
         transformers["mult"] = []
 
-    transformers["Cost"] = (
+    transformers["cost"] = (
         transformers["rateA"] * transformers["per_MW_cost"] * transformers["mult"]
     )
 
-    lines.Cost *= calculate_inflation(2010)
-    transformers.Cost *= calculate_inflation(2020)
+    lines.cost *= calculate_inflation(2010)
+    transformers.cost *= calculate_inflation(2020)
     if sum_results:
         return {
-            "line_cost": lines.Cost.sum(),
-            "transformer_cost": transformers.Cost.sum(),
+            "line_cost": lines.cost.sum(),
+            "transformer_cost": transformers.cost.sum(),
         }
     else:
-        return {"line_cost": lines, "transformer_cost": transformers}
+        return {"line_cost": lines.cost, "transformer_cost": transformers.cost}
 
 
 def calculate_dc_inv_costs(scenario, sum_results=True):
     """Calculate cost of upgrading HVDC lines in a scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param bool sum_results: sum series to return total cost.
-    :return: (*pandas.Series/float*) -- cost of upgrading HVDC lines in $2015.
+    :param bool sum_results: whether to sum series to return total cost. Defaults to
+        True.
+    :return: (*pandas.Series/float*) -- cost of upgrading HVDC lines, in $USD,
+        inflation-adjusted to today. If ``sum_results``, a float is returned, otherwise
+        a Series.
     """
     base_grid = Grid(scenario.info["interconnect"].split("_"))
     grid = scenario.state.get_grid()
@@ -274,8 +283,11 @@ def _calculate_dc_inv_costs(grid_new, sum_results=True):
     """Calculate cost of upgrading HVDC lines.
 
     :param powersimdata.input.grid.Grid grid_new: grid instance.
-    :param bool sum_results: sum series to return total cost.
-    :return: (*pandas.Series/float*) -- cost of upgrading HVDC lines in $2015.
+    :param bool sum_results: whether to sum series to return total cost. Defaults to
+        True.
+    :return: (*pandas.Series/float*) -- cost of upgrading HVDC lines, in $USD,
+        inflation-adjusted to today. If ``sum_results``, a float is returned, otherwise
+        a Series.
     """
 
     def _calculate_single_line_cost(line, bus):
@@ -321,8 +333,13 @@ def calculate_gen_inv_costs(scenario, year, cost_case, sum_results=True):
     :param int/str year: building year.
     :param str cost_case: ATB cost case of data. *'Moderate'*: mid cost case,
         *'Conservative'*: generally higher costs, *'Advanced'*: generally lower costs
-    :return: (*pandas.DataFrame*) -- total generation investment cost summed by
-        technology.
+    :param bool sum_results: whether to sum data frame for plant costs. Defaults to
+        True.
+    :return: (*pandas.Series*) -- Overnight generation investment cost.
+        If ``sum_results``, indices are technologies and values are total cost.
+        Otherwise, indices are IDs of plants (including storage, which is given
+        pseudo-plant-IDs), and values are individual generator costs.
+        Whether summed or not, values are $USD, inflation-adjusted to today.
 
     .. todo:: it currently uses one (arbitrary) sub-technology. The rest of the costs
         are dropped. Wind and solar will need to be fixed based on the resource supply
@@ -364,11 +381,16 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
         *'Conservative'*: generally higher costs, *'Advanced'*: generally lower costs.
     :raises ValueError: if year not 2020 - 2050, or cost case not an allowed option.
     :raises TypeError: if year not int/str or cost_case not str.
-    :return: (*pandas.Series*) -- total generation investment cost, summed by
-        technology.
+    :param bool sum_results: whether to sum data frame for plant costs. Defaults to
+        True.
+    :return: (*pandas.Series*) -- Overnight generation investment cost.
+        If ``sum_results``, indices are technologies and values are total cost.
+        Otherwise, indices are IDs of plants (including storage, which is given
+        pseudo-plant-IDs), and values are individual generator costs.
+        Whether summed or not, values are $USD, inflation-adjusted to today.
 
     .. note:: the function computes the total capital cost as:
-        CAPEX_total = CAPEX ($/MW) * Pmax (MW) * regional multiplier
+        CAPEX_total = overnight CAPEX ($/MW) * Power capacity (MW) * regional multiplier
     """
 
     def load_cost(year, cost_case):
@@ -501,13 +523,13 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
     )
 
     # multiply all together to get summed CAPEX ($)
-    plants.loc[:, "CAPEX_total"] = (
+    plants.loc[:, "cost"] = (
         plants["CAPEX"] * plants["Pmax"] * plants["reg_cap_cost_mult"]
     )
 
     # sum cost by technology
-    plants.loc[:, "CAPEX_total"] *= calculate_inflation(2018)
+    plants.loc[:, "cost"] *= calculate_inflation(2018)
     if sum_results:
-        return plants.groupby(["Technology"])["CAPEX_total"].sum()
+        return plants.groupby(["Technology"])["cost"].sum()
     else:
-        return plants
+        return plants["cost"]

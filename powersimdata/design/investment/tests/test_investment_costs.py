@@ -167,7 +167,7 @@ def test_calculate_ac_inv_costs_not_summed(mock_grid):
     for branch_type, upgrade_costs in expected_ac_cost.items():
         assert set(upgrade_costs.keys()) == set(ac_cost[branch_type].index)
         for branch, cost in upgrade_costs.items():
-            assert cost == pytest.approx(ac_cost[branch_type].loc[branch, "Cost"])
+            assert cost == pytest.approx(ac_cost[branch_type].loc[branch])
 
 
 def test_calculate_dc_inv_costs(mock_grid):
@@ -244,6 +244,4 @@ def test_calculate_gen_inv_costs_not_summed(mock_grid):
     expected_gen_inv_cost = {k: v * inflation for k, v in expected_gen_inv_cost.items()}
     assert set(gen_inv_cost.index) == set(expected_gen_inv_cost.keys())
     for k in gen_inv_cost.index:
-        assert gen_inv_cost.loc[k, "CAPEX_total"] == pytest.approx(
-            expected_gen_inv_cost[k]
-        )
+        assert gen_inv_cost.loc[k] == pytest.approx(expected_gen_inv_cost[k])
