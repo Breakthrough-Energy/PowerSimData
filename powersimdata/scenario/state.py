@@ -34,7 +34,7 @@ class State(object):
             print("State switching: %s --> %s" % (self, state.name))
             self._leave()
             self.__class__ = state
-            self._enter()
+            self._enter(state)
         else:
             raise Exception(
                 "State switching: %s --> %s not permitted" % (self, state.name)
@@ -55,6 +55,6 @@ class State(object):
             del self.grid
             del self.ct
 
-    def _enter(self):
+    def _enter(self, state):
         """Initializes when entering state."""
-        pass
+        self.exported_methods = state.exported_methods

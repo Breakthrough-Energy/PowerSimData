@@ -102,13 +102,13 @@ def test_add_dcline_in_different_interconnect(ct):
     assert ct.ct == expected
 
 
-def test_add_dcline_Pmin_and_Pmax_success(ct):
+def test_add_dcline_Pmin_and_Pmax_success(ct):  # noqa: N802
     new_dcline = [{"Pmax": 2000, "Pmin": 0, "from_bus_id": 200, "to_bus_id": 2000}]
     ct.add_dcline(new_dcline)
     assert ct.ct == {"new_dcline": new_dcline}
 
 
-def test_add_dcline_Pmin_gt_Pmax(ct):
+def test_add_dcline_Pmin_gt_Pmax(ct):  # noqa: N802
     new_dcline = [{"Pmax": 2000, "Pmin": 3000, "from_bus_id": 200, "to_bus_id": 2000}]
     with pytest.raises(ValueError) as excinfo:
         ct.add_dcline(new_dcline)
@@ -116,7 +116,7 @@ def test_add_dcline_Pmin_gt_Pmax(ct):
     assert ct.ct == {}
 
 
-def test_add_dcline_Pmin_and_Pmax_and_capacity(ct):
+def test_add_dcline_Pmin_and_Pmax_and_capacity(ct):  # noqa: N802
     new_dcline = [
         {"Pmax": 200, "Pmin": -200, "capacity": 10, "from_bus_id": 1, "to_bus_id": 2}
     ]
@@ -146,7 +146,7 @@ def test_add_branch_zero_distance_between_buses(ct):
     assert ct.ct == {}
 
 
-def test_add_branch_Pmin_and_Pmax(ct):
+def test_add_branch_Pmin_and_Pmax(ct):  # noqa: N802
     new_dcline = [{"Pmax": 2000, "Pmin": 0, "from_bus_id": 200, "to_bus_id": 2000}]
     with pytest.raises(ValueError) as excinfo:
         ct.add_branch(new_dcline)

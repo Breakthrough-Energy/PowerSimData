@@ -9,7 +9,7 @@ def export_case_mat(grid, filepath, storage_filepath=None):
 
     :param powersimdata.input.grid.Grid grid: Grid instance.
     :param str filepath: path where main grid file will be saved.
-    :param str filepath: path where storage data file will be saved (if present).
+    :param str storage_filepath: path where storage data file will be saved, if present.
     """
     grid = copy.deepcopy(grid)
 

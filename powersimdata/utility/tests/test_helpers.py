@@ -68,6 +68,17 @@ def test_mem_cache_get_returns_copy():
     assert id(cache.get(key)) != id(obj)
 
 
+def test_mem_cache_put_version_never_changes():
+    cache = MemoryCache()
+    key = cache_key("foo", 4)
+    obj = {"key1": "value1"}
+    cache.put(key, obj)
+    obj["key2"] = "value2"
+    assert "key1" in cache.get(key)
+    assert "key2" not in cache.get(key)
+    assert "key2" in obj
+
+
 def test_copy_command():
     expected = r"\cp -p source dest"
     command = CommandBuilder.copy("source", "dest")
@@ -87,14 +98,10 @@ def test_copy_command():
 
 
 def test_remove_command():
-    expected = "rm target"
+    expected = "rm -f target"
     command = CommandBuilder.remove("target")
     assert expected == command
 
-    expected = "rm -r target"
-    command = CommandBuilder.remove("target", recursive=True)
-    assert expected == command
-
     expected = "rm -rf target"
-    command = CommandBuilder.remove("target", recursive=True, force=True)
+    command = CommandBuilder.remove("target", recursive=True)
     assert expected == command

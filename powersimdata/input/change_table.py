@@ -91,8 +91,11 @@ class ChangeTable(object):
         the and the scaling factor for the increase/decrease in capacity
         of the line as value.
     * *'storage'*:
-        value is a dictionary. The latter has *'bus_id'* as keys and the
-        capacity of storage (in MW) to add as value.
+        value is a list. Each entry in this list is a dictionary enclosing all the
+        information needed to add a new storage device to the grid. The keys in the
+        dictionary are: *'bus_id'*, *'capacity'*, "duration", "min_stor", "max_stor",
+        "energy_value", "InEff", "OutEff", "LossFactor", "terminal_min",
+        and "terminal_max". See the :meth:`add_storage_capacity` method for details.
     * *'new_dcline'*:
         value is a list. Each entry in this list is a dictionary enclosing
         all the information needed to add a new dcline to the grid. The
@@ -130,7 +133,7 @@ class ChangeTable(object):
         """
         self.grid = grid
         self.ct = {}
-        self.new_bus_cache = {}
+        self._new_element_caches = {k: {} for k in {"branch", "bus", "dcline", "plant"}}
 
     @staticmethod
     def _check_resource(resource):
@@ -259,10 +262,8 @@ class ChangeTable(object):
                 if len(self.ct[ct_key]["zone_id"]) == 0:
                     self.ct.pop(ct_key)
             if plant_id is not None:
-                plant_id_interconnect = set(
-                    self.grid.plant.groupby("type").get_group(resource).index
-                )
-                diff = set(plant_id.keys()).difference(plant_id_interconnect)
+                anticipated_plant = self._get_df_with_new_elements("plant")
+                diff = set(plant_id.keys()) - set(anticipated_plant.index)
                 if len(diff) != 0:
                     err_msg = f"No {resource} plant(s) with the following id: "
                     err_msg += ", ".join(sorted([str(d) for d in diff]))
@@ -351,6 +352,7 @@ class ChangeTable(object):
             is (are) the id of the line(s) and the associated value is the
             scaling factor for the increase/decrease in capacity of the line(s).
         """
+        anticipated_branch = self._get_df_with_new_elements("branch")
         if bool(zone_name) or bool(branch_id) is True:
             if "branch" not in self.ct:
                 self.ct["branch"] = {}
@@ -365,8 +367,7 @@ class ChangeTable(object):
                 for z in zone_name.keys():
                     self.ct["branch"]["zone_id"][self.grid.zone2id[z]] = zone_name[z]
             if branch_id is not None:
-                branch_id_interconnect = set(self.grid.branch.index)
-                diff = set(branch_id.keys()).difference(branch_id_interconnect)
+                diff = set(branch_id.keys()) - set(anticipated_branch.index)
                 if len(diff) != 0:
                     print("No branch with the following id:")
                     for i in list(diff):
@@ -391,7 +392,8 @@ class ChangeTable(object):
         """
         if "dcline" not in self.ct:
             self.ct["dcline"] = {}
-        diff = set(dcline_id.keys()).difference(set(self.grid.dcline.index))
+        anticipated_dcline = self._get_df_with_new_elements("dcline")
+        diff = set(dcline_id.keys()) - set(anticipated_dcline.index)
         if len(diff) != 0:
             print("No dc line with the following id:")
             for i in list(diff):
@@ -467,7 +469,23 @@ class ChangeTable(object):
 
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new storage device.
-        :raises TypeError: if info is not a list.
+            Required keys: "bus_id", "capacity".
+            "capacity" denotes the symmetric input and output power limits (MW).
+            Optional keys: "duration", "min_stor", "max_stor", "energy_value", "InEff",
+                "OutEff", "LossFactor", "terminal_min", "terminal_max".
+            "duration" denotes the energy to power ratio (hours).
+            "min_stor" denotes the minimum energy limit (unitless), e.g. 0.05 = 5%.
+            "max_stor" denotes the maximum energy limit (unitless), e.g. 0.95 = 95%.
+            "energy_value" denotes the value of stored energy at interval end ($/MWh).
+            "InEff" denotes the input efficiency (unitless), e.g. 0.95 = 95%.
+            "OutEff" denotes the output efficiency (unitless), e.g. 0.95 = 95%.
+            "LossFactor" denotes the per-hour relative losses,
+            e.g. 0.01 means that 1% of the current state of charge is lost per hour).
+            "terminal_min" denotes the minimum state of charge at interval end,
+            e.g. 0.5 means that the storage must end the interval with at least 50%.
+            "terminal_max" denotes the maximum state of charge at interval end,
+            e.g. 0.9 means that the storage must end the interval with no more than 90%.
+        :raises TypeError: if ``info`` is not a list.
         :raises ValueError: if any of the new storages to be added have bad values.
         """
         if not isinstance(info, list):
@@ -487,7 +505,7 @@ class ChangeTable(object):
             "terminal_min",
             "terminal_max",
         }
-        anticipated_bus = self._get_new_bus()
+        anticipated_bus = self._get_df_with_new_elements("bus")
         for i, storage in enumerate(info):
             self._check_entry_keys(storage, i, "storage", required, None, optional)
             if storage["bus_id"] not in anticipated_bus.index:
@@ -520,7 +538,14 @@ class ChangeTable(object):
 
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new dcline.
-        :raises TypeError: if info is not a list.
+            Required keys: "from_bus_id", "to_bus_id".
+            Optional keys: "capacity", "Pmax", "Pmin".
+            "capacity" denotes a bidirectional power limit (MW).
+            "Pmax" denotes a limit on power flowing from 'from' end to 'to' end.
+            "Pmin" denotes a limit on power flowing from 'from' end to 'to' end.
+            Either "capacity" XOR ("Pmax" and "Pmin") must be provided.
+            `capacity: 200` is equivalent to `Pmax: 200, Pmin: -200`.
+        :raises TypeError: if ``info`` is not a list.
         """
         if not isinstance(info, list):
             raise TypeError("Argument enclosing new HVDC line(s) must be a list")
@@ -531,7 +556,8 @@ class ChangeTable(object):
 
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new branch.
-        :raises TypeError: if info is not a list.
+            Required keys: "from_bus_id", "to_bus_id", "capacity".
+        :raises TypeError: if ``info`` is not a list.
         """
         if not isinstance(info, list):
             raise TypeError("Argument enclosing new AC line(s) must be a list")
@@ -583,7 +609,7 @@ class ChangeTable(object):
         :raises ValueError: if any of the new lines to be added have nonsensical values.
         """
         info = copy.deepcopy(info)
-        anticipated_bus = self._get_new_bus()
+        anticipated_bus = self._get_df_with_new_elements("bus")
         new_lines = []
         required = {"from_bus_id", "to_bus_id"}
         xor_sets = {("capacity", "Pmax"), ("capacity", "Pmin")}
@@ -646,14 +672,19 @@ class ChangeTable(object):
 
         :param list info: each entry is a dictionary. The dictionary gathers
             the information needed to create a new generator.
-        :raises TypeError: if info is not a list.
+            Required keys: "bus_id", "Pmax", "type".
+            Optional keys: "c0", "c1", "c2", "Pmin".
+            "c0", "c1", and "c2" are the coefficients for the cost curve, representing
+            the fixed cost ($/hour), linear cost ($/MWh), and quadratic cost ($/MW^2·h).
+            These are optional for hydro, solar, and wind, and required for other types.
+        :raises TypeError: if ``info`` is not a list.
         :raises ValueError: if any of the new plants to be added have bad values.
         """
         if not isinstance(info, list):
             raise TypeError("Argument enclosing new plant(s) must be a list")
 
         info = copy.deepcopy(info)
-        anticipated_bus = self._get_new_bus()
+        anticipated_bus = self._get_df_with_new_elements("bus")
         new_plants = []
         required = {"bus_id", "Pmax", "type"}
         optional = {"c0", "c1", "c2", "Pmin"}
@@ -701,7 +732,7 @@ class ChangeTable(object):
             the information needed to create a new bus.
             Required keys: "lat", "lon", ["zone_id" XOR "zone_name"].
             Optional key: "Pd", "baseKV".
-        :raises TypeError: if info is not a list.
+        :raises TypeError: if ``info`` is not a list.
         :raises ValueError: if any new bus doesn't have appropriate keys/values.
         """
         if not isinstance(info, list):
@@ -750,16 +781,24 @@ class ChangeTable(object):
             self.ct["new_bus"] = []
         self.ct["new_bus"] += new_buses
 
-    def _get_new_bus(self):
-        if "new_bus" not in self.ct:
-            return self.grid.bus
-        new_bus_tuple = tuple(tuple(sorted(b.items())) for b in self.ct["new_bus"])
-        if new_bus_tuple in self.new_bus_cache:
-            return self.new_bus_cache[new_bus_tuple]
+    def _get_df_with_new_elements(self, table):
+        """Get a post-transformation data table, for use with adding elements at new
+        buses, or scaling new elements.
+
+        :param str table: the table of the grid to be fetched:
+            'branch', 'bus', 'dcline', or 'plant'.
+        :return: (*pandas.DataFrame*) -- the post-transformation table.
+        """
+        add_key = f"new_{table}"
+        if add_key not in self.ct:
+            return getattr(self.grid, table)
+        new_elements_tuple = tuple(tuple(sorted(b.items())) for b in self.ct[add_key])
+        if new_elements_tuple in self._new_element_caches[table]:
+            return self._new_element_caches[table][new_elements_tuple]
         else:
-            bus = TransformGrid(self.grid, self.ct).get_grid().bus
-            self.new_bus_cache[new_bus_tuple] = bus
-            return bus
+            transformed = getattr(TransformGrid(self.grid, self.ct).get_grid(), table)
+            self._new_element_caches[table][new_elements_tuple] = transformed
+            return transformed.copy()
 
     def write(self, scenario_id):
         """Saves change table to disk.

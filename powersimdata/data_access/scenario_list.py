@@ -1,9 +1,9 @@
-import posixpath
 from collections import OrderedDict
 
-from powersimdata.data_access.csv_store import CsvStore
+import pandas as pd
+
+from powersimdata.data_access.csv_store import CsvStore, verify_hash
 from powersimdata.data_access.sql_store import SqlStore, to_data_frame
-from powersimdata.utility import server_setup
 
 
 class ScenarioTable(SqlStore):
@@ -62,29 +62,19 @@ class ScenarioTable(SqlStore):
         sql = self.insert(subset=scenario_info.keys())
         self.cur.execute(sql, tuple(scenario_info.values()))
 
-    def delete_entry(self, scenario_info):
+    def delete_entry(self, scenario_id):
         """Deletes entry in scenario list.
 
-        :param collections.OrderedDict scenario_info: entry to delete from scenario list.
+        :param int/str scenario_id: the id of the scenario
         """
         sql = self.delete("id")
-        self.cur.execute(sql, (scenario_info["id"],))
+        self.cur.execute(sql, (scenario_id,))
 
 
 class ScenarioListManager(CsvStore):
-    """Storage abstraction for scenario list using a csv file on the server.
+    """Storage abstraction for scenario list using a csv file."""
 
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
-    """
-
-    _SCENARIO_LIST = "ScenarioList.csv"
-
-    def __init__(self, ssh_client):
-        """Constructor"""
-        super().__init__(ssh_client)
-        self._server_path = posixpath.join(
-            server_setup.DATA_ROOT_DIR, self._SCENARIO_LIST
-        )
+    _FILE_NAME = "ScenarioList.csv"
 
     def get_scenario_table(self):
         """Returns scenario table from server if possible, otherwise read local
@@ -92,27 +82,17 @@ class ScenarioListManager(CsvStore):
 
         :return: (*pandas.DataFrame*) -- scenario list as a data frame.
         """
-        return self.get_table(self._SCENARIO_LIST)
+        return self.get_table()
 
-    def generate_scenario_id(self):
+    def _generate_scenario_id(self, table):
         """Generates scenario id.
 
+        :param pandas.DataFrame table: the current scenario list
         :return: (*str*) -- new scenario id.
         """
-        print("--> Generating scenario id")
-        command = "(flock -x 200; \
-                   id=$(awk -F',' 'END{print $1+1}' %s); \
-                   echo $id, >> %s; \
-                   echo $id) 200>%s" % (
-            self._server_path,
-            self._server_path,
-            posixpath.join(server_setup.DATA_ROOT_DIR, "scenario.lockfile"),
-        )
-
-        err_message = "Failed to generate id for new scenario"
-        command_output = self._execute_and_check_err(command, err_message)
-        scenario_id = command_output[0].splitlines()[0]
-        return scenario_id
+        max_value = table.index.max()
+        result = 1 if pd.isna(max_value) else max_value + 1
+        return str(result)
 
     def get_scenario(self, descriptor):
         """Get information for a scenario based on id or name
@@ -148,34 +128,34 @@ class ScenarioListManager(CsvStore):
                 .to_dict("records", into=OrderedDict)[0]
             )
 
+    @verify_hash
     def add_entry(self, scenario_info):
         """Adds scenario to the scenario list file on server.
 
         :param collections.OrderedDict scenario_info: entry to add to scenario list.
+        :return: (*pandas.DataFrame*) -- the updated data frame
         """
-        print("--> Adding entry in %s on server" % self._SCENARIO_LIST)
-        entry = ",".join(scenario_info.values())
-        options = "-F, -v INPLACE_SUFFIX=.bak -i inplace"
-        # AWK parses the file line-by-line. When the entry of the first column is
-        # equal to the scenario identification number, the entire line is replaced
-        # by the scenaario information.
-        program = "'{if($1==%s) $0=\"%s\"};1'" % (
-            scenario_info["id"],
-            entry,
-        )
-        command = "awk %s %s %s" % (options, program, self._server_path)
+        table = self.get_scenario_table()
+        scenario_id = self._generate_scenario_id(table)
+        scenario_info["id"] = scenario_id
+        scenario_info.move_to_end("id", last=False)
+        table.reset_index(inplace=True)
+        entry = pd.DataFrame({k: [v] for k, v in scenario_info.items()})
+        table = table.append(entry)
+        table.set_index("id", inplace=True)
 
-        err_message = "Failed to add entry in %s on server" % self._SCENARIO_LIST
-        _ = self._execute_and_check_err(command, err_message)
+        print("--> Adding entry in %s on server" % self._FILE_NAME)
+        return table
 
-    def delete_entry(self, scenario_info):
+    @verify_hash
+    def delete_entry(self, scenario_id):
         """Deletes entry in scenario list.
 
-        :param collections.OrderedDict scenario_info: entry to delete from scenario list.
+        :param int/str scenario_id: the id of the scenario
+        :return: (*pandas.DataFrame*) -- the updated data frame
         """
-        print("--> Deleting entry in %s on server" % self._SCENARIO_LIST)
-        entry = ",".join(scenario_info.values())
-        command = "sed -i.bak '/%s/d' %s" % (entry, self._server_path)
+        table = self.get_scenario_table()
+        table.drop(int(scenario_id), inplace=True)
 
-        err_message = "Failed to delete entry in %s on server" % self._SCENARIO_LIST
-        _ = self._execute_and_check_err(command, err_message)
+        print("--> Deleting entry in %s on server" % self._FILE_NAME)
+        return table

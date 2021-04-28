@@ -25,27 +25,15 @@ class CommandBuilder:
         return fr"\cp {flags} {src} {dest}"
 
     @staticmethod
-    def remove(target, recursive=False, force=False):
+    def remove(target, recursive=False):
         """Builds a rm command with some options
 
         :param str target: the path or file to be removed
         :param bool recursive: whether to pass -r option
-        :param bool force: whether to pass -f option
         """
-        r_flag = "r" if recursive else ""
-        f_flag = "f" if force else ""
-        if recursive or force:
-            flags = f"-{r_flag}{f_flag}"
-            return f"rm {flags} {target}"
-        return f"rm {target}"
-
-    @staticmethod
-    def list(path):
-        """Builds an ls command
-
-        :param str path: the path argument
-        """
-        return f"ls {path}"
+        if recursive:
+            return f"rm -rf {target}"
+        return f"rm -f {target}"
 
 
 class MemoryCache:
@@ -63,7 +51,7 @@ class MemoryCache:
         :param tuple key: a tuple used to lookup the cached value
         :param Any obj: the object to cache
         """
-        self._cache[key] = obj
+        self._cache[key] = copy.deepcopy(obj)
 
     def get(self, key):
         """Retrieve the value associated with key if it exists.

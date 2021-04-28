@@ -22,6 +22,16 @@ class Execute(State):
 
     name = "execute"
     allowed = []
+    exported_methods = {
+        "check_progress",
+        "extract_simulation_output",
+        "get_ct",
+        "get_grid",
+        "launch_simulation",
+        "prepare_simulation_input",
+        "print_scenario_info",
+        "print_scenario_status",
+    }
 
     def __init__(self, scenario):
         """Constructor."""
@@ -37,6 +47,9 @@ class Execute(State):
         print("--> Status\n%s" % self._scenario_status)
 
         self._set_ct_and_grid()
+
+    def _scenario_id(self):
+        return self._scenario_info["id"]
 
     def _set_ct_and_grid(self):
         """Sets change table and grid."""
@@ -68,13 +81,15 @@ class Execute(State):
 
     def _update_scenario_status(self):
         """Updates scenario status."""
-        scenario_id = self._scenario_info["id"]
-        self._scenario_status = self._execute_list_manager.get_status(scenario_id)
+        self._scenario_status = self._execute_list_manager.get_status(
+            self._scenario_id()
+        )
 
     def _update_scenario_info(self):
         """Updates scenario information."""
-        scenario_id = self._scenario_info["id"]
-        self._scenario_info = self._scenario_list_manager.get_scenario(scenario_id)
+        self._scenario_info = self._scenario_list_manager.get_scenario(
+            self._scenario_id()
+        )
 
     def _run_script(self, script, extra_args=None):
         """Returns running process
@@ -152,9 +167,7 @@ class Execute(State):
 
             si.prepare_mpc_file()
 
-            self._execute_list_manager.update_execute_list(
-                "prepared", self._scenario_info
-            )
+            self._execute_list_manager.set_status(self._scenario_id(), "prepared")
         else:
             print("---------------------------")
             print("SCENARIO CANNOT BE PREPARED")
@@ -193,7 +206,7 @@ class Execute(State):
             extra_args.append("--threads " + str(threads))
 
         if solver:
-            extra_args.append("--solver", solver)
+            extra_args.append("--solver " + solver)
 
         if not isinstance(extract_data, bool):
             raise TypeError("extract_data must be a boolean: 'True' or 'False'")
@@ -211,7 +224,7 @@ class Execute(State):
             None, which translates to gurobi
         :return: (*requests.Response*) -- the http response object
         """
-        scenario_id = self._scenario_info["id"]
+        scenario_id = self._scenario_id()
         url = f"http://{server_setup.SERVER_ADDRESS}:5000/launch/{scenario_id}"
         resp = requests.post(url, params={"threads": threads, "solver": solver})
         if resp.status_code != 200:
@@ -274,7 +287,7 @@ class Execute(State):
         if mode != DeploymentMode.Container:
             raise NotImplementedError("Operation only supported for container mode")
 
-        scenario_id = self._scenario_info["id"]
+        scenario_id = self._scenario_id()
         url = f"http://{server_setup.SERVER_ADDRESS}:5000/status/{scenario_id}"
         resp = requests.get(url)
         return resp.json()
@@ -321,22 +334,14 @@ class SimulationInput(object):
         self.server_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
         self.scenario_folder = "scenario_%s" % scenario_info["id"]
 
-        self.TMP_DIR = posixpath.join(
-            self.server_config.execute_dir(), self.scenario_folder
-        )
         self.REL_TMP_DIR = posixpath.join(
             server_setup.EXECUTE_DIR, self.scenario_folder
         )
 
     def create_folder(self):
-        """Creates folder on server that will enclose simulation inputs.
-
-        :raises IOError: if folder cannot be created.
-        """
+        """Creates folder on server that will enclose simulation inputs."""
         print("--> Creating temporary folder on server for simulation inputs")
-        _, _, stderr = self._data_access.makedir(self.TMP_DIR)
-        if len(stderr.readlines()) != 0:
-            raise IOError("Failed to create %s on server" % self.TMP_DIR)
+        self._data_access.makedir(self.REL_TMP_DIR)
 
     def prepare_mpc_file(self):
         """Creates MATPOWER case file."""
@@ -349,6 +354,10 @@ class SimulationInput(object):
         self._data_access.move_to(
             file_name, self.REL_TMP_DIR, change_name_to="case.mat"
         )
+        if len(self.grid.storage["gen"]) > 0:
+            self._data_access.move_to(
+                storage_file_name, self.REL_TMP_DIR, change_name_to="case_storage.mat"
+            )
 
     def prepare_profile(self, kind, profile_as=None):
         """Prepares profile for simulation.

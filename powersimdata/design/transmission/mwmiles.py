@@ -1,4 +1,5 @@
 from powersimdata.input.grid import Grid
+from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.utility.distance import haversine
 
 
@@ -51,20 +52,30 @@ def _calculate_mw_miles(original_grid, ct, exclude_branches=None):
     else:
         raise TypeError("exclude_branches must be None, list, tuple, or set")
 
-    base_branch = original_grid.branch
-    upgraded_branches = ct["branch"]["branch_id"]
-    for b, v in upgraded_branches.items():
+    base_branch_ids = set(original_grid.branch.index)
+    upgraded_branch_ids = set(ct["branch"]["branch_id"].keys())
+    transformed_branch = TransformGrid(original_grid, ct).get_grid().branch
+    if "new_branch" in ct:
+        upgraded_branch_ids |= set(transformed_branch.index) - base_branch_ids
+    for b in upgraded_branch_ids:
         if b in exclude_branches:
             continue
-        # 'upgraded' capacity is v-1 because a scale of 1 = an upgrade of 0
-        upgraded_capacity = base_branch.loc[b, "rateA"] * (v - 1)
-        device_type = base_branch.loc[b, "branch_device_type"]
+        if b in base_branch_ids:
+            # 'upgraded' capacity is (scale - 1) because a scale of 1 = an upgrade of 0
+            scale = ct["branch"]["branch_id"][b]
+            upgraded_capacity = transformed_branch.loc[b, "rateA"] / scale * (scale - 1)
+        else:
+            upgraded_capacity = transformed_branch.loc[b, "rateA"]
+        device_type = transformed_branch.loc[b, "branch_device_type"]
         if device_type == "Line":
             from_coords = (
-                base_branch.loc[b, "from_lat"],
-                base_branch.loc[b, "from_lon"],
+                transformed_branch.loc[b, "from_lat"],
+                transformed_branch.loc[b, "from_lon"],
             )
-            to_coords = (base_branch.loc[b, "to_lat"], base_branch.loc[b, "to_lon"])
+            to_coords = (
+                transformed_branch.loc[b, "to_lat"],
+                transformed_branch.loc[b, "to_lon"],
+            )
             addtl_mw_miles = upgraded_capacity * haversine(from_coords, to_coords)
             upgrades["mw_miles"] += addtl_mw_miles
             upgrades["num_lines"] += 1
@@ -75,6 +86,6 @@ def _calculate_mw_miles(original_grid, ct, exclude_branches=None):
             upgrades["transformer_mw"] += upgraded_capacity
             upgrades["num_transformers"] += 1
         else:
-            raise Exception("Unknown branch: " + str(b))
+            raise Exception("Unknown branch type: " + str(b))
 
     return upgrades

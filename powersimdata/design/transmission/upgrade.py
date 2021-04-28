@@ -1,5 +1,6 @@
 import pandas as pd
 
+from powersimdata.design.investment.investment_costs import _calculate_ac_inv_costs
 from powersimdata.input.grid import Grid
 from powersimdata.network.model import area_to_loadzone
 from powersimdata.utility.distance import haversine
@@ -262,14 +263,13 @@ def _identify_mesh_branch_upgrades(
     zero_length_value = 1  # miles
 
     # Validate method input
-    allowed_methods = ("branches", "MW", "MWmiles")
+    allowed_methods = ("branches", "MW", "MWmiles", "cost")
     if method not in allowed_methods:
         allowed_list = ", ".join(allowed_methods)
         raise ValueError(f"method must be one of: {allowed_list}")
 
     # Get raw congestion dual values, add them
-    rss = ref_scenario.state
-    ref_cong_abs = rss.get_congu() + rss.get_congl()
+    ref_cong_abs = ref_scenario.state.get_congu() + ref_scenario.state.get_congl()
     all_branches = set(ref_cong_abs.columns.tolist())
     # Create validated composite allow list
     composite_allow_list = _construct_composite_allow_list(
@@ -277,12 +277,12 @@ def _identify_mesh_branch_upgrades(
     )
 
     # Parse 2-D array to vector of quantile values
+    ref_cong_abs = ref_cong_abs.filter(items=composite_allow_list)
     quantile_cong_abs = ref_cong_abs.quantile(quantile)
     # Filter out insignificant values
     significance_bitmask = quantile_cong_abs > cong_significance_cutoff
     quantile_cong_abs = quantile_cong_abs.where(significance_bitmask).dropna()
     # Filter based on composite allow list
-    quantile_cong_abs = quantile_cong_abs.filter(items=composite_allow_list)
     congested_indices = list(quantile_cong_abs.index)
 
     # Ensure that we have enough congested branches to upgrade
@@ -293,6 +293,15 @@ def _identify_mesh_branch_upgrades(
         raise ValueError(err_msg)
 
     # Calculate selected metric for congested branches
+    if method == "cost":
+        # Calculate costs for an upgrade dataframe containing only composite_allow_list
+        base_grid = Grid(
+            ref_scenario.info["interconnect"], ref_scenario.info["grid_model"]
+        )
+        base_grid.branch = base_grid.branch.filter(items=congested_indices, axis=0)
+        upgrade_costs = _calculate_ac_inv_costs(base_grid, sum_results=False)
+        # Merge the individual line/transformer data into a single Series
+        merged_upgrade_costs = pd.concat([v for v in upgrade_costs.values()])
     if method in ("MW", "MWmiles"):
         ref_grid = ref_scenario.state.get_grid()
         branch_ratings = ref_grid.branch.loc[congested_indices, "rateA"]
@@ -315,6 +324,8 @@ def _identify_mesh_branch_upgrades(
         # Replace zero-length branches by designated default, don't divide by 0
         branch_lengths = branch_lengths.replace(0, value=zero_length_value)
         branch_metric = quantile_cong_abs / (branch_ratings * branch_lengths)
+    elif method == "cost":
+        branch_metric = quantile_cong_abs / merged_upgrade_costs
     else:
         # By process of elimination, all that's left is method 'branches'
         branch_metric = quantile_cong_abs

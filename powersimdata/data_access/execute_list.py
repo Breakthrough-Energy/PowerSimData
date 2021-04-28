@@ -1,8 +1,5 @@
-import posixpath
-
-from powersimdata.data_access.csv_store import CsvStore
+from powersimdata.data_access.csv_store import CsvStore, verify_hash
 from powersimdata.data_access.sql_store import SqlStore, to_data_frame
-from powersimdata.utility import server_setup
 
 
 class ExecuteTable(SqlStore):
@@ -50,40 +47,30 @@ class ExecuteTable(SqlStore):
             ),
         )
 
-    def update_execute_list(self, status, scenario_info):
+    def set_status(self, scenario_id, status):
         """Updates status of scenario in execute list
 
+        :param int scenario_id: the scenario id
         :param str status: execution status.
-        :param collections.OrderedDict scenario_info: entry to update
         """
         self.cur.execute(
             "UPDATE execute_list SET status = %s WHERE id = %s",
-            (status, scenario_info["id"]),
+            (status, scenario_id),
         )
 
-    def delete_entry(self, scenario_info):
+    def delete_entry(self, scenario_id):
         """Deletes entry from execute list.
 
-        :param collections.OrderedDict scenario_info: entry to delete
+        :param int/str scenario_id: the id of the scenario
         """
         sql = self.delete("id")
-        self.cur.execute(sql, (scenario_info["id"],))
+        self.cur.execute(sql, (scenario_id,))
 
 
 class ExecuteListManager(CsvStore):
-    """Storage abstraction for execute list using a csv file on the server.
+    """Storage abstraction for execute list using a csv file."""
 
-    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
-    """
-
-    _EXECUTE_LIST = "ExecuteList.csv"
-
-    def __init__(self, ssh_client):
-        """Constructor"""
-        super().__init__(ssh_client)
-        self._server_path = posixpath.join(
-            server_setup.DATA_ROOT_DIR, self._EXECUTE_LIST
-        )
+    _FILE_NAME = "ExecuteList.csv"
 
     def get_execute_table(self):
         """Returns execute table from server if possible, otherwise read local
@@ -91,7 +78,7 @@ class ExecuteListManager(CsvStore):
 
         :return: (*pandas.DataFrame*) -- execute list as a data frame.
         """
-        return self.get_table(self._EXECUTE_LIST)
+        return self.get_table()
 
     def get_status(self, scenario_id):
         """Return the status for the scenario
@@ -107,39 +94,36 @@ class ExecuteListManager(CsvStore):
             raise Exception(f"Scenario not found in execute list, id = {scenario_id}")
 
     def add_entry(self, scenario_info):
-        """Adds scenario to the execute list file on server.
+        """Add entry to execute list
 
         :param collections.OrderedDict scenario_info: entry to add
         """
-        print("--> Adding entry in execute table on server")
-        entry = "%s,created" % scenario_info["id"]
-        command = "echo %s >> %s" % (entry, self._server_path)
-        err_message = "Failed to update %s on server" % self._EXECUTE_LIST
-        _ = self._execute_and_check_err(command, err_message)
+        scenario_id = int(scenario_info["id"])
+        return self.set_status(scenario_id, "created")
 
-    def update_execute_list(self, status, scenario_info):
-        """Updates status in execute list file on server.
+    @verify_hash
+    def set_status(self, scenario_id, status):
+        """Set the scenario status
 
-        :param str status: execution status.
-        :param collections.OrderedDict scenario_info: entry to update
+        :param int/str scenario_id: the scenario id
+        :param str status: the new status
+        :return: (*pandas.DataFrame*) -- the updated data frame
         """
-        print("--> Updating status in execute table on server")
-        options = "-F, -v OFS=',' -v INPLACE_SUFFIX=.bak -i inplace"
-        # AWK parses the file line-by-line. When the entry of the first column is equal
-        # to the scenario identification number, the second column is replaced by the
-        # status parameter.
-        program = "'{if($1==%s) $2=\"%s\"};1'" % (scenario_info["id"], status)
-        command = "awk %s %s %s" % (options, program, self._server_path)
-        err_message = "Failed to update %s on server" % self._EXECUTE_LIST
-        _ = self._execute_and_check_err(command, err_message)
+        table = self.get_execute_table()
+        table.loc[int(scenario_id), "status"] = status
 
-    def delete_entry(self, scenario_info):
+        print(f"-->  Setting status={status} in execute table on server")
+        return table
+
+    @verify_hash
+    def delete_entry(self, scenario_id):
         """Deletes entry from execute list on server.
 
-        :param collections.OrderedDict scenario_info: entry to delete
+        :param int/str scenario_id: the id of the scenario
+        :return: (*pandas.DataFrame*) -- the updated data frame
         """
+        table = self.get_execute_table()
+        table.drop(int(scenario_id), inplace=True)
+
         print("--> Deleting entry in execute table on server")
-        entry = "^%s,extracted" % scenario_info["id"]
-        command = "sed -i.bak '/%s/d' %s" % (entry, self._server_path)
-        err_message = "Failed to delete entry in %s on server" % self._EXECUTE_LIST
-        _ = self._execute_and_check_err(command, err_message)
+        return table

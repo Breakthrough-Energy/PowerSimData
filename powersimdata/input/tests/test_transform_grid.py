@@ -365,6 +365,29 @@ def test_add_branch(ct):
     )
 
 
+def test_added_branch_scaled(ct):
+    new_branch = [
+        {"capacity": 150, "from_bus_id": 8, "to_bus_id": 100},
+        {"capacity": 250, "from_bus_id": 8000, "to_bus_id": 30000},
+        {"capacity": 50, "from_bus_id": 1, "to_bus_id": 655},
+        {"capacity": 125, "from_bus_id": 3001005, "to_bus_id": 3008157},
+    ]
+    ct.add_branch(new_branch)
+    prev_max_branch_id = grid.branch.index.max()
+    new_branch_ids = list(
+        range(prev_max_branch_id + 1, prev_max_branch_id + 1 + len(new_branch))
+    )
+    ct.scale_branch_capacity(branch_id={new_branch_ids[0]: 2})
+    new_grid = TransformGrid(grid, ct.ct).get_grid()
+    new_capacity = new_grid.branch.rateA
+
+    for i, new_id in enumerate(new_branch_ids):
+        if i == 0:
+            assert new_capacity.loc[new_branch_ids[i]] == new_branch[i]["capacity"] * 2
+        else:
+            assert new_capacity.loc[new_id] == new_branch[i]["capacity"]
+
+
 def test_add_dcline(ct):
     new_dcline = [
         {"capacity": 2000, "from_bus_id": 200, "to_bus_id": 2000},

@@ -103,7 +103,7 @@ class TransformProfile(object):
         :return: (*pandas.DataFrame*) -- data frame of demand.
         """
         zone_id = sorted(self.grid.bus.zone_id.unique())
-        demand = self._input_data.get_data(self.scenario_info, "demand")[zone_id]
+        demand = self._input_data.get_data(self.scenario_info, "demand").loc[:, zone_id]
         if bool(self.ct) and "demand" in list(self.ct.keys()):
             for key, value in self.ct["demand"]["zone_id"].items():
                 print(

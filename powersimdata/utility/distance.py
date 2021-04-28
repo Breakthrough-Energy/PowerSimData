@@ -9,7 +9,7 @@ def haversine(point1, point2):
     :return: (*float*) -- distance in miles.
     """
 
-    _AVG_EARTH_RADIUS_MILES = 3958.7613
+    _AVG_EARTH_RADIUS_MILES = 3958.7613  # noqa: N806
 
     # unpack latitude/longitude
     lat1, lng1 = point1

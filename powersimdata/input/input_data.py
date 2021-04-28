@@ -1,15 +1,60 @@
 import os
-import posixpath
 
 import pandas as pd
 
 from powersimdata.data_access.context import Context
+from powersimdata.data_access.profile_helper import ProfileHelper
 from powersimdata.utility import server_setup
 from powersimdata.utility.helpers import MemoryCache, cache_key
 
 _cache = MemoryCache()
 
 profile_kind = {"demand", "hydro", "solar", "wind"}
+
+
+_file_extension = {
+    **{"ct": "pkl", "grid": "mat"},
+    **{k: "csv" for k in profile_kind},
+}
+
+
+class InputHelper:
+    def __init__(self, data_access):
+        self.data_access = data_access
+
+    @staticmethod
+    def get_file_components(scenario_info, field_name):
+        """Get the file name and relative path for either ct or grid
+
+        :param dict scenario_info: a ScenarioInfo instance
+        :param str field_name: the input file type
+        :return: (*tuple*) -- file name and path
+        """
+        ext = _file_extension[field_name]
+        file_name = scenario_info["id"] + "_" + field_name + "." + ext
+        from_dir = server_setup.INPUT_DIR
+        return file_name, from_dir
+
+    def download_file(self, file_name, from_dir):
+        """Download the file if using server, otherwise no-op
+
+        :param str file_name: either grid or ct file name
+        :param str from_dir: the path relative to the root dir
+        """
+        self.data_access.copy_from(file_name, from_dir)
+
+
+def _check_field(field_name):
+    """Checks field name.
+
+    :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
+        *'ct'* or *'grid'*.
+    :raises ValueError: if not *'demand'*, *'hydro'*, *'solar'*, *'wind'*
+        *'ct'* or *'grid'*
+    """
+    possible = list(_file_extension.keys())
+    if field_name not in possible:
+        raise ValueError("Only %s data can be loaded" % " | ".join(possible))
 
 
 class InputData(object):
@@ -22,24 +67,7 @@ class InputData(object):
         """Constructor."""
         os.makedirs(server_setup.LOCAL_DIR, exist_ok=True)
 
-        self.file_extension = {
-            **{"ct": "pkl", "grid": "mat"},
-            **{k: "csv" for k in profile_kind},
-        }
-
         self.data_access = Context.get_data_access(data_loc)
-
-    def _check_field(self, field_name):
-        """Checks field name.
-
-        :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
-            *'ct'* or *'grid'*.
-        :raises ValueError: if not *'demand'*, *'hydro'*, *'solar'*, *'wind'*
-            *'ct'* or *'grid'*
-        """
-        possible = list(self.file_extension.keys())
-        if field_name not in possible:
-            raise ValueError("Only %s data can be loaded" % " | ".join(possible))
 
     def get_data(self, scenario_info, field_name):
         """Returns data either from server or local directory.
@@ -52,20 +80,15 @@ class InputData(object):
             dictionary, or the path to a matfile enclosing the grid data.
         :raises FileNotFoundError: if file not found on local machine.
         """
-        self._check_field(field_name)
-
+        _check_field(field_name)
         print("--> Loading %s" % field_name)
-        ext = self.file_extension[field_name]
 
         if field_name in profile_kind:
-            version = scenario_info["base_" + field_name]
-            file_name = field_name + "_" + version + "." + ext
-            from_dir = posixpath.join(
-                server_setup.BASE_PROFILE_DIR, scenario_info["grid_model"]
-            )
+            helper = ProfileHelper
         else:
-            file_name = scenario_info["id"] + "_" + field_name + "." + ext
-            from_dir = server_setup.INPUT_DIR
+            helper = InputHelper(self.data_access)
+
+        file_name, from_dir = helper.get_file_components(scenario_info, field_name)
 
         filepath = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
         key = cache_key(filepath)
@@ -79,37 +102,19 @@ class InputData(object):
                 "%s not found in %s on local machine"
                 % (file_name, server_setup.LOCAL_DIR)
             )
-            self.data_access.copy_from(file_name, from_dir)
+            helper.download_file(file_name, from_dir)
             data = _read_data(filepath)
         _cache.put(key, data)
         return data
 
     def get_profile_version(self, grid_model, kind):
-        """Returns available raw profile either from server or local directory.
+        """Returns available raw profile from blob storage or local disk
 
         :param str grid_model: grid model.
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
         :return: (*list*) -- available profile version.
-        :raises ValueError: if kind not one of *'demand'*, *'hydro'*, *'solar'* or
-            *'wind'*.
         """
-        if kind not in profile_kind:
-            raise ValueError("kind must be one of %s" % " | ".join(profile_kind))
-
-        query = posixpath.join(
-            server_setup.DATA_ROOT_DIR,
-            server_setup.BASE_PROFILE_DIR,
-            grid_model,
-            kind + "_*",
-        )
-        stdin, stdout, stderr = self.data_access.execute_command("ls " + query)
-        if len(stderr.readlines()) != 0:
-            print("No %s profiles available." % kind)
-            version = []
-        else:
-            filename = [os.path.basename(line.rstrip()) for line in stdout.readlines()]
-            version = [f[f.rfind("_") + 1 : -4] for f in filename]
-        return version
+        return self.data_access.get_profile_version(grid_model, kind)
 
 
 def _read_data(filepath):
@@ -144,8 +149,8 @@ def get_bus_demand(scenario_info, grid):
     :param powersimdata.input.grid.Grid grid: grid to construct bus demand for.
     :return: (*pandas.DataFrame*) -- data frame of demand.
     """
-    demand = InputData().get_data(scenario_info, "demand")
     bus = grid.bus
+    demand = InputData().get_data(scenario_info, "demand")[bus.zone_id.unique()]
     bus["zone_Pd"] = bus.groupby("zone_id")["Pd"].transform("sum")
     bus["zone_share"] = bus["Pd"] / bus["zone_Pd"]
     zone_bus_shares = pd.DataFrame(
