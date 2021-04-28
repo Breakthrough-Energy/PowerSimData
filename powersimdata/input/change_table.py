@@ -133,7 +133,7 @@ class ChangeTable(object):
         """
         self.grid = grid
         self.ct = {}
-        self.new_bus_cache = {}
+        self._new_element_caches = {k: {} for k in {"branch", "bus", "dcline", "plant"}}
 
     @staticmethod
     def _check_resource(resource):
@@ -262,10 +262,8 @@ class ChangeTable(object):
                 if len(self.ct[ct_key]["zone_id"]) == 0:
                     self.ct.pop(ct_key)
             if plant_id is not None:
-                plant_id_interconnect = set(
-                    self.grid.plant.groupby("type").get_group(resource).index
-                )
-                diff = set(plant_id.keys()).difference(plant_id_interconnect)
+                anticipated_plant = self._get_df_with_new_elements("plant")
+                diff = set(plant_id.keys()) - set(anticipated_plant.index)
                 if len(diff) != 0:
                     err_msg = f"No {resource} plant(s) with the following id: "
                     err_msg += ", ".join(sorted([str(d) for d in diff]))
@@ -354,6 +352,7 @@ class ChangeTable(object):
             is (are) the id of the line(s) and the associated value is the
             scaling factor for the increase/decrease in capacity of the line(s).
         """
+        anticipated_branch = self._get_df_with_new_elements("branch")
         if bool(zone_name) or bool(branch_id) is True:
             if "branch" not in self.ct:
                 self.ct["branch"] = {}
@@ -368,8 +367,7 @@ class ChangeTable(object):
                 for z in zone_name.keys():
                     self.ct["branch"]["zone_id"][self.grid.zone2id[z]] = zone_name[z]
             if branch_id is not None:
-                branch_id_interconnect = set(self.grid.branch.index)
-                diff = set(branch_id.keys()).difference(branch_id_interconnect)
+                diff = set(branch_id.keys()) - set(anticipated_branch.index)
                 if len(diff) != 0:
                     print("No branch with the following id:")
                     for i in list(diff):
@@ -394,7 +392,8 @@ class ChangeTable(object):
         """
         if "dcline" not in self.ct:
             self.ct["dcline"] = {}
-        diff = set(dcline_id.keys()).difference(set(self.grid.dcline.index))
+        anticipated_dcline = self._get_df_with_new_elements("dcline")
+        diff = set(dcline_id.keys()) - set(anticipated_dcline.index)
         if len(diff) != 0:
             print("No dc line with the following id:")
             for i in list(diff):
@@ -506,7 +505,7 @@ class ChangeTable(object):
             "terminal_min",
             "terminal_max",
         }
-        anticipated_bus = self._get_new_bus()
+        anticipated_bus = self._get_df_with_new_elements("bus")
         for i, storage in enumerate(info):
             self._check_entry_keys(storage, i, "storage", required, None, optional)
             if storage["bus_id"] not in anticipated_bus.index:
@@ -610,7 +609,7 @@ class ChangeTable(object):
         :raises ValueError: if any of the new lines to be added have nonsensical values.
         """
         info = copy.deepcopy(info)
-        anticipated_bus = self._get_new_bus()
+        anticipated_bus = self._get_df_with_new_elements("bus")
         new_lines = []
         required = {"from_bus_id", "to_bus_id"}
         xor_sets = {("capacity", "Pmax"), ("capacity", "Pmin")}
@@ -685,7 +684,7 @@ class ChangeTable(object):
             raise TypeError("Argument enclosing new plant(s) must be a list")
 
         info = copy.deepcopy(info)
-        anticipated_bus = self._get_new_bus()
+        anticipated_bus = self._get_df_with_new_elements("bus")
         new_plants = []
         required = {"bus_id", "Pmax", "type"}
         optional = {"c0", "c1", "c2", "Pmin"}
@@ -782,16 +781,24 @@ class ChangeTable(object):
             self.ct["new_bus"] = []
         self.ct["new_bus"] += new_buses
 
-    def _get_new_bus(self):
-        if "new_bus" not in self.ct:
-            return self.grid.bus
-        new_bus_tuple = tuple(tuple(sorted(b.items())) for b in self.ct["new_bus"])
-        if new_bus_tuple in self.new_bus_cache:
-            return self.new_bus_cache[new_bus_tuple]
+    def _get_df_with_new_elements(self, table):
+        """Get a post-transformation data table, for use with adding elements at new
+        buses, or scaling new elements.
+
+        :param str table: the table of the grid to be fetched:
+            'branch', 'bus', 'dcline', or 'plant'.
+        :return: (*pandas.DataFrame*) -- the post-transformation table.
+        """
+        add_key = f"new_{table}"
+        if add_key not in self.ct:
+            return getattr(self.grid, table)
+        new_elements_tuple = tuple(tuple(sorted(b.items())) for b in self.ct[add_key])
+        if new_elements_tuple in self._new_element_caches[table]:
+            return self._new_element_caches[table][new_elements_tuple]
         else:
-            bus = TransformGrid(self.grid, self.ct).get_grid().bus
-            self.new_bus_cache[new_bus_tuple] = bus
-            return bus
+            transformed = getattr(TransformGrid(self.grid, self.ct).get_grid(), table)
+            self._new_element_caches[table][new_elements_tuple] = transformed
+            return transformed.copy()
 
     def write(self, scenario_id):
         """Saves change table to disk.

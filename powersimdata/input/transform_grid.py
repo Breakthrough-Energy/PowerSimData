@@ -43,20 +43,19 @@ class TransformGrid(object):
 
     def _apply_change_table(self):
         """Apply changes listed in change table to the grid."""
+        # First scale by zones, so that zone factors are not applied to additions.
         for g in self.gen_types:
             if g in self.ct.keys():
-                self._scale_gen(g)
+                self._scale_gen_by_zone(g)
             if f"{g}_cost" in self.ct.keys():
-                self._scale_gencost(g)
+                self._scale_gencost_by_zone(g)
             if f"{g}_pmin" in self.ct.keys():
-                self._scale_gen_pmin(g)
+                self._scale_gen_pmin_by_zone(g)
 
         if "branch" in self.ct.keys():
-            self._scale_branch()
+            self._scale_branch_by_zone()
 
-        if "dcline" in self.ct.keys():
-            self._scale_dcline()
-
+        # Then, add new elements
         if "new_bus" in self.ct.keys():
             self._add_bus()
 
@@ -72,9 +71,24 @@ class TransformGrid(object):
         if "storage" in self.ct.keys():
             self._add_storage()
 
-    def _scale_gen(self, gen_type):
-        """Scales capacity of generators and the associated generation cost curve
-            (to maintain the same slopes at the start/end of the curve).
+        # Finally, scale by IDs, so that additions can be scaled.
+        for g in self.gen_types:
+            if g in self.ct.keys():
+                self._scale_gen_by_id(g)
+            if f"{g}_cost" in self.ct.keys():
+                self._scale_gencost_by_id(g)
+            if f"{g}_pmin" in self.ct.keys():
+                self._scale_gen_pmin_by_id(g)
+
+        if "branch" in self.ct.keys():
+            self._scale_branch_by_id()
+
+        if "dcline" in self.ct.keys():
+            self._scale_dcline()
+
+    def _scale_gen_by_zone(self, gen_type):
+        """Scales capacity of generators, by zone. Also scales the associated generation
+            cost curve (to maintain the same slopes at the start/end of the curve).
 
         :param str gen_type: type of generator.
         """
@@ -88,14 +102,21 @@ class TransformGrid(object):
                 self._scale_gen_capacity(plant_id, factor)
                 if gen_type in self.thermal_gen_types:
                     self._scale_gencost_by_capacity(plant_id, factor)
+
+    def _scale_gen_by_id(self, gen_type):
+        """Scales capacity of generators by ID. Also scales the associated generation
+            cost curve (to maintain the same slopes at the start/end of the curve).
+
+        :param str gen_type: type of generator.
+        """
         if "plant_id" in self.ct[gen_type].keys():
             for plant_id, factor in self.ct[gen_type]["plant_id"].items():
                 self._scale_gen_capacity(plant_id, factor)
                 if gen_type in self.thermal_gen_types:
                     self._scale_gencost_by_capacity(plant_id, factor)
 
-    def _scale_gencost(self, gen_type):
-        """Scales cost of generators.
+    def _scale_gencost_by_zone(self, gen_type):
+        """Scales cost of generators, by zone.
 
         :param str gen_type: type of generator.
         """
@@ -108,12 +129,19 @@ class TransformGrid(object):
                     .index.tolist()
                 )
                 self.grid.gencost["before"].loc[plant_id, ["c0", "c1", "c2"]] *= factor
+
+    def _scale_gencost_by_id(self, gen_type):
+        """Scales cost of generators, by ID.
+
+        :param str gen_type: type of generator.
+        """
+        cost_key = f"{gen_type}_cost"
         if "plant_id" in self.ct[cost_key].keys():
             for plant_id, factor in self.ct[cost_key]["plant_id"].items():
                 self.grid.gencost["before"].loc[plant_id, ["c0", "c1", "c2"]] *= factor
 
-    def _scale_gen_pmin(self, gen_type):
-        """Scales cost of generators.
+    def _scale_gen_pmin_by_zone(self, gen_type):
+        """Scales minimum generation of generators, by zone.
 
         :param str gen_type: type of generator.
         """
@@ -126,6 +154,13 @@ class TransformGrid(object):
                     .index.tolist()
                 )
                 self.grid.plant.loc[plant_id, "Pmin"] *= factor
+
+    def _scale_gen_pmin_by_id(self, gen_type):
+        """Scales minimum generation of generators, by ID.
+
+        :param str gen_type: type of generator.
+        """
+        pmin_key = f"{gen_type}_pmin"
         if "plant_id" in self.ct[pmin_key].keys():
             for plant_id, factor in self.ct[pmin_key]["plant_id"].items():
                 self.grid.plant.loc[plant_id, "Pmin"] *= factor
@@ -151,8 +186,8 @@ class TransformGrid(object):
         if factor != 0:
             self.grid.gencost["before"].loc[plant_id, "c2"] /= factor
 
-    def _scale_branch(self):
-        """Scales capacity of AC lines."""
+    def _scale_branch_by_zone(self):
+        """Scales capacity of AC lines, by zone, for lines entirely within that zone."""
         if "zone_id" in self.ct["branch"].keys():
             for zone_id, factor in self.ct["branch"]["zone_id"].items():
                 branch_id = (
@@ -161,6 +196,9 @@ class TransformGrid(object):
                     .index.tolist()
                 )
                 self._scale_branch_capacity(branch_id, factor)
+
+    def _scale_branch_by_id(self):
+        """Scales capacity of AC lines, by ID."""
         if "branch_id" in self.ct["branch"].keys():
             for branch_id, factor in self.ct["branch"]["branch_id"].items():
                 self._scale_branch_capacity(branch_id, factor)
