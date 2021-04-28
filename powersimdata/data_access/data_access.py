@@ -91,7 +91,7 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def execute_command(self, command):
+    def _execute_command(self, command):
         """Execute a command locally at the data access.
 
         :param list command: list of str to be passed to command line.
@@ -366,7 +366,7 @@ class SSHDataAccess(DataAccess):
 
         os.remove(from_path)
 
-    def execute_command(self, command):
+    def _execute_command(self, command):
         """Execute a command locally at the data access.
 
         :param list command: list of str to be passed to command line.
@@ -396,7 +396,7 @@ class SSHDataAccess(DataAccess):
         self._check_file_exists(full_path)
 
         command = f"sha1sum {full_path}"
-        _, stdout, _ = self.execute_command(command)
+        _, stdout, _ = self._execute_command(command)
         lines = stdout.readlines()
         return lines[0].strip()
 
@@ -427,7 +427,7 @@ class SSHDataAccess(DataAccess):
                 200>{lockfile}"
 
         command = template.format(**values)
-        _, _, stderr = self.execute_command(command)
+        _, _, stderr = self._execute_command(command)
 
         errors = stderr.readlines()
         if len(errors) > 0:
@@ -441,7 +441,7 @@ class SSHDataAccess(DataAccess):
         :param str full_path: the path, excluding filename
         :raises IOError: if command generated stderr
         """
-        _, _, stderr = self.execute_command(f"mkdir -p {full_path}")
+        _, _, stderr = self._execute_command(f"mkdir -p {full_path}")
         errors = stderr.readlines()
         if len(errors) > 0:
             raise IOError(f"Failed to create {full_path} on server")
@@ -457,7 +457,7 @@ class SSHDataAccess(DataAccess):
         """
         self.makedir(dest)
         command = CommandBuilder.copy(src, dest, recursive, update)
-        _, _, stderr = self.execute_command(command)
+        _, _, stderr = self._execute_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError(f"Failed to execute {command}")
 
@@ -475,7 +475,7 @@ class SSHDataAccess(DataAccess):
             if confirmed.lower() != "y":
                 print("Operation cancelled.")
                 return
-        _, _, stderr = self.execute_command(command)
+        _, _, stderr = self._execute_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError(f"Failed to delete target={target} on server")
         print("--> Done!")
@@ -486,7 +486,7 @@ class SSHDataAccess(DataAccess):
         :param str filepath: the path to the file
         :return: (*bool*) -- whether the file exists
         """
-        _, _, stderr = self.execute_command(f"ls {filepath}")
+        _, _, stderr = self._execute_command(f"ls {filepath}")
         return len(stderr.readlines()) == 0
 
     def close(self):

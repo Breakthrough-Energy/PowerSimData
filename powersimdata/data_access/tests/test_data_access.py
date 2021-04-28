@@ -70,7 +70,7 @@ def _check_content(filepath):
 @pytest.mark.integration
 @pytest.mark.ssh
 def test_setup_server_connection(data_access):
-    _, stdout, _ = data_access.execute_command("whoami")
+    _, stdout, _ = data_access._execute_command("whoami")
     assert stdout.read().decode("utf-8").strip() == get_server_user()
 
 
