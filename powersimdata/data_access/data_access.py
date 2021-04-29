@@ -42,6 +42,13 @@ class DataAccess:
         raise NotImplementedError
 
     def get_base_dir(self, kind, backup=False):
+        """Get path to given kind relative to instance root
+
+        :param str kind: one of {input, output, tmp}
+        :param bool backup: pass True if relative to backup root dir
+        :raises ValueError: if kind is invalid
+        :return: (*str*) -- the specified path
+        """
         _allowed = ("input", "output", "tmp")
         if kind not in _allowed:
             raise ValueError(f"Invalid 'kind', must be one of {_allowed}")
@@ -52,6 +59,13 @@ class DataAccess:
         return self.join(root, "data", kind)
 
     def match_scenario_files(self, scenario_id, kind, backup=False):
+        """Get path matching the given kind of scenario data
+
+        :param int/str scenario_id: the scenario id
+        :param str kind: one of {input, output, tmp}
+        :param bool backup: pass True if relative to backup root dir
+        :return: (*str*) -- the specified path
+        """
         base_dir = self.get_base_dir(kind, backup)
         if kind == "tmp":
             return self.join(base_dir, f"scenario_{scenario_id}")
@@ -514,8 +528,9 @@ class SSHDataAccess(DataAccess):
         return len(stderr.readlines()) == 0
 
     def close(self):
-        """Close the connection that was opened when the object was created."""
-        self.ssh.close()
+        """Close the connection if one is open"""
+        if self._ssh is not None:
+            self._ssh.close()
 
 
 def progress_bar(*args, **kwargs):

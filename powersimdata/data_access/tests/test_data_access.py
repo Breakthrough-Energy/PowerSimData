@@ -7,7 +7,7 @@ import pytest
 
 from powersimdata.data_access.data_access import SSHDataAccess
 from powersimdata.tests.mock_ssh import MockConnection
-from powersimdata.utility.server_setup import get_server_user
+from powersimdata.utility import server_setup
 
 CONTENT = b"content"
 
@@ -67,11 +67,40 @@ def _check_content(filepath):
         assert CONTENT == f.read()
 
 
+root_dir = server_setup.DATA_ROOT_DIR
+backup_root = server_setup.BACKUP_DATA_ROOT_DIR
+
+
+def test_base_dir(data_access):
+    input_dir = data_access.get_base_dir("input")
+    assert f"{root_dir}/data/input" == input_dir
+
+    output_dir = data_access.get_base_dir("output", backup=True)
+    assert f"{backup_root}/data/output" == output_dir
+
+    tmp_dir = data_access.get_base_dir("tmp")
+    assert f"{root_dir}/tmp" == tmp_dir
+
+    with pytest.raises(ValueError):
+        data_access.get_base_dir("foo")
+
+
+def test_match_scenario_files(data_access):
+    output_files = data_access.match_scenario_files(99, "output")
+    assert f"{root_dir}/data/output/99_*" == output_files
+
+    tmp_files = data_access.match_scenario_files(42, "tmp", backup=True)
+    assert f"{backup_root}/tmp/scenario_42" == tmp_files
+
+    with pytest.raises(ValueError):
+        data_access.match_scenario_files(1, "foo")
+
+
 @pytest.mark.integration
 @pytest.mark.ssh
 def test_setup_server_connection(data_access):
     _, stdout, _ = data_access._execute_command("whoami")
-    assert stdout.read().decode("utf-8").strip() == get_server_user()
+    assert stdout.read().decode("utf-8").strip() == server_setup.get_server_user()
 
 
 def test_mocked_correctly(mock_data_access):
