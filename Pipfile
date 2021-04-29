@@ -5,12 +5,14 @@ verify_ssl = true
 
 [dev-packages]
 black = "*"
+pytest = "*"
+coverage = "*"
+pytest-cov = "*"
 
 [packages]
 numpy = "~=1.20"
 pandas = "~=1.2"
 paramiko = "==2.7.2"
-pytest = "==5.4.3"
 scipy = "~=1.5"
 tqdm = "==4.29.1"
 psycopg2 = "~=2.8.5"
