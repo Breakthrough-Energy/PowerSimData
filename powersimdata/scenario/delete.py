@@ -1,5 +1,4 @@
 import os
-import posixpath
 
 from powersimdata.data_access.data_access import LocalDataAccess
 from powersimdata.scenario.state import State
@@ -41,25 +40,21 @@ class Delete(State):
         self._scenario_list_manager.delete_entry(scenario_id)
         self._execute_list_manager.delete_entry(scenario_id)
 
-        wildcard = f"{scenario_id}_*"
-
         print("--> Deleting scenario input data on server")
-        target = posixpath.join(self.path_config.input_dir(), wildcard)
+        target = self._data_access.match_scenario_files(scenario_id, "input")
         self._data_access.remove(target, recursive=False, confirm=confirm)
 
         print("--> Deleting scenario output data on server")
-        target = posixpath.join(self.path_config.output_dir(), wildcard)
+        target = self._data_access.match_scenario_files(scenario_id, "output")
         self._data_access.remove(target, recursive=False, confirm=confirm)
 
         # Delete temporary folder enclosing simulation inputs
         print("--> Deleting temporary folder on server")
-        tmp_dir = posixpath.join(
-            self.path_config.execute_dir(), f"scenario_{scenario_id}"
-        )
+        tmp_dir = self._data_access.match_scenario_files(scenario_id, "tmp")
         self._data_access.remove(tmp_dir, recursive=True, confirm=confirm)
 
         print("--> Deleting input and output data on local machine")
-        target = os.path.join(server_setup.LOCAL_DIR, "data", "**", wildcard)
+        target = os.path.join(server_setup.LOCAL_DIR, "data", "**", f"{scenario_id}_*")
         LocalDataAccess().remove(target, recursive=False, confirm=confirm)
 
         # Delete attributes

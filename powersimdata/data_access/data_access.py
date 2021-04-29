@@ -18,6 +18,12 @@ from powersimdata.utility.helpers import CommandBuilder
 class DataAccess:
     """Interface to a local or remote data store."""
 
+    def __init__(self, root=None):
+        """Constructor"""
+        self.root = server_setup.DATA_ROOT_DIR if root is None else root
+        self.backup_root = server_setup.BACKUP_DATA_ROOT_DIR
+        self.join = None
+
     def copy_from(self, file_name, from_dir):
         """Copy a file from data store to userspace.
 
@@ -34,6 +40,22 @@ class DataAccess:
         :param str change_name_to: new name for file when copied to data store.
         """
         raise NotImplementedError
+
+    def get_base_dir(self, kind, backup=False):
+        _allowed = ("input", "output", "tmp")
+        if kind not in _allowed:
+            raise ValueError(f"Invalid 'kind', must be one of {_allowed}")
+
+        root = self.root if not backup else self.backup_root
+        if kind == "tmp":
+            return self.join(root, "tmp")
+        return self.join(root, "data", kind)
+
+    def match_scenario_files(self, scenario_id, kind, backup=False):
+        base_dir = self.get_base_dir(kind, backup)
+        if kind == "tmp":
+            return self.join(base_dir, f"scenario_{scenario_id}")
+        return self.join(base_dir, f"{scenario_id}_*")
 
     def copy(self, src, dest, recursive=False, update=False):
         """Wrapper around cp command which creates dest path if needed
@@ -141,8 +163,9 @@ class LocalDataAccess(DataAccess):
     """Interface to shared data volume"""
 
     def __init__(self, root=None):
-        self.root = root if root else server_setup.DATA_ROOT_DIR
+        super().__init__(root)
         self.description = "local machine"
+        self.join = os.path.join
 
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
@@ -259,11 +282,12 @@ class SSHDataAccess(DataAccess):
 
     def __init__(self, root=None):
         """Constructor"""
+        super().__init__(root)
         self._ssh = None
         self._retry_after = 5
-        self.root = server_setup.DATA_ROOT_DIR if root is None else root
         self.local_root = server_setup.LOCAL_DIR
         self.description = "server"
+        self.join = posixpath.join
 
     @property
     def ssh(self):

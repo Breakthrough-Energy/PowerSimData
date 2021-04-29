@@ -331,16 +331,12 @@ class SimulationInput(object):
         self._scenario_info = scenario_info
         self.grid = grid
         self.ct = ct
-        self.server_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
         self.scenario_id = scenario_info["id"]
-        self.scenario_folder = "scenario_%s" % self.scenario_id
 
-        self.REL_TMP_DIR = posixpath.join(
-            server_setup.EXECUTE_DIR, self.scenario_folder
+        self.REL_TMP_DIR = self._data_access.join(
+            server_setup.EXECUTE_DIR, f"scenario_{self.scenario_id}"
         )
-        self.TMP_DIR = posixpath.join(
-            self.server_config.execute_dir(), self.scenario_folder
-        )
+        self.TMP_DIR = self._data_access.match_scenario_files(self.scenario_id, "tmp")
 
     def create_folder(self):
         """Creates folder on server that will enclose simulation inputs."""
@@ -382,9 +378,6 @@ class SimulationInput(object):
                 file_name, self.REL_TMP_DIR, change_name_to=f"{kind}.csv"
             )
         else:
-            from_dir = posixpath.join(
-                self.server_config.execute_dir(),
-                f"scenario_{profile_as}",
-            )
+            from_dir = self._data_access.match_scenario_files(profile_as, "tmp")
             to_dir = self.TMP_DIR
             self._data_access.copy(f"{from_dir}/{kind}.csv", to_dir)
