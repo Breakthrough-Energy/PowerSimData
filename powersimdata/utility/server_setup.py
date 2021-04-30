@@ -6,8 +6,8 @@ SERVER_SSH_PORT = os.getenv("BE_SERVER_SSH_PORT", 22)
 BACKUP_DATA_ROOT_DIR = "/mnt/RE-Storage/v2"
 DATA_ROOT_DIR = "/mnt/bes/pcm"
 EXECUTE_DIR = "tmp"
-INPUT_DIR = "data/input"
-OUTPUT_DIR = "data/output"
+INPUT_DIR = ("data", "input")
+OUTPUT_DIR = ("data", "output")
 LOCAL_DIR = os.path.join(Path.home(), "ScenarioData", "")
 MODEL_DIR = "/home/bes/pcm"
 

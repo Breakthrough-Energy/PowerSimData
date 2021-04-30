@@ -80,7 +80,8 @@ class Create(State):
         print("--> Writing change table on local machine")
         self.builder.change_table.write(self._scenario_info["id"])
         file_name = self._scenario_info["id"] + "_ct.pkl"
-        self._data_access.move_to(file_name, server_setup.INPUT_DIR)
+        input_dir = self._data_access.join(*server_setup.INPUT_DIR)
+        self._data_access.move_to(file_name, input_dir)
 
     def get_bus_demand(self):
         """Returns demand profiles, by bus.
