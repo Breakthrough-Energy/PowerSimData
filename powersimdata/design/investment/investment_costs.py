@@ -52,7 +52,9 @@ def calculate_ac_inv_costs(scenario, sum_results=True, exclude_branches=None):
         Whether summed or not, values are $USD, inflation-adjusted to today.
     """
 
-    base_grid = Grid(scenario.info["interconnect"].split("_"))
+    base_grid = Grid(
+        scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
+    )
     grid = scenario.state.get_grid()
 
     # find upgraded AC lines
@@ -265,7 +267,9 @@ def calculate_dc_inv_costs(scenario, sum_results=True):
         inflation-adjusted to today. If ``sum_results``, a float is returned, otherwise
         a Series.
     """
-    base_grid = Grid(scenario.info["interconnect"].split("_"))
+    base_grid = Grid(
+        scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
+    )
     grid = scenario.state.get_grid()
 
     grid_new = cp.deepcopy(grid)
@@ -346,7 +350,9 @@ def calculate_gen_inv_costs(scenario, year, cost_case, sum_results=True):
         curves.
     """
 
-    base_grid = Grid(scenario.info["interconnect"].split("_"))
+    base_grid = Grid(
+        scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
+    )
     grid = scenario.state.get_grid()
 
     # Find change in generation capacity
