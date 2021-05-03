@@ -1,6 +1,6 @@
 from powersimdata.data_access.data_access import LocalDataAccess, SSHDataAccess
 from powersimdata.utility import server_setup
-from powersimdata.utility.server_setup import DeploymentMode, get_deployment_mode
+from powersimdata.utility.config import DeploymentMode, get_deployment_mode
 
 
 class Context:
