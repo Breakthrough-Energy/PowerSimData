@@ -14,6 +14,12 @@ from powersimdata.data_access.profile_helper import ProfileHelper
 from powersimdata.utility import server_setup
 from powersimdata.utility.helpers import CommandBuilder
 
+_dirs = {
+    "tmp": (server_setup.EXECUTE_DIR,),
+    "input": server_setup.INPUT_DIR,
+    "output": server_setup.OUTPUT_DIR,
+}
+
 
 class DataAccess:
     """Interface to a local or remote data store."""
@@ -49,14 +55,12 @@ class DataAccess:
         :raises ValueError: if kind is invalid
         :return: (*str*) -- the specified path
         """
-        _allowed = ("input", "output", "tmp")
+        _allowed = list(_dirs.keys())
         if kind not in _allowed:
             raise ValueError(f"Invalid 'kind', must be one of {_allowed}")
 
         root = self.root if not backup else self.backup_root
-        if kind == "tmp":
-            return self.join(root, "tmp")
-        return self.join(root, "data", kind)
+        return self.join(root, *_dirs[kind])
 
     def match_scenario_files(self, scenario_id, kind, backup=False):
         """Get path matching the given kind of scenario data
