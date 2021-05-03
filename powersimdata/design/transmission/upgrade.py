@@ -197,12 +197,16 @@ def scale_congested_mesh_branches(
     upgrade_n=100,
     allow_list=None,
     deny_list=None,
-    quantile=0.95,
+    congestion_metric="quantile",
+    cost_metric="branches",
+    quantile=None,
     increment=1,
-    method="branches",
 ):
-    """Use a reference scenario as a baseline for branch scaling, and further
-    increment branch scaling based on observed congestion duals.
+    """Use a reference scenario to detect congested mesh branches (based on values of
+    the shadow price of congestion), and increase the capacity of a subset of them.
+    Branches are ranked by a ratio of (congestion metric) / (cost metric), and the top N
+    branches are selected for upgrading, where N is specified by ``upgraade_n``, with
+    each upgraded by their base capacity multiplied by ``increment``.
 
     :param powersimdata.input.change_table.ChangeTable change_table: the
         change table instance we are operating on.
@@ -211,10 +215,15 @@ def scale_congested_mesh_branches(
     :param int upgrade_n: the number of branches to upgrade.
     :param list/set/tuple/None allow_list: only select from these branch IDs.
     :param list/set/tuple/None deny_list: never select any of these branch IDs.
-    :param float quantile: the quantile to use to judge branch congestion.
-    :param [float/int] increment: branch increment, relative to original
+    :param str congestion_metric: numerator method: 'quantile' or 'mean'.
+    :param str cost_metric: denominator method: 'branches', 'cost', 'MW', or
+        'MWmiles'.
+    :param float quantile: if ``congestion_metric`` == 'quantile', this is the quantile
+        to use to judge branch congestion (otherwise it is unused). If None, a default
+        value of 0.95 is used, i.e. we evaluate the shadow price for the worst 5% of
+        hours.
+    :param float/int increment: branch increment, relative to original
         capacity.
-    :param str method: prioritization method: 'branches', 'MW', or 'MWmiles'.
     :return: (*None*) -- the change_table is modified in-place.
     """
     # To do: better type checking of inputs.
@@ -223,10 +232,11 @@ def scale_congested_mesh_branches(
     branches_to_upgrade = _identify_mesh_branch_upgrades(
         ref_scenario,
         upgrade_n=upgrade_n,
-        quantile=quantile,
-        method=method,
+        congestion_metric=congestion_metric,
+        cost_metric=cost_metric,
         allow_list=allow_list,
         deny_list=deny_list,
+        quantile=quantile,
     )
     _increment_branch_scaling(
         change_table, branches_to_upgrade, ref_scenario, value=increment
