@@ -270,14 +270,14 @@ class TestIdentifyMesh(unittest.TestCase):
     def test_identify_mesh_MW_n_3(self):  # noqa: N802
         expected_return = {101, 102, 103}
         branches = _identify_mesh_branch_upgrades(
-            self.mock_scenario, upgrade_n=3, method="MW"
+            self.mock_scenario, upgrade_n=3, cost_metric="MW"
         )
         self.assertEqual(branches, expected_return)
 
     def test_identify_mesh_MW_n_2(self):  # noqa: N802
         expected_return = {101, 102}
         branches = _identify_mesh_branch_upgrades(
-            self.mock_scenario, upgrade_n=2, method="MW"
+            self.mock_scenario, upgrade_n=2, cost_metric="MW"
         )
         self.assertEqual(branches, expected_return)
 
@@ -285,7 +285,7 @@ class TestIdentifyMesh(unittest.TestCase):
         expected_return = {102, 103}
         allow_list = {102, 103, 104}
         branches = _identify_mesh_branch_upgrades(
-            self.mock_scenario, upgrade_n=2, method="MW", allow_list=allow_list
+            self.mock_scenario, upgrade_n=2, cost_metric="MW", allow_list=allow_list
         )
         self.assertEqual(branches, expected_return)
 
@@ -293,14 +293,14 @@ class TestIdentifyMesh(unittest.TestCase):
         expected_return = {101, 103}
         deny_list = [102, 105]
         branches = _identify_mesh_branch_upgrades(
-            self.mock_scenario, upgrade_n=2, method="MW", deny_list=deny_list
+            self.mock_scenario, upgrade_n=2, cost_metric="MW", deny_list=deny_list
         )
         self.assertEqual(branches, expected_return)
 
     def test_identify_mesh_MW_n_1(self):  # noqa: N802
         expected_return = {102}
         branches = _identify_mesh_branch_upgrades(
-            self.mock_scenario, upgrade_n=1, method="MW"
+            self.mock_scenario, upgrade_n=1, cost_metric="MW"
         )
         self.assertEqual(branches, expected_return)
 
@@ -309,21 +309,21 @@ class TestIdentifyMesh(unittest.TestCase):
     def test_identify_mesh_MWmiles_n_3(self):  # noqa: N802
         expected_return = {101, 102, 103}
         branches = _identify_mesh_branch_upgrades(
-            self.mock_scenario, upgrade_n=3, method="MWmiles"
+            self.mock_scenario, upgrade_n=3, cost_metric="MWmiles"
         )
         self.assertEqual(branches, expected_return)
 
     def test_identify_mesh_MWmiles_n_2(self):  # noqa: N802
         expected_return = {101, 102}
         branches = _identify_mesh_branch_upgrades(
-            self.mock_scenario, upgrade_n=2, method="MWmiles"
+            self.mock_scenario, upgrade_n=2, cost_metric="MWmiles"
         )
         self.assertEqual(branches, expected_return)
 
     def test_identify_mesh_MWmiles_n_1(self):  # noqa: N802
         expected_return = {101}
         branches = _identify_mesh_branch_upgrades(
-            self.mock_scenario, upgrade_n=1, method="MWmiles"
+            self.mock_scenario, upgrade_n=1, cost_metric="MWmiles"
         )
         self.assertEqual(branches, expected_return)
 
@@ -331,7 +331,7 @@ class TestIdentifyMesh(unittest.TestCase):
     def test_identify_mesh_bad_method(self):
         with self.assertRaises(ValueError):
             _identify_mesh_branch_upgrades(
-                self.mock_scenario, upgrade_n=2, method="does not exist"
+                self.mock_scenario, upgrade_n=2, cost_metric="does not exist"
             )
 
 
