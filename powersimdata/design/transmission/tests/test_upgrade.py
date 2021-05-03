@@ -213,7 +213,7 @@ class TestIdentifyMesh(unittest.TestCase):
         columns = mock_branch["branch_id"]
         congu = pd.DataFrame(congu_data, index=range(num_hours), columns=columns)
         congl = pd.DataFrame(congl_data, index=range(num_hours), columns=columns)
-        # Populate with dummy data
+        # Populate with dummy data, added in different hours for thorough testing
         # Branch 101 will have frequent, low congestion
         congu[101].iloc[-15:] = 1
         # Branch 102 will have less frequent, but greater congestion
@@ -221,6 +221,8 @@ class TestIdentifyMesh(unittest.TestCase):
         # Branch 103 will have only occassional congestion, but very high
         congu[103].iloc[10:13] = 20
         congl[103].iloc[20:23] = 30
+        # Branch 105 will have extremely high congestion in only one hour
+        congl[105].iloc[49] = 9000
         # Build dummy change table
         ct = {"branch": {"branch_id": {b: 1 for b in branch_indices}}}
 
@@ -324,6 +326,45 @@ class TestIdentifyMesh(unittest.TestCase):
         expected_return = {101}
         branches = _identify_mesh_branch_upgrades(
             self.mock_scenario, upgrade_n=1, cost_metric="MWmiles"
+        )
+        self.assertEqual(branches, expected_return)
+
+    def test_identify_mesh_mean(self):
+        # Not enough branches
+        with self.assertRaises(ValueError):
+            _identify_mesh_branch_upgrades(self.mock_scenario, congestion_metric="mean")
+
+    def test_identify_mesh_mean_n_4_specify_quantile(self):
+        with self.assertRaises(ValueError):
+            _identify_mesh_branch_upgrades(
+                self.mock_scenario, congestion_metric="mean", upgrade_n=4, quantile=0.99
+            )
+
+    def test_identify_mesh_mean_n_4(self):
+        expected_return = {101, 102, 103, 105}
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, congestion_metric="mean", upgrade_n=4
+        )
+        self.assertEqual(branches, expected_return)
+
+    def test_identify_mesh_mean_n_3(self):
+        expected_return = {102, 103, 105}
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, congestion_metric="mean", upgrade_n=3
+        )
+        self.assertEqual(branches, expected_return)
+
+    def test_identify_mesh_mean_n_2(self):
+        expected_return = {103, 105}
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, congestion_metric="mean", upgrade_n=2
+        )
+        self.assertEqual(branches, expected_return)
+
+    def test_identify_mesh_mean_n_1(self):
+        expected_return = {105}
+        branches = _identify_mesh_branch_upgrades(
+            self.mock_scenario, congestion_metric="mean", upgrade_n=1
         )
         self.assertEqual(branches, expected_return)
 
