@@ -219,9 +219,9 @@ class LocalDataAccess(DataAccess):
         :param str change_name_to: new name for file when copied to data store.
         """
         self._check_filename(file_name)
-        src = os.path.join(server_setup.LOCAL_DIR, file_name)
+        src = self.join(server_setup.LOCAL_DIR, file_name)
         file_name = file_name if change_name_to is None else change_name_to
-        dest = os.path.join(self.root, to_dir, file_name)
+        dest = self.join(self.root, to_dir, file_name)
         print(f"--> Moving file {src} to {dest}")
         self._check_file_exists(dest, should_exist=False)
         self.makedir(os.path.dirname(dest))
@@ -248,10 +248,10 @@ class LocalDataAccess(DataAccess):
         :param bool recursive: create directories recursively
         :param bool update: ignored
         """
-        self.makedir(dest)
         if recursive:
             shutil.copytree(src, dest)
         else:
+            self.makedir(dest)
             func = lambda s: shutil.copy(s, dest)  # noqa: E731
             LocalDataAccess._fapply(func, src)
 
@@ -366,7 +366,7 @@ class SSHDataAccess(DataAccess):
         to_dir = os.path.join(self.local_root, from_dir)
         os.makedirs(to_dir, exist_ok=True)
 
-        from_path = posixpath.join(self.root, from_dir, file_name)
+        from_path = self.join(self.root, from_dir, file_name)
         to_path = os.path.join(to_dir, file_name)
         self._check_file_exists(from_path, should_exist=True)
 
@@ -397,8 +397,8 @@ class SSHDataAccess(DataAccess):
             )
 
         file_name = file_name if change_name_to is None else change_name_to
-        to_dir = posixpath.join(self.root, "" if to_dir is None else to_dir)
-        to_path = posixpath.join(to_dir, file_name)
+        to_dir = self.join(self.root, "" if to_dir is None else to_dir)
+        to_path = self.join(to_dir, file_name)
         self.makedir(to_dir)
         self._check_file_exists(to_path, should_exist=False)
 
@@ -434,7 +434,7 @@ class SSHDataAccess(DataAccess):
         :param str relative_path: path relative to root
         :return: (*str*) -- the checksum of the file
         """
-        full_path = posixpath.join(self.root, relative_path)
+        full_path = self.join(self.root, relative_path)
         self._check_file_exists(full_path)
 
         command = f"sha1sum {full_path}"
@@ -455,9 +455,9 @@ class SSHDataAccess(DataAccess):
         self.move_to(file_name, change_name_to=backup)
 
         values = {
-            "original": posixpath.join(self.root, new_name),
-            "updated": posixpath.join(self.root, backup),
-            "lockfile": posixpath.join(self.root, "scenario.lockfile"),
+            "original": self.join(self.root, new_name),
+            "updated": self.join(self.root, backup),
+            "lockfile": self.join(self.root, "scenario.lockfile"),
             "checksum": checksum,
         }
 
