@@ -99,7 +99,7 @@ def test_match_scenario_files(data_access):
 @pytest.mark.integration
 @pytest.mark.ssh
 def test_setup_server_connection(data_access):
-    _, stdout, _ = data_access._execute_command("whoami")
+    _, stdout, _ = data_access.ssh.exec_command("whoami")
     assert stdout.read().decode("utf-8").strip() == server_setup.get_server_user()
 
 
