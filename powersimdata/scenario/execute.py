@@ -4,6 +4,7 @@ import posixpath
 
 import requests
 
+from powersimdata.data_access.context import Context
 from powersimdata.input.case_mat import export_case_mat
 from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
@@ -31,6 +32,7 @@ class Execute(State):
         "prepare_simulation_input",
         "print_scenario_info",
         "print_scenario_status",
+        "scenario_id",
     }
 
     def __init__(self, scenario):
@@ -47,8 +49,10 @@ class Execute(State):
         print("--> Status\n%s" % self._scenario_status)
 
         self._set_ct_and_grid()
+        self._launcher = Context.get_launcher(scenario)
 
-    def _scenario_id(self):
+    @property
+    def scenario_id(self):
         return self._scenario_info["id"]
 
     def _set_ct_and_grid(self):
@@ -81,50 +85,11 @@ class Execute(State):
 
     def _update_scenario_status(self):
         """Updates scenario status."""
-        self._scenario_status = self._execute_list_manager.get_status(
-            self._scenario_id()
-        )
+        self._scenario_status = self._execute_list_manager.get_status(self.scenario_id)
 
     def _update_scenario_info(self):
         """Updates scenario information."""
-        self._scenario_info = self._scenario_list_manager.get_scenario(
-            self._scenario_id()
-        )
-
-    def _run_script(self, script, extra_args=None):
-        """Returns running process
-
-        :param str script: script to be used.
-        :param list extra_args: list of strings to be passed after scenario id.
-        :return: (*subprocess.Popen*) -- process used to run script
-        """
-
-        if not extra_args:
-            extra_args = []
-
-        path_to_package = posixpath.join(
-            server_setup.MODEL_DIR, self._scenario_info["engine"]
-        )
-
-        if self._scenario_info["engine"] == "REISE":
-            folder = "pyreise"
-        else:
-            folder = "pyreisejl"
-
-        path_to_script = posixpath.join(path_to_package, folder, "utility", script)
-        cmd_pythonpath = [f'export PYTHONPATH="{path_to_package}:$PYTHONPATH";']
-        cmd_pythoncall = [
-            "nohup",
-            "python3",
-            "-u",
-            path_to_script,
-            self._scenario_info["id"],
-        ]
-        cmd_io_redirect = ["</dev/null >/dev/null 2>&1 &"]
-        cmd = cmd_pythonpath + cmd_pythoncall + extra_args + cmd_io_redirect
-        process = self._data_access.execute_command_async(cmd)
-        print("PID: %s" % process.pid)
-        return process
+        self._scenario_info = self._scenario_list_manager.get_scenario(self.scenario_id)
 
     def print_scenario_info(self):
         """Prints scenario information."""
@@ -167,7 +132,7 @@ class Execute(State):
 
             si.prepare_mpc_file()
 
-            self._execute_list_manager.set_status(self._scenario_id(), "prepared")
+            self._execute_list_manager.set_status(self.scenario_id, "prepared")
         else:
             print("---------------------------")
             print("SCENARIO CANNOT BE PREPARED")
@@ -187,75 +152,6 @@ class Execute(State):
                 f"Status must be one of {valid_status}, but got status={self._scenario_status}"
             )
 
-    def _launch_on_server(self, threads=None, solver=None, extract_data=True):
-        """Launch simulation on server, via ssh.
-
-        :param int/None threads: the number of threads to be used. This defaults to None,
-            where None means auto.
-        :param str solver: the solver used for optimization. This defaults to
-            None, which translates to gurobi
-        :param bool extract_data: whether the results of the simulation engine should
-            automatically extracted after the simulation has run. This defaults to True.
-        :raises TypeError: if extract_data is not a boolean
-        :return: (*subprocess.Popen*) -- new process used to launch simulation.
-        """
-        extra_args = []
-
-        if threads:
-            # Use the -t flag as defined in call.py in REISE.jl
-            extra_args.append("--threads " + str(threads))
-
-        if solver:
-            extra_args.append("--solver " + solver)
-
-        if not isinstance(extract_data, bool):
-            raise TypeError("extract_data must be a boolean: 'True' or 'False'")
-        if extract_data:
-            extra_args.append("--extract-data")
-
-        return self._run_script("call.py", extra_args=extra_args)
-
-    def _launch_in_container(self, threads, solver):
-        """Launches simulation in container via http call
-
-        :param int/None threads: the number of threads to be used. This defaults to None,
-            where None means auto.
-        :param str solver: the solver used for optimization. This defaults to
-            None, which translates to gurobi
-        :return: (*requests.Response*) -- the http response object
-        """
-        scenario_id = self._scenario_id()
-        url = f"http://{server_setup.SERVER_ADDRESS}:5000/launch/{scenario_id}"
-        resp = requests.post(url, params={"threads": threads, "solver": solver})
-        if resp.status_code != 200:
-            print(
-                f"Failed to launch simulation: status={resp.status_code}. See response for details"
-            )
-        return resp
-
-    def _check_threads(self, threads):
-        """Validate threads argument
-
-        :param int threads: the number of threads to be used
-        :raises TypeError: if threads is not an int
-        :raises ValueError: if threads is not a positive value
-        """
-        if threads:
-            if not isinstance(threads, int):
-                raise TypeError("threads must be an int")
-            if threads < 1:
-                raise ValueError("threads must be a positive value")
-
-    def _check_solver(self, solver):
-        """Validate solver argument
-
-        :param str solver: the solver used for the optimization
-        :raises ValueError: if invalid solver provided
-        """
-        solvers = ("gurobi", "glpk")
-        if solver is not None and solver.lower() not in solvers:
-            raise ValueError(f"Invalid solver: options are {solvers}")
-
     def launch_simulation(self, threads=None, extract_data=True, solver=None):
         """Launches simulation on target environment (server or container)
 
@@ -269,14 +165,10 @@ class Execute(State):
             process (if using ssh to server) or http response (if run in container)
         """
         self._check_if_ready()
-        self._check_threads(threads)
-        self._check_solver(solver)
 
         mode = get_deployment_mode()
         print(f"--> Launching simulation on {mode.lower()}")
-        if mode == DeploymentMode.Server:
-            return self._launch_on_server(threads, solver, extract_data)
-        return self._launch_in_container(threads, solver)
+        self._launcher.launch_simulation(threads, extract_data, solver)
 
     def check_progress(self):
         """Get the lastest information from the server container
@@ -287,7 +179,7 @@ class Execute(State):
         if mode != DeploymentMode.Container:
             raise NotImplementedError("Operation only supported for container mode")
 
-        scenario_id = self._scenario_id()
+        scenario_id = self.scenario_id
         url = f"http://{server_setup.SERVER_ADDRESS}:5000/status/{scenario_id}"
         resp = requests.get(url)
         return resp.json()

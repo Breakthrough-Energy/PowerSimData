@@ -1,4 +1,5 @@
 from powersimdata.data_access.data_access import LocalDataAccess, SSHDataAccess
+from powersimdata.data_access.launcher import HttpLauncher, NativeLauncher, SSHLauncher
 from powersimdata.utility import server_setup
 from powersimdata.utility.config import DeploymentMode, get_deployment_mode
 
@@ -23,3 +24,16 @@ class Context:
         if mode == DeploymentMode.Server:
             return SSHDataAccess(root)
         return LocalDataAccess(root)
+
+    @staticmethod
+    def get_launcher(scenario):
+        """Return instance for interaction with simulation engine
+
+        :param powersimdata.Scenario scenario: a scenario object
+        """
+        mode = get_deployment_mode()
+        if mode == DeploymentMode.Server:
+            return SSHLauncher(scenario)
+        elif mode == DeploymentMode.Container:
+            return HttpLauncher(scenario)
+        return NativeLauncher(scenario)
