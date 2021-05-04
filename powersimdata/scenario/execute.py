@@ -2,8 +2,6 @@ import copy
 import os
 import posixpath
 
-import requests
-
 from powersimdata.data_access.context import Context
 from powersimdata.input.case_mat import export_case_mat
 from powersimdata.input.grid import Grid
@@ -12,7 +10,7 @@ from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
-from powersimdata.utility.config import DeploymentMode, get_deployment_mode
+from powersimdata.utility.config import get_deployment_mode
 
 
 class Execute(State):
@@ -171,18 +169,11 @@ class Execute(State):
         self._launcher.launch_simulation(threads, extract_data, solver)
 
     def check_progress(self):
-        """Get the lastest information from the server container
+        """Get the status of an ongoing simulation, if possible
 
-        :raises NotImplementedError: if not running in container mode
+        :return: (*dict*) -- progress information, or None
         """
-        mode = get_deployment_mode()
-        if mode != DeploymentMode.Container:
-            raise NotImplementedError("Operation only supported for container mode")
-
-        scenario_id = self.scenario_id
-        url = f"http://{server_setup.SERVER_ADDRESS}:5000/status/{scenario_id}"
-        resp = requests.get(url)
-        return resp.json()
+        return self._launcher.check_progress()
 
     def extract_simulation_output(self):
         """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL} on server.
@@ -192,13 +183,7 @@ class Execute(State):
         """
         self._update_scenario_status()
         if self._scenario_status == "finished":
-            mode = get_deployment_mode()
-            if mode == DeploymentMode.Container:
-                print("WARNING: extraction not yet supported, please extract manually")
-                return
-
-            print("--> Extracting output data on server")
-            return self._run_script("extract_data.py")
+            return self._launcher.extract_simulation_output()
         else:
             print("---------------------------")
             print("OUTPUTS CANNOT BE EXTRACTED")

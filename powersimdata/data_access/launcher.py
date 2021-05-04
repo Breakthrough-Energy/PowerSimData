@@ -30,14 +30,16 @@ def _check_solver(solver):
         raise ValueError(f"Invalid solver: options are {solvers}")
 
 
-# TODO - check_progress (just print a message for SSHLauncher)
-# TODO - extract_data
 class Launcher:
     def __init__(self, scenario):
         self.scenario = scenario
 
     def _launch(self, threads=None, solver=None, extract_data=True):
         raise NotImplementedError
+
+    def extract_simulation_output(self):
+        """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL} on server."""
+        pass
 
     def launch_simulation(self, threads=None, solver=None, extract_data=True):
         _check_threads(threads)
@@ -88,12 +90,11 @@ class SSHLauncher(Launcher):
         :return: (*subprocess.Popen*) -- new process used to launch simulation.
         """
         extra_args = []
-
-        if threads:
+        if threads is not None:
             # Use the -t flag as defined in call.py in REISE.jl
             extra_args.append("--threads " + str(threads))
 
-        if solver:
+        if solver is not None:
             extra_args.append("--solver " + solver)
 
         if not isinstance(extract_data, bool):
@@ -102,6 +103,18 @@ class SSHLauncher(Launcher):
             extra_args.append("--extract-data")
 
         return self._run_script("call.py", extra_args=extra_args)
+
+    def extract_simulation_output(self):
+        """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL} on server.
+
+        :return: (*subprocess.Popen*) -- new process used to extract output
+            data.
+        """
+        print("--> Extracting output data on server")
+        return self._run_script("extract_data.py")
+
+    def check_progress(self):
+        print("Information is available on the server.")
 
 
 class HttpLauncher(Launcher):
@@ -124,6 +137,16 @@ class HttpLauncher(Launcher):
             )
         return resp
 
+    def check_progress(self):
+        """Get the status of an ongoing simulation, if possible
+
+        :return: (*dict*) -- json response
+        """
+        scenario_id = self.scenario.scenario_id
+        url = f"http://{server_setup.SERVER_ADDRESS}:5000/status/{scenario_id}"
+        resp = requests.get(url)
+        return resp.json()
+
 
 class NativeLauncher(Launcher):
     def _launch(self, threads=None, solver=None, extract_data=True):
@@ -134,6 +157,13 @@ class NativeLauncher(Launcher):
         :param str solver: the solver used for optimization. This defaults to
             None, which translates to gurobi
         :param bool extract_data: always True
+        :return: (*dict*) -- json response
+        """
+        pass
+
+    def check_progress(self):
+        """Get the status of an ongoing simulation, if possible
+
         :return: (*dict*) -- json response
         """
         pass
