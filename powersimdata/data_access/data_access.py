@@ -4,7 +4,7 @@ import os
 import posixpath
 import shutil
 import time
-from subprocess import PIPE, Popen
+from subprocess import Popen
 from tempfile import mkstemp
 
 import paramiko
@@ -14,9 +14,21 @@ from powersimdata.data_access.profile_helper import ProfileHelper
 from powersimdata.utility import server_setup
 from powersimdata.utility.helpers import CommandBuilder
 
+_dirs = {
+    "tmp": (server_setup.EXECUTE_DIR,),
+    "input": server_setup.INPUT_DIR,
+    "output": server_setup.OUTPUT_DIR,
+}
+
 
 class DataAccess:
     """Interface to a local or remote data store."""
+
+    def __init__(self, root=None):
+        """Constructor"""
+        self.root = server_setup.DATA_ROOT_DIR if root is None else root
+        self.backup_root = server_setup.BACKUP_DATA_ROOT_DIR
+        self.join = None
 
     def copy_from(self, file_name, from_dir):
         """Copy a file from data store to userspace.
@@ -35,6 +47,34 @@ class DataAccess:
         """
         raise NotImplementedError
 
+    def get_base_dir(self, kind, backup=False):
+        """Get path to given kind relative to instance root
+
+        :param str kind: one of {input, output, tmp}
+        :param bool backup: pass True if relative to backup root dir
+        :raises ValueError: if kind is invalid
+        :return: (*str*) -- the specified path
+        """
+        _allowed = list(_dirs.keys())
+        if kind not in _allowed:
+            raise ValueError(f"Invalid 'kind', must be one of {_allowed}")
+
+        root = self.root if not backup else self.backup_root
+        return self.join(root, *_dirs[kind])
+
+    def match_scenario_files(self, scenario_id, kind, backup=False):
+        """Get path matching the given kind of scenario data
+
+        :param int/str scenario_id: the scenario id
+        :param str kind: one of {input, output, tmp}
+        :param bool backup: pass True if relative to backup root dir
+        :return: (*str*) -- the specified path
+        """
+        base_dir = self.get_base_dir(kind, backup)
+        if kind == "tmp":
+            return self.join(base_dir, f"scenario_{scenario_id}")
+        return self.join(base_dir, f"{scenario_id}_*")
+
     def copy(self, src, dest, recursive=False, update=False):
         """Wrapper around cp command which creates dest path if needed
 
@@ -43,9 +83,7 @@ class DataAccess:
         :param bool recursive: create directories recursively
         :param bool update: only copy if needed
         """
-        self.makedir(posixpath.dirname(dest))
-        command = CommandBuilder.copy(src, dest, recursive, update)
-        return self.execute_command(command)
+        raise NotImplementedError
 
     def remove(self, target, recursive=False, confirm=True):
         """Wrapper around rm command
@@ -86,17 +124,10 @@ class DataAccess:
         if len(os.path.dirname(filename)) != 0:
             raise ValueError(f"Expecting file name but got path {filename}")
 
-    def makedir(self, relative_path):
-        """Create paths relative to the instance root
+    def makedir(self, full_path):
+        """Create path, including parents
 
-        :param str relative_path: the path, without filename, relative to root
-        """
-        raise NotImplementedError
-
-    def execute_command(self, command):
-        """Execute a command locally at the data access.
-
-        :param list command: list of str to be passed to command line.
+        :param str full_path: the path, excluding filename
         """
         raise NotImplementedError
 
@@ -143,8 +174,9 @@ class LocalDataAccess(DataAccess):
     """Interface to shared data volume"""
 
     def __init__(self, root=None):
-        self.root = root if root else server_setup.DATA_ROOT_DIR
+        super().__init__(root)
         self.description = "local machine"
+        self.join = os.path.join
 
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
@@ -180,21 +212,41 @@ class LocalDataAccess(DataAccess):
         :param str change_name_to: new name for file when copied to data store.
         """
         self._check_filename(file_name)
-        src = posixpath.join(server_setup.LOCAL_DIR, file_name)
+        src = self.join(server_setup.LOCAL_DIR, file_name)
         file_name = file_name if change_name_to is None else change_name_to
-        dest = posixpath.join(self.root, to_dir, file_name)
+        dest = self.join(self.root, to_dir, file_name)
         print(f"--> Moving file {src} to {dest}")
         self._check_file_exists(dest, should_exist=False)
-        self.copy(src, dest)
-        self.remove(src)
+        self.makedir(os.path.dirname(dest))
+        shutil.move(src, dest)
 
-    def makedir(self, relative_path):
-        """Create paths relative to the instance root
+    def makedir(self, full_path):
+        """Create path on local machine
 
-        :param str relative_path: the path, without filename, relative to root
+        :param str full_path: the path, excluding filename
         """
-        target = os.path.join(self.root, relative_path)
-        os.makedirs(target, exist_ok=True)
+        os.makedirs(full_path, exist_ok=True)
+
+    @staticmethod
+    def _fapply(func, pattern):
+        files = [f for f in glob.glob(pattern) if os.path.isfile(f)]
+        for f in files:
+            func(f)
+
+    def copy(self, src, dest, recursive=False, update=False):
+        """Wrapper around cp command which creates dest path if needed
+
+        :param str src: path to original
+        :param str dest: destination path
+        :param bool recursive: create directories recursively
+        :param bool update: ignored
+        """
+        if recursive:
+            shutil.copytree(src, dest)
+        else:
+            self.makedir(dest)
+            func = lambda s: shutil.copy(s, dest)  # noqa: E731
+            LocalDataAccess._fapply(func, src)
 
     def remove(self, target, recursive=False, confirm=True):
         """Remove target using rm semantics
@@ -211,31 +263,8 @@ class LocalDataAccess(DataAccess):
         if recursive:
             shutil.rmtree(target)
         else:
-            files = [f for f in glob.glob(target) if os.path.isfile(f)]
-            for f in files:
-                os.remove(f)
+            LocalDataAccess._fapply(os.remove, target)
         print("--> Done!")
-
-    def execute_command(self, command):
-        """Execute a command locally at the data access.
-
-        :param list command: list of str to be passed to command line.
-        """
-
-        def wrap(s):
-            if s is not None:
-                return s
-            return open(os.devnull)
-
-        proc = Popen(
-            command,
-            shell=True,
-            executable="/bin/bash",
-            stdout=PIPE,
-            stderr=PIPE,
-            text=True,
-        )
-        return wrap(None), wrap(proc.stdout), wrap(proc.stderr)
 
     def get_profile_version(self, grid_model, kind):
         """Returns available raw profile from blob storage or local disk
@@ -264,11 +293,12 @@ class SSHDataAccess(DataAccess):
 
     def __init__(self, root=None):
         """Constructor"""
+        super().__init__(root)
         self._ssh = None
         self._retry_after = 5
-        self.root = server_setup.DATA_ROOT_DIR if root is None else root
         self.local_root = server_setup.LOCAL_DIR
         self.description = "server"
+        self.join = posixpath.join
 
     @property
     def ssh(self):
@@ -329,7 +359,7 @@ class SSHDataAccess(DataAccess):
         to_dir = os.path.join(self.local_root, from_dir)
         os.makedirs(to_dir, exist_ok=True)
 
-        from_path = posixpath.join(self.root, from_dir, file_name)
+        from_path = self.join(self.root, from_dir, file_name)
         to_path = os.path.join(to_dir, file_name)
         self._check_file_exists(from_path, should_exist=True)
 
@@ -360,8 +390,8 @@ class SSHDataAccess(DataAccess):
             )
 
         file_name = file_name if change_name_to is None else change_name_to
-        to_dir = "" if to_dir is None else to_dir
-        to_path = posixpath.join(self.root, to_dir, file_name)
+        to_dir = self.join(self.root, "" if to_dir is None else to_dir)
+        to_path = self.join(to_dir, file_name)
         self.makedir(to_dir)
         self._check_file_exists(to_path, should_exist=False)
 
@@ -370,14 +400,6 @@ class SSHDataAccess(DataAccess):
             sftp.put(from_path, to_path)
 
         os.remove(from_path)
-
-    def execute_command(self, command):
-        """Execute a command locally at the data access.
-
-        :param list command: list of str to be passed to command line.
-        :return: (*tuple*) -- stdin, stdout, stderr of executed command.
-        """
-        return self.ssh.exec_command(command)
 
     def execute_command_async(self, command):
         """Execute a command via ssh, without waiting for completion.
@@ -397,11 +419,11 @@ class SSHDataAccess(DataAccess):
         :param str relative_path: path relative to root
         :return: (*str*) -- the checksum of the file
         """
-        full_path = posixpath.join(self.root, relative_path)
+        full_path = self.join(self.root, relative_path)
         self._check_file_exists(full_path)
 
         command = f"sha1sum {full_path}"
-        _, stdout, _ = self.execute_command(command)
+        _, stdout, _ = self.ssh.exec_command(command)
         lines = stdout.readlines()
         return lines[0].strip()
 
@@ -418,9 +440,9 @@ class SSHDataAccess(DataAccess):
         self.move_to(file_name, change_name_to=backup)
 
         values = {
-            "original": posixpath.join(self.root, new_name),
-            "updated": posixpath.join(self.root, backup),
-            "lockfile": posixpath.join(self.root, "scenario.lockfile"),
+            "original": self.join(self.root, new_name),
+            "updated": self.join(self.root, backup),
+            "lockfile": self.join(self.root, "scenario.lockfile"),
             "checksum": checksum,
         }
 
@@ -432,7 +454,7 @@ class SSHDataAccess(DataAccess):
                 200>{lockfile}"
 
         command = template.format(**values)
-        _, _, stderr = self.execute_command(command)
+        _, _, stderr = self.ssh.exec_command(command)
 
         errors = stderr.readlines()
         if len(errors) > 0:
@@ -440,16 +462,31 @@ class SSHDataAccess(DataAccess):
                 print(e)
             raise IOError("Failed to push file - most likely a conflict was detected.")
 
-    def makedir(self, relative_path):
-        """Create paths relative to the instance root
+    def makedir(self, full_path):
+        """Create path on server
 
-        :param str relative_path: the path, without filename, relative to root
+        :param str full_path: the path, excluding filename
         :raises IOError: if command generated stderr
         """
-        full_path = posixpath.join(self.root, relative_path)
-        _, _, stderr = self.execute_command(f"mkdir -p {full_path}")
+        _, _, stderr = self.ssh.exec_command(f"mkdir -p {full_path}")
+        errors = stderr.readlines()
+        if len(errors) > 0:
+            raise IOError(f"Failed to create {full_path} on server")
+
+    def copy(self, src, dest, recursive=False, update=False):
+        """Wrapper around cp command which creates dest path if needed
+
+        :param str src: path to original
+        :param str dest: destination path
+        :param bool recursive: create directories recursively
+        :param bool update: only copy if needed
+        :raises IOError: if command generated stderr
+        """
+        self.makedir(dest)
+        command = CommandBuilder.copy(src, dest, recursive, update)
+        _, _, stderr = self.ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
-            raise IOError("Failed to create %s on server" % full_path)
+            raise IOError(f"Failed to execute {command}")
 
     def remove(self, target, recursive=False, confirm=True):
         """Run rm command on server
@@ -465,7 +502,7 @@ class SSHDataAccess(DataAccess):
             if confirmed.lower() != "y":
                 print("Operation cancelled.")
                 return
-        _, _, stderr = self.execute_command(command)
+        _, _, stderr = self.ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError(f"Failed to delete target={target} on server")
         print("--> Done!")
@@ -476,12 +513,13 @@ class SSHDataAccess(DataAccess):
         :param str filepath: the path to the file
         :return: (*bool*) -- whether the file exists
         """
-        _, _, stderr = self.execute_command(f"ls {filepath}")
+        _, _, stderr = self.ssh.exec_command(f"ls {filepath}")
         return len(stderr.readlines()) == 0
 
     def close(self):
-        """Close the connection that was opened when the object was created."""
-        self.ssh.close()
+        """Close the connection if one is open"""
+        if self._ssh is not None:
+            self._ssh.close()
 
 
 def progress_bar(*args, **kwargs):

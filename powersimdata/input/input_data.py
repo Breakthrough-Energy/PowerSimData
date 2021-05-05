@@ -28,19 +28,19 @@ class InputHelper:
 
         :param dict scenario_info: a ScenarioInfo instance
         :param str field_name: the input file type
-        :return: (*tuple*) -- file name and path
+        :return: (*tuple*) -- file name and list of path components
         """
         ext = _file_extension[field_name]
         file_name = scenario_info["id"] + "_" + field_name + "." + ext
-        from_dir = server_setup.INPUT_DIR
-        return file_name, from_dir
+        return file_name, server_setup.INPUT_DIR
 
     def download_file(self, file_name, from_dir):
         """Download the file if using server, otherwise no-op
 
         :param str file_name: either grid or ct file name
-        :param str from_dir: the path relative to the root dir
+        :param tuple from_dir: tuple of path components
         """
+        from_dir = self.data_access.join(*from_dir)
         self.data_access.copy_from(file_name, from_dir)
 
 
@@ -90,7 +90,7 @@ class InputData(object):
 
         file_name, from_dir = helper.get_file_components(scenario_info, field_name)
 
-        filepath = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
+        filepath = os.path.join(server_setup.LOCAL_DIR, *from_dir, file_name)
         key = cache_key(filepath)
         cached = _cache.get(key)
         if cached is not None:

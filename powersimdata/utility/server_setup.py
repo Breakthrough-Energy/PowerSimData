@@ -1,5 +1,4 @@
 import os
-import posixpath
 from pathlib import Path
 
 SERVER_ADDRESS = os.getenv("BE_SERVER_ADDRESS", "becompute01.gatesventures.com")
@@ -7,8 +6,8 @@ SERVER_SSH_PORT = os.getenv("BE_SERVER_SSH_PORT", 22)
 BACKUP_DATA_ROOT_DIR = "/mnt/RE-Storage/v2"
 DATA_ROOT_DIR = "/mnt/bes/pcm"
 EXECUTE_DIR = "tmp"
-INPUT_DIR = "data/input"
-OUTPUT_DIR = "data/output"
+INPUT_DIR = ("data", "input")
+OUTPUT_DIR = ("data", "output")
 LOCAL_DIR = os.path.join(Path.home(), "ScenarioData", "")
 MODEL_DIR = "/home/bes/pcm"
 
@@ -23,23 +22,6 @@ def get_deployment_mode():
     if mode is None:
         return DeploymentMode.Server
     return DeploymentMode.Container
-
-
-class PathConfig:
-    def __init__(self, root=None):
-        self.root = root
-
-    def _join(self, rel_path):
-        return posixpath.join(self.root, rel_path)
-
-    def execute_dir(self):
-        return self._join(EXECUTE_DIR)
-
-    def input_dir(self):
-        return self._join(INPUT_DIR)
-
-    def output_dir(self):
-        return self._join(OUTPUT_DIR)
 
 
 def get_server_user():
