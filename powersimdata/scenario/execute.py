@@ -1,6 +1,5 @@
 import copy
 import os
-import posixpath
 
 from powersimdata.data_access.context import Context
 from powersimdata.input.case_mat import export_case_mat

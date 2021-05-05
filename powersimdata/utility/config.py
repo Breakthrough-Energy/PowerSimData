@@ -5,6 +5,10 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class Config:
+    SERVER_ADDRESS = None
+    SERVER_SSH_PORT = None
+    BACKUP_DATA_ROOT_DIR = None
+    ENGINE_DIR = None
     DATA_ROOT_DIR = "/mnt/bes/pcm"
     EXECUTE_DIR = "tmp"
     INPUT_DIR = ("data", "input")
@@ -28,6 +32,7 @@ class ContainerConfig(Config):
 @dataclass(frozen=True)
 class LocalConfig(Config):
     DATA_ROOT_DIR = Config.LOCAL_DIR
+    ENGINE_DIR = os.getenv("ENGINE_DIR")
 
 
 class DeploymentMode:

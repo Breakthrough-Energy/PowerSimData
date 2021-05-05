@@ -1,4 +1,5 @@
 import posixpath
+import sys
 
 import requests
 
@@ -159,11 +160,17 @@ class NativeLauncher(Launcher):
         :param bool extract_data: always True
         :return: (*dict*) -- json response
         """
-        pass
+        sys.path.append(server_setup.ENGINE_DIR)
+        from pyreisejl.utility import app
+
+        return app.launch_simulation(self.scenario.scenario_id, threads, solver)
 
     def check_progress(self):
         """Get the status of an ongoing simulation, if possible
 
         :return: (*dict*) -- json response
         """
-        pass
+        sys.path.append(server_setup.ENGINE_DIR)
+        from pyreisejl.utility import app
+
+        return app.check_progress()
