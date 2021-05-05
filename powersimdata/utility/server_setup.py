@@ -12,6 +12,7 @@ INPUT_DIR = config.INPUT_DIR
 OUTPUT_DIR = config.OUTPUT_DIR
 LOCAL_DIR = config.LOCAL_DIR
 MODEL_DIR = config.MODEL_DIR
+ENGINE_DIR = config.ENGINE_DIR
 
 
 def get_server_user():
