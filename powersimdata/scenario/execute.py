@@ -340,7 +340,8 @@ class SimulationInput(object):
 
     def create_folder(self):
         """Creates folder on server that will enclose simulation inputs."""
-        print("--> Creating temporary folder on server for simulation inputs")
+        description = self._data_access.description
+        print(f"--> Creating temporary folder on {description} for simulation inputs")
         self._data_access.makedir(self.TMP_DIR)
 
     def prepare_mpc_file(self):
