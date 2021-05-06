@@ -27,17 +27,20 @@ class Execute(State):
         "get_grid",
         "launch_simulation",
         "prepare_simulation_input",
-        "print_scenario_info",
         "print_scenario_status",
         "scenario_id",
     }
 
     def __init__(self, scenario):
         """Constructor."""
-        self._scenario_info = scenario.info
-        self._scenario_status = scenario.status
         super().__init__(scenario)
+        self.refresh(scenario)
 
+    @property
+    def scenario_id(self):
+        return self._scenario_info["id"]
+
+    def refresh(self, scenario):
         print(
             "SCENARIO: %s | %s\n"
             % (self._scenario_info["plan"], self._scenario_info["name"])
@@ -47,10 +50,6 @@ class Execute(State):
 
         self._set_ct_and_grid()
         self._launcher = Context.get_launcher(scenario)
-
-    @property
-    def scenario_id(self):
-        return self._scenario_info["id"]
 
     def _set_ct_and_grid(self):
         """Sets change table and grid."""
@@ -129,7 +128,9 @@ class Execute(State):
 
             si.prepare_mpc_file()
 
-            self._execute_list_manager.set_status(self.scenario_id, "prepared")
+            prepared = "prepared"
+            self._execute_list_manager.set_status(self.scenario_id, prepared)
+            self._scenario_status = prepared
         else:
             print("---------------------------")
             print("SCENARIO CANNOT BE PREPARED")

@@ -57,6 +57,7 @@ class Scenario(object):
 
         if not descriptor:
             self.info = OrderedDict(self._default_info)
+            self.status = None
             self.state = Create(self)
         else:
             self._set_info(descriptor)
@@ -68,7 +69,7 @@ class Scenario(object):
                 elif state == "analyze":
                     self.state = Analyze(self)
             except AttributeError:
-                return
+                pass
 
     def __getattr__(self, name):
         if name in self.state.exported_methods:
