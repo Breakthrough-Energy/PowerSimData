@@ -149,15 +149,15 @@ class Execute(State):
                 f"Status must be one of {valid_status}, but got status={self._scenario_status}"
             )
 
-    def launch_simulation(self, threads=None, extract_data=True, solver=None):
+    def launch_simulation(self, threads=None, solver=None, extract_data=True):
         """Launches simulation on target environment (server or container)
 
         :param int/None threads: the number of threads to be used. This defaults to None,
             where None means auto.
-        :param bool extract_data: whether the results of the simulation engine should
-            automatically extracted after the simulation has run. This defaults to True.
         :param str solver: the solver used for optimization. This defaults to
             None, which translates to gurobi
+        :param bool extract_data: whether the results of the simulation engine should
+            automatically extracted after the simulation has run. This defaults to True.
         :return: (*subprocess.Popen*) or (*requests.Response*) - either the
             process (if using ssh to server) or http response (if run in container)
         """
@@ -165,7 +165,7 @@ class Execute(State):
 
         mode = get_deployment_mode()
         print(f"--> Launching simulation on {mode.lower()}")
-        self._launcher.launch_simulation(threads, extract_data, solver)
+        return self._launcher.launch_simulation(threads, solver, extract_data)
 
     def check_progress(self):
         """Get the status of an ongoing simulation, if possible
