@@ -45,7 +45,7 @@ class Launcher:
     def launch_simulation(self, threads=None, solver=None, extract_data=True):
         _check_threads(threads)
         _check_solver(solver)
-        self._launch(threads, solver, extract_data)
+        return self._launch(threads, solver, extract_data)
 
 
 class SSHLauncher(Launcher):
@@ -127,7 +127,8 @@ class HttpLauncher(Launcher):
         :param str solver: the solver used for optimization. This defaults to
             None, which translates to gurobi
         :param bool extract_data: always True
-        :return: (*requests.Response*) -- the http response object
+        :return: (*requests.Response*) -- http response from the engine, with a json
+            body as is returned by check_progress
         """
         scenario_id = self.scenario.scenario_id
         url = f"http://{server_setup.SERVER_ADDRESS}:5000/launch/{scenario_id}"
@@ -141,7 +142,8 @@ class HttpLauncher(Launcher):
     def check_progress(self):
         """Get the status of an ongoing simulation, if possible
 
-        :return: (*dict*) -- json response
+        :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
+            keys which map to stdout, stderr, and the respective scenario attributes
         """
         scenario_id = self.scenario.scenario_id
         url = f"http://{server_setup.SERVER_ADDRESS}:5000/status/{scenario_id}"
@@ -158,7 +160,8 @@ class NativeLauncher(Launcher):
         :param str solver: the solver used for optimization. This defaults to
             None, which translates to gurobi
         :param bool extract_data: always True
-        :return: (*dict*) -- json response
+        :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
+            keys which map to stdout, stderr, and the respective scenario attributes
         """
         sys.path.append(server_setup.ENGINE_DIR)
         from pyreisejl.utility import app
@@ -168,7 +171,8 @@ class NativeLauncher(Launcher):
     def check_progress(self):
         """Get the status of an ongoing simulation, if possible
 
-        :return: (*dict*) -- json response
+        :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
+            keys which map to stdout, stderr, and the respective scenario attributes
         """
         sys.path.append(server_setup.ENGINE_DIR)
         from pyreisejl.utility import app
