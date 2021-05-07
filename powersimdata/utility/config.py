@@ -21,7 +21,6 @@ class Config:
 class ServerConfig(Config):
     SERVER_ADDRESS = os.getenv("BE_SERVER_ADDRESS", "becompute01.gatesventures.com")
     SERVER_SSH_PORT = os.getenv("BE_SERVER_SSH_PORT", 22)
-    BACKUP_DATA_ROOT_DIR = "/mnt/RE-Storage/v2"
     MODEL_DIR = "/home/bes/pcm"
 
 

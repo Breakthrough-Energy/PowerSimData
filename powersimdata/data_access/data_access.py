@@ -24,10 +24,12 @@ _dirs = {
 class DataAccess:
     """Interface to a local or remote data store."""
 
-    def __init__(self, root=None):
+    def __init__(self, root=None, backup_root=None):
         """Constructor"""
         self.root = server_setup.DATA_ROOT_DIR if root is None else root
-        self.backup_root = server_setup.BACKUP_DATA_ROOT_DIR
+        self.backup_root = (
+            server_setup.BACKUP_DATA_ROOT_DIR if backup_root is None else backup_root
+        )
         self.join = None
 
     def copy_from(self, file_name, from_dir):
@@ -291,9 +293,9 @@ class SSHDataAccess(DataAccess):
 
     _last_attempt = 0
 
-    def __init__(self, root=None):
+    def __init__(self, root=None, backup_root=None):
         """Constructor"""
-        super().__init__(root)
+        super().__init__(root, backup_root)
         self._ssh = None
         self._retry_after = 5
         self.local_root = server_setup.LOCAL_DIR
