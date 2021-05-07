@@ -27,7 +27,6 @@ class Create(State):
     default_exported_methods = (
         "create_scenario",
         "get_bus_demand",
-        "print_scenario_info",
         "set_builder",
         "set_grid",
     )
@@ -37,8 +36,6 @@ class Create(State):
         self.builder = None
         self.grid = None
         self.ct = None
-        self._scenario_status = None
-        self._scenario_info = scenario.info
         self.exported_methods = set(self.default_exported_methods)
         super().__init__(scenario)
 
@@ -175,6 +172,9 @@ class Create(State):
 
         self._scenario_info["grid_model"] = self.builder.grid_model
         self._scenario_info["interconnect"] = self.builder.interconnect
+
+    def _leave(self):
+        del self.builder
 
 
 class _Builder(object):

@@ -39,17 +39,16 @@ class Analyze(State):
         "get_storage_pg",
         "get_wind",
         "print_infeasibilities",
-        "print_scenario_info",
     }
 
     def __init__(self, scenario):
         """Constructor."""
-        self._scenario_info = scenario.info
-        self._scenario_status = scenario.status
         super().__init__(scenario)
 
         self.data_loc = "disk" if scenario.status == "moved" else None
+        self.refresh(scenario)
 
+    def refresh(self, scenario):
         print(
             "SCENARIO: %s | %s\n"
             % (self._scenario_info["plan"], self._scenario_info["name"])
@@ -62,7 +61,9 @@ class Analyze(State):
     def _set_allowed_state(self):
         """Sets allowed state."""
         if self._scenario_status == "extracted":
-            self.allowed = ["delete", "move"]
+            self.allowed = ["delete"]
+            if self._data_access.backup_root is not None:
+                self.allowed.append("move")
 
     def _set_ct_and_grid(self):
         """Sets change table and grid."""
@@ -321,3 +322,8 @@ class Analyze(State):
         """
         profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
         return profile.get_profile("wind")
+
+    def _leave(self):
+        """Cleans when leaving state."""
+        del self.grid
+        del self.ct
