@@ -151,7 +151,7 @@ class Execute(State):
             )
 
     def launch_simulation(self, threads=None, solver=None, extract_data=True):
-        """Launches simulation on target environment (server or container)
+        """Launches simulation on target environment
 
         :param int/None threads: the number of threads to be used. This defaults to None,
             where None means auto.
@@ -161,6 +161,7 @@ class Execute(State):
             automatically extracted after the simulation has run. This defaults to True.
         :return: (*subprocess.Popen*) or (*requests.Response*) - either the
             process (if using ssh to server) or http response (if run in container)
+            or (*dict*) (if run locally)
         """
         self._check_if_ready()
 

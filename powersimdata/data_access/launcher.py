@@ -36,6 +36,16 @@ class Launcher:
         self.scenario = scenario
 
     def _launch(self, threads=None, solver=None, extract_data=True):
+        """Launches simulation on target environment
+
+        :param int/None threads: the number of threads to be used. This defaults to None,
+            where None means auto.
+        :param str solver: the solver used for optimization. This defaults to
+            None, which translates to gurobi
+        :param bool extract_data: whether the results of the simulation engine should
+            automatically extracted after the simulation has run. This defaults to True.
+        :raises NotImplementedError: always - this must be implemented in a subclass
+        """
         raise NotImplementedError
 
     def extract_simulation_output(self):
@@ -43,6 +53,18 @@ class Launcher:
         pass
 
     def launch_simulation(self, threads=None, solver=None, extract_data=True):
+        """Launches simulation on target environment
+
+        :param int/None threads: the number of threads to be used. This defaults to None,
+            where None means auto.
+        :param str solver: the solver used for optimization. This defaults to
+            None, which translates to gurobi
+        :param bool extract_data: whether the results of the simulation engine should
+            automatically extracted after the simulation has run. This defaults to True.
+        :return: (*subprocess.Popen*) or (*requests.Response*) - either the
+            process (if using ssh to server) or http response (if run in container)
+            or (*dict*) (if run locally)
+        """
         _check_threads(threads)
         _check_solver(solver)
         return self._launch(threads, solver, extract_data)
@@ -99,7 +121,7 @@ class SSHLauncher(Launcher):
             extra_args.append("--solver " + solver)
 
         if not isinstance(extract_data, bool):
-            raise TypeError("extract_data must be a boolean: 'True' or 'False'")
+            raise TypeError("extract_data must be a bool")
         if extract_data:
             extra_args.append("--extract-data")
 

@@ -14,6 +14,8 @@ class Context:
 
         :param str data_loc: pass "disk" if using data from backup disk,
             otherwise leave the default.
+        :return: (:class:`powersimdata.data_access.data_access.DataAccess`) -- a data access
+            instance
         """
         if data_loc == "disk":
             root = server_setup.BACKUP_DATA_ROOT_DIR
@@ -29,7 +31,8 @@ class Context:
     def get_launcher(scenario):
         """Return instance for interaction with simulation engine
 
-        :param powersimdata.Scenario scenario: a scenario object
+        :param powersimdata.scenario.scenario.Scenario scenario: a scenario object
+        :return: (:class:`powersimdata.data_access.launcher.Launcher`) -- a launcher instance
         """
         mode = get_deployment_mode()
         if mode == DeploymentMode.Server:
