@@ -1,11 +1,16 @@
+[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 ![Tests](https://github.com/Breakthrough-Energy/PowerSimData/workflows/Pytest/badge.svg)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://github.com/Breakthrough-Energy/docs/actions/workflows/publish.yml/badge.svg)](https://breakthrough-energy.github.io/docs/)
+![GitHub contributors](https://img.shields.io/github/contributors/Breakthrough-Energy/PowerSimData?logo=GitHub)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/Breakthrough-Energy/PowerSimData?logo=GitHub)
+![GitHub last commit (branch)](https://img.shields.io/github/last-commit/Breakthrough-Energy/PowerSimData/develop?logo=GitHub)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/Breakthrough-Energy/PowerSimData?logo=GitHub)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code of Conduct](https://img.shields.io/badge/code%20of-conduct-ff69b4.svg?style=flat)](https://breakthrough-energy.github.io/docs/communication/code_of_conduct.html)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4538590.svg)](https://doi.org/10.5281/zenodo.4538590)
 
 
-# PowerSimData
 **PowerSimData** is part of a Python software ecosystem developed by [Breakthrough
 Energy Sciences](https://science.breakthroughenergy.org/) to carry out power flow study
 in the U.S. electrical grid.
