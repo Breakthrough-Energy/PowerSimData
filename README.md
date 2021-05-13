@@ -1,3 +1,6 @@
+
+![logo](https://raw.githubusercontent.com/Breakthrough-Energy/docs/master/source/_static/img/BE_Sciences_RGB_Horizontal_Color.svg)
+
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 ![Tests](https://github.com/Breakthrough-Energy/PowerSimData/workflows/Pytest/badge.svg)
@@ -11,6 +14,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4538590.svg)](https://doi.org/10.5281/zenodo.4538590)
 
 
+# PowerSimData
 **PowerSimData** is part of a Python software ecosystem developed by [Breakthrough
 Energy Sciences](https://science.breakthroughenergy.org/) to carry out power flow study
 in the U.S. electrical grid.
