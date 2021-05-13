@@ -1,6 +1,6 @@
 class State(object):
     """Defines an interface for encapsulating the behavior associated with a
-        particular state of the Scenario object.
+    particular state of the Scenario object.
 
     :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
     :raise TypeError: if not instantiated through a derived class
@@ -22,6 +22,10 @@ class State(object):
         self._execute_list_manager = scenario._execute_list_manager
 
     def refresh(self, scenario):
+        """Called during state changes to ensure instance is properly initialized
+
+        :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
+        """
         pass
 
     def switch(self, state):

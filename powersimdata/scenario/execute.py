@@ -38,9 +38,17 @@ class Execute(State):
 
     @property
     def scenario_id(self):
+        """Get the current scenario id
+
+        :return: (*str*) -- scenario id
+        """
         return self._scenario_info["id"]
 
     def refresh(self, scenario):
+        """Called during state changes to ensure instance is properly initialized
+
+        :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
+        """
         print(
             "SCENARIO: %s | %s\n"
             % (self._scenario_info["plan"], self._scenario_info["name"])

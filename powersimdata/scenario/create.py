@@ -174,6 +174,7 @@ class Create(State):
         self._scenario_info["interconnect"] = self.builder.interconnect
 
     def _leave(self):
+        """Cleans when leaving state."""
         del self.builder
 
 

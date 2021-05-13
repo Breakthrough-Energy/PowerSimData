@@ -32,6 +32,11 @@ def _check_solver(solver):
 
 
 class Launcher:
+    """Base class for interaction with simulation engine.
+
+    :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
+    """
+
     def __init__(self, scenario):
         self.scenario = scenario
 
