@@ -1,9 +1,17 @@
+import configparser
 import os
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
 from powersimdata.utility import templates
+
+INI_FILE = "config.ini"
+if Path(INI_FILE).exists():
+    conf = configparser.ConfigParser()
+    conf.read(INI_FILE)
+    for k, v in conf["PowerSimData"].items():
+        os.environ[k.upper()] = v
 
 
 @dataclass(frozen=True)
