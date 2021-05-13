@@ -67,7 +67,7 @@ def _check_content(filepath):
         assert CONTENT == f.read()
 
 
-root_dir = server_setup.DATA_ROOT_DIR
+root_dir = server_setup.DATA_ROOT_DIR.rstrip("/")
 backup_root = server_setup.BACKUP_DATA_ROOT_DIR
 
 

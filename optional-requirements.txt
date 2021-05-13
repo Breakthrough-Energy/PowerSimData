@@ -4,3 +4,4 @@ fiona~=1.8.14
 matplotlib==3.2.1
 rtree~=0.9.4
 shapely==1.7.1
+psycopg2~=2.8.5
