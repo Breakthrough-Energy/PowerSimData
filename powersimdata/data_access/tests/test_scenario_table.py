@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 import pytest
 
-from powersimdata.data_access.scenario_list import ScenarioTable
+from powersimdata.data_access.scenario_table import ScenarioTable
 from powersimdata.data_access.sql_store import SqlException
 
 # uncomment to enable logging queries to stdout
