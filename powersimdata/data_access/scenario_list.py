@@ -64,7 +64,7 @@ class ScenarioListManager(CsvStore):
 
     @verify_hash
     def add_entry(self, scenario_info):
-        """Adds scenario to the scenario list file on server.
+        """Adds scenario to the scenario list file.
 
         :param collections.OrderedDict scenario_info: entry to add to scenario list.
         :return: (*pandas.DataFrame*) -- the updated data frame
@@ -78,7 +78,7 @@ class ScenarioListManager(CsvStore):
         table = table.append(entry)
         table.set_index("id", inplace=True)
 
-        print("--> Adding entry in %s on server" % self._FILE_NAME)
+        print("--> Adding entry in %s" % self._FILE_NAME)
         return table
 
     @verify_hash
@@ -91,5 +91,5 @@ class ScenarioListManager(CsvStore):
         table = self.get_scenario_table()
         table.drop(int(scenario_id), inplace=True)
 
-        print("--> Deleting entry in %s on server" % self._FILE_NAME)
+        print("--> Deleting entry in %s" % self._FILE_NAME)
         return table
