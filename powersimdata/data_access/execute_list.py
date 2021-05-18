@@ -18,7 +18,7 @@ class ExecuteListManager(CsvStore):
         """Return the status for the scenario
 
         :param str/int scenario_id: the scenario id
-        :raises Exception: if scenario not found in execute list on server.
+        :raises Exception: if scenario not found in execute list.
         :return: (*str*) -- scenario status
         """
         table = self.get_execute_table()
@@ -46,12 +46,12 @@ class ExecuteListManager(CsvStore):
         table = self.get_execute_table()
         table.loc[int(scenario_id), "status"] = status
 
-        print(f"-->  Setting status={status} in execute table on server")
+        print(f"--> Setting status={status} in execute list")
         return table
 
     @verify_hash
     def delete_entry(self, scenario_id):
-        """Deletes entry from execute list on server.
+        """Deletes entry from execute list.
 
         :param int/str scenario_id: the id of the scenario
         :return: (*pandas.DataFrame*) -- the updated data frame
@@ -59,5 +59,5 @@ class ExecuteListManager(CsvStore):
         table = self.get_execute_table()
         table.drop(int(scenario_id), inplace=True)
 
-        print("--> Deleting entry in execute table on server")
+        print("--> Deleting entry in %s" % self._FILE_NAME)
         return table

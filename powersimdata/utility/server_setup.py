@@ -1,27 +1,18 @@
 import os
-from pathlib import Path
 
-SERVER_ADDRESS = os.getenv("BE_SERVER_ADDRESS", "becompute01.gatesventures.com")
-SERVER_SSH_PORT = os.getenv("BE_SERVER_SSH_PORT", 22)
-BACKUP_DATA_ROOT_DIR = "/mnt/RE-Storage/v2"
-DATA_ROOT_DIR = "/mnt/bes/pcm"
-EXECUTE_DIR = "tmp"
-INPUT_DIR = ("data", "input")
-OUTPUT_DIR = ("data", "output")
-LOCAL_DIR = os.path.join(Path.home(), "ScenarioData", "")
-MODEL_DIR = "/home/bes/pcm"
+from powersimdata.utility.config import get_config
 
-
-class DeploymentMode:
-    Server = "SERVER"
-    Container = "CONTAINER"
-
-
-def get_deployment_mode():
-    mode = os.getenv("DEPLOYMENT_MODE")
-    if mode is None:
-        return DeploymentMode.Server
-    return DeploymentMode.Container
+config = get_config()
+SERVER_ADDRESS = config.SERVER_ADDRESS
+SERVER_SSH_PORT = config.SERVER_SSH_PORT
+BACKUP_DATA_ROOT_DIR = config.BACKUP_DATA_ROOT_DIR
+DATA_ROOT_DIR = config.DATA_ROOT_DIR
+EXECUTE_DIR = config.EXECUTE_DIR
+INPUT_DIR = config.INPUT_DIR
+OUTPUT_DIR = config.OUTPUT_DIR
+LOCAL_DIR = config.LOCAL_DIR
+MODEL_DIR = config.MODEL_DIR
+ENGINE_DIR = config.ENGINE_DIR
 
 
 def get_server_user():

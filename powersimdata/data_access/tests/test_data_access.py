@@ -10,11 +10,12 @@ from powersimdata.tests.mock_ssh import MockConnection
 from powersimdata.utility import server_setup
 
 CONTENT = b"content"
+backup_root = "/mnt/backup_dir"
 
 
 @pytest.fixture
 def data_access():
-    data_access = SSHDataAccess()
+    data_access = SSHDataAccess(backup_root=backup_root)
     yield data_access
     data_access.close()
 
@@ -68,7 +69,6 @@ def _check_content(filepath):
 
 
 root_dir = server_setup.DATA_ROOT_DIR.rstrip("/")
-backup_root = server_setup.BACKUP_DATA_ROOT_DIR
 
 
 def test_base_dir(data_access):
