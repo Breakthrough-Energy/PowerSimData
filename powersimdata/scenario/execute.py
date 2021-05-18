@@ -167,9 +167,8 @@ class Execute(State):
             None, which translates to gurobi
         :param bool extract_data: whether the results of the simulation engine should
             automatically extracted after the simulation has run. This defaults to True.
-        :return: (*subprocess.Popen*) or (*requests.Response*) - either the
-            process (if using ssh to server) or http response (if run in container)
-            or (*dict*) (if run locally)
+        :return: (*subprocess.Popen*) or (*dict*) - the process, if using ssh to server,
+            otherwise a dict containing status information.
         """
         self._check_if_ready()
 
@@ -180,7 +179,9 @@ class Execute(State):
     def check_progress(self):
         """Get the status of an ongoing simulation, if possible
 
-        :return: (*dict*) -- progress information, or None
+        :return: (*dict*) -- either None if using ssh, or a dict which contains
+            "output", "errors", "scenario_id", and "status" keys which map to
+            stdout, stderr, and the respective scenario attributes
         """
         return self._launcher.check_progress()
 

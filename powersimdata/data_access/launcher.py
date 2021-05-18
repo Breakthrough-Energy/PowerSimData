@@ -13,7 +13,7 @@ def _check_threads(threads):
     :raises TypeError: if threads is not an int
     :raises ValueError: if threads is not a positive value
     """
-    if threads:
+    if threads is not None:
         if not isinstance(threads, int):
             raise TypeError("threads must be an int")
         if threads < 1:
@@ -24,8 +24,11 @@ def _check_solver(solver):
     """Validate solver argument
 
     :param str solver: the solver used for the optimization
+    :raises TypeError: if solver is not a str
     :raises ValueError: if invalid solver provided
     """
+    if not isinstance(solver, str):
+        raise TypeError("solver must be a str")
     solvers = ("gurobi", "glpk")
     if solver is not None and solver.lower() not in solvers:
         raise ValueError(f"Invalid solver: options are {solvers}")
@@ -43,7 +46,7 @@ class Launcher:
     def _launch(self, threads=None, solver=None, extract_data=True):
         """Launches simulation on target environment
 
-        :param int/None threads: the number of threads to be used. This defaults to None,
+        :param int threads: the number of threads to be used. This defaults to None,
             where None means auto.
         :param str solver: the solver used for optimization. This defaults to
             None, which translates to gurobi
@@ -60,15 +63,14 @@ class Launcher:
     def launch_simulation(self, threads=None, solver=None, extract_data=True):
         """Launches simulation on target environment
 
-        :param int/None threads: the number of threads to be used. This defaults to None,
+        :param int threads: the number of threads to be used. This defaults to None,
             where None means auto.
         :param str solver: the solver used for optimization. This defaults to
             None, which translates to gurobi
         :param bool extract_data: whether the results of the simulation engine should
             automatically extracted after the simulation has run. This defaults to True.
-        :return: (*subprocess.Popen*) or (*requests.Response*) - either the
-            process (if using ssh to server) or http response (if run in container)
-            or (*dict*) (if run locally)
+        :return: (*subprocess.Popen*) or (*dict*) - the process, if using ssh to server,
+            otherwise a dict containing status information.
         """
         _check_threads(threads)
         _check_solver(solver)
@@ -108,7 +110,7 @@ class SSHLauncher(Launcher):
     def _launch(self, threads=None, solver=None, extract_data=True):
         """Launch simulation on server, via ssh.
 
-        :param int/None threads: the number of threads to be used. This defaults to None,
+        :param int threads: the number of threads to be used. This defaults to None,
             where None means auto.
         :param str solver: the solver used for optimization. This defaults to
             None, which translates to gurobi
@@ -147,15 +149,15 @@ class SSHLauncher(Launcher):
 
 class HttpLauncher(Launcher):
     def _launch(self, threads=None, solver=None, extract_data=True):
-        """Launches simulation in container via http call
+        """Launch simulation in container via http call
 
-        :param int/None threads: the number of threads to be used. This defaults to None,
+        :param int threads: the number of threads to be used. This defaults to None,
             where None means auto.
         :param str solver: the solver used for optimization. This defaults to
             None, which translates to gurobi
         :param bool extract_data: always True
-        :return: (*requests.Response*) -- http response from the engine, with a json
-            body as is returned by check_progress
+        :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
+            keys which map to stdout, stderr, and the respective scenario attributes
         """
         scenario_id = self.scenario.scenario_id
         url = f"http://{server_setup.SERVER_ADDRESS}:5000/launch/{scenario_id}"
@@ -164,7 +166,7 @@ class HttpLauncher(Launcher):
             print(
                 f"Failed to launch simulation: status={resp.status_code}. See response for details"
             )
-        return resp
+        return resp.json()
 
     def check_progress(self):
         """Get the status of an ongoing simulation, if possible
@@ -180,9 +182,9 @@ class HttpLauncher(Launcher):
 
 class NativeLauncher(Launcher):
     def _launch(self, threads=None, solver=None, extract_data=True):
-        """Launches simulation by importing from REISE.jl
+        """Launch simulation by importing from REISE.jl
 
-        :param int/None threads: the number of threads to be used. This defaults to None,
+        :param int threads: the number of threads to be used. This defaults to None,
             where None means auto.
         :param str solver: the solver used for optimization. This defaults to
             None, which translates to gurobi
