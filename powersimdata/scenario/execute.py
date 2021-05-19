@@ -251,7 +251,7 @@ class SimulationInput(object):
         """Prepares profile for simulation.
 
         :param kind: one of *demand*, *'hydro'*, *'solar'* or *'wind'*.
-        :param int/str/None profile_as: if given, copy profile from this scenario.
+        :param int/str profile_as: if given, copy profile from this scenario.
         """
         if profile_as is None:
             tp = TransformProfile(self._scenario_info, self.grid, self.ct)
@@ -267,5 +267,5 @@ class SimulationInput(object):
             )
         else:
             from_dir = self._data_access.match_scenario_files(profile_as, "tmp")
-            to_dir = self.TMP_DIR
-            self._data_access.copy(f"{from_dir}/{kind}.csv", to_dir)
+            src = self._data_access.join(from_dir, f"{kind}.csv")
+            self._data_access.copy(src, self.TMP_DIR)
