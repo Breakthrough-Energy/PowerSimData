@@ -15,7 +15,7 @@ class ProfileHelper:
         """Get the file name and relative path for the given profile and
         scenario.
 
-        :param dict scenario_info: a ScenarioInfo instance
+        :param dict scenario_info: metadata for a scenario
         :param str field_name: the kind of profile
         :return: (*tuple*) -- file name and list of path components
         """
