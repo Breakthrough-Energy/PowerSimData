@@ -26,7 +26,7 @@ class InputHelper:
     def get_file_components(scenario_info, field_name):
         """Get the file name and relative path for either ct or grid
 
-        :param dict scenario_info: a ScenarioInfo instance
+        :param dict scenario_info: metadata for a scenario
         :param str field_name: the input file type
         :return: (*tuple*) -- file name and list of path components
         """
