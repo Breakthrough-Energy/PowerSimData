@@ -24,21 +24,21 @@ class InputHelper:
 
     @staticmethod
     def get_file_components(scenario_info, field_name):
-        """Get the file name and relative path for either ct or grid
+        """Get the file name and relative path for either ct or grid.
 
-        :param dict scenario_info: a ScenarioInfo instance
-        :param str field_name: the input file type
-        :return: (*tuple*) -- file name and list of path components
+        :param dict scenario_info: metadata for a scenario.
+        :param str field_name: the input file type.
+        :return: (*tuple*) -- file name and list of path components.
         """
         ext = _file_extension[field_name]
         file_name = scenario_info["id"] + "_" + field_name + "." + ext
         return file_name, server_setup.INPUT_DIR
 
     def download_file(self, file_name, from_dir):
-        """Download the file if using server, otherwise no-op
+        """Download the file if using server, otherwise no-op.
 
-        :param str file_name: either grid or ct file name
-        :param tuple from_dir: tuple of path components
+        :param str file_name: either grid or ct file name.
+        :param tuple from_dir: tuple of path components.
         """
         from_dir = self.data_access.join(*from_dir)
         self.data_access.copy_from(file_name, from_dir)
@@ -50,7 +50,7 @@ def _check_field(field_name):
     :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
         *'ct'* or *'grid'*.
     :raises ValueError: if not *'demand'*, *'hydro'*, *'solar'*, *'wind'*
-        *'ct'* or *'grid'*
+        *'ct'* or *'grid'*.
     """
     possible = list(_file_extension.keys())
     if field_name not in possible:
@@ -108,7 +108,7 @@ class InputData(object):
         return data
 
     def get_profile_version(self, grid_model, kind):
-        """Returns available raw profile from blob storage or local disk
+        """Returns available raw profile from blob storage or local disk.
 
         :param str grid_model: grid model.
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
