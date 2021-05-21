@@ -10,7 +10,7 @@ from powersimdata.input.input_data import get_bus_demand
 from powersimdata.utility import server_setup
 
 
-class OutputData(object):
+class OutputData:
     """Load output data.
 
     :param str data_loc: data location.

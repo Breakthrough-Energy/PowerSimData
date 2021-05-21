@@ -111,7 +111,7 @@ class CacheKeyBuilder:
         raise ValueError(f"unsupported type for cache key = {type(arg)}")
 
 
-class PrintManager(object):
+class PrintManager:
     """Manages print messages."""
 
     def __init__(self):

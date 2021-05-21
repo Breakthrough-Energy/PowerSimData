@@ -52,7 +52,7 @@ class Move(State):
         self._data_access.close()
 
 
-class BackUpDisk(object):
+class BackUpDisk:
     """Back up scenario data to backup disk mounted on server.
 
     :param powersimdata.data_access.data_access.DataAccess data_access:

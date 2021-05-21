@@ -6,7 +6,7 @@ from powersimdata.input.case_mat import export_case_mat
 from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
-from powersimdata.input.transform_profile import TransformProfile
+from powersimdata.input.transform_profile import export_scaled_profile
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
 from powersimdata.utility.config import get_deployment_mode
@@ -202,7 +202,7 @@ class Execute(State):
             return
 
 
-class SimulationInput(object):
+class SimulationInput:
     """Prepares scenario for execution.
 
     :param powersimdata.data_access.data_access.DataAccess data_access:
@@ -254,13 +254,11 @@ class SimulationInput(object):
         :param int/str profile_as: if given, copy profile from this scenario.
         """
         if profile_as is None:
-            tp = TransformProfile(self._scenario_info, self.grid, self.ct)
-            profile = tp.get_profile(kind)
-            print(
-                f"Writing scaled {kind} profile in {server_setup.LOCAL_DIR} on local machine"
-            )
             file_name = "%s_%s.csv" % (self.scenario_id, kind)
-            profile.to_csv(os.path.join(server_setup.LOCAL_DIR, file_name))
+            filepath = os.path.join(server_setup.LOCAL_DIR, file_name)
+            export_scaled_profile(
+                kind, self._scenario_info, self.grid, self.ct, filepath
+            )
 
             self._data_access.move_to(
                 file_name, self.REL_TMP_DIR, change_name_to=f"{kind}.csv"

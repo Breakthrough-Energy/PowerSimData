@@ -3,7 +3,23 @@ import copy
 from powersimdata.input.input_data import InputData
 
 
-class TransformProfile(object):
+def export_scaled_profile(kind, scenario_info, grid, ct, filepath):
+    """Apply transformation to the given kind of profile and save the result locally.
+
+    :param dict scenario_info: a dict containing the profile version, with
+        key in the form base_{kind}
+    :param powersimdata.input.grid.Grid grid: a Grid object previously
+        transformed.
+    :param dict ct: change table.
+    :param str filepath: path to save the result, including the filename
+    """
+    tp = TransformProfile(scenario_info, grid, ct)
+    profile = tp.get_profile(kind)
+    print(f"Writing scaled {kind} profile to {filepath} on local machine")
+    profile.to_csv(filepath)
+
+
+class TransformProfile:
     """Transform profile according to operations listed in change table."""
 
     def __init__(self, scenario_info, grid, ct):

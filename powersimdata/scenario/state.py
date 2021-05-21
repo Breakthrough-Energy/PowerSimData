@@ -1,4 +1,4 @@
-class State(object):
+class State:
     """Defines an interface for encapsulating the behavior associated with a
     particular state of the Scenario object.
 

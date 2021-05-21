@@ -178,7 +178,7 @@ class Create(State):
         del self.builder
 
 
-class _Builder(object):
+class _Builder:
     """Scenario Builder.
 
     :param str grid_model: grid model.
