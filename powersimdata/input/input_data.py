@@ -57,7 +57,7 @@ def _check_field(field_name):
         raise ValueError("Only %s data can be loaded" % " | ".join(possible))
 
 
-class InputData(object):
+class InputData:
     """Load input data.
 
     :param str data_loc: data location.

@@ -11,7 +11,7 @@ from powersimdata.utility.helpers import MemoryCache, cache_key
 _cache = MemoryCache()
 
 
-class Grid(object):
+class Grid:
     """Grid
 
     :param str/list interconnect: geographical region covered. Either *'USA'*, one of

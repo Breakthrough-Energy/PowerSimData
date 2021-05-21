@@ -170,7 +170,7 @@ storage_columns = {
 }
 
 
-class MockGrid(object):
+class MockGrid:
     def __init__(self, grid_attrs=None, model="usa_tamu"):
         """Constructor.
 

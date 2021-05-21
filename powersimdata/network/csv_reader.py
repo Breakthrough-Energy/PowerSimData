@@ -1,7 +1,7 @@
 from powersimdata.input.helpers import csv_to_data_frame
 
 
-class CSVReader(object):
+class CSVReader:
     """MPC files reader.
 
     :param str data_loc: path to data.

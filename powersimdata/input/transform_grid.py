@@ -6,7 +6,7 @@ import pandas as pd
 from powersimdata.utility.distance import haversine
 
 
-class TransformGrid(object):
+class TransformGrid:
     """Transforms grid according to operations listed in change table."""
 
     def __init__(self, grid, ct):

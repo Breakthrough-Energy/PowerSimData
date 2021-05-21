@@ -12,7 +12,7 @@ from powersimdata.scenario.execute import Execute
 pd.set_option("display.max_colwidth", None)
 
 
-class Scenario(object):
+class Scenario:
     """Handles scenario.
 
     :param int/str descriptor: scenario name or index. If None, default to a Scenario

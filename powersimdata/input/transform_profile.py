@@ -19,7 +19,7 @@ def export_scaled_profile(kind, scenario_info, grid, ct, filepath):
     profile.to_csv(filepath)
 
 
-class TransformProfile(object):
+class TransformProfile:
     """Transform profile according to operations listed in change table."""
 
     def __init__(self, scenario_info, grid, ct):

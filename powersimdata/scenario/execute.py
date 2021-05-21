@@ -202,7 +202,7 @@ class Execute(State):
             return
 
 
-class SimulationInput(object):
+class SimulationInput:
     """Prepares scenario for execution.
 
     :param powersimdata.data_access.data_access.DataAccess data_access:
