@@ -8,7 +8,7 @@ from powersimdata.utility import server_setup
 
 
 class ProfileHelper:
-    BASE_URL = "https://bescienceswebsite.blob.core.windows.net/profiles"
+    BASE_URL = "https://besciences.blob.core.windows.net/profiles"
 
     @staticmethod
     def get_file_components(scenario_info, field_name):
