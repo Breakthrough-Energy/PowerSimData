@@ -2,11 +2,10 @@ import copy
 import os
 
 from powersimdata.data_access.context import Context
-from powersimdata.input.case_mat import export_case_mat
+from powersimdata.input.export_data import export_case_mat, export_transformed_profile
 from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
-from powersimdata.input.transform_profile import export_scaled_profile
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
 from powersimdata.utility.config import get_deployment_mode
@@ -256,7 +255,7 @@ class SimulationInput:
         if profile_as is None:
             file_name = "%s_%s.csv" % (self.scenario_id, kind)
             filepath = os.path.join(server_setup.LOCAL_DIR, file_name)
-            export_scaled_profile(
+            export_transformed_profile(
                 kind, self._scenario_info, self.grid, self.ct, filepath
             )
 
