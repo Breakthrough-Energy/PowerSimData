@@ -13,11 +13,12 @@ def _check_threads(threads):
     :raises TypeError: if threads is not an int
     :raises ValueError: if threads is not a positive value
     """
-    if threads is not None:
-        if not isinstance(threads, int):
-            raise TypeError("threads must be an int")
-        if threads < 1:
-            raise ValueError("threads must be a positive value")
+    if threads is None:
+        return
+    if not isinstance(threads, int):
+        raise TypeError("threads must be an int")
+    if threads < 1:
+        raise ValueError("threads must be a positive value")
 
 
 def _check_solver(solver):
@@ -27,10 +28,12 @@ def _check_solver(solver):
     :raises TypeError: if solver is not a str
     :raises ValueError: if invalid solver provided
     """
+    if solver is None:
+        return
     if not isinstance(solver, str):
         raise TypeError("solver must be a str")
     solvers = ("gurobi", "glpk")
-    if solver is not None and solver.lower() not in solvers:
+    if solver.lower() not in solvers:
         raise ValueError(f"Invalid solver: options are {solvers}")
 
 
