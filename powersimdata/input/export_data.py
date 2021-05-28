@@ -3,6 +3,8 @@ import copy
 import numpy as np
 from scipy.io import savemat
 
+from powersimdata.input.transform_profile import TransformProfile
+
 
 def export_case_mat(grid, filepath, storage_filepath=None):
     """Export a grid to a format suitable for loading into simulation engine.
@@ -120,3 +122,19 @@ def export_case_mat(grid, filepath, storage_filepath=None):
         savemat(storage_filepath, mpc_storage, appendmat=False)
 
     savemat(filepath, mpc, appendmat=False)
+
+
+def export_transformed_profile(kind, scenario_info, grid, ct, filepath):
+    """Apply transformation to the given kind of profile and save the result locally.
+
+    :param dict scenario_info: a dict containing the profile version, with
+        key in the form base_{kind}
+    :param powersimdata.input.grid.Grid grid: a Grid object previously
+        transformed.
+    :param dict ct: change table.
+    :param str filepath: path to save the result, including the filename
+    """
+    tp = TransformProfile(scenario_info, grid, ct)
+    profile = tp.get_profile(kind)
+    print(f"Writing scaled {kind} profile to {filepath} on local machine")
+    profile.to_csv(filepath)
