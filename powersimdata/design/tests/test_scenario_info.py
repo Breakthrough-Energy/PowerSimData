@@ -79,36 +79,21 @@ zone2_plant_id = [
     if mock_plant["zone_name"][i] == "Arizona"
 ]
 
-solar_plant_id = [
-    plant_id
-    for i, plant_id in enumerate(mock_plant["plant_id"])
-    if mock_plant["type"][i] == "solar"
-]
-wind_plant_id = [
-    plant_id
-    for i, plant_id in enumerate(mock_plant["plant_id"])
-    if mock_plant["type"][i] == "wind"
-]
-ng_plant_id = [
-    plant_id
-    for i, plant_id in enumerate(mock_plant["plant_id"])
-    if mock_plant["type"][i] == "ng"
-]
-coal_plant_id = [
-    plant_id
-    for i, plant_id in enumerate(mock_plant["plant_id"])
-    if mock_plant["type"][i] == "coal"
-]
-dfo_plant_id = [
-    plant_id
-    for i, plant_id in enumerate(mock_plant["plant_id"])
-    if mock_plant["type"][i] == "dfo"
-]
-hydro_plant_id = [
-    plant_id
-    for i, plant_id in enumerate(mock_plant["plant_id"])
-    if mock_plant["type"][i] == "hydro"
-]
+
+def _select_plant_id(type):
+    return [
+        plant_id
+        for i, plant_id in enumerate(mock_plant["plant_id"])
+        if mock_plant["type"][i] == type
+    ]
+
+
+solar_plant_id = _select_plant_id("solar")
+wind_plant_id = _select_plant_id("wind")
+ng_plant_id = _select_plant_id("ng")
+coal_plant_id = _select_plant_id("coal")
+dfo_plant_id = _select_plant_id("dfo")
+hydro_plant_id = _select_plant_id("hydro")
 
 mock_solar = mock_pg[solar_plant_id] * 2
 mock_wind = mock_pg[wind_plant_id] * 4
@@ -128,7 +113,6 @@ class TestScenarioInfo(unittest.TestCase):
             wind=mock_wind,
             hydro=mock_hydro,
         )
-        scenario.state.grid.get_grid_model = lambda: "usa_tamu"
         scenario.state.grid.zone2id = {"Oregon": 202, "Arizona": 209}
         self.scenario_info = ScenarioInfo(scenario)
 

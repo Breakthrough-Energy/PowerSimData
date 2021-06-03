@@ -101,7 +101,7 @@ def _make_zonename2target(grid, targets):
     :raises ValueError: if a zone is not present in any target areas, or
         if a zone is present in more than one target area.
     """
-    grid_model = grid.get_grid_model()
+    grid_model = grid.grid_model
     target_zones = {
         target_name: area_to_loadzone(grid_model, target_name)
         if pd.isnull(targets.loc[target_name, "area_type"])

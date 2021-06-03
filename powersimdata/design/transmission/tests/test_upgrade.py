@@ -61,7 +61,6 @@ mock_plant = {
 mock_grid = MockGrid(
     grid_attrs={"branch": mock_branch, "bus": mock_bus, "plant": mock_plant}
 )
-mock_grid.get_grid_model = lambda: "usa_tamu"
 
 
 class TestStubTopologyHelpers(unittest.TestCase):

@@ -228,7 +228,7 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
-    returned_zones = area_to_loadzone(grid.get_grid_model(), area, area_type)
+    returned_zones = area_to_loadzone(grid.grid_model, area, area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     supply_data = supply_data.loc[supply_data.zone_name.isin(returned_zones)]
@@ -467,7 +467,7 @@ def plot_linear_vs_quadratic_terms(
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
-    returned_zones = area_to_loadzone(grid.get_grid_model(), area, area_type)
+    returned_zones = area_to_loadzone(grid.grid_model, area, area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     supply_data = supply_data.loc[supply_data.zone_name.isin(returned_zones)]
@@ -574,7 +574,7 @@ def plot_capacity_vs_price(
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
-    returned_zones = area_to_loadzone(grid.get_grid_model(), area, area_type)
+    returned_zones = area_to_loadzone(grid.grid_model, area, area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     supply_data = supply_data.loc[supply_data.zone_name.isin(returned_zones)]

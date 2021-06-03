@@ -196,6 +196,7 @@ class MockGrid:
         if len(extra_keys) > 0:
             raise ValueError("Got unknown key(s):" + str(extra_keys))
 
+        self.grid_model = model
         self.model_immutables = ModelImmutables(model)
 
         cols = {

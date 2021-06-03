@@ -31,13 +31,6 @@ class Grid:
         if engine not in supported_engines:
             raise ValueError(f"Engine must be one of {','.join(supported_engines)}")
 
-        try:
-            self.model_immutables = ModelImmutables(source)
-        except ValueError:
-            self.model_immutables = ModelImmutables(
-                _get_grid_model_from_scenario_list(source)
-            )
-
         key = cache_key(interconnect, source)
         cached = _cache.get(key)
         if cached is not None:
@@ -65,7 +58,10 @@ class Grid:
 
         _cache.put(key, self)
 
-    def get_grid_model(self):
+        self.grid_model = self._get_grid_model()
+        self.model_immutables = ModelImmutables(self.grid_model)
+
+    def _get_grid_model(self):
         """Get the grid model.
 
         :return: (*str*).
