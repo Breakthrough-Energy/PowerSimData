@@ -27,7 +27,7 @@ class ScenarioInfo:
         self.pg = scenario.state.get_pg()
         self.grid = scenario.state.get_grid()
         self.demand = scenario.state.get_demand()
-        self.grid_model = self.grid.get_grid_model()
+        self.grid_model = self.grid.grid_model
         solar = scenario.state.get_solar()
         wind = scenario.state.get_wind()
         hydro = scenario.state.get_hydro()
