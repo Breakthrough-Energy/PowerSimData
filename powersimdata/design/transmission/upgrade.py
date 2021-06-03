@@ -176,7 +176,7 @@ def get_branches_by_area(grid, area_names, method="either"):
 
     branch = grid.branch
     selected_branches = set()
-    grid_model = grid.get_grid_model()
+    grid_model = grid.grid_model
     for a in area_names:
         load_zone_names = area_to_loadzone(grid_model, a)
         to_bus_in_area = branch.to_zone_name.isin(load_zone_names)
