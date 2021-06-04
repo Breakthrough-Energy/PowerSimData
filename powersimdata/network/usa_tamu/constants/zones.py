@@ -30,7 +30,10 @@ _exports = [
 mappings = {"loadzone", "state", "state_abbr", "interconnect"}
 
 # Define combinations of interconnects
-interconnect_combinations = {"USA", "Texas_Western"}
+interconnect_combinations = {
+    "USA": {"Eastern", "Western", "Texas"},
+    "Texas_Western": {"Western", "Texas"},
+}
 
 
 # Map state abbreviations to state name
