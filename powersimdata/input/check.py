@@ -8,10 +8,11 @@ def check_grid(grid):
 
     :param powersimdata.input.grid.Grid grid: grid or grid-like object to check.
     :raises TypeError: if ``grid`` is not a Grid object.
+    :raises ValueError: if ``grid`` has any inconsistency
     """
-    error_messages = []
     if not isinstance(grid, Grid):
-        error_messages.append("grid must be a Grid object")
+        raise TypeError("grid must be a Grid object")
+    error_messages = []
     _check_attributes(grid, error_messages)
     _check_for_islanded_buses(grid, error_messages)
     _check_for_undescribed_buses(grid, error_messages)
