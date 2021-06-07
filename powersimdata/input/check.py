@@ -1,3 +1,5 @@
+import sys
+
 import networkx as nx
 
 from powersimdata.input.grid import Grid
@@ -8,19 +10,28 @@ def check_grid(grid):
 
     :param powersimdata.input.grid.Grid grid: grid or grid-like object to check.
     :raises TypeError: if ``grid`` is not a Grid object.
+    :raises ValueError: if ``grid`` has any inconsistency
     """
-    error_messages = []
     if not isinstance(grid, Grid):
-        error_messages.append("grid must be a Grid object")
-    _check_attributes(grid, error_messages)
-    _check_for_islanded_buses(grid, error_messages)
-    _check_for_undescribed_buses(grid, error_messages)
-    _check_bus_against_bus2sub(grid, error_messages)
-    _check_ac_interconnects(grid, error_messages)
-    _check_transformer_substations(grid, error_messages)
-    _check_line_voltages(grid, error_messages)
-    _check_plant_against_gencost(grid, error_messages)
-    _check_connected_components(grid, error_messages)
+        raise TypeError("grid must be a Grid object")
+    error_messages = []
+    for check in [
+        _check_attributes,
+        _check_for_islanded_buses,
+        _check_for_undescribed_buses,
+        _check_bus_against_bus2sub,
+        _check_ac_interconnects,
+        _check_transformer_substations,
+        _check_line_voltages,
+        _check_plant_against_gencost,
+        _check_connected_components,
+    ]:
+        try:
+            check(grid, error_messages)
+        except Exception:
+            error_messages.append(
+                f"Exception during {check.__name__}: {sys.exc_info()[1]!r}"
+            )
     if len(error_messages) > 0:
         collected = "\n".join(error_messages)
         raise ValueError(f"Problem(s) found with grid:\n{collected}")
