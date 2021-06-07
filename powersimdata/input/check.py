@@ -30,7 +30,7 @@ def check_grid(grid):
             check(grid, error_messages)
         except Exception:
             error_messages.append(
-                f"Exception during {check.__name__}: {sys.exc_info()}"
+                f"Exception during {check.__name__}: {sys.exc_info()[1]!r}"
             )
     if len(error_messages) > 0:
         collected = "\n".join(error_messages)
