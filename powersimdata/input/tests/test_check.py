@@ -1,5 +1,14 @@
+import pytest
+
 from powersimdata import Grid
 from powersimdata.input.check import check_grid
+
+
+def test_error_handling():
+    grid = Grid("Western")
+    del grid.dcline
+    with pytest.raises(ValueError):
+        check_grid(grid)
 
 
 def test_check_eastern():
