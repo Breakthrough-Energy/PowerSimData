@@ -11,26 +11,9 @@ def test_error_handling():
         check_grid(grid)
 
 
-def test_check_eastern():
-    grid = Grid("Eastern")
-    check_grid(grid)
-
-
-def test_check_western():
-    grid = Grid("Western")
-    check_grid(grid)
-
-
-def test_check_texas():
-    grid = Grid("Texas")
-    check_grid(grid)
-
-
-def test_check_western_texas():
-    grid = Grid(["Western", "Texas"])
-    check_grid(grid)
-
-
-def test_check_usa():
-    grid = Grid(["USA"])
+@pytest.mark.parametrize(
+    "interconnect", ["Eastern", "Western", "Texas", ["Western", "Texas"], "USA"]
+)
+def test_check_grid(interconnect):
+    grid = Grid(interconnect)
     check_grid(grid)
