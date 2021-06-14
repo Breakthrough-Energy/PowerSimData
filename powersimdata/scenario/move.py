@@ -1,7 +1,4 @@
-import posixpath
-
 from powersimdata.scenario.state import State
-from powersimdata.utility import server_setup
 
 
 class Move(State):
@@ -14,7 +11,6 @@ class Move(State):
     allowed = []
     exported_methods = {
         "move_scenario",
-        "print_scenario_info",
     }
 
     def print_scenario_info(self):
@@ -56,7 +52,7 @@ class Move(State):
         self._data_access.close()
 
 
-class BackUpDisk(object):
+class BackUpDisk:
     """Back up scenario data to backup disk mounted on server.
 
     :param powersimdata.data_access.data_access.DataAccess data_access:
@@ -68,39 +64,28 @@ class BackUpDisk(object):
         """Constructor."""
         self._data_access = data_access
         self._scenario_info = scenario_info
-        self.backup_config = server_setup.PathConfig(server_setup.BACKUP_DATA_ROOT_DIR)
-        self.server_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
         self.scenario_id = self._scenario_info["id"]
-        self.wildcard = f"{self.scenario_id}_*"
 
     def move_input_data(self, confirm=True):
         """Moves input data."""
         print("--> Moving scenario input data to backup disk")
-        source = posixpath.join(
-            self.server_config.input_dir(),
-            self.wildcard,
-        )
-        target = self.backup_config.input_dir()
+        source = self._data_access.match_scenario_files(self.scenario_id, "input")
+        target = self._data_access.get_base_dir("input", backup=True)
         self._data_access.copy(source, target, update=True)
         self._data_access.remove(source, recursive=False, confirm=confirm)
 
     def move_output_data(self, confirm=True):
         """Moves output data"""
         print("--> Moving scenario output data to backup disk")
-        source = posixpath.join(
-            self.server_config.output_dir(),
-            self.wildcard,
-        )
-        target = self.backup_config.output_dir()
+        source = self._data_access.match_scenario_files(self.scenario_id, "output")
+        target = self._data_access.get_base_dir("output", backup=True)
         self._data_access.copy(source, target, update=True)
         self._data_access.remove(source, recursive=False, confirm=confirm)
 
     def move_temporary_folder(self, confirm=True):
         """Moves temporary folder."""
         print("--> Moving temporary folder to backup disk")
-        source = posixpath.join(
-            self.server_config.execute_dir(), "scenario_" + self.scenario_id
-        )
-        target = self.backup_config.execute_dir()
+        source = self._data_access.match_scenario_files(self.scenario_id, "tmp")
+        target = self._data_access.get_base_dir("tmp", backup=True)
         self._data_access.copy(source, target, recursive=True, update=True)
         self._data_access.remove(source, recursive=True, confirm=confirm)

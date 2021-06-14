@@ -1,9 +1,11 @@
-black==20.8b1
+networkx~=2.5
 numpy~=1.20
 pandas~=1.2
 paramiko==2.7.2
-psycopg2~=2.8.5
-pytest==5.4.3
 scipy~=1.5
 tqdm==4.29.1
 requests~=2.25
+black
+pytest
+coverage
+pytest-cov

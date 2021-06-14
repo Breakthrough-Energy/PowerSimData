@@ -1,6 +1,3 @@
-import os
-import posixpath
-
 from powersimdata.data_access.data_access import LocalDataAccess
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
@@ -13,7 +10,6 @@ class Delete(State):
     allowed = []
     exported_methods = {
         "delete_scenario",
-        "print_scenario_info",
     }
 
     def print_scenario_info(self):
@@ -41,26 +37,25 @@ class Delete(State):
         self._scenario_list_manager.delete_entry(scenario_id)
         self._execute_list_manager.delete_entry(scenario_id)
 
-        wildcard = f"{scenario_id}_*"
-
-        print("--> Deleting scenario input data on server")
-        target = posixpath.join(self.path_config.input_dir(), wildcard)
+        print("--> Deleting scenario input data")
+        target = self._data_access.match_scenario_files(scenario_id, "input")
         self._data_access.remove(target, recursive=False, confirm=confirm)
 
-        print("--> Deleting scenario output data on server")
-        target = posixpath.join(self.path_config.output_dir(), wildcard)
+        print("--> Deleting scenario output data")
+        target = self._data_access.match_scenario_files(scenario_id, "output")
         self._data_access.remove(target, recursive=False, confirm=confirm)
 
         # Delete temporary folder enclosing simulation inputs
-        print("--> Deleting temporary folder on server")
-        tmp_dir = posixpath.join(
-            self.path_config.execute_dir(), f"scenario_{scenario_id}"
-        )
+        print("--> Deleting temporary folder")
+        tmp_dir = self._data_access.match_scenario_files(scenario_id, "tmp")
         self._data_access.remove(tmp_dir, recursive=True, confirm=confirm)
 
         print("--> Deleting input and output data on local machine")
-        target = os.path.join(server_setup.LOCAL_DIR, "data", "**", wildcard)
-        LocalDataAccess().remove(target, recursive=False, confirm=confirm)
+        local_data_access = LocalDataAccess()
+        target = local_data_access.join(
+            server_setup.LOCAL_DIR, "data", "**", f"{scenario_id}_*"
+        )
+        local_data_access.remove(target, recursive=False, confirm=confirm)
 
         # Delete attributes
         self._clean()

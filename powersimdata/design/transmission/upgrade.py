@@ -176,9 +176,8 @@ def get_branches_by_area(grid, area_names, method="either"):
 
     branch = grid.branch
     selected_branches = set()
-    grid_model = grid.get_grid_model()
     for a in area_names:
-        load_zone_names = area_to_loadzone(grid_model, a)
+        load_zone_names = area_to_loadzone(grid.grid_model, a)
         to_bus_in_area = branch.to_zone_name.isin(load_zone_names)
         from_bus_in_area = branch.from_zone_name.isin(load_zone_names)
         if method in ("internal", "either"):
@@ -197,12 +196,16 @@ def scale_congested_mesh_branches(
     upgrade_n=100,
     allow_list=None,
     deny_list=None,
-    quantile=0.95,
+    congestion_metric="quantile",
+    cost_metric="branches",
+    quantile=None,
     increment=1,
-    method="branches",
 ):
-    """Use a reference scenario as a baseline for branch scaling, and further
-    increment branch scaling based on observed congestion duals.
+    """Use a reference scenario to detect congested mesh branches (based on values of
+    the shadow price of congestion), and increase the capacity of a subset of them.
+    Branches are ranked by a ratio of (congestion metric) / (cost metric), and the top N
+    branches are selected for upgrading, where N is specified by ``upgraade_n``, with
+    each upgraded by their base capacity multiplied by ``increment``.
 
     :param powersimdata.input.change_table.ChangeTable change_table: the
         change table instance we are operating on.
@@ -211,10 +214,15 @@ def scale_congested_mesh_branches(
     :param int upgrade_n: the number of branches to upgrade.
     :param list/set/tuple/None allow_list: only select from these branch IDs.
     :param list/set/tuple/None deny_list: never select any of these branch IDs.
-    :param float quantile: the quantile to use to judge branch congestion.
-    :param [float/int] increment: branch increment, relative to original
+    :param str congestion_metric: numerator method: 'quantile' or 'mean'.
+    :param str cost_metric: denominator method: 'branches', 'cost', 'MW', or
+        'MWmiles'.
+    :param float quantile: if ``congestion_metric`` == 'quantile', this is the quantile
+        to use to judge branch congestion (otherwise it is unused). If None, a default
+        value of 0.95 is used, i.e. we evaluate the shadow price for the worst 5% of
+        hours.
+    :param float/int increment: branch increment, relative to original
         capacity.
-    :param str method: prioritization method: 'branches', 'MW', or 'MWmiles'.
     :return: (*None*) -- the change_table is modified in-place.
     """
     # To do: better type checking of inputs.
@@ -223,10 +231,11 @@ def scale_congested_mesh_branches(
     branches_to_upgrade = _identify_mesh_branch_upgrades(
         ref_scenario,
         upgrade_n=upgrade_n,
-        quantile=quantile,
-        method=method,
+        congestion_metric=congestion_metric,
+        cost_metric=cost_metric,
         allow_list=allow_list,
         deny_list=deny_list,
+        quantile=quantile,
     )
     _increment_branch_scaling(
         change_table, branches_to_upgrade, ref_scenario, value=increment
@@ -236,24 +245,32 @@ def scale_congested_mesh_branches(
 def _identify_mesh_branch_upgrades(
     ref_scenario,
     upgrade_n=100,
-    quantile=0.95,
     allow_list=None,
     deny_list=None,
-    method="branches",
+    congestion_metric="quantile",
+    cost_metric="branches",
+    quantile=None,
 ):
     """Identify the N most congested branches in a previous scenario, based on
-    the quantile value of congestion duals. A quantile value of 0.95 obtains
-    the branches with highest dual in top 5% of hours.
+    the quantile value of congestion duals, where N is specified by ``upgrade_n``. A
+    quantile value of 0.95 obtains the branches with highest dual in top 5% of hours.
 
     :param powersimdata.scenario.scenario.Scenario ref_scenario: the reference
         scenario to be used to determine the most congested branches.
     :param int upgrade_n: the number of branches to upgrade.
-    :param float quantile: the quantile to use to judge branch congestion.
     :param list/set/tuple/None allow_list: only select from these branch IDs.
     :param list/set/tuple/None deny_list: never select any of these branch IDs.
-    :param str method: prioritization method: 'branches', 'MW', or 'MWmiles'.
-    :raises ValueError: if 'method' not recognized, or not enough branches to
-        upgrade.
+    :param str congestion_metric: numerator method: 'quantile' or 'mean'.
+    :param str cost_metric: denominator method: 'branches', 'cost', 'MW', or
+        'MWmiles'.
+    :param float quantile: if ``congestion_metric`` == 'quantile', this is the quantile
+        to use to judge branch congestion (otherwise it is unused). If None, a default
+        value of 0.95 is used, i.e. we evaluate the shadow price for the worst 5% of
+        hours.
+    :raises ValueError: if ``congestion_metric`` or ``cost_metric`` is not recognized,
+        ``congestion_metric`` == 'mean' but a ``quantile`` is specified, or
+        ``congestion_metric`` == 'quantile' but there are not enough branches which are
+        congested at the desired frequency based on the ``quantile`` specified.
     :return: (*set*) -- A set of ints representing branch indices.
     """
 
@@ -261,39 +278,61 @@ def _identify_mesh_branch_upgrades(
     cong_significance_cutoff = 1e-6  # $/MWh
     # If we rank by MW-miles, what 'length' do we give to zero-length branches?
     zero_length_value = 1  # miles
+    # If the quantile is not provided, what should we default to?
+    default_quantile = 0.95
 
-    # Validate method input
-    allowed_methods = ("branches", "MW", "MWmiles", "cost")
-    if method not in allowed_methods:
-        allowed_list = ", ".join(allowed_methods)
-        raise ValueError(f"method must be one of: {allowed_list}")
+    # Validate congestion_metric input
+    allowed_congestion_metrics = ("mean", "quantile")
+    if congestion_metric not in allowed_congestion_metrics:
+        allowed_list = ", ".join(allowed_congestion_metrics)
+        raise ValueError(f"congestion_metric must be one of: {allowed_list}")
+    if congestion_metric == "mean" and quantile is not None:
+        raise ValueError("quantile cannot be specified if congestion_metric is 'mean'")
+    if congestion_metric == "quantile" and quantile is None:
+        quantile = default_quantile
+
+    # Validate cost_metric input
+    allowed_cost_metrics = ("branches", "MW", "MWmiles", "cost")
+    if cost_metric not in allowed_cost_metrics:
+        allowed_list = ", ".join(allowed_cost_metrics)
+        raise ValueError(f"cost_metric must be one of: {allowed_list}")
 
     # Get raw congestion dual values, add them
     ref_cong_abs = ref_scenario.state.get_congu() + ref_scenario.state.get_congl()
     all_branches = set(ref_cong_abs.columns.tolist())
-    # Create validated composite allow list
+    # Create validated composite allow list, and filter shadow price data frame
     composite_allow_list = _construct_composite_allow_list(
         all_branches, allow_list, deny_list
     )
-
-    # Parse 2-D array to vector of quantile values
     ref_cong_abs = ref_cong_abs.filter(items=composite_allow_list)
-    quantile_cong_abs = ref_cong_abs.quantile(quantile)
-    # Filter out insignificant values
-    significance_bitmask = quantile_cong_abs > cong_significance_cutoff
-    quantile_cong_abs = quantile_cong_abs.where(significance_bitmask).dropna()
+
+    if congestion_metric == "mean":
+        congestion_metric_values = ref_cong_abs.mean()
+    if congestion_metric == "quantile":
+        congestion_metric_values = ref_cong_abs.quantile(quantile)
+
+    # Filter out 'insignificant' values
+    congestion_metric_values = congestion_metric_values.where(
+        congestion_metric_values > cong_significance_cutoff
+    ).dropna()
     # Filter based on composite allow list
-    congested_indices = list(quantile_cong_abs.index)
+    congested_indices = list(congestion_metric_values.index)
 
     # Ensure that we have enough congested branches to upgrade
-    num_congested = len(quantile_cong_abs)
+    num_congested = len(congested_indices)
     if num_congested < upgrade_n:
         err_msg = "not enough congested branches: "
         err_msg += f"{upgrade_n} desired, but only {num_congested} congested."
+        if congestion_metric == "quantile":
+            err_msg += (
+                f" The quantile used is {quantile}; increasing this value will increase"
+                " the number of branches which qualify as having 'frequent-enough'"
+                " congestion and can be selected for upgrades."
+            )
         raise ValueError(err_msg)
 
-    # Calculate selected metric for congested branches
-    if method == "cost":
+    # Calculate selected cost metric for congested branches
+    if cost_metric == "cost":
         # Calculate costs for an upgrade dataframe containing only composite_allow_list
         base_grid = Grid(
             ref_scenario.info["interconnect"], ref_scenario.info["grid_model"]
@@ -302,7 +341,7 @@ def _identify_mesh_branch_upgrades(
         upgrade_costs = _calculate_ac_inv_costs(base_grid, sum_results=False)
         # Merge the individual line/transformer data into a single Series
         merged_upgrade_costs = pd.concat([v for v in upgrade_costs.values()])
-    if method in ("MW", "MWmiles"):
+    if cost_metric in ("MW", "MWmiles"):
         ref_grid = ref_scenario.state.get_grid()
         branch_ratings = ref_grid.branch.loc[congested_indices, "rateA"]
         # Calculate 'original' branch capacities, since that's our increment
@@ -315,20 +354,21 @@ def _identify_mesh_branch_upgrades(
             {i: (branch_ct[i] if i in branch_ct else 1) for i in congested_indices}
         )
         branch_ratings = branch_ratings / branch_prev_scaling
-    if method == "MW":
-        branch_metric = quantile_cong_abs / branch_ratings
-    elif method == "MWmiles":
+    # Then, apply this metric
+    if cost_metric == "MW":
+        branch_metric = congestion_metric_values / branch_ratings
+    elif cost_metric == "MWmiles":
         branch_lengths = ref_grid.branch.loc[congested_indices].apply(
             lambda x: haversine((x.from_lat, x.from_lon), (x.to_lat, x.to_lon)), axis=1
         )
         # Replace zero-length branches by designated default, don't divide by 0
         branch_lengths = branch_lengths.replace(0, value=zero_length_value)
-        branch_metric = quantile_cong_abs / (branch_ratings * branch_lengths)
-    elif method == "cost":
-        branch_metric = quantile_cong_abs / merged_upgrade_costs
+        branch_metric = congestion_metric_values / (branch_ratings * branch_lengths)
+    elif cost_metric == "cost":
+        branch_metric = congestion_metric_values / merged_upgrade_costs
     else:
         # By process of elimination, all that's left is method 'branches'
-        branch_metric = quantile_cong_abs
+        branch_metric = congestion_metric_values
 
     # Sort by our metric, grab indexes for N largest values (tail), return
     ranked_branches = set(branch_metric.sort_values().tail(upgrade_n).index)

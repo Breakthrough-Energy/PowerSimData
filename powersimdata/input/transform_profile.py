@@ -3,7 +3,7 @@ import copy
 from powersimdata.input.input_data import InputData
 
 
-class TransformProfile(object):
+class TransformProfile:
     """Transform profile according to operations listed in change table."""
 
     def __init__(self, scenario_info, grid, ct):

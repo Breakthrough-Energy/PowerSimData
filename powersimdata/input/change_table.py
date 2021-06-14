@@ -37,7 +37,7 @@ def ordinal(n):
     return str(n + 1) + ord_dict.get((n + 1) if (n + 1) < 20 else (n + 1) % 10, "th")
 
 
-class ChangeTable(object):
+class ChangeTable:
     """Create change table for changes that need to be applied to the original
     grid as well as to the original demand, hydro, solar and wind profiles.
     A pickle file enclosing the change table in form of a dictionary can be

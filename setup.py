@@ -1,18 +1,18 @@
 from setuptools import find_packages, setup
 
 install_requires = [
+    "networkx",
     "numpy",
     "pandas",
     "paramiko",
     "scipy",
     "tqdm",
-    "psycopg2",
     "requests",
 ]
 
 setup(
     name="powersimdata",
-    version="0.4.1",
+    version="0.4.2",
     description="Power Simulation Data",
     url="https://github.com/Breakthrough-Energy/powersimdata",
     author="Kaspar Mueller",

@@ -27,7 +27,6 @@ class Create(State):
     default_exported_methods = (
         "create_scenario",
         "get_bus_demand",
-        "print_scenario_info",
         "set_builder",
         "set_grid",
     )
@@ -37,8 +36,6 @@ class Create(State):
         self.builder = None
         self.grid = None
         self.ct = None
-        self._scenario_status = None
-        self._scenario_info = scenario.info
         self.exported_methods = set(self.default_exported_methods)
         super().__init__(scenario)
 
@@ -80,7 +77,8 @@ class Create(State):
         print("--> Writing change table on local machine")
         self.builder.change_table.write(self._scenario_info["id"])
         file_name = self._scenario_info["id"] + "_ct.pkl"
-        self._data_access.move_to(file_name, server_setup.INPUT_DIR)
+        input_dir = self._data_access.join(*server_setup.INPUT_DIR)
+        self._data_access.move_to(file_name, input_dir)
 
     def get_bus_demand(self):
         """Returns demand profiles, by bus.
@@ -175,8 +173,12 @@ class Create(State):
         self._scenario_info["grid_model"] = self.builder.grid_model
         self._scenario_info["interconnect"] = self.builder.interconnect
 
+    def _leave(self):
+        """Cleans when leaving state."""
+        del self.builder
 
-class _Builder(object):
+
+class _Builder:
     """Scenario Builder.
 
     :param str grid_model: grid model.

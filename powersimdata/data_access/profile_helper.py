@@ -8,35 +8,34 @@ from powersimdata.utility import server_setup
 
 
 class ProfileHelper:
-    BASE_URL = "https://bescienceswebsite.blob.core.windows.net/profiles"
+    BASE_URL = "https://besciences.blob.core.windows.net/profiles"
 
     @staticmethod
     def get_file_components(scenario_info, field_name):
         """Get the file name and relative path for the given profile and
         scenario.
 
-        :param dict scenario_info: a ScenarioInfo instance
-        :param str field_name: the kind of profile
-        :return: (*tuple*) -- file name and path
+        :param dict scenario_info: metadata for a scenario.
+        :param str field_name: the kind of profile.
+        :return: (*tuple*) -- file name and list of path components.
         """
         version = scenario_info["base_" + field_name]
         file_name = field_name + "_" + version + ".csv"
         grid_model = scenario_info["grid_model"]
-        from_dir = os.path.join("raw", grid_model)
-        return file_name, from_dir
+        return file_name, ("raw", grid_model)
 
     @staticmethod
     def download_file(file_name, from_dir):
-        """Download the profile from blob storage at the given path
+        """Download the profile from blob storage at the given path.
 
-        :param str file_name: profile csv
-        :param str from_dir: the path relative to the blob container
-        :return: (*str*) -- path to downloaded file
+        :param str file_name: profile csv.
+        :param tuple from_dir: tuple of path components.
+        :return: (*str*) -- path to downloaded file.
         """
         print(f"--> Downloading {file_name} from blob storage.")
-        url_path = "/".join(os.path.split(from_dir))
+        url_path = "/".join(from_dir)
         url = f"{ProfileHelper.BASE_URL}/{url_path}/{file_name}"
-        dest = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
+        dest = os.path.join(server_setup.LOCAL_DIR, *from_dir, file_name)
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         resp = requests.get(url, stream=True)
         content_length = int(resp.headers.get("content-length", 0))
@@ -56,11 +55,11 @@ class ProfileHelper:
 
     @staticmethod
     def parse_version(grid_model, kind, version):
-        """Parse available versions from the given spec
+        """Parse available versions from the given spec.
 
         :param str grid_model: grid model.
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
-        :param dict version: version information per grid model
+        :param dict version: version information per grid model.
         :return: (*list*) -- available profile version.
         """
         if grid_model in version and kind in version[grid_model]:
@@ -70,7 +69,7 @@ class ProfileHelper:
 
     @staticmethod
     def get_profile_version_cloud(grid_model, kind):
-        """Returns available raw profile from blob storage
+        """Returns available raw profile from blob storage.
 
         :param str grid_model: grid model.
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
@@ -82,7 +81,7 @@ class ProfileHelper:
 
     @staticmethod
     def get_profile_version_local(grid_model, kind):
-        """Returns available raw profile from local file
+        """Returns available raw profile from local file.
 
         :param str grid_model: grid model.
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.

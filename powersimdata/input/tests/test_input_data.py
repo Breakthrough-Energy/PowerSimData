@@ -9,7 +9,7 @@ def test_get_file_components():
     grid_file, from_dir = InputHelper.get_file_components(s_info, "grid")
     assert "123_ct.pkl" == ct_file
     assert "123_grid.mat" == grid_file
-    assert "data/input" == from_dir
+    assert ("data", "input") == from_dir
 
 
 def test_check_field():

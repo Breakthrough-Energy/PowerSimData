@@ -11,7 +11,7 @@ from powersimdata.utility.helpers import MemoryCache, cache_key
 _cache = MemoryCache()
 
 
-class Grid(object):
+class Grid:
     """Grid
 
     :param str/list interconnect: geographical region covered. Either *'USA'*, one of
@@ -30,13 +30,6 @@ class Grid(object):
         supported_engines = {"REISE", "REISE.jl"}
         if engine not in supported_engines:
             raise ValueError(f"Engine must be one of {','.join(supported_engines)}")
-
-        try:
-            self.model_immutables = ModelImmutables(source)
-        except ValueError:
-            self.model_immutables = ModelImmutables(
-                _get_grid_model_from_scenario_list(source)
-            )
 
         key = cache_key(interconnect, source)
         cached = _cache.get(key)
@@ -65,7 +58,10 @@ class Grid(object):
 
         _cache.put(key, self)
 
-    def get_grid_model(self):
+        self.grid_model = self._get_grid_model()
+        self.model_immutables = ModelImmutables(self.grid_model)
+
+    def _get_grid_model(self):
         """Get the grid model.
 
         :return: (*str*).

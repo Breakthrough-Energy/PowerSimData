@@ -174,18 +174,28 @@ def bus_to_neem_reg(df):
     return pts_poly
 
 
-def write_bus_neem_map():
-    """Write bus location to NEEM region mapping to file"""
-    base_grid = Grid(["USA"])
+def write_bus_neem_map(base_grid):
+    """Write bus location to NEEM region mapping to file.
+
+    :param powersimdata.input.grid.Grid base_grid: a Grid instance.
+    :raises TypeError: if ``base_grid`` is not a Grid instance.
+    """
+    if not isinstance(base_grid, Grid):
+        raise TypeError("base_grid must be a Grid instance")
     df_pts_bus = bus_to_neem_reg(base_grid.bus)
     df_pts_bus.sort_index(inplace=True)
     os.makedirs(const.bus_neem_regions_path, exist_ok=True)
     df_pts_bus.to_csv(const.bus_neem_regions_path)
 
 
-def write_bus_reeds_map():
-    """Write bus location to ReEDS region mapping to file."""
-    base_grid = Grid(["USA"])
+def write_bus_reeds_map(base_grid):
+    """Write bus location to ReEDS region mapping to file.
+
+    :param powersimdata.input.grid.Grid base_grid: a Grid instance.
+    :raises TypeError: if ``base_grid`` is not a Grid instance.
+    """
+    if not isinstance(base_grid, Grid):
+        raise TypeError("base_grid must be a Grid instance")
     df_pts_bus = bus_to_reeds_reg(base_grid.bus)
     df_pts_bus.sort_index(inplace=True)
     os.makedirs(const.bus_reeds_regions_path, exist_ok=True)

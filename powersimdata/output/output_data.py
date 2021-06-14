@@ -10,7 +10,7 @@ from powersimdata.input.input_data import get_bus_demand
 from powersimdata.utility import server_setup
 
 
-class OutputData(object):
+class OutputData:
     """Load output data.
 
     :param str data_loc: data location.
@@ -36,7 +36,7 @@ class OutputData(object):
         print("--> Loading %s" % field_name)
         file_name = scenario_id + "_" + field_name + ".pkl"
         from_dir = server_setup.OUTPUT_DIR
-        filepath = os.path.join(server_setup.LOCAL_DIR, from_dir, file_name)
+        filepath = os.path.join(server_setup.LOCAL_DIR, *from_dir, file_name)
 
         try:
             return pd.read_pickle(filepath)
@@ -46,7 +46,8 @@ class OutputData(object):
         except FileNotFoundError:
             print(f"{filepath} not found on local machine")
 
-        self._data_access.copy_from(file_name, from_dir)
+        remote_dir = self._data_access.join(*from_dir)
+        self._data_access.copy_from(file_name, remote_dir)
         return pd.read_pickle(filepath)
 
 

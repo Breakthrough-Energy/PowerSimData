@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 import pytest
 
-from powersimdata.data_access.execute_list import ExecuteTable
+from powersimdata.data_access.execute_table import ExecuteTable
 from powersimdata.data_access.sql_store import SqlException
 
 row_id = 9000

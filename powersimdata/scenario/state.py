@@ -1,11 +1,6 @@
-from powersimdata.data_access.execute_list import ExecuteListManager
-from powersimdata.data_access.scenario_list import ScenarioListManager
-from powersimdata.utility import server_setup
-
-
-class State(object):
+class State:
     """Defines an interface for encapsulating the behavior associated with a
-        particular state of the Scenario object.
+    particular state of the Scenario object.
 
     :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
     :raise TypeError: if not instantiated through a derived class
@@ -19,10 +14,19 @@ class State(object):
         if type(self) == State:
             raise TypeError("Only subclasses of 'State' can be instantiated directly")
 
+        self._scenario = scenario
+        self._scenario_info = scenario.info
+        self._scenario_status = scenario.status
         self._data_access = scenario.data_access
-        self._scenario_list_manager = ScenarioListManager(self._data_access)
-        self._execute_list_manager = ExecuteListManager(self._data_access)
-        self.path_config = server_setup.PathConfig(server_setup.DATA_ROOT_DIR)
+        self._scenario_list_manager = scenario._scenario_list_manager
+        self._execute_list_manager = scenario._execute_list_manager
+
+    def refresh(self, scenario):
+        """Called during state changes to ensure instance is properly initialized
+
+        :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
+        """
+        pass
 
     def switch(self, state):
         """Switches state.
@@ -35,6 +39,7 @@ class State(object):
             self._leave()
             self.__class__ = state
             self._enter(state)
+            self.refresh(self._scenario)
         else:
             raise Exception(
                 "State switching: %s --> %s not permitted" % (self, state.name)
@@ -49,11 +54,7 @@ class State(object):
 
     def _leave(self):
         """Cleans when leaving state."""
-        if self.name == "create":
-            del self.builder
-        elif self.name == "analyze":
-            del self.grid
-            del self.ct
+        pass
 
     def _enter(self, state):
         """Initializes when entering state."""

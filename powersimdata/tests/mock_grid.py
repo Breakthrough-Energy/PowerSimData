@@ -1,5 +1,6 @@
 import pandas as pd
 
+from powersimdata.input import const
 from powersimdata.input.grid import Grid
 from powersimdata.network.model import ModelImmutables
 
@@ -24,28 +25,7 @@ sub_columns = ["name", "interconnect_sub_id", "lat", "lon", "interconnect"]
 
 bus2sub_columns = ["sub_id", "interconnect"]
 
-branch_columns = [
-    "from_bus_id",
-    "to_bus_id",
-    "r",
-    "x",
-    "b",
-    "rateA",
-    "rateB",
-    "rateC",
-    "ratio",
-    "angle",
-    "status",
-    "angmin",
-    "angmax",
-    "Pf",
-    "Qf",
-    "Pt",
-    "Qt",
-    "mu_Sf",
-    "mu_St",
-    "mu_angmin",
-    "mu_angmax",
+branch_augment_columns = [
     "branch_device_type",
     "interconnect",
     "from_zone_id",
@@ -57,85 +37,18 @@ branch_columns = [
     "to_lat",
     "to_lon",
 ]
+branch_columns = const.col_name_branch + branch_augment_columns
 
-bus_columns = [
-    "type",
-    "Pd",
-    "Qd",
-    "Gs",
-    "Bs",
-    "zone_id",
-    "Vm",
-    "Va",
-    "loss_zone",
-    "baseKV",
-    "Vmax",
-    "Vmin",
-    "lam_P",
-    "lam_Q",
-    "mu_Vmax",
-    "mu_Vmin",
-    "interconnect",
-    "lat",
-    "lon",
-]
+bus_augment_columns = ["interconnect", "lat", "lon"]
+bus_columns = const.col_name_bus + bus_augment_columns
 
-dcline_columns = [
-    "from_bus_id",
-    "to_bus_id",
-    "status",
-    "Pf",
-    "Pt",
-    "Qf",
-    "Qt",
-    "Vf",
-    "Vt",
-    "Pmin",
-    "Pmax",
-    "QminF",
-    "QmaxF",
-    "QminT",
-    "QmaxT",
-    "loss0",
-    "loss1",
-    "muPmin",
-    "muPmax",
-    "muQminF",
-    "muQmaxF",
-    "muQminT",
-    "muQmaxT",
-    "from_interconnect",
-    "to_interconnect",
-]
+dcline_augment_columns = ["from_interconnect", "to_interconnect"]
+dcline_columns = const.col_name_dcline + dcline_augment_columns
 
-gencost_columns = ["type", "startup", "shutdown", "n", "c2", "c1", "c0", "interconnect"]
+gencost_augment_columns = ["interconnect"]
+gencost_columns = const.col_name_gencost + gencost_augment_columns
 
-plant_columns = [
-    "bus_id",
-    "Pg",
-    "Qg",
-    "Qmax",
-    "Qmin",
-    "Vg",
-    "mBase",
-    "status",
-    "Pmax",
-    "Pmin",
-    "Pc1",
-    "Pc2",
-    "Qc1min",
-    "Qc1max",
-    "Qc2min",
-    "Qc2max",
-    "ramp_agc",
-    "ramp_10",
-    "ramp_30",
-    "ramp_q",
-    "apf",
-    "mu_Pmax",
-    "mu_Pmin",
-    "mu_Qmax",
-    "mu_Qmin",
+plant_augment_columns = [
     "type",
     "interconnect",
     "GenFuelCost",
@@ -147,30 +60,16 @@ plant_columns = [
     "lat",
     "lon",
 ]
+plant_columns = const.col_name_plant + plant_augment_columns
 
 storage_columns = {
     # The first 21 columns of plant are all that's necessary
     "gen": plant_columns[:21],
-    "StorageData": [
-        "UnitIdx",
-        "InitialStorage",
-        "InitialStorageLowerBound",
-        "InitialStorageUpperBound",
-        "InitialStorageCost",
-        "TerminalStoragePrice",
-        "MinStorageLevel",
-        "MaxStorageLevel",
-        "OutEff",
-        "InEff",
-        "LossFactor",
-        "rho",
-        "ExpectedTerminalStorageMax",
-        "ExpectedTerminalStorageMin",
-    ],
+    "StorageData": const.col_name_storage_storagedata,
 }
 
 
-class MockGrid(object):
+class MockGrid:
     def __init__(self, grid_attrs=None, model="usa_tamu"):
         """Constructor.
 
@@ -196,6 +95,7 @@ class MockGrid(object):
         if len(extra_keys) > 0:
             raise ValueError("Got unknown key(s):" + str(extra_keys))
 
+        self.grid_model = model
         self.model_immutables = ModelImmutables(model)
 
         cols = {

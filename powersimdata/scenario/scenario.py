@@ -12,7 +12,7 @@ from powersimdata.scenario.execute import Execute
 pd.set_option("display.max_colwidth", None)
 
 
-class Scenario(object):
+class Scenario:
     """Handles scenario.
 
     :param int/str descriptor: scenario name or index. If None, default to a Scenario
@@ -57,6 +57,7 @@ class Scenario(object):
 
         if not descriptor:
             self.info = OrderedDict(self._default_info)
+            self.status = None
             self.state = Create(self)
         else:
             self._set_info(descriptor)
@@ -68,7 +69,7 @@ class Scenario(object):
                 elif state == "analyze":
                     self.state = Analyze(self)
             except AttributeError:
-                return
+                pass
 
     def __getattr__(self, name):
         if name in self.state.exported_methods:
