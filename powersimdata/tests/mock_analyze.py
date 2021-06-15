@@ -34,6 +34,7 @@ class MockAnalyze:
         pf=None,
         pg=None,
         dcline_pf=None,
+        storage_e=None,
         storage_pg=None,
         solar=None,
         wind=None,
@@ -63,6 +64,7 @@ class MockAnalyze:
         self.pf = _ensure_ts_index(pf)
         self.dcline_pf = _ensure_ts_index(dcline_pf)
         self.pg = _ensure_ts_index(pg)
+        self.storage_e = _ensure_ts_index(storage_e)
         self.storage_pg = _ensure_ts_index(storage_pg)
         self.solar = _ensure_ts_index(solar)
         self.wind = _ensure_ts_index(wind)
@@ -122,6 +124,12 @@ class MockAnalyze:
         :return: (pandas.DataFrame) -- dummy pg
         """
         return self.pg
+
+    def get_storage_e(self):
+        """Get storage E.
+        :return: (pandas.DataFrame) -- dummy storage_e
+        """
+        return self.storage_e
 
     def get_storage_pg(self):
         """Get storage PG.
