@@ -23,6 +23,39 @@ def _ensure_ts_index(df):
 
 
 class MockAnalyze:
+    """A mock of a powersimdata.scenario.analyze.Analyze object.
+
+    :param dict grid_attrs: fields to be added to grid.
+    :param pandas.DataFrame congl: dummy congl
+    :param pandas.DataFrame congu: dummy congu
+    :param dict ct: dummy ct
+    :param pandas.DataFrame demand: dummy demand
+    :param pandas.DataFrame lmp: dummy lmp
+    :param pandas.DataFrame pf: dummy pf
+    :param pandas.DataFrame pg: dummy pg
+    :param pandas.DataFrame storage_pg: dummy storage_pg
+    :param pandas.DataFrame solar: dummy solar
+    :param pandas.DataFrame wind: dummy wind
+    :param pandas.DataFrame hydro: dummy hydro
+    """
+
+    exported_methods = [
+        "get_congl",
+        "get_congu",
+        "get_ct",
+        "get_demand",
+        "get_grid",
+        "get_lmp",
+        "get_pf",
+        "gt_dcline_pf",
+        "get_pg",
+        "get_storage_pg",
+        "get_storage_e",
+        "get_solar",
+        "get_wind",
+        "get_hydro",
+    ]
+
     def __init__(
         self,
         grid_attrs=None,
@@ -40,21 +73,7 @@ class MockAnalyze:
         wind=None,
         hydro=None,
     ):
-        """Constructor.
-
-        :param dict grid_attrs: fields to be added to grid.
-        :param pandas.DataFrame congl: dummy congl
-        :param pandas.DataFrame congu: dummy congu
-        :param dict ct: dummy ct
-        :param pandas.DataFrame demand: dummy demand
-        :param pandas.DataFrame lmp: dummy lmp
-        :param pandas.DataFrame pf: dummy pf
-        :param pandas.DataFrame pg: dummy pg
-        :param pandas.DataFrame storage_pg: dummy storage_pg
-        :param pandas.DataFrame solar: dummy solar
-        :param pandas.DataFrame wind: dummy wind
-        :param pandas.DataFrame hydro: dummy hydro
-        """
+        """Constructor."""
         self.grid = MockGrid(grid_attrs)
         self.congl = _ensure_ts_index(congl)
         self.congu = _ensure_ts_index(congu)
