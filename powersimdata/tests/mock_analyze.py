@@ -31,6 +31,7 @@ class MockAnalyze:
         ct=None,
         demand=None,
         lmp=None,
+        pf=None,
         pg=None,
         storage_pg=None,
         solar=None,
@@ -45,6 +46,7 @@ class MockAnalyze:
         :param dict ct: dummy ct
         :param pandas.DataFrame demand: dummy demand
         :param pandas.DataFrame lmp: dummy lmp
+        :param pandas.DataFrame pf: dummy pf
         :param pandas.DataFrame pg: dummy pg
         :param pandas.DataFrame storage_pg: dummy storage_pg
         :param pandas.DataFrame solar: dummy solar
@@ -57,6 +59,7 @@ class MockAnalyze:
         self.ct = ct if ct is not None else {}
         self.demand = _ensure_ts_index(demand)
         self.lmp = _ensure_ts_index(lmp)
+        self.pf = _ensure_ts_index(pf)
         self.pg = _ensure_ts_index(pg)
         self.storage_pg = _ensure_ts_index(storage_pg)
         self.solar = _ensure_ts_index(solar)
