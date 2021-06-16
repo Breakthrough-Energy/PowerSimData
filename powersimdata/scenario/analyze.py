@@ -323,6 +323,36 @@ class Analyze(State):
         profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
         return profile.get_profile("wind")
 
+    def get_wind_onshore(self):
+        """Returns wind onshore profile
+
+        :return: (*pandas.DataFrame*) -- data frame of wind energy output for onshore
+            turbines
+        """
+        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
+        wind = profile.get_profile("wind")
+
+        grid = self.get_grid()
+        onshore_id = grid.plant.groupby(["type"]).get_group("wind").index
+        return wind[onshore_id]
+
+    def get_wind_offshore(self):
+        """Returns wind offshore profile
+
+        :return: (*pandas.DataFrame*) -- data frame of wind energy output for offshore
+            turbines
+        :raises ValueError: if no offshore wind turbines in grid
+        """
+        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
+        wind = profile.get_profile("wind")
+
+        grid = self.get_grid()
+        if "wind_offshore" in grid.plant["type"].unique():
+            offshore_id = grid.plant.groupby(["type"]).get_group("wind_offshore").index
+            return wind[offshore_id]
+        else:
+            raise ValueError("No offshore wind turbines in grid")
+
     def _leave(self):
         """Cleans when leaving state."""
         del self.grid
