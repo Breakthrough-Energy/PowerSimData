@@ -494,12 +494,8 @@ class SSHDataAccess(DataAccess):
         """Create path on server
 
         :param str full_path: the path, excluding filename
-        :raises IOError: if command generated stderr
         """
-        _, _, stderr = self.ssh.exec_command(f"mkdir -p {full_path}")
-        errors = stderr.readlines()
-        if len(errors) > 0:
-            raise IOError(f"Failed to create {full_path} on server")
+        self.sshfs.makedirs(full_path, exist_ok=True)
 
     def copy(self, src, dest, recursive=False, update=False):
         """Wrapper around cp command which creates dest path if needed
@@ -522,7 +518,6 @@ class SSHDataAccess(DataAccess):
         :param str target: path to remove
         :param bool recursive: delete directories recursively
         :param bool confirm: prompt before executing command
-        :raises IOError: if command generated stderr
         """
         command = CommandBuilder.remove(target, recursive)
         if confirm:
@@ -530,9 +525,7 @@ class SSHDataAccess(DataAccess):
             if confirmed.lower() != "y":
                 print("Operation cancelled.")
                 return
-        _, _, stderr = self.ssh.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError(f"Failed to delete target={target} on server")
+        self.sshfs.rm(target, recursive=recursive)
         print("--> Done!")
 
     def _exists(self, filepath):
@@ -541,8 +534,7 @@ class SSHDataAccess(DataAccess):
         :param str filepath: the path to the file
         :return: (*bool*) -- whether the file exists
         """
-        _, _, stderr = self.ssh.exec_command(f"ls {filepath}")
-        return len(stderr.readlines()) == 0
+        return self.sshfs.exists(filepath)
 
     def close(self):
         """Close the connection if one is open"""
