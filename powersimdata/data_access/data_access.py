@@ -519,9 +519,8 @@ class SSHDataAccess(DataAccess):
         :param bool recursive: delete directories recursively
         :param bool confirm: prompt before executing command
         """
-        command = CommandBuilder.remove(target, recursive)
         if confirm:
-            confirmed = input(f"Execute '{command}'? [y/n] (default is 'n')")
+            confirmed = input(f"Delete '{target}'? [y/n] (default is 'n')")
             if confirmed.lower() != "y":
                 print("Operation cancelled.")
                 return

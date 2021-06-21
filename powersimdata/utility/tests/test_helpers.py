@@ -95,13 +95,3 @@ def test_copy_command():
     expected = r"\cp -Rup source dest"
     command = CommandBuilder.copy("source", "dest", recursive=True, update=True)
     assert expected == command
-
-
-def test_remove_command():
-    expected = "rm -f target"
-    command = CommandBuilder.remove("target")
-    assert expected == command
-
-    expected = "rm -rf target"
-    command = CommandBuilder.remove("target", recursive=True)
-    assert expected == command
