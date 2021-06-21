@@ -9,3 +9,4 @@ black
 pytest
 coverage
 pytest-cov
+fsspec
