@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from powersimdata.data_access.data_access import SSHDataAccess
-from powersimdata.tests.mock_ssh import MockConnection
+from powersimdata.tests.mock_ssh import MockConnection, MockFilesystem
 from powersimdata.utility import server_setup
 
 CONTENT = b"content"
@@ -33,6 +33,7 @@ def temp_fs(tmp_path):
 def mock_data_access(monkeypatch, temp_fs):
     data_access = SSHDataAccess()
     monkeypatch.setattr(data_access, "_ssh", MockConnection())
+    monkeypatch.setattr(data_access, "_fs", MockFilesystem())
     data_access.root = temp_fs[0]
     data_access.local_root = temp_fs[1]
     yield data_access

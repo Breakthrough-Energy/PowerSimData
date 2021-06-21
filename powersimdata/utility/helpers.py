@@ -24,17 +24,6 @@ class CommandBuilder:
         flags = f"-{r_flag}{u_flag}{p_flag}"
         return fr"\cp {flags} {src} {dest}"
 
-    @staticmethod
-    def remove(target, recursive=False):
-        """Builds a rm command with some options
-
-        :param str target: the path or file to be removed
-        :param bool recursive: whether to pass -r option
-        """
-        if recursive:
-            return f"rm -rf {target}"
-        return f"rm -f {target}"
-
 
 class MemoryCache:
     """Wrapper around a dict object that exposes a cache interface. Users should

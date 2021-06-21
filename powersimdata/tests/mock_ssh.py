@@ -1,6 +1,15 @@
+import os
 import shutil
 from contextlib import contextmanager
 from subprocess import PIPE, Popen
+
+
+class MockFilesystem:
+    def exists(self, path):
+        return os.path.exists(path)
+
+    def makedirs(self, path, exist_ok):
+        pass
 
 
 class MockConnection:
