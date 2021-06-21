@@ -390,15 +390,11 @@ class SSHDataAccess(DataAccess):
         from_path = self.join(self.root, from_dir, file_name)
         to_path = os.path.join(to_dir, file_name)
         self._check_file_exists(from_path, should_exist=True)
+        tmp_file, tmp_path = mkstemp()
 
-        with self.ssh.open_sftp() as sftp:
-            print(f"Transferring {file_name} from server")
-            cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
-            tmp_file, tmp_path = mkstemp()
-            sftp.get(from_path, tmp_path, callback=cbk)
-            bar.close()
-            os.close(tmp_file)
-        # wait for file handle to be available
+        print(f"Transferring {file_name} from server")
+        self.sshfs.get(from_path, tmp_path)
+        os.close(tmp_file)
         shutil.move(tmp_path, to_path)
 
     def move_to(self, file_name, to_dir=None, change_name_to=None):
@@ -423,10 +419,8 @@ class SSHDataAccess(DataAccess):
         self.makedir(to_dir)
         self._check_file_exists(to_path, should_exist=False)
 
-        with self.ssh.open_sftp() as sftp:
-            print(f"Transferring {file_name} to server")
-            sftp.put(from_path, to_path)
-
+        print(f"Transferring {file_name} to server")
+        self.sshfs.put(from_path, to_path)
         os.remove(from_path)
 
     def execute_command_async(self, command):
