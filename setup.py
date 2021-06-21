@@ -8,6 +8,7 @@ install_requires = [
     "scipy",
     "tqdm",
     "requests",
+    "fsspec",
 ]
 
 setup(
