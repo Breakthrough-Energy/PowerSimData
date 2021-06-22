@@ -88,13 +88,19 @@ class DataAccess:
         raise NotImplementedError
 
     def remove(self, target, recursive=False, confirm=True):
-        """Wrapper around rm command
+        """Delete files in current environment
 
         :param str target: path to remove
         :param bool recursive: delete directories recursively
         :param bool confirm: prompt before executing command
         """
-        raise NotImplementedError
+        if confirm:
+            confirmed = input(f"Delete '{target}'? [y/n] (default is 'n')")
+            if confirmed.lower() != "y":
+                print("Operation cancelled.")
+                return
+        self.fs.rm(target, recursive=recursive)
+        print("--> Done!")
 
     def _exists(self, filepath):
         """Return whether the file exists
@@ -102,7 +108,7 @@ class DataAccess:
         :param str filepath: the path to the file
         :return: (*bool*) -- whether the file exists
         """
-        raise NotImplementedError
+        return self.fs.exists(filepath)
 
     def _check_file_exists(self, filepath, should_exist=True):
         """Check that file exists (or not) at the given path
@@ -127,11 +133,11 @@ class DataAccess:
             raise ValueError(f"Expecting file name but got path {filename}")
 
     def makedir(self, full_path):
-        """Create path, including parents
+        """Create path in current environment
 
         :param str full_path: the path, excluding filename
         """
-        raise NotImplementedError
+        self.fs.makedirs(full_path, exist_ok=True)
 
     def execute_command_async(self, command):
         """Execute a command locally at the DataAccess, without waiting for completion.
@@ -141,13 +147,15 @@ class DataAccess:
         raise NotImplementedError
 
     def checksum(self, relative_path):
-        """Return the checksum of the file path, and write the content if the
-        server is remote
+        """Return the checksum of the file path
 
         :param str relative_path: path relative to root
         :return: (*str*) -- the checksum of the file
         """
-        raise NotImplementedError
+        full_path = self.join(self.root, relative_path)
+        self._check_file_exists(full_path)
+
+        return self.fs.checksum(full_path)
 
     def push(self, file_name, checksum, change_name_to=None):
         """Push the file from local to remote root folder, ensuring integrity
@@ -176,6 +184,7 @@ class LocalDataAccess(DataAccess):
     """Interface to shared data volume"""
 
     def __init__(self, root=None):
+        root = server_setup.LOCAL_DIR if root is None else root
         super().__init__(root)
         self.description = "local machine"
         self.join = os.path.join
@@ -198,15 +207,6 @@ class LocalDataAccess(DataAccess):
         """
         pass
 
-    def checksum(self, relative_path):
-        """Return dummy value since this is only required for remote
-        environment
-
-        :param str relative_path: path relative to root
-        :return: (*str*) -- the checksum of the file
-        """
-        return "dummy_value"
-
     def move_to(self, file_name, to_dir, change_name_to=None):
         """Copy a file from userspace to data store.
 
@@ -223,13 +223,6 @@ class LocalDataAccess(DataAccess):
         self.makedir(os.path.dirname(dest))
         shutil.move(src, dest)
 
-    def makedir(self, full_path):
-        """Create path on local machine
-
-        :param str full_path: the path, excluding filename
-        """
-        os.makedirs(full_path, exist_ok=True)
-
     def copy(self, src, dest, recursive=False, update=False):
         """Wrapper around cp command which creates dest path if needed
 
@@ -239,21 +232,6 @@ class LocalDataAccess(DataAccess):
         :param bool update: ignored
         """
         self.fs.cp(src, dest, recursive=recursive)
-
-    def remove(self, target, recursive=False, confirm=True):
-        """Remove target using rm semantics
-
-        :param str target: path to remove
-        :param bool recursive: delete directories recursively
-        :param bool confirm: prompt before executing command
-        """
-        if confirm:
-            confirmed = input(f"Delete {target}? [y/n] (default is 'n')")
-            if confirmed.lower() != "y":
-                print("Operation cancelled.")
-                return
-        self.fs.rm(target, recursive=recursive)
-        print("--> Done!")
 
     def get_profile_version(self, grid_model, kind):
         """Returns available raw profile from blob storage or local disk
@@ -265,14 +243,6 @@ class LocalDataAccess(DataAccess):
         blob_version = super().get_profile_version(grid_model, kind)
         local_version = ProfileHelper.get_profile_version_local(grid_model, kind)
         return list(set(blob_version + local_version))
-
-    def _exists(self, filepath):
-        """Return whether the file exists
-
-        :param str filepath: the path to the file
-        :return: (*bool*) -- whether the file exists
-        """
-        return os.path.exists(filepath)
 
 
 class SSHDataAccess(DataAccess):
@@ -291,7 +261,7 @@ class SSHDataAccess(DataAccess):
         self.join = posixpath.join
 
     @property
-    def sshfs(self):
+    def fs(self):
         """Get or create the filesystem object, with attempts rate limited.
 
         :raises IOError: if connection failed or still within retry window
@@ -379,7 +349,7 @@ class SSHDataAccess(DataAccess):
         tmp_file, tmp_path = mkstemp()
 
         print(f"Transferring {file_name} from server")
-        self.sshfs.get(from_path, tmp_path)
+        self.fs.get(from_path, tmp_path)
         os.close(tmp_file)
         shutil.move(tmp_path, to_path)
 
@@ -406,7 +376,7 @@ class SSHDataAccess(DataAccess):
         self._check_file_exists(to_path, should_exist=False)
 
         print(f"Transferring {file_name} to server")
-        self.sshfs.put(from_path, to_path)
+        self.fs.put(from_path, to_path)
         os.remove(from_path)
 
     def execute_command_async(self, command):
@@ -420,17 +390,6 @@ class SSHDataAccess(DataAccess):
         full_command = cmd_ssh + command
         process = Popen(full_command)
         return process
-
-    def checksum(self, relative_path):
-        """Return the checksum of the file path
-
-        :param str relative_path: path relative to root
-        :return: (*str*) -- the checksum of the file
-        """
-        full_path = self.join(self.root, relative_path)
-        self._check_file_exists(full_path)
-
-        return self.sshfs.checksum(full_path)
 
     def push(self, file_name, checksum, change_name_to=None):
         """Push file to server and verify the checksum matches a prior value
@@ -467,13 +426,6 @@ class SSHDataAccess(DataAccess):
                 print(e)
             raise IOError("Failed to push file - most likely a conflict was detected.")
 
-    def makedir(self, full_path):
-        """Create path on server
-
-        :param str full_path: the path, excluding filename
-        """
-        self.sshfs.makedirs(full_path, exist_ok=True)
-
     def copy(self, src, dest, recursive=False, update=False):
         """Wrapper around cp command which creates dest path if needed
 
@@ -488,29 +440,6 @@ class SSHDataAccess(DataAccess):
         _, _, stderr = self.ssh.exec_command(command)
         if len(stderr.readlines()) != 0:
             raise IOError(f"Failed to execute {command}")
-
-    def remove(self, target, recursive=False, confirm=True):
-        """Run rm command on server
-
-        :param str target: path to remove
-        :param bool recursive: delete directories recursively
-        :param bool confirm: prompt before executing command
-        """
-        if confirm:
-            confirmed = input(f"Delete '{target}'? [y/n] (default is 'n')")
-            if confirmed.lower() != "y":
-                print("Operation cancelled.")
-                return
-        self.sshfs.rm(target, recursive=recursive)
-        print("--> Done!")
-
-    def _exists(self, filepath):
-        """Return whether the file exists
-
-        :param str filepath: the path to the file
-        :return: (*bool*) -- whether the file exists
-        """
-        return self.sshfs.exists(filepath)
 
     def close(self):
         """Close the connection if one is open"""
