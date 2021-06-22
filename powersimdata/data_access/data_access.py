@@ -1,4 +1,3 @@
-import glob
 import operator
 import os
 import posixpath
@@ -180,6 +179,7 @@ class LocalDataAccess(DataAccess):
         super().__init__(root)
         self.description = "local machine"
         self.join = os.path.join
+        self.fs = fsspec.filesystem("file")
 
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
@@ -230,12 +230,6 @@ class LocalDataAccess(DataAccess):
         """
         os.makedirs(full_path, exist_ok=True)
 
-    @staticmethod
-    def _fapply(func, pattern):
-        files = [f for f in glob.glob(pattern) if os.path.isfile(f)]
-        for f in files:
-            func(f)
-
     def copy(self, src, dest, recursive=False, update=False):
         """Wrapper around cp command which creates dest path if needed
 
@@ -244,12 +238,7 @@ class LocalDataAccess(DataAccess):
         :param bool recursive: create directories recursively
         :param bool update: ignored
         """
-        if recursive:
-            shutil.copytree(src, dest)
-        else:
-            self.makedir(dest)
-            func = lambda s: shutil.copy(s, dest)  # noqa: E731
-            LocalDataAccess._fapply(func, src)
+        self.fs.cp(src, dest, recursive=recursive)
 
     def remove(self, target, recursive=False, confirm=True):
         """Remove target using rm semantics
@@ -263,10 +252,7 @@ class LocalDataAccess(DataAccess):
             if confirmed.lower() != "y":
                 print("Operation cancelled.")
                 return
-        if recursive:
-            shutil.rmtree(target)
-        else:
-            LocalDataAccess._fapply(os.remove, target)
+        self.fs.rm(target, recursive=recursive)
         print("--> Done!")
 
     def get_profile_version(self, grid_model, kind):
