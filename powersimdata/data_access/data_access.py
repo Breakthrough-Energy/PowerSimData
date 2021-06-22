@@ -436,7 +436,7 @@ class SSHDataAccess(DataAccess):
         return process
 
     def checksum(self, relative_path):
-        """Return the checksum of the file path (using sha1sum)
+        """Return the checksum of the file path
 
         :param str relative_path: path relative to root
         :return: (*str*) -- the checksum of the file
@@ -444,10 +444,7 @@ class SSHDataAccess(DataAccess):
         full_path = self.join(self.root, relative_path)
         self._check_file_exists(full_path)
 
-        command = f"sha1sum {full_path}"
-        _, stdout, _ = self.ssh.exec_command(command)
-        lines = stdout.readlines()
-        return lines[0].strip()
+        return self.sshfs.checksum(full_path)
 
     def push(self, file_name, checksum, change_name_to=None):
         """Push file to server and verify the checksum matches a prior value
