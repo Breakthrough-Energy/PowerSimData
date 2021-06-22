@@ -8,9 +8,9 @@ from tempfile import mkstemp
 
 import fsspec
 import paramiko
-from tqdm import tqdm
 
 from powersimdata.data_access.profile_helper import ProfileHelper
+from powersimdata.data_access.ssh_fs import CustomSSHFileSystem
 from powersimdata.utility import server_setup
 from powersimdata.utility.helpers import CommandBuilder
 
@@ -273,8 +273,8 @@ class SSHDataAccess(DataAccess):
             if should_attempt:
                 try:
                     server_user = server_setup.get_server_user()
-                    self._fs = fsspec.filesystem(
-                        "ssh", host=server_setup.SERVER_ADDRESS, username=server_user
+                    self._fs = CustomSSHFileSystem(
+                        host=server_setup.SERVER_ADDRESS, username=server_user
                     )
                     return self._fs
                 except:  # noqa
@@ -445,20 +445,3 @@ class SSHDataAccess(DataAccess):
         """Close the connection if one is open"""
         if self._ssh is not None:
             self._ssh.close()
-
-
-def progress_bar(*args, **kwargs):
-    """Creates progress bar
-
-    :param \\*args: variable length argument list passed to the tqdm constructor.
-    :param \\*\\*kwargs: arbitrary keyword arguments passed to the tqdm constructor.
-    """
-    bar = tqdm(*args, **kwargs)
-    last = [0]
-
-    def show(a, b):
-        bar.total = int(b)
-        bar.update(int(a - last[0]))
-        last[0] = a
-
-    return show, bar
