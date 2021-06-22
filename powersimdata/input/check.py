@@ -13,11 +13,9 @@ def check_grid(grid):
     """Check whether an object is an internally-consistent Grid object.
 
     :param powersimdata.input.grid.Grid grid: grid or grid-like object to check.
-    :raises TypeError: if ``grid`` is not a Grid object.
     :raises ValueError: if ``grid`` has any inconsistency
     """
-    if not isinstance(grid, Grid):
-        raise TypeError("grid must be a Grid object")
+    _check_grid_type(grid)
     error_messages = []
     # Run all checks which operate on a Grid object
     for check in [
@@ -44,7 +42,7 @@ def check_grid(grid):
         except Exception:
             error_messages.append(
                 f"Exception during {check.__name__} {gencost_key}: "
-                "{sys.exc_info()[1]!r}"
+                f"{sys.exc_info()[1]!r}"
             )
     if len(error_messages) > 0:
         collected = "\n".join(error_messages)
@@ -233,6 +231,8 @@ def _check_grid_models_match(grid1, grid2):
     :param powersimdata.input.grid.Grid grid2: second Grid instance.
     :raises ValueError: if the grid models don't match.
     """
+    _check_grid_type(grid1)
+    _check_grid_type(grid2)
     if not grid1.grid_model == grid2.grid_model:
         raise ValueError(
             f"Grid models don't match: {grid1.grid_model}, {grid2.grid_model}"
