@@ -8,6 +8,7 @@ from tempfile import mkstemp
 
 import fsspec
 import paramiko
+from fsspec.registry import register_implementation
 
 from powersimdata.data_access.profile_helper import ProfileHelper
 from powersimdata.data_access.ssh_fs import CustomSSHFileSystem
@@ -19,6 +20,17 @@ _dirs = {
     "input": server_setup.INPUT_DIR,
     "output": server_setup.OUTPUT_DIR,
 }
+
+register_implementation("ssh", CustomSSHFileSystem)
+
+
+def get_ssh_fs():
+    return fsspec.filesystem(
+        "ssh",
+        host=server_setup.SERVER_ADDRESS,
+        port=server_setup.SERVER_SSH_PORT,
+        username=server_setup.get_server_user(),
+    )
 
 
 class DataAccess:
@@ -272,10 +284,7 @@ class SSHDataAccess(DataAccess):
         if self._fs is None:
             if should_attempt:
                 try:
-                    server_user = server_setup.get_server_user()
-                    self._fs = CustomSSHFileSystem(
-                        host=server_setup.SERVER_ADDRESS, username=server_user
-                    )
+                    self._fs = get_ssh_fs()
                     return self._fs
                 except:  # noqa
                     SSHDataAccess._last_attempt = time.time()
