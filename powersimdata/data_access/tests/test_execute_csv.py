@@ -48,7 +48,6 @@ def test_get_execute_file_from_server_header(execute_table):
 def clone_template():
     orig = os.path.join(templates.__path__[0], "ExecuteList.csv")
     dest = os.path.join(server_setup.LOCAL_DIR, "ExecuteList.csv.test")
-    os.makedirs(server_setup.LOCAL_DIR, exist_ok=True)
     shutil.copy(orig, dest)
     return dest
 

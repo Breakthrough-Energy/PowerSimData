@@ -151,7 +151,7 @@ class DataAccess:
         """Return the checksum of the file path
 
         :param str relative_path: path relative to root
-        :return: (*str*) -- the checksum of the file
+        :return: (*int/str*) -- the checksum of the file
         """
         full_path = self.join(self.root, relative_path)
         self._check_file_exists(full_path)

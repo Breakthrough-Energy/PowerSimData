@@ -65,8 +65,6 @@ class InputData:
 
     def __init__(self, data_loc=None):
         """Constructor."""
-        os.makedirs(server_setup.LOCAL_DIR, exist_ok=True)
-
         self.data_access = Context.get_data_access(data_loc)
 
     def get_data(self, scenario_info, field_name):
