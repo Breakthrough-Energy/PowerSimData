@@ -87,11 +87,3 @@ def test_copy_command():
     expected = r"\cp -Rp source dest"
     command = CommandBuilder.copy("source", "dest", recursive=True)
     assert expected == command
-
-    expected = r"\cp -up source dest"
-    command = CommandBuilder.copy("source", "dest", update=True)
-    assert expected == command
-
-    expected = r"\cp -Rup source dest"
-    command = CommandBuilder.copy("source", "dest", recursive=True, update=True)
-    assert expected == command

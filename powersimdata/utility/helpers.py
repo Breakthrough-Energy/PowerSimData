@@ -10,18 +10,15 @@ class CommandBuilder:
     """
 
     @staticmethod
-    def copy(src, dest, recursive=False, update=False):
+    def copy(src, dest, recursive=False):
         """Builds a cp command with some options
 
         :param str src: The source directory or file
         :param str dest: The desination directory or file
         :param bool recursive: Whether to pass -R option
-        :param bool update: Whether to pass -u option
         """
         r_flag = "R" if recursive else ""
-        u_flag = "u" if update else ""
-        p_flag = "p"
-        flags = f"-{r_flag}{u_flag}{p_flag}"
+        flags = f"-{r_flag}p"
         return fr"\cp {flags} {src} {dest}"
 
 

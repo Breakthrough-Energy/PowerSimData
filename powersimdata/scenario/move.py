@@ -71,7 +71,7 @@ class BackUpDisk:
         print("--> Moving scenario input data to backup disk")
         source = self._data_access.match_scenario_files(self.scenario_id, "input")
         target = self._data_access.get_base_dir("input", backup=True)
-        self._data_access.copy(source, target, update=True)
+        self._data_access.copy(source, target)
         self._data_access.remove(source, recursive=False, confirm=confirm)
 
     def move_output_data(self, confirm=True):
@@ -79,7 +79,7 @@ class BackUpDisk:
         print("--> Moving scenario output data to backup disk")
         source = self._data_access.match_scenario_files(self.scenario_id, "output")
         target = self._data_access.get_base_dir("output", backup=True)
-        self._data_access.copy(source, target, update=True)
+        self._data_access.copy(source, target)
         self._data_access.remove(source, recursive=False, confirm=confirm)
 
     def move_temporary_folder(self, confirm=True):
@@ -87,5 +87,5 @@ class BackUpDisk:
         print("--> Moving temporary folder to backup disk")
         source = self._data_access.match_scenario_files(self.scenario_id, "tmp")
         target = self._data_access.get_base_dir("tmp", backup=True)
-        self._data_access.copy(source, target, recursive=True, update=True)
+        self._data_access.copy(source, target, recursive=True)
         self._data_access.remove(source, recursive=True, confirm=confirm)
