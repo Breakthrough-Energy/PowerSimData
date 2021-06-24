@@ -15,6 +15,9 @@ MODEL_DIR = config.MODEL_DIR
 ENGINE_DIR = config.ENGINE_DIR
 
 
+os.makedirs(LOCAL_DIR, exist_ok=True)
+
+
 def get_server_user():
     """Returns the first username found using the following sources:
 
