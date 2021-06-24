@@ -10,6 +10,7 @@ from powersimdata.design.investment.create_mapping_files import (
     bus_to_reeds_reg,
 )
 from powersimdata.design.investment.inflation import calculate_inflation
+from powersimdata.input.check import _check_grid_models_match
 from powersimdata.input.grid import Grid
 from powersimdata.utility.distance import haversine
 
@@ -40,22 +41,32 @@ def append_keep_index_name(df1, other, *args, **kwargs):
     return new_df
 
 
-def calculate_ac_inv_costs(scenario, sum_results=True, exclude_branches=None):
+def calculate_ac_inv_costs(
+    scenario,
+    sum_results=True,
+    exclude_branches=None,
+    base_grid=None,
+):
     """Calculate cost of upgrading AC lines and/or transformers in a scenario.
     NEEM regions are used to find regional multipliers.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param bool sum_results: whether to sum data frame for each branch type. Defaults to
         True.
+    :param powersimdata.input.grid.Grid base_grid: a Grid to compare against. If None,
+        the grid model and interconnect from the ``scenario`` are used to instantiate a
+        corresponding unmodified Grid.
     :return: (*dict*) -- keys are {'line_cost', 'transformer_cost'}, values are either
         float if ``sum_results``, or pandas Series indexed by branch ID.
         Whether summed or not, values are $USD, inflation-adjusted to today.
     """
-
-    base_grid = Grid(
-        scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
-    )
     grid = scenario.state.get_grid()
+    if base_grid is None:
+        base_grid = Grid(
+            scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
+        )
+    else:
+        _check_grid_models_match(base_grid, grid)
 
     # find upgraded AC lines
     grid_new = cp.deepcopy(grid)
@@ -257,20 +268,26 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         return {"line_cost": lines.cost, "transformer_cost": transformers.cost}
 
 
-def calculate_dc_inv_costs(scenario, sum_results=True):
+def calculate_dc_inv_costs(scenario, sum_results=True, base_grid=None):
     """Calculate cost of upgrading HVDC lines in a scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param bool sum_results: whether to sum series to return total cost. Defaults to
         True.
+    :param powersimdata.input.grid.Grid base_grid: a Grid to compare against. If None,
+        the grid model and interconnect from the ``scenario`` are used to instantiate a
+        corresponding unmodified Grid.
     :return: (*pandas.Series/float*) -- cost of upgrading HVDC lines, in $USD,
         inflation-adjusted to today. If ``sum_results``, a float is returned, otherwise
         a Series.
     """
-    base_grid = Grid(
-        scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
-    )
     grid = scenario.state.get_grid()
+    if base_grid is None:
+        base_grid = Grid(
+            scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
+        )
+    else:
+        _check_grid_models_match(base_grid, grid)
 
     grid_new = cp.deepcopy(grid)
     # Reindex so that we don't get NaN when calculating upgrades for new DC lines
@@ -329,7 +346,13 @@ def _calculate_dc_inv_costs(grid_new, sum_results=True):
         return 0.0
 
 
-def calculate_gen_inv_costs(scenario, year, cost_case, sum_results=True):
+def calculate_gen_inv_costs(
+    scenario,
+    year,
+    cost_case,
+    sum_results=True,
+    base_grid=None,
+):
     """Calculate cost of upgrading generators in a scenario. ReEDS regions are used to
     find regional multipliers.
 
@@ -339,6 +362,9 @@ def calculate_gen_inv_costs(scenario, year, cost_case, sum_results=True):
         *'Conservative'*: generally higher costs, *'Advanced'*: generally lower costs
     :param bool sum_results: whether to sum data frame for plant costs. Defaults to
         True.
+    :param powersimdata.input.grid.Grid base_grid: a Grid to compare against. If None,
+        the grid model and interconnect from the ``scenario`` are used to instantiate a
+        corresponding unmodified Grid.
     :return: (*pandas.Series*) -- Overnight generation investment cost.
         If ``sum_results``, indices are technologies and values are total cost.
         Otherwise, indices are IDs of plants (including storage, which is given
@@ -349,11 +375,13 @@ def calculate_gen_inv_costs(scenario, year, cost_case, sum_results=True):
         are dropped. Wind and solar will need to be fixed based on the resource supply
         curves.
     """
-
-    base_grid = Grid(
-        scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
-    )
     grid = scenario.state.get_grid()
+    if base_grid is None:
+        base_grid = Grid(
+            scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
+        )
+    else:
+        _check_grid_models_match(base_grid, grid)
 
     # Find change in generation capacity
     grid_new = cp.deepcopy(grid)
