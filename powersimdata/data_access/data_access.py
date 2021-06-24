@@ -13,7 +13,6 @@ from fsspec.registry import register_implementation
 from powersimdata.data_access.profile_helper import ProfileHelper
 from powersimdata.data_access.ssh_fs import CustomSSHFileSystem
 from powersimdata.utility import server_setup
-from powersimdata.utility.helpers import CommandBuilder
 
 _dirs = {
     "tmp": (server_setup.EXECUTE_DIR,),
@@ -89,15 +88,14 @@ class DataAccess:
             return self.join(base_dir, f"scenario_{scenario_id}")
         return self.join(base_dir, f"{scenario_id}_*")
 
-    def copy(self, src, dest, recursive=False, update=False):
+    def copy(self, src, dest, recursive=False):
         """Wrapper around cp command which creates dest path if needed
 
         :param str src: path to original
         :param str dest: destination path
         :param bool recursive: create directories recursively
-        :param bool update: only copy if needed
         """
-        raise NotImplementedError
+        self.fs.cp(src, dest, recursive=recursive)
 
     def remove(self, target, recursive=False, confirm=True):
         """Delete files in current environment
@@ -234,16 +232,6 @@ class LocalDataAccess(DataAccess):
         self._check_file_exists(dest, should_exist=False)
         self.makedir(os.path.dirname(dest))
         shutil.move(src, dest)
-
-    def copy(self, src, dest, recursive=False, update=False):
-        """Wrapper around cp command which creates dest path if needed
-
-        :param str src: path to original
-        :param str dest: destination path
-        :param bool recursive: create directories recursively
-        :param bool update: ignored
-        """
-        self.fs.cp(src, dest, recursive=recursive)
 
     def get_profile_version(self, grid_model, kind):
         """Returns available raw profile from blob storage or local disk
@@ -434,21 +422,6 @@ class SSHDataAccess(DataAccess):
             for e in errors:
                 print(e)
             raise IOError("Failed to push file - most likely a conflict was detected.")
-
-    def copy(self, src, dest, recursive=False, update=False):
-        """Wrapper around cp command which creates dest path if needed
-
-        :param str src: path to original
-        :param str dest: destination path
-        :param bool recursive: create directories recursively
-        :param bool update: only copy if needed
-        :raises IOError: if command generated stderr
-        """
-        self.makedir(dest)
-        command = CommandBuilder.copy(src, dest, recursive, update)
-        _, _, stderr = self.ssh.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError(f"Failed to execute {command}")
 
     def close(self):
         """Close the connection if one is open"""
