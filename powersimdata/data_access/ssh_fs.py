@@ -29,6 +29,16 @@ class CustomSSHFileSystem(SFTPFileSystem):
         if len(stderr.readlines()) != 0:
             raise IOError(f"Failed to execute {command}")
 
+    def checksum(self, filepath):
+        """Return the checksum of the file path (using sha1sum)
+        :param str filepath: path to file
+        :return: (*str*) -- the checksum of the file
+        """
+        command = f"sha1sum {filepath}"
+        _, stdout, _ = self.client.exec_command(command)
+        lines = stdout.readlines()
+        return lines[0].strip()
+
 
 def progress_bar(*args, **kwargs):
     """Creates progress bar
