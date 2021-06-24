@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from powersimdata.data_access.data_access import SSHDataAccess
-from powersimdata.tests.mock_ssh import MockConnection, MockFilesystem
+from powersimdata.tests.mock_ssh import MockFilesystem
 from powersimdata.utility import server_setup
 
 CONTENT = b"content"
@@ -15,9 +15,7 @@ backup_root = "/mnt/backup_dir"
 
 @pytest.fixture
 def data_access():
-    data_access = SSHDataAccess(backup_root=backup_root)
-    yield data_access
-    data_access.close()
+    return SSHDataAccess(backup_root=backup_root)
 
 
 @pytest.fixture
@@ -32,12 +30,10 @@ def temp_fs(tmp_path):
 @pytest.fixture
 def mock_data_access(monkeypatch, temp_fs):
     data_access = SSHDataAccess()
-    monkeypatch.setattr(data_access, "_ssh", MockConnection())
     monkeypatch.setattr(data_access, "_fs", MockFilesystem())
     data_access.root = temp_fs[0]
     data_access.local_root = temp_fs[1]
-    yield data_access
-    data_access.close()
+    return data_access
 
 
 @pytest.fixture
@@ -102,10 +98,6 @@ def test_match_scenario_files(data_access):
 def test_setup_server_connection(data_access):
     _, stdout, _ = data_access.ssh.exec_command("whoami")
     assert stdout.read().decode("utf-8").strip() == server_setup.get_server_user()
-
-
-def test_mocked_correctly(mock_data_access):
-    assert isinstance(mock_data_access.ssh, MockConnection)
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Does not run on windows")

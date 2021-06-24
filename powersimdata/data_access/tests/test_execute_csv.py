@@ -14,9 +14,7 @@ from powersimdata.utility import server_setup, templates
 
 @pytest.fixture
 def data_access():
-    data_access = SSHDataAccess()
-    yield data_access
-    data_access.close()
+    return SSHDataAccess()
 
 
 @pytest.fixture

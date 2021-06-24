@@ -62,5 +62,4 @@ class Delete(State):
 
     def _clean(self):
         """Clean after deletion."""
-        self._data_access.close()
         self._scenario_info = None

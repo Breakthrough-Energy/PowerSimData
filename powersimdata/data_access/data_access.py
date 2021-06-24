@@ -7,7 +7,6 @@ from subprocess import Popen
 from tempfile import mkstemp
 
 import fsspec
-import paramiko
 from fsspec.registry import register_implementation
 
 from powersimdata.data_access.profile_helper import ProfileHelper
@@ -177,10 +176,6 @@ class DataAccess:
         """
         return ProfileHelper.get_profile_version_cloud(grid_model, kind)
 
-    def close(self):
-        """Perform any necessary cleanup for the object."""
-        pass
-
 
 class LocalDataAccess(DataAccess):
     """Interface to shared data volume"""
@@ -245,7 +240,6 @@ class SSHDataAccess(DataAccess):
     def __init__(self, root=None, backup_root=None):
         """Constructor"""
         super().__init__(root, backup_root)
-        self._ssh = None
         self._fs = None
         self._retry_after = 5
         self.local_root = server_setup.LOCAL_DIR
@@ -275,51 +269,11 @@ class SSHDataAccess(DataAccess):
 
     @property
     def ssh(self):
-        """Get or create the ssh connection object, with attempts rate limited.
+        """Get the ssh client from the filesystem object
 
-        :raises IOError: if connection failed or still within retry window
         :return: (*paramiko.SSHClient*) -- the client instance
         """
-        should_attempt = time.time() - SSHDataAccess._last_attempt > self._retry_after
-
-        if self._ssh is None:
-            if should_attempt:
-                try:
-                    self._setup_server_connection()
-                    return self._ssh
-                except:  # noqa
-                    SSHDataAccess._last_attempt = time.time()
-            msg = f"Could not connect to server, will try again after {self._retry_after} seconds"
-            raise IOError(msg)
-
-        return self._ssh
-
-    def _setup_server_connection(self):
-        """This function setup the connection to the server."""
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        try:
-            client.load_system_host_keys()
-        except IOError:
-            print("Could not find ssh host keys.")
-            ssh_known_hosts = input("Provide ssh known_hosts key file =")
-            while True:
-                try:
-                    client.load_system_host_keys(str(ssh_known_hosts))
-                    break
-                except IOError:
-                    print("Cannot read file, try again")
-                    ssh_known_hosts = input("Provide ssh known_hosts key file =")
-
-        server_user = server_setup.get_server_user()
-        client.connect(
-            server_setup.SERVER_ADDRESS,
-            username=server_user,
-            port=server_setup.SERVER_SSH_PORT,
-            timeout=10,
-        )
-
-        self._ssh = client
+        return self.fs.client
 
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
@@ -414,8 +368,3 @@ class SSHDataAccess(DataAccess):
             for e in errors:
                 print(e)
             raise IOError("Failed to push file - most likely a conflict was detected.")
-
-    def close(self):
-        """Close the connection if one is open"""
-        if self._ssh is not None:
-            self._ssh.close()
