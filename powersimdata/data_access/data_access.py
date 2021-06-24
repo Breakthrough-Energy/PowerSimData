@@ -112,14 +112,6 @@ class DataAccess:
         self.fs.rm(target, recursive=recursive)
         print("--> Done!")
 
-    def _exists(self, filepath):
-        """Return whether the file exists
-
-        :param str filepath: the path to the file
-        :return: (*bool*) -- whether the file exists
-        """
-        return self.fs.exists(filepath)
-
     def _check_file_exists(self, filepath, should_exist=True):
         """Check that file exists (or not) at the given path
 
@@ -127,7 +119,7 @@ class DataAccess:
         :param bool should_exist: whether the file is expected to exist
         :raises OSError: if the expected condition is not met
         """
-        result = self._exists(filepath)
+        result = self.fs.exists(filepath)
         compare = operator.ne if should_exist else operator.eq
         if compare(result, True):
             msg = "not found" if should_exist else "already exists"
