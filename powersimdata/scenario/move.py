@@ -44,13 +44,6 @@ class Move(State):
         sid = self._scenario_info["id"]
         self._execute_list_manager.set_status(sid, "moved")
 
-        # Delete attributes
-        self._clean()
-
-    def _clean(self):
-        """Clean after move."""
-        self._data_access.close()
-
 
 class BackUpDisk:
     """Back up scenario data to backup disk mounted on server.
