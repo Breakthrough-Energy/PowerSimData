@@ -210,3 +210,16 @@ def _check_connected_components(grid, error_messages):
             f"but is specified as having {num_interconnects} interconnects: "
             f"{grid.interconnect}."
         )
+
+
+def _check_grid_models_match(grid1, grid2):
+    """Check whether an object is an internally-consistent Grid object.
+
+    :param powersimdata.input.grid.Grid grid1: first Grid instance.
+    :param powersimdata.input.grid.Grid grid2: second Grid instance.
+    :raises ValueError: if the grid models don't match.
+    """
+    if not grid1.grid_model == grid2.grid_model:
+        raise ValueError(
+            f"Grid models don't match: {grid1.grid_model}, {grid2.grid_model}"
+        )
