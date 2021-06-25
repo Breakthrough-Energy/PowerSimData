@@ -8,17 +8,15 @@ on:
 jobs:
   coverage:
     runs-on: ubuntu-latest
-    env:
-      python-version: 3.9
 
-    name: Python ${{ env.python-version }}
+    name: Generate coverage report
     steps:
       - uses: actions/checkout@v2
 
-      - name: Set up Python ${{ env.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ env.python-version }}
+          python-version: 3.9
 
       - name: Start postgres container
         run: |
