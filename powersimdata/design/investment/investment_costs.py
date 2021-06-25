@@ -4,6 +4,11 @@ import warnings
 import numpy as np
 import pandas as pd
 
+from powersimdata.design.compare.generation import calculate_plant_difference
+from powersimdata.design.compare.transmission import (
+    calculate_branch_difference,
+    calculate_dcline_differences,
+)
 from powersimdata.design.investment import const
 from powersimdata.design.investment.create_mapping_files import (
     bus_to_neem_reg,
@@ -68,12 +73,11 @@ def calculate_ac_inv_costs(
     else:
         _check_grid_models_match(base_grid, grid)
 
-    # find upgraded AC lines
     grid_new = cp.deepcopy(grid)
-    # Reindex so that we don't get NaN when calculating upgrades for new branches
-    base_grid.branch = base_grid.branch.reindex(grid_new.branch.index).fillna(0)
-    grid_new.branch.rateA = grid.branch.rateA - base_grid.branch.rateA
-    grid_new.branch = grid_new.branch[grid_new.branch.rateA != 0.0]
+    # find upgraded AC lines
+    capacity_difference = calculate_branch_difference(base_grid.branch, grid.branch)
+    grid_new.branch = grid.branch.assign(rateA=capacity_difference.diff)
+    grid_new.branch = grid_new.branch.query("rateA != 0.0")
     if exclude_branches is not None:
         present_exclude_branches = set(exclude_branches) & set(grid_new.branch.index)
         grid_new.branch.drop(index=present_exclude_branches, inplace=True)
@@ -290,11 +294,10 @@ def calculate_dc_inv_costs(scenario, sum_results=True, base_grid=None):
         _check_grid_models_match(base_grid, grid)
 
     grid_new = cp.deepcopy(grid)
-    # Reindex so that we don't get NaN when calculating upgrades for new DC lines
-    base_grid.dcline = base_grid.dcline.reindex(grid_new.dcline.index).fillna(0)
     # find upgraded DC lines
-    grid_new.dcline.Pmax = grid.dcline.Pmax - base_grid.dcline.Pmax
-    grid_new.dcline = grid_new.dcline[grid_new.dcline.Pmax != 0.0]
+    capacity_difference = calculate_dcline_differences(base_grid.dcline, grid.dcline)
+    grid_new.dcline = grid.dcline.assign(Pmax=capacity_difference.diff)
+    grid_new.dcline = grid_new.dcline.query("Pmax != 0.0")
 
     costs = _calculate_dc_inv_costs(grid_new, sum_results)
     return costs
@@ -383,11 +386,11 @@ def calculate_gen_inv_costs(
     else:
         _check_grid_models_match(base_grid, grid)
 
-    # Find change in generation capacity
     grid_new = cp.deepcopy(grid)
-    # Reindex so that we don't get NaN when calculating upgrades for new generators
-    base_grid.plant = base_grid.plant.reindex(grid_new.plant.index).fillna(0)
-    grid_new.plant.Pmax = grid.plant.Pmax - base_grid.plant.Pmax
+    # Find change in generation capacity
+    capacity_difference = calculate_plant_difference(base_grid.plant, grid.plant)
+    grid_new.plant = grid.plant.assign(Pmax=capacity_difference.diff)
+    grid_new.plant = grid_new.plant.query("Pmax >= 0.01")
     # Find change in storage capacity
     # Reindex so that we don't get NaN when calculating upgrades for new storage
     base_grid.storage["gen"] = base_grid.storage["gen"].reindex(
@@ -397,9 +400,6 @@ def calculate_gen_inv_costs(
         grid.storage["gen"].Pmax - base_grid.storage["gen"].Pmax
     )
     grid_new.storage["gen"]["type"] = "storage"
-
-    # Drop small changes
-    grid_new.plant = grid_new.plant[grid_new.plant.Pmax > 0.01]
 
     costs = _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results)
     return costs
