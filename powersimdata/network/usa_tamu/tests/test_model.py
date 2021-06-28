@@ -31,8 +31,11 @@ def test_interconnect_usa_is_unique():
         check_and_format_interconnect(interconnect)
 
 
-def test_interconnect_set():
+def test_interconnect_iterable():
     result = check_and_format_interconnect({"Texas", "Eastern"})
+    _assert_lists_equal(["Eastern", "Texas"], result)
+
+    result = check_and_format_interconnect(("Texas", "Eastern"))
     _assert_lists_equal(["Eastern", "Texas"], result)
 
 

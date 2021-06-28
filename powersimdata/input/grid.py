@@ -14,7 +14,7 @@ _cache = MemoryCache()
 class Grid:
     """Grid
 
-    :param str/list/set interconnect: geographical region covered. Either *'USA'*, one of
+    :param str/iterable interconnect: geographical region covered. Either *'USA'*, one of
         the three interconnections, i.e., *'Eastern'*, *'Western'* or *'Texas'* or a
         combination of two interconnections.
     :param str source: model used to build the network.
