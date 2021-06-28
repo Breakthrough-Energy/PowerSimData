@@ -77,7 +77,7 @@ class TAMU(AbstractGrid):
 def check_and_format_interconnect(interconnect):
     """Checks interconnect.
 
-    :param str/list interconnect: interconnect name(s).
+    :param str/iterable interconnect: interconnect name(s).
     :return: (*list*) -- interconnect(s)
     :raises TypeError: if parameter has wrong type.
     :raises ValueError: if interconnect not found or combination of interconnect is not
@@ -85,18 +85,15 @@ def check_and_format_interconnect(interconnect):
     """
     if isinstance(interconnect, str):
         interconnect = [interconnect]
-    if not isinstance(interconnect, list):
-        raise TypeError("interconnect must be a str or list of str")
+    try:
+        interconnect = sorted(set(interconnect))
+    except:  # noqa
+        raise TypeError("interconnect must be either str or an iterable of str")
 
     possible = ["Eastern", "Texas", "Western", "USA"]
-    for i in interconnect:
-        if i not in possible:
-            raise ValueError(
-                "Wrong interconnect. Choose from %s" % " | ".join(possible)
-            )
+    if any(i for i in interconnect if i not in possible):
+        raise ValueError("Wrong interconnect. Choose from %s" % " | ".join(possible))
     n = len(interconnect)
-    if n > len(set(interconnect)):
-        raise ValueError("List of interconnects contains duplicate values")
     if "USA" in interconnect and n > 1:
         raise ValueError("USA cannot be paired")
     if n == 3:
