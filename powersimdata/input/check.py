@@ -5,7 +5,8 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from powersimdata.input.grid import Grid
+# Importing the module, not anything in it, to avid a circular import
+import powersimdata.input.grid as _grid
 from powersimdata.network.model import ModelImmutables
 
 
@@ -281,8 +282,8 @@ def _check_grid_type(grid):
     :param powersimdata.input.grid.Grid grid: a Grid instance.
     :raises TypeError: if input is not a Grid instance.
     """
-    if not isinstance(grid, Grid):
-        raise TypeError(f"grid must be a {Grid} object")
+    if not isinstance(grid, _grid.Grid):
+        raise TypeError(f"grid must be a {_grid.Grid} object")
 
 
 def _check_areas_and_format(areas, grid_model="usa_tamu"):
