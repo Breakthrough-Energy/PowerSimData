@@ -41,7 +41,7 @@ def check_grid(grid):
             _check_gencost(grid.gencost[gencost_key], error_messages)
         except Exception:
             error_messages.append(
-                f"Exception during {check.__name__} {gencost_key}: "
+                f"Exception during _check_gencost: {gencost_key}: "
                 f"{sys.exc_info()[1]!r}"
             )
     if len(error_messages) > 0:
