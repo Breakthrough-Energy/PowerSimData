@@ -12,7 +12,7 @@ install_requires = [
 
 setup(
     name="powersimdata",
-    version="0.4.2",
+    version="0.4.3",
     description="Power Simulation Data",
     url="https://github.com/Breakthrough-Energy/powersimdata",
     author="Kaspar Mueller",

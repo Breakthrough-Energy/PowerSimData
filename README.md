@@ -1,6 +1,7 @@
 
 ![logo](https://raw.githubusercontent.com/Breakthrough-Energy/docs/master/source/_static/img/BE_Sciences_RGB_Horizontal_Color.svg)
 
+[![codecov](https://codecov.io/gh/Breakthrough-Energy/PowerSimData/branch/develop/graph/badge.svg?token=5A20TCV5XL)](https://codecov.io/gh/Breakthrough-Energy/PowerSimData)
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 ![Tests](https://github.com/Breakthrough-Energy/PowerSimData/workflows/Pytest/badge.svg)
