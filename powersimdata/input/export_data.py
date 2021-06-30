@@ -127,6 +127,8 @@ def export_case_mat(grid, filepath, storage_filepath=None):
 def export_transformed_profile(kind, scenario_info, grid, ct, filepath):
     """Apply transformation to the given kind of profile and save the result locally.
 
+    :param str kind: which profile to export. This parameter is passed to
+        :meth:`TransformProfile.get_profile`.
     :param dict scenario_info: a dict containing the profile version, with
         key in the form base_{kind}
     :param powersimdata.input.grid.Grid grid: a Grid object previously
