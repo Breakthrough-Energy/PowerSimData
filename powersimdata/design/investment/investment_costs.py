@@ -7,7 +7,7 @@ import pandas as pd
 from powersimdata.design.compare.generation import calculate_plant_difference
 from powersimdata.design.compare.transmission import (
     calculate_branch_difference,
-    calculate_dcline_differences,
+    calculate_dcline_difference,
 )
 from powersimdata.design.investment import const
 from powersimdata.design.investment.create_mapping_files import (
@@ -295,7 +295,7 @@ def calculate_dc_inv_costs(scenario, sum_results=True, base_grid=None):
 
     grid_new = cp.deepcopy(grid)
     # find upgraded DC lines
-    capacity_difference = calculate_dcline_differences(base_grid.dcline, grid.dcline)
+    capacity_difference = calculate_dcline_difference(base_grid.dcline, grid.dcline)
     grid_new.dcline = grid.dcline.assign(Pmax=capacity_difference.diff)
     grid_new.dcline = grid_new.dcline.query("Pmax != 0.0")
 
