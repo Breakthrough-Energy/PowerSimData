@@ -8,6 +8,19 @@ from powersimdata.input.grid import Grid
 from powersimdata.input.helpers import add_column_to_data_frame
 from powersimdata.input.scenario_grid import format_gencost, link
 
+INCORRECT_SOURCE = "invalid_source"
+INCORRECT_ENGINE = "invalid_engine"
+
+
+def test_grid_incorrect_source():
+    with pytest.raises(ValueError):
+        Grid(["USA"], source=INCORRECT_SOURCE)
+
+
+def test_grid_incorrect_engine():
+    with pytest.raises(ValueError):
+        Grid(["USA"], engine=INCORRECT_ENGINE)
+
 
 def test_add_column_to_data_frame():
     df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})

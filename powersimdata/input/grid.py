@@ -12,12 +12,18 @@ _cache = MemoryCache()
 
 
 class Grid:
+
+    SUPPORTED_MODELS = {"usa_tamu"}
+    SUPPORTED_ENGINES = {"REISE", "REISE.jl"}
+
     """Grid
 
     :param str/iterable interconnect: geographical region covered. Either *'USA'*, one of
         the three interconnections, i.e., *'Eastern'*, *'Western'* or *'Texas'* or a
         combination of two interconnections.
-    :param str source: model used to build the network.
+    :param str source: model used to build the network. Can be one of the
+        supported models ("usa_tamu"), or a .mat file that represents a
+        grid.
     :param str engine: engine used to run scenario, if using ScenarioGrid.
     :raises TypeError: if source and engine are not both strings.
     :raises ValueError: if source or engine does not exist.
@@ -27,9 +33,15 @@ class Grid:
         """Constructor."""
         if not isinstance(source, str):
             raise TypeError("source must be a str")
-        supported_engines = {"REISE", "REISE.jl"}
-        if engine not in supported_engines:
-            raise ValueError(f"Engine must be one of {','.join(supported_engines)}")
+        if source not in self.SUPPORTED_MODELS and not source.endswith(".mat"):
+            raise ValueError(
+                f"Source must be one of {','.join(self.SUPPORTED_MODELS)} "
+                "or the path to a .mat file that represents a grid "
+            )
+        if engine not in self.SUPPORTED_ENGINES:
+            raise ValueError(
+                f"Engine must be one of {','.join(self.SUPPORTED_ENGINES)}"
+            )
 
         key = cache_key(interconnect, source)
         cached = _cache.get(key)
