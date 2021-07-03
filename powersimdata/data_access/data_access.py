@@ -1,46 +1,31 @@
 import operator
-import os
 import posixpath
-import shutil
 import time
 from subprocess import Popen
-from tempfile import mkstemp
 
-import fsspec
-from fsspec.registry import register_implementation
+import fs as fs2
+from fs.tempfs import TempFS
 
 from powersimdata.data_access.profile_helper import ProfileHelper
-from powersimdata.data_access.ssh_fs import CustomSSHFileSystem
 from powersimdata.utility import server_setup
 
-_dirs = {
-    "tmp": (server_setup.EXECUTE_DIR,),
-    "input": server_setup.INPUT_DIR,
-    "output": server_setup.OUTPUT_DIR,
-}
 
-register_implementation("ssh", CustomSSHFileSystem)
-
-
-def get_ssh_fs():
-    return fsspec.filesystem(
-        "ssh",
-        host=server_setup.SERVER_ADDRESS,
-        port=server_setup.SERVER_SSH_PORT,
-        username=server_setup.get_server_user(),
-    )
+def get_ssh_fs(root=None):
+    if root is None:
+        root = ""
+    host = server_setup.SERVER_ADDRESS
+    port = server_setup.SERVER_SSH_PORT
+    username = server_setup.get_server_user()
+    return fs2.open_fs(f"ssh://{username}@{host}:{port}/{root}")
 
 
 class DataAccess:
     """Interface to a local or remote data store."""
 
-    def __init__(self, root=None, backup_root=None):
+    def __init__(self, root=None):
         """Constructor"""
         self.root = server_setup.DATA_ROOT_DIR if root is None else root
-        self.backup_root = (
-            server_setup.BACKUP_DATA_ROOT_DIR if backup_root is None else backup_root
-        )
-        self.join = None
+        self.join = fs2.path.join
 
     def copy_from(self, file_name, from_dir):
         """Copy a file from data store to userspace.
@@ -59,86 +44,67 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def get_base_dir(self, kind, backup=False):
-        """Get path to given kind relative to instance root
-
-        :param str kind: one of {input, output, tmp}
-        :param bool backup: pass True if relative to backup root dir
-        :raises ValueError: if kind is invalid
-        :return: (*str*) -- the specified path
-        """
-        _allowed = list(_dirs.keys())
-        if kind not in _allowed:
-            raise ValueError(f"Invalid 'kind', must be one of {_allowed}")
-
-        root = self.root if not backup else self.backup_root
-        return self.join(root, *_dirs[kind])
-
-    def match_scenario_files(self, scenario_id, kind, backup=False):
+    def match_scenario_files(self, scenario_id, kind):
         """Get path matching the given kind of scenario data
 
         :param int/str scenario_id: the scenario id
         :param str kind: one of {input, output, tmp}
-        :param bool backup: pass True if relative to backup root dir
         :return: (*str*) -- the specified path
         """
-        base_dir = self.get_base_dir(kind, backup)
+        _dirs = {
+            "tmp": (server_setup.EXECUTE_DIR,),
+            "input": server_setup.INPUT_DIR,
+            "output": server_setup.OUTPUT_DIR,
+        }
+        base_dir = self.join(*_dirs[kind])
         if kind == "tmp":
             return self.join(base_dir, f"scenario_{scenario_id}")
         return self.join(base_dir, f"{scenario_id}_*")
 
-    def copy(self, src, dest, recursive=False):
+    def copy(self, src, dest):
         """Wrapper around cp command which creates dest path if needed
 
-        :param str src: path to original
+        :param str src: path to file
         :param str dest: destination path
-        :param bool recursive: create directories recursively
         """
-        self.fs.cp(src, dest, recursive=recursive)
+        if self.fs.exists(dest) and self.fs.isdir(dest):
+            dest = self.join(dest, fs2.path.basename(src))
 
-    def remove(self, target, recursive=False, confirm=True):
+        self.fs.copy(src, dest)
+
+    def remove(self, pattern, confirm=True):
         """Delete files in current environment
 
-        :param str target: path to remove
-        :param bool recursive: delete directories recursively
+        :param str pattern: glob specifying files to remove
         :param bool confirm: prompt before executing command
         """
         if confirm:
-            confirmed = input(f"Delete '{target}'? [y/n] (default is 'n')")
+            confirmed = input(f"Delete '{pattern}'? [y/n] (default is 'n')")
             if confirmed.lower() != "y":
                 print("Operation cancelled.")
                 return
-        self.fs.rm(target, recursive=recursive)
+        self.fs.glob(pattern).remove()
         print("--> Done!")
 
-    def _check_file_exists(self, filepath, should_exist=True):
+    def _check_file_exists(self, path, should_exist=True):
         """Check that file exists (or not) at the given path
 
-        :param str filepath: the full path to the file
+        :param str path: the relative path to the file
         :param bool should_exist: whether the file is expected to exist
         :raises OSError: if the expected condition is not met
         """
-        result = self.fs.exists(filepath)
+        result = self.fs.exists(path)
         compare = operator.ne if should_exist else operator.eq
         if compare(result, True):
             msg = "not found" if should_exist else "already exists"
-            raise OSError(f"{filepath} {msg} on {self.description}")
+            raise OSError(f"{path} {msg} on {self.description}")
 
-    def _check_filename(self, filename):
-        """Check that filename is only the name part
-
-        :param str filename: the filename to verify
-        :raises ValueError: if filename contains path segments
-        """
-        if len(os.path.dirname(filename)) != 0:
-            raise ValueError(f"Expecting file name but got path {filename}")
-
-    def makedir(self, full_path):
+    def makedir(self, path):
         """Create path in current environment
 
-        :param str full_path: the path, excluding filename
+        :param str path: the relative path, excluding filename
         """
-        self.fs.makedirs(full_path, exist_ok=True)
+        self.fs.makedirs(path, recreate=True)
 
     def execute_command_async(self, command):
         """Execute a command locally at the DataAccess, without waiting for completion.
@@ -153,10 +119,11 @@ class DataAccess:
         :param str relative_path: path relative to root
         :return: (*int/str*) -- the checksum of the file
         """
-        full_path = self.join(self.root, relative_path)
-        self._check_file_exists(full_path)
+        # full_path = self.join(self.root, relative_path)
+        self._check_file_exists(relative_path)
 
-        return self.fs.checksum(full_path)
+        # return self.fs.checksum(full_path)
+        return "TODO"
 
     def push(self, file_name, checksum, change_name_to=None):
         """Push the file from local to remote root folder, ensuring integrity
@@ -184,8 +151,7 @@ class LocalDataAccess(DataAccess):
         root = server_setup.LOCAL_DIR if root is None else root
         super().__init__(root)
         self.description = "local machine"
-        self.join = os.path.join
-        self.fs = fsspec.filesystem("file")
+        self.fs = fs2.open_fs(root)
 
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
@@ -211,14 +177,12 @@ class LocalDataAccess(DataAccess):
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
         """
-        self._check_filename(file_name)
-        src = self.join(server_setup.LOCAL_DIR, file_name)
         file_name = file_name if change_name_to is None else change_name_to
-        dest = self.join(self.root, to_dir, file_name)
-        print(f"--> Moving file {src} to {dest}")
+        dest = self.join(to_dir, file_name)
+        print(f"--> Moving file {file_name} to {to_dir}")
         self._check_file_exists(dest, should_exist=False)
-        self.makedir(os.path.dirname(dest))
-        shutil.move(src, dest)
+        self.makedir(to_dir)
+        self.fs.copy(file_name, dest)
 
     def get_profile_version(self, grid_model, kind):
         """Returns available raw profile from blob storage or local disk
@@ -232,19 +196,20 @@ class LocalDataAccess(DataAccess):
         return list(set(blob_version + local_version))
 
 
+# TODO: progress bars
 class SSHDataAccess(DataAccess):
     """Interface to a remote data store, accessed via SSH."""
 
     _last_attempt = 0
 
-    def __init__(self, root=None, backup_root=None):
+    def __init__(self, root=None):
         """Constructor"""
-        super().__init__(root, backup_root)
+        super().__init__(root)
         self._fs = None
         self._retry_after = 5
         self.local_root = server_setup.LOCAL_DIR
+        self.local_fs = fs2.open_fs(self.local_root)
         self.description = "server"
-        self.join = posixpath.join
 
     @property
     def fs(self):
@@ -258,7 +223,7 @@ class SSHDataAccess(DataAccess):
         if self._fs is None:
             if should_attempt:
                 try:
-                    self._fs = get_ssh_fs()
+                    self._fs = get_ssh_fs(self.root)
                     return self._fs
                 except:  # noqa
                     SSHDataAccess._last_attempt = time.time()
@@ -273,7 +238,7 @@ class SSHDataAccess(DataAccess):
 
         :return: (*paramiko.SSHClient*) -- the client instance
         """
-        return self.fs.client
+        return self.fs._client
 
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
@@ -281,20 +246,16 @@ class SSHDataAccess(DataAccess):
         :param str file_name: file name to copy.
         :param str from_dir: data store directory to copy file from.
         """
-        self._check_filename(file_name)
         from_dir = "" if from_dir is None else from_dir
-        to_dir = os.path.join(self.local_root, from_dir)
-        os.makedirs(to_dir, exist_ok=True)
-
-        from_path = self.join(self.root, from_dir, file_name)
-        to_path = os.path.join(to_dir, file_name)
+        from_path = self.join(from_dir, file_name)
         self._check_file_exists(from_path, should_exist=True)
-        tmp_file, tmp_path = mkstemp()
 
         print(f"Transferring {file_name} from server")
-        self.fs.get(from_path, tmp_path)
-        os.close(tmp_file)
-        shutil.move(tmp_path, to_path)
+        with TempFS() as tmp_fs:
+            self.local_fs.makedirs(from_dir, recreate=True)
+            tmp_fs.makedirs(from_dir)
+            fs2.copy.copy_file(self.fs, from_path, tmp_fs, from_path)
+            fs2.move.move_file(tmp_fs, from_path, self.local_fs, from_path)
 
     def move_to(self, file_name, to_dir=None, change_name_to=None):
         """Copy a file from userspace to data store.
@@ -304,23 +265,20 @@ class SSHDataAccess(DataAccess):
         :param str change_name_to: new name for file when copied to data store.
         :raises FileNotFoundError: if specified file does not exist
         """
-        self._check_filename(file_name)
-        from_path = os.path.join(self.local_root, file_name)
-
-        if not os.path.isfile(from_path):
+        if not self.local_fs.isfile(file_name):
             raise FileNotFoundError(
                 f"{file_name} not found in {self.local_root} on local machine"
             )
 
         file_name = file_name if change_name_to is None else change_name_to
-        to_dir = self.join(self.root, "" if to_dir is None else to_dir)
-        to_path = self.join(to_dir, file_name)
+        to_dir = "" if to_dir is None else to_dir
         self.makedir(to_dir)
+
+        to_path = self.join(to_dir, file_name)
         self._check_file_exists(to_path, should_exist=False)
 
         print(f"Transferring {file_name} to server")
-        self.fs.put(from_path, to_path)
-        os.remove(from_path)
+        fs2.move.move_file(self.local_fs, file_name, self.fs, to_path)
 
     def execute_command_async(self, command):
         """Execute a command via ssh, without waiting for completion.
@@ -347,9 +305,9 @@ class SSHDataAccess(DataAccess):
         self.move_to(file_name, change_name_to=backup)
 
         values = {
-            "original": self.join(self.root, new_name),
-            "updated": self.join(self.root, backup),
-            "lockfile": self.join(self.root, "scenario.lockfile"),
+            "original": posixpath.join(self.root, new_name),
+            "updated": posixpath.join(self.root, backup),
+            "lockfile": posixpath.join(self.root, "scenario.lockfile"),
             "checksum": checksum,
         }
 

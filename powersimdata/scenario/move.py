@@ -1,4 +1,6 @@
+from powersimdata.data_access.data_access import get_ssh_fs
 from powersimdata.scenario.state import State
+from powersimdata.utility import server_setup
 
 
 class Move(State):
@@ -58,27 +60,37 @@ class BackUpDisk:
         self._data_access = data_access
         self._scenario_info = scenario_info
         self.scenario_id = self._scenario_info["id"]
+        self._fs = get_ssh_fs("/")
+
+    def _move_data(self, kind, confirm=True):
+        pattern = self._data_access.join(
+            server_setup.DATA_ROOT_DIR, kind, f"{self.scenario_id}_*"
+        )
+        for m in self._fs.glob(pattern):
+            dest = self._data_access.join(
+                server_setup.BACKUP_DATA_ROOT_DIR, kind, m.info.name
+            )
+            self._fs.copy(m.path, dest)
+            self._data_access.remove(m.path, confirm=confirm)
 
     def move_input_data(self, confirm=True):
-        """Moves input data."""
+        """Moves input data"""
         print("--> Moving scenario input data to backup disk")
-        source = self._data_access.match_scenario_files(self.scenario_id, "input")
-        target = self._data_access.get_base_dir("input", backup=True)
-        self._data_access.copy(source, target)
-        self._data_access.remove(source, recursive=False, confirm=confirm)
+        self._move_data(kind="data/input", confirm=confirm)
 
     def move_output_data(self, confirm=True):
         """Moves output data"""
         print("--> Moving scenario output data to backup disk")
-        source = self._data_access.match_scenario_files(self.scenario_id, "output")
-        target = self._data_access.get_base_dir("output", backup=True)
-        self._data_access.copy(source, target)
-        self._data_access.remove(source, recursive=False, confirm=confirm)
+        self._move_data(kind="data/output", confirm=confirm)
 
     def move_temporary_folder(self, confirm=True):
         """Moves temporary folder."""
         print("--> Moving temporary folder to backup disk")
-        source = self._data_access.match_scenario_files(self.scenario_id, "tmp")
-        target = self._data_access.get_base_dir("tmp", backup=True)
-        self._data_access.copy(source, target, recursive=True)
-        self._data_access.remove(source, recursive=True, confirm=confirm)
+        folder = self._data_access.match_scenario_files(self.scenario_id, "tmp")
+        pattern = self._data_access.join(server_setup.DATA_ROOT_DIR, folder)
+        for m in self._fs.glob(pattern):
+            dest = self._data_access.join(
+                server_setup.BACKUP_DATA_ROOT_DIR, folder, m.info.name
+            )
+            self._fs.copy(m.path, dest)
+            self._data_access.remove(m.path, confirm=confirm)

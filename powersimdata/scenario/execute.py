@@ -193,16 +193,15 @@ class SimulationInput:
         self.ct = ct
         self.scenario_id = scenario_info["id"]
 
-        self.REL_TMP_DIR = self._data_access.join(
-            server_setup.EXECUTE_DIR, f"scenario_{self.scenario_id}"
+        self.REL_TMP_DIR = self._data_access.match_scenario_files(
+            self.scenario_id, "tmp"
         )
-        self.TMP_DIR = self._data_access.match_scenario_files(self.scenario_id, "tmp")
 
     def create_folder(self):
         """Creates folder on server that will enclose simulation inputs."""
         description = self._data_access.description
         print(f"--> Creating temporary folder on {description} for simulation inputs")
-        self._data_access.makedir(self.TMP_DIR)
+        self._data_access.makedir(self.REL_TMP_DIR)
 
     def prepare_mpc_file(self):
         """Creates MATPOWER case file."""
@@ -239,4 +238,4 @@ class SimulationInput:
         else:
             from_dir = self._data_access.match_scenario_files(profile_as, "tmp")
             src = self._data_access.join(from_dir, f"{kind}.csv")
-            self._data_access.copy(src, self.TMP_DIR)
+            self._data_access.copy(src, self.REL_TMP_DIR)

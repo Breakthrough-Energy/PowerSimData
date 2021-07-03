@@ -39,23 +39,23 @@ class Delete(State):
 
         print("--> Deleting scenario input data")
         target = self._data_access.match_scenario_files(scenario_id, "input")
-        self._data_access.remove(target, recursive=False, confirm=confirm)
+        self._data_access.remove(target, confirm=confirm)
 
         print("--> Deleting scenario output data")
         target = self._data_access.match_scenario_files(scenario_id, "output")
-        self._data_access.remove(target, recursive=False, confirm=confirm)
+        self._data_access.remove(target, confirm=confirm)
 
         # Delete temporary folder enclosing simulation inputs
         print("--> Deleting temporary folder")
         tmp_dir = self._data_access.match_scenario_files(scenario_id, "tmp")
-        self._data_access.remove(tmp_dir, recursive=True, confirm=confirm)
+        self._data_access.remove(tmp_dir, confirm=confirm)
 
         print("--> Deleting input and output data on local machine")
         local_data_access = LocalDataAccess()
         target = local_data_access.join(
             server_setup.LOCAL_DIR, "data", "**", f"{scenario_id}_*"
         )
-        local_data_access.remove(target, recursive=False, confirm=confirm)
+        local_data_access.remove(target, confirm=confirm)
 
         # Delete attributes
         self._clean()
