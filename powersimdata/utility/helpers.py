@@ -4,24 +4,6 @@ import os
 import sys
 
 
-class CommandBuilder:
-    """
-    Wrapper class to construct unix commands that are run over ssh
-    """
-
-    @staticmethod
-    def copy(src, dest, recursive=False):
-        """Builds a cp command with some options
-
-        :param str src: The source directory or file
-        :param str dest: The desination directory or file
-        :param bool recursive: Whether to pass -R option
-        """
-        r_flag = "R" if recursive else ""
-        flags = f"-{r_flag}p"
-        return fr"\cp {flags} {src} {dest}"
-
-
 class MemoryCache:
     """Wrapper around a dict object that exposes a cache interface. Users should
     create a separate instance for each distinct use case.

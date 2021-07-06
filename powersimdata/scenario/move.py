@@ -60,7 +60,7 @@ class BackUpDisk:
         self._data_access = data_access
         self._scenario_info = scenario_info
         self.scenario_id = self._scenario_info["id"]
-        self._fs = get_ssh_fs("/")
+        self._fs = get_ssh_fs()
 
     def _move_data(self, kind, confirm=True):
         pattern = self._data_access.join(

@@ -7,6 +7,7 @@ import fs as fs2
 from fs.tempfs import TempFS
 
 from powersimdata.data_access.profile_helper import ProfileHelper
+from powersimdata.data_access.ssh_fs import WrapSSHFS
 from powersimdata.utility import server_setup
 
 
@@ -16,7 +17,8 @@ def get_ssh_fs(root=None):
     host = server_setup.SERVER_ADDRESS
     port = server_setup.SERVER_SSH_PORT
     username = server_setup.get_server_user()
-    return fs2.open_fs(f"ssh://{username}@{host}:{port}/{root}")
+    base_fs = fs2.open_fs(f"ssh://{username}@{host}:{port}")
+    return WrapSSHFS(base_fs, root)
 
 
 class DataAccess:
@@ -196,7 +198,6 @@ class LocalDataAccess(DataAccess):
         return list(set(blob_version + local_version))
 
 
-# TODO: progress bars
 class SSHDataAccess(DataAccess):
     """Interface to a remote data store, accessed via SSH."""
 
@@ -232,14 +233,6 @@ class SSHDataAccess(DataAccess):
 
         return self._fs
 
-    @property
-    def ssh(self):
-        """Get the ssh client from the filesystem object
-
-        :return: (*paramiko.SSHClient*) -- the client instance
-        """
-        return self.fs._client
-
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
 
@@ -253,7 +246,7 @@ class SSHDataAccess(DataAccess):
         print(f"Transferring {file_name} from server")
         with TempFS() as tmp_fs:
             self.local_fs.makedirs(from_dir, recreate=True)
-            tmp_fs.makedirs(from_dir)
+            tmp_fs.makedirs(from_dir, recreate=True)
             fs2.copy.copy_file(self.fs, from_path, tmp_fs, from_path)
             fs2.move.move_file(tmp_fs, from_path, self.local_fs, from_path)
 
@@ -319,7 +312,7 @@ class SSHDataAccess(DataAccess):
                 200>{lockfile}"
 
         command = template.format(**values)
-        _, _, stderr = self.ssh.exec_command(command)
+        _, _, stderr = self.fs.exec_command(command)
 
         errors = stderr.readlines()
         if len(errors) > 0:

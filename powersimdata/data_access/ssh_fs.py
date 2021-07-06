@@ -1,43 +1,5 @@
-from fsspec.implementations.sftp import SFTPFileSystem
+from fs.subfs import SubFS
 from tqdm import tqdm
-
-from powersimdata.utility.helpers import CommandBuilder
-
-
-class CustomSSHFileSystem(SFTPFileSystem):
-    def put(self, lpath, rpath):
-        cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
-        self.ftp.put(lpath, rpath, callback=cbk)
-        bar.close()
-
-    def get(self, rpath, lpath):
-        cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
-        self.ftp.get(rpath, lpath, callback=cbk)
-        bar.close()
-
-    def cp(self, src, dest, recursive=False):
-        """Wrapper around cp command which creates dest path if needed
-
-        :param str src: path to original
-        :param str dest: destination path
-        :param bool recursive: create directories recursively
-        :raises IOError: if command generated stderr
-        """
-        self.makedirs(dest, exist_ok=True)
-        command = CommandBuilder.copy(src, dest, recursive)
-        _, _, stderr = self.client.exec_command(command)
-        if len(stderr.readlines()) != 0:
-            raise IOError(f"Failed to execute {command}")
-
-    def checksum(self, filepath):
-        """Return the checksum of the file path (using sha1sum)
-        :param str filepath: path to file
-        :return: (*str*) -- the checksum of the file
-        """
-        command = f"sha1sum {filepath}"
-        _, stdout, _ = self.client.exec_command(command)
-        lines = stdout.readlines()
-        return lines[0].strip()
 
 
 def progress_bar(*args, **kwargs):
@@ -55,3 +17,48 @@ def progress_bar(*args, **kwargs):
         last[0] = a
 
     return show, bar
+
+
+class WrapSSHFS(SubFS):
+    def __init__(self, parent_fs, path):
+        self.client = parent_fs._client
+        super().__init__(parent_fs, path)
+
+    def download(self, path, file, chunk_size=None, **options):
+        cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
+        super().download(path, file, chunk_size=chunk_size, callback=cbk, **options)
+        bar.close()
+
+    def upload(
+        self,
+        path,
+        file,
+        chunk_size=None,
+        file_size=None,
+        confirm=True,
+        **options,
+    ):
+        cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
+        super().upload(
+            path,
+            file,
+            chunk_size=chunk_size,
+            callback=cbk,
+            file_size=file_size,
+            confirm=confirm,
+            **options,
+        )
+        bar.close()
+
+    def exec_command(self, command):
+        return self.client.exec_command(command)
+
+    def checksum(self, filepath):
+        """Return the checksum of the file path (using sha1sum)
+        :param str filepath: path to file
+        :return: (*str*) -- the checksum of the file
+        """
+        command = f"sha1sum {filepath}"
+        _, stdout, _ = self.exec_command(command)
+        lines = stdout.readlines()
+        return lines[0].strip()

@@ -1,11 +1,6 @@
 import pytest
 
-from powersimdata.utility.helpers import (
-    CommandBuilder,
-    MemoryCache,
-    PrintManager,
-    cache_key,
-)
+from powersimdata.utility.helpers import MemoryCache, PrintManager, cache_key
 
 
 def test_print_is_disabled(capsys):
@@ -77,13 +72,3 @@ def test_mem_cache_put_version_never_changes():
     assert "key1" in cache.get(key)
     assert "key2" not in cache.get(key)
     assert "key2" in obj
-
-
-def test_copy_command():
-    expected = r"\cp -p source dest"
-    command = CommandBuilder.copy("source", "dest")
-    assert expected == command
-
-    expected = r"\cp -Rp source dest"
-    command = CommandBuilder.copy("source", "dest", recursive=True)
-    assert expected == command
