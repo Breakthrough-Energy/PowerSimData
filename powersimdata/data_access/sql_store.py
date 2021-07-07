@@ -7,7 +7,7 @@ import psycopg2.extras
 from psycopg2.sql import SQL, Identifier, Placeholder
 
 
-class SqlException(Exception):
+class SqlError(Exception):
     """To be raised by sql layer, enabling handling of data access errors."""
 
     pass
@@ -157,4 +157,4 @@ class SqlStore:
         self.conn.close()
 
         if exc_type:
-            raise SqlException("Exception during sql transaction.") from exc_value
+            raise SqlError("Exception during sql transaction.") from exc_value
