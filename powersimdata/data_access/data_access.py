@@ -263,11 +263,11 @@ class SSHDataAccess(DataAccess):
                 f"{file_name} not found in {self.local_root} on local machine"
             )
 
-        file_name = file_name if change_name_to is None else change_name_to
+        change_name_to = file_name if change_name_to is None else change_name_to
         to_dir = "" if to_dir is None else to_dir
         self.makedir(to_dir)
 
-        to_path = self.join(to_dir, file_name)
+        to_path = self.join(to_dir, change_name_to)
         self._check_file_exists(to_path, should_exist=False)
 
         print(f"Transferring {file_name} to server")
