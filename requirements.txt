@@ -9,4 +9,5 @@ black
 pytest
 coverage
 pytest-cov
-fsspec
+fs
+fs.sshfs
