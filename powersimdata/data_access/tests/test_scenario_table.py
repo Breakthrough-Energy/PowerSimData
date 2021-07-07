@@ -3,7 +3,7 @@ from collections import OrderedDict
 import pytest
 
 from powersimdata.data_access.scenario_table import ScenarioTable
-from powersimdata.data_access.sql_store import SqlException
+from powersimdata.data_access.sql_store import SqlError
 
 # uncomment to enable logging queries to stdout
 # os.environ["DEBUG_MODE"] = "1"
@@ -85,7 +85,7 @@ def test_add_entry(store):
 def test_add_entry_missing_required_raises():
     info = _get_test_row()
     del info["plan"]
-    with pytest.raises(SqlException):
+    with pytest.raises(SqlError):
         # create explicitly since yield loses exception context
         with NoEffectSqlStore() as store:
             store.add_entry(info)
