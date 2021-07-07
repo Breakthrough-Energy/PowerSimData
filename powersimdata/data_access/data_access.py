@@ -274,7 +274,7 @@ class SSHDataAccess(DataAccess):
         to_path = self.join(to_dir, change_name_to)
         self._check_file_exists(to_path, should_exist=False)
 
-        print(f"Transferring {file_name} to server")
+        print(f"Transferring {change_name_to} to server")
         fs2.move.move_file(self.local_fs, file_name, self.fs, to_path)
 
     def execute_command_async(self, command):
