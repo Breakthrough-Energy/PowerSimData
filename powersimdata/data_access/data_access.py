@@ -179,8 +179,8 @@ class LocalDataAccess(DataAccess):
         :param str to_dir: data store directory to copy file to.
         :param str change_name_to: new name for file when copied to data store.
         """
-        file_name = file_name if change_name_to is None else change_name_to
-        dest = self.join(to_dir, file_name)
+        change_name_to = file_name if change_name_to is None else change_name_to
+        dest = self.join(to_dir, change_name_to)
         print(f"--> Moving file {file_name} to {to_dir}")
         self._check_file_exists(dest, should_exist=False)
         self.makedir(to_dir)
