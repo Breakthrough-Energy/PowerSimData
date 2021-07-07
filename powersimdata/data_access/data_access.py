@@ -121,11 +121,7 @@ class DataAccess:
         :param str relative_path: path relative to root
         :return: (*int/str*) -- the checksum of the file
         """
-        # full_path = self.join(self.root, relative_path)
-        self._check_file_exists(relative_path)
-
-        # return self.fs.checksum(full_path)
-        return "TODO"
+        raise NotImplementedError
 
     def push(self, file_name, checksum, change_name_to=None):
         """Push the file from local to remote root folder, ensuring integrity
@@ -186,6 +182,14 @@ class LocalDataAccess(DataAccess):
         self.makedir(to_dir)
         self.fs.copy(file_name, dest)
 
+    def checksum(self, relative_path):
+        """Return the checksum of the file path
+
+        :param str relative_path: path relative to root
+        :return: (*int/str*) -- the checksum of the file
+        """
+        return "dummy_value"
+
     def get_profile_version(self, grid_model, kind):
         """Returns available raw profile from blob storage or local disk
 
@@ -217,7 +221,7 @@ class SSHDataAccess(DataAccess):
         """Get or create the filesystem object, with attempts rate limited.
 
         :raises IOError: if connection failed or still within retry window
-        :return: (*fsspec.implementations.sftp.SFTPFileSystem*) -- filesystem instance
+        :return: (*powersimdata.data_access.ssh_fs.WrapSSHFS) -- filesystem instance
         """
         should_attempt = time.time() - SSHDataAccess._last_attempt > self._retry_after
 
@@ -284,6 +288,17 @@ class SSHDataAccess(DataAccess):
         full_command = cmd_ssh + command
         process = Popen(full_command)
         return process
+
+    def checksum(self, relative_path):
+        """Return the checksum of the file path
+
+        :param str relative_path: path relative to root
+        :return: (*int/str*) -- the checksum of the file
+        """
+        full_path = self.join(self.root, relative_path)
+        self._check_file_exists(relative_path)
+
+        return self.fs.checksum(full_path)
 
     def push(self, file_name, checksum, change_name_to=None):
         """Push file to server and verify the checksum matches a prior value
