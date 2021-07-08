@@ -58,7 +58,7 @@ class DataAccess:
         """Copy file to new location
 
         :param str src: path to file
-        :param str dest: destination path
+        :param str dest: destination folder
         """
         if self.fs.exists(dest) and self.fs.isdir(dest):
             dest = self.join(dest, fs2.path.basename(src))
