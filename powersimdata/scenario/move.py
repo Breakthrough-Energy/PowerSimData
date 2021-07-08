@@ -37,11 +37,11 @@ class Move(State):
         if target != "disk":
             raise ValueError("scenario data can only be backed up to disk now")
 
-        backup = BackUpDisk(self._data_access, self._scenario_info)
+        backup = BackUpDisk(self._data_access, self._scenario_info, confirm)
 
-        backup.move_input_data(confirm=confirm)
-        backup.move_output_data(confirm=confirm)
-        backup.move_temporary_folder(confirm=confirm)
+        backup.move_input_data()
+        backup.move_output_data()
+        backup.move_temporary_folder()
 
         sid = self._scenario_info["id"]
         self._execute_list_manager.set_status(sid, "moved")
@@ -55,42 +55,40 @@ class BackUpDisk:
     :param dict scenario_info: scenario information.
     """
 
-    def __init__(self, data_access, scenario_info):
+    def __init__(self, data_access, scenario_info, confirm):
         """Constructor."""
         self._data_access = data_access
         self._scenario_info = scenario_info
         self.scenario_id = self._scenario_info["id"]
         self._fs = get_ssh_fs()
+        self._join = data_access.join
+        self._confirm = confirm
 
-    def _move_data(self, kind, confirm=True):
-        pattern = self._data_access.join(
-            server_setup.DATA_ROOT_DIR, kind, f"{self.scenario_id}_*"
-        )
-        for m in self._fs.glob(pattern):
-            dest = self._data_access.join(
-                server_setup.BACKUP_DATA_ROOT_DIR, kind, m.info.name
-            )
-            self._fs.copy(m.path, dest)
-            self._data_access.remove(m.path, confirm=confirm)
+    def _move_data(self, pattern, folder):
+        search_path = self._join(server_setup.DATA_ROOT_DIR, folder)
+        for m in self._fs.glob(pattern, path=search_path):
+            dest = self._join(server_setup.BACKUP_DATA_ROOT_DIR, folder)
+            self._fs.makedirs(dest, recreate=True)
+            self._fs.copy(m.path, self._join(dest, m.info.name))
+            self._data_access.remove(m.path, confirm=self._confirm)
 
-    def move_input_data(self, confirm=True):
+    def move_input_data(self):
         """Moves input data"""
         print("--> Moving scenario input data to backup disk")
-        self._move_data(kind="data/input", confirm=confirm)
+        folder = self._join(*server_setup.INPUT_DIR)
+        pattern = f"**/{self.scenario_id}_*"
+        self._move_data(pattern, folder)
 
-    def move_output_data(self, confirm=True):
+    def move_output_data(self):
         """Moves output data"""
         print("--> Moving scenario output data to backup disk")
-        self._move_data(kind="data/output", confirm=confirm)
+        folder = self._join(*server_setup.OUTPUT_DIR)
+        pattern = f"**/{self.scenario_id}_*"
+        self._move_data(pattern, folder)
 
-    def move_temporary_folder(self, confirm=True):
+    def move_temporary_folder(self):
         """Moves temporary folder."""
         print("--> Moving temporary folder to backup disk")
-        folder = self._data_access.match_scenario_files(self.scenario_id, "tmp")
-        pattern = self._data_access.join(server_setup.DATA_ROOT_DIR, folder)
-        for m in self._fs.glob(pattern):
-            dest = self._data_access.join(
-                server_setup.BACKUP_DATA_ROOT_DIR, folder, m.info.name
-            )
-            self._fs.copy(m.path, dest)
-            self._data_access.remove(m.path, confirm=confirm)
+        folder = self._data_access.tmp_folder(self.scenario_id)
+        pattern = "**"
+        self._move_data(pattern, folder)

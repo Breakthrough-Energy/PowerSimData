@@ -44,11 +44,8 @@ def _join(*paths):
     return fs2.path.join(*paths)
 
 
-def test_match_scenario_files(ssh_data_access):
-    output_files = ssh_data_access.match_scenario_files(99, "output")
-    assert "data/output/99_*" == output_files
-
-    tmp_files = ssh_data_access.match_scenario_files(42, "tmp")
+def test_tmp_folder(ssh_data_access):
+    tmp_files = ssh_data_access.tmp_folder(42)
     assert "tmp/scenario_42" == tmp_files
 
 

@@ -38,23 +38,21 @@ class Delete(State):
         self._execute_list_manager.delete_entry(scenario_id)
 
         print("--> Deleting scenario input data")
-        target = self._data_access.match_scenario_files(scenario_id, "input")
+        target = self._data_access.join(*server_setup.INPUT_DIR, f"{scenario_id}_*")
         self._data_access.remove(target, confirm=confirm)
 
         print("--> Deleting scenario output data")
-        target = self._data_access.match_scenario_files(scenario_id, "output")
+        target = self._data_access.join(*server_setup.OUTPUT_DIR, f"{scenario_id}_*")
         self._data_access.remove(target, confirm=confirm)
 
         # Delete temporary folder enclosing simulation inputs
         print("--> Deleting temporary folder")
-        tmp_dir = self._data_access.match_scenario_files(scenario_id, "tmp")
+        tmp_dir = self._data_access.tmp_folder(scenario_id)
         self._data_access.remove(tmp_dir, confirm=confirm)
 
         print("--> Deleting input and output data on local machine")
         local_data_access = LocalDataAccess()
-        target = local_data_access.join(
-            server_setup.LOCAL_DIR, "data", "**", f"{scenario_id}_*"
-        )
+        target = local_data_access.join("data", "**", f"{scenario_id}_*")
         local_data_access.remove(target, confirm=confirm)
 
         # Delete attributes

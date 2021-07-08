@@ -46,25 +46,16 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def match_scenario_files(self, scenario_id, kind):
+    def tmp_folder(self, scenario_id):
         """Get path matching the given kind of scenario data
 
         :param int/str scenario_id: the scenario id
-        :param str kind: one of {input, output, tmp}
         :return: (*str*) -- the specified path
         """
-        _dirs = {
-            "tmp": (server_setup.EXECUTE_DIR,),
-            "input": server_setup.INPUT_DIR,
-            "output": server_setup.OUTPUT_DIR,
-        }
-        base_dir = self.join(*_dirs[kind])
-        if kind == "tmp":
-            return self.join(base_dir, f"scenario_{scenario_id}")
-        return self.join(base_dir, f"{scenario_id}_*")
+        return self.join(server_setup.EXECUTE_DIR, f"scenario_{scenario_id}")
 
     def copy(self, src, dest):
-        """Wrapper around cp command which creates dest path if needed
+        """Copy file to new location
 
         :param str src: path to file
         :param str dest: destination path
