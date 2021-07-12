@@ -61,7 +61,7 @@ A scenario can be created using few lines of code. This is illustrated below:
 
 .. code-block:: python
 
-    from powersimdata.scenario.scenario import Scenario
+    from powersimdata import Scenario
 
     scenario = Scenario()
     # print name of Scenario object state
@@ -111,7 +111,7 @@ A scenario can be created using few lines of code. This is illustrated below:
     # add a new bus, and a new one-way DC line connected to this bus
     scenario.change_table.add_bus(
     	[{"lat": 48, "lon": -125, "zone_id": 201, "baseKV": 138}])
-    scenario.state.builder.change_table.add_dcline(
+    scenario.change_table.add_dcline(
     	[{"from_bus_id": 2090023, "to_bus_id": 2090024, "Pmin": 0, "Pmax": 200}])
 
     # get grid used in scenario
@@ -130,13 +130,13 @@ previous scenario. These can be called as:
 
 .. code-block:: python
 
-    scenario.state.builder.change_table.scale_renewable_stubs()
+    scenario.change_table.scale_renewable_stubs()
 
 or
 
 .. code-block:: python
 
-    scenario.state.builder.change_table.scale_congested_mesh_branches(ref_scenario)
+    scenario.change_table.scale_congested_mesh_branches(ref_scenario)
 
 where ``ref_scenario`` is a ``Scenario`` object in **analyze** state.
 
@@ -172,7 +172,7 @@ The **execute** state accomplishes the three following tasks:
 
 .. code-block:: python
 
-    from powersimdata.scenario.scenario import Scenario
+    from powersimdata import Scenario
 
     scenario = Scenario("dummy")
     # print scenario information
@@ -195,7 +195,7 @@ specified using for example:
 
 .. code-block:: python
 
-    process_run = scenario.state.launch_simulation(threads=8)
+    process_run = scenario.launch_simulation(threads=8)
 
 Extracting data from the simulation engine outputs can be a memory intensive process. If
 there are resource constraints where the engine resides, it is possible to pause the
@@ -220,7 +220,7 @@ to do so:
 
 .. code-block:: python
 
-    from powersimdata.scenario.scenario import Scenario
+    from powersimdata import Scenario
 
     scenario = Scenario(600)
     # print name of Scenario object state
@@ -279,7 +279,7 @@ monitoring files will be removed. The **delete** state is only accessible from t
 
 .. code-block::python
 
-    from powersimdata.scenario.scenario import Scenario
+    from powersimdata import Scenario
     from powersimdata.scenario.delete import Delete
 
     scenario = Scenario("dummy")
@@ -303,7 +303,7 @@ A scenario can be move to a backup disk. The **move** state is only accessible f
 
 .. code-block:: python
 
-    from powersimdata.scenario.scenario import Scenario
+    from powersimdata import Scenario
     from powersimdata.scenario.move import Move
 
     scenario = Scenario("dummy")
