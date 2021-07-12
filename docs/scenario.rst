@@ -61,7 +61,7 @@ A scenario can be created using few lines of code. This is illustrated below:
 
 .. code-block:: python
 
-    from powersimdata.scenario.scenario import Scenario
+    from powersimdata import Scenario
 
     scenario = Scenario()
     # print name of Scenario object state
@@ -172,7 +172,7 @@ The **execute** state accomplishes the three following tasks:
 
 .. code-block:: python
 
-    from powersimdata.scenario.scenario import Scenario
+    from powersimdata import Scenario
 
     scenario = Scenario("dummy")
     # print scenario information
@@ -220,7 +220,7 @@ to do so:
 
 .. code-block:: python
 
-    from powersimdata.scenario.scenario import Scenario
+    from powersimdata import Scenario
 
     scenario = Scenario(600)
     # print name of Scenario object state
@@ -279,7 +279,7 @@ monitoring files will be removed. The **delete** state is only accessible from t
 
 .. code-block::python
 
-    from powersimdata.scenario.scenario import Scenario
+    from powersimdata import Scenario
     from powersimdata.scenario.delete import Delete
 
     scenario = Scenario("dummy")
@@ -303,7 +303,7 @@ A scenario can be move to a backup disk. The **move** state is only accessible f
 
 .. code-block:: python
 
-    from powersimdata.scenario.scenario import Scenario
+    from powersimdata import Scenario
     from powersimdata.scenario.move import Move
 
     scenario = Scenario("dummy")
