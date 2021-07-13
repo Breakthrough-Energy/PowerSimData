@@ -1,4 +1,3 @@
-import copy
 import os
 
 from powersimdata.data_access.context import Context
@@ -6,12 +5,12 @@ from powersimdata.input.export_data import export_case_mat, export_transformed_p
 from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
-from powersimdata.scenario.state import State
+from powersimdata.scenario.ready import Ready
 from powersimdata.utility import server_setup
 from powersimdata.utility.config import get_deployment_mode
 
 
-class Execute(State):
+class Execute(Ready):
     """Scenario is in a state of being executed.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
@@ -71,20 +70,6 @@ class Execute(State):
         else:
             self.ct = {}
             self.grid = base_grid
-
-    def get_ct(self):
-        """Returns change table.
-
-        :return: (*dict*) -- change table.
-        """
-        return copy.deepcopy(self.ct)
-
-    def get_grid(self):
-        """Returns Grid.
-
-        :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
-        """
-        return copy.deepcopy(self.grid)
 
     def _update_scenario_status(self):
         """Updates scenario status."""
