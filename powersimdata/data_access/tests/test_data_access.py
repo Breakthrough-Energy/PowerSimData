@@ -1,7 +1,7 @@
 import fs as fs2
 import pytest
 
-from powersimdata.data_access.data_access import SSHDataAccess
+from powersimdata.data_access.data_access import MemoryDataAccess, SSHDataAccess
 from powersimdata.utility import server_setup
 
 FILE_NAME = "test.txt"
@@ -13,19 +13,9 @@ def ssh_data_access():
     return SSHDataAccess()
 
 
-def mem_fs():
-    return fs2.open_fs("mem://")
-
-
 @pytest.fixture
 def data_access():
-    with mem_fs() as fs1, mem_fs() as fs2:
-        data_access = SSHDataAccess()
-        data_access._fs = fs1
-        data_access.local_fs = fs2
-        data_access.root = "/"
-        data_access.local_root = "/"
-        yield data_access
+    return MemoryDataAccess()
 
 
 def make_temp(fs, path):

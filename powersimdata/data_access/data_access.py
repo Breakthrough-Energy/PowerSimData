@@ -47,7 +47,7 @@ class DataAccess:
         raise NotImplementedError
 
     def tmp_folder(self, scenario_id):
-        """Get path matching the given kind of scenario data
+        """Get path to temporary scenario folder
 
         :param int/str scenario_id: the scenario id
         :return: (*str*) -- the specified path
@@ -110,9 +110,9 @@ class DataAccess:
         """Return the checksum of the file path
 
         :param str relative_path: path relative to root
-        :return: (*int/str*) -- the checksum of the file
+        :return: (*str*) -- the checksum of the file
         """
-        raise NotImplementedError
+        return "dummy_value"
 
     def push(self, file_name, checksum, change_name_to=None):
         """Push the file from local to remote root folder, ensuring integrity
@@ -173,14 +173,6 @@ class LocalDataAccess(DataAccess):
         self.makedir(to_dir)
         self.fs.copy(file_name, dest)
 
-    def checksum(self, relative_path):
-        """Return the checksum of the file path
-
-        :param str relative_path: path relative to root
-        :return: (*int/str*) -- the checksum of the file
-        """
-        return "dummy_value"
-
     def get_profile_version(self, grid_model, kind):
         """Returns available raw profile from blob storage or local disk
 
@@ -214,9 +206,10 @@ class SSHDataAccess(DataAccess):
         :raises IOError: if connection failed or still within retry window
         :return: (*powersimdata.data_access.ssh_fs.WrapSSHFS) -- filesystem instance
         """
-        should_attempt = time.time() - SSHDataAccess._last_attempt > self._retry_after
-
         if self._fs is None:
+            should_attempt = (
+                time.time() - SSHDataAccess._last_attempt > self._retry_after
+            )
             if should_attempt:
                 try:
                     self._fs = get_ssh_fs(self.root)
@@ -284,7 +277,7 @@ class SSHDataAccess(DataAccess):
         """Return the checksum of the file path
 
         :param str relative_path: path relative to root
-        :return: (*int/str*) -- the checksum of the file
+        :return: (*str*) -- the checksum of the file
         """
         full_path = self.join(self.root, relative_path)
         self._check_file_exists(relative_path)
@@ -325,3 +318,15 @@ class SSHDataAccess(DataAccess):
             for e in errors:
                 print(e)
             raise IOError("Failed to push file - most likely a conflict was detected.")
+
+
+class MemoryDataAccess(SSHDataAccess):
+    def __init__(self):
+        self.local_fs = fs2.open_fs("mem://")
+        self._fs = fs2.open_fs("mem://")
+        self.description = "in-memory"
+        self.local_root = self.root = "dummy"
+        self.join = fs2.path.join
+
+    def push(self, file_name, checksum, change_name_to=None):
+        self.move_to(file_name, change_name_to=change_name_to)
