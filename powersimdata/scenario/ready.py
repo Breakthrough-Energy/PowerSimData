@@ -6,6 +6,18 @@ from powersimdata.scenario.state import State
 
 
 class Ready(State):
+    exported_methods = {
+        "get_ct",
+        "get_grid",
+        "get_bus_demand",
+        "get_demand",
+        "get_hydro",
+        "get_grid",
+        "get_solar",
+        "get_wind",
+        "get_wind_offshore",
+    }
+
     def __init__(self, scenario):
         """Constructor."""
         super().__init__(scenario)

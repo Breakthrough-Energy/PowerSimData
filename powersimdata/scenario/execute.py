@@ -21,13 +21,11 @@ class Execute(Ready):
     exported_methods = {
         "check_progress",
         "extract_simulation_output",
-        "get_ct",
-        "get_grid",
         "launch_simulation",
         "prepare_simulation_input",
         "print_scenario_status",
         "scenario_id",
-    }
+    } | Ready.exported_methods
 
     def __init__(self, scenario):
         """Constructor."""

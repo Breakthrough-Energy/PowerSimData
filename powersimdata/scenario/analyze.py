@@ -21,24 +21,17 @@ class Analyze(Ready):
     allowed = []
     exported_methods = {
         "get_averaged_cong",
-        "get_bus_demand",
         "get_congl",
         "get_congu",
-        "get_ct",
-        "get_demand",
-        "get_hydro",
-        "get_grid",
         "get_dcline_pf",
         "get_lmp",
         "get_load_shed",
         "get_pf",
         "get_pg",
-        "get_solar",
         "get_storage_e",
         "get_storage_pg",
-        "get_wind",
         "print_infeasibilities",
-    }
+    } | Ready.exported_methods
 
     def __init__(self, scenario):
         """Constructor."""
