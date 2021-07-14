@@ -36,29 +36,35 @@ class Ready(State):
         """
         return copy.deepcopy(self.grid)
 
+    def get_profile(self, kind):
+        """Returns demand, hydro, solar or wind  profile.
+
+        :param str kind: either *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :return: (*pandas.DataFrame*) -- profile.
+        """
+        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
+        return profile.get_profile(kind)
+
     def get_hydro(self):
         """Returns hydro profile
 
         :return: (*pandas.DataFrame*) -- data frame of hydro energy output.
         """
-        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
-        return profile.get_profile("hydro")
+        return self.get_profile("hydro")
 
     def get_solar(self):
         """Returns solar profile
 
         :return: (*pandas.DataFrame*) -- data frame of solar energy output.
         """
-        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
-        return profile.get_profile("solar")
+        return self.get_profile("solar")
 
     def get_wind(self):
         """Returns wind profile
 
         :return: (*pandas.DataFrame*) -- data frame of wind energy output.
         """
-        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
-        return profile.get_profile("wind")
+        return self.get_profile("wind")
 
     def get_wind_onshore(self):
         """Returns wind onshore profile
@@ -66,8 +72,7 @@ class Ready(State):
         :return: (*pandas.DataFrame*) -- data frame of wind energy output for onshore
             turbines
         """
-        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
-        wind = profile.get_profile("wind")
+        wind = self.get_profile("wind")
 
         grid = self.get_grid()
         onshore_id = grid.plant.groupby(["type"]).get_group("wind").index
@@ -80,9 +85,7 @@ class Ready(State):
             turbines
         :raises ValueError: if no offshore wind turbines in grid
         """
-        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
-        wind = profile.get_profile("wind")
-
+        wind = self.get_profile("wind")
         grid = self.get_grid()
         if "wind_offshore" in grid.plant["type"].unique():
             offshore_id = grid.plant.groupby(["type"]).get_group("wind_offshore").index
@@ -99,8 +102,7 @@ class Ready(State):
         """
         if not original:
             print("Only original profile is accessible before scenario is complete")
-        profile = TransformProfile(self._scenario_info, self.get_grid(), self.get_ct())
-        return profile.get_profile("demand")
+        return self.get_profile("demand")
 
     def get_bus_demand(self):
         """Returns demand profiles, by bus.
