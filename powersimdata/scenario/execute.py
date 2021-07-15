@@ -46,7 +46,7 @@ class Execute(State):
     def refresh(self, scenario):
         """Called during state changes to ensure instance is properly initialized
 
-        :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
+        :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
         """
         print(
             "SCENARIO: %s | %s\n"
