@@ -32,7 +32,7 @@ def _check_solver(solver):
         return
     if not isinstance(solver, str):
         raise TypeError("solver must be a str")
-    solvers = ("gurobi", "glpk")
+    solvers = ("clp", "glpk", "gurobi")
     if solver.lower() not in solvers:
         raise ValueError(f"Invalid solver: options are {solvers}")
 
