@@ -10,6 +10,7 @@ from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.output.output_data import OutputData, construct_load_shed
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
+from powersimdata.input.helpers import load_model_data_from_mat
 
 
 class Analyze(State):
@@ -70,9 +71,7 @@ class Analyze(State):
         input_data = InputData(data_loc=self.data_loc)
         grid_mat_path = input_data.get_data(self._scenario_info, "grid")
         self.grid = Grid(
-            interconnect=[None],
-            source=grid_mat_path,
-            engine=self._scenario_info["engine"],
+            model_data=load_model_data_from_mat(grid_mat_path, self._scenario_info["engine"])
         )
 
         if self._scenario_info["change_table"] == "Yes":

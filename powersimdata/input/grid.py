@@ -29,44 +29,20 @@ class Grid:
     :raises ValueError: if source or engine does not exist.
     """
 
-    def __init__(self, interconnect, source="usa_tamu", engine="REISE"):
+    def __init__(self, model_data):
         """Constructor."""
-        if not isinstance(source, str):
-            raise TypeError("source must be a str")
-        if source not in self.SUPPORTED_MODELS and not source.endswith(".mat"):
-            raise ValueError(
-                f"Source must be one of {','.join(self.SUPPORTED_MODELS)} "
-                "or the path to a .mat file that represents a grid "
-            )
-        if engine not in self.SUPPORTED_ENGINES:
-            raise ValueError(
-                f"Engine must be one of {','.join(self.SUPPORTED_ENGINES)}"
-            )
-
-        key = cache_key(interconnect, source)
-        cached = _cache.get(key)
-        if cached is not None:
-            data = cached
-        elif source == "usa_tamu":
-            data = TAMU(interconnect)
-        elif os.path.splitext(source)[1] == ".mat":
-            if engine == "REISE":
-                data = FromREISE(source)
-            elif engine == "REISE.jl":
-                data = FromREISEjl(source)
-
-        self.data_loc = data.data_loc
-        self.interconnect = data.interconnect
-        self.zone2id = data.zone2id
-        self.id2zone = data.id2zone
-        self.sub = data.sub
-        self.plant = data.plant
-        self.gencost = data.gencost
-        self.dcline = data.dcline
-        self.bus2sub = data.bus2sub
-        self.bus = data.bus
-        self.branch = data.branch
-        self.storage = data.storage
+        self.data_loc = model_data.data_loc
+        self.interconnect = model_data.interconnect
+        self.zone2id = model_data.zone2id
+        self.id2zone = model_data.id2zone
+        self.sub = model_data.sub
+        self.plant = model_data.plant
+        self.gencost = model_data.gencost
+        self.dcline = model_data.dcline
+        self.bus2sub = model_data.bus2sub
+        self.bus = model_data.bus
+        self.branch = model_data.branch
+        self.storage = model_data.storage
 
         _cache.put(key, self)
 

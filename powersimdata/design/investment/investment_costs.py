@@ -67,7 +67,8 @@ def calculate_ac_inv_costs(
     """
     grid = scenario.state.get_grid()
     if base_grid is None:
-        base_grid = Grid(
+        base_grid = Grid( # Why are we repeatedly regenerating the base_grid?
+                          # (There are 3 other instances of this in this file)
             scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
         )
     else:

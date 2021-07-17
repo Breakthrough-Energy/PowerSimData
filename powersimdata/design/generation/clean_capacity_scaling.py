@@ -4,6 +4,7 @@ import pandas as pd
 from powersimdata.design.mimic_grid import mimic_generation_capacity
 from powersimdata.input.grid import Grid
 from powersimdata.network.model import area_to_loadzone
+from powersimdata.network.usa_tamu.model import TAMU
 from powersimdata.scenario.scenario import Scenario
 
 
@@ -456,7 +457,7 @@ def create_change_table(input_targets, ref_scenario):
     """
     epsilon = 1e-3
     interconnect = ref_scenario.info["interconnect"]
-    base_grid = Grid([interconnect])
+    base_grid = Grid(model_data=TAMU([interconnect]))
     grid_zones = base_grid.plant.zone_name.unique()
     ref_grid = ref_scenario.state.get_grid()
     ct = mimic_generation_capacity(base_grid, ref_grid)
