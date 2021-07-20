@@ -16,7 +16,7 @@ class Ready(State):
         "get_solar",
         "get_wind",
         "get_wind_offshore",
-    }
+    } | State.exported_methods
 
     def __init__(self, scenario):
         """Constructor."""
@@ -73,7 +73,6 @@ class Ready(State):
             turbines
         """
         wind = self.get_profile("wind")
-
         grid = self.get_grid()
         onshore_id = grid.plant.groupby(["type"]).get_group("wind").index
         return wind[onshore_id]

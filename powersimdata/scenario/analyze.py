@@ -72,14 +72,6 @@ class Analyze(Ready):
         else:
             self.ct = {}
 
-    def print_scenario_info(self):
-        """Prints scenario information."""
-        print("--------------------")
-        print("SCENARIO INFORMATION")
-        print("--------------------")
-        for key, val in self._scenario_info.items():
-            print("%s: %s" % (key, val))
-
     def _parse_infeasibilities(self):
         """Parses infeasibilities. When the optimizer cannot find a solution in a time
         interval, the remedy is to decrease demand by some amount until a solution is

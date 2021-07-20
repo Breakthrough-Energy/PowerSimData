@@ -77,15 +77,6 @@ class Execute(Ready):
         """Updates scenario information."""
         self._scenario_info = self._scenario_list_manager.get_scenario(self.scenario_id)
 
-    def print_scenario_info(self):
-        """Prints scenario information."""
-        print("--------------------")
-        print("SCENARIO INFORMATION")
-        print("--------------------")
-        self._update_scenario_info()
-        for key, val in self._scenario_info.items():
-            print("%s: %s" % (key, val))
-
     def print_scenario_status(self):
         """Prints scenario status."""
         print("---------------")

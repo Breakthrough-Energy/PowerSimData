@@ -8,6 +8,7 @@ class State:
 
     name = "state"
     allowed = []
+    exported_methods = {"print_scenario_info"}
 
     def __init__(self, scenario):
         """Constructor."""
@@ -27,6 +28,19 @@ class State:
         :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
         """
         pass
+
+    def _update_scenario_info(self):
+        """Override this method if applicable"""
+        pass
+
+    def print_scenario_info(self):
+        """Prints scenario information."""
+        print("--------------------")
+        print("SCENARIO INFORMATION")
+        print("--------------------")
+        self._update_scenario_info()
+        for key, val in self._scenario_info.items():
+            print("%s: %s" % (key, val))
 
     def switch(self, state):
         """Switches state.
