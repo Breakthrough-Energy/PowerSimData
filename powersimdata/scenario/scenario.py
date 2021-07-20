@@ -117,10 +117,6 @@ class Scenario:
         scenario_id = self.info["id"]
         self.status = self._execute_list_manager.get_status(scenario_id)
 
-    def print_scenario_info(self):
-        """Prints scenario information."""
-        self.state.print_scenario_info()
-
     def get_scenario_table(self):
         """Get scenario table
 

@@ -24,12 +24,12 @@ class Create(State):
 
     name = "create"
     allowed = []
-    default_exported_methods = (
+    default_exported_methods = {
         "create_scenario",
         "get_bus_demand",
         "set_builder",
         "set_grid",
-    )
+    } | State.exported_methods
 
     def __init__(self, scenario):
         """Constructor."""
@@ -128,15 +128,6 @@ class Create(State):
                 "SCENARIO SUCCESSFULLY CREATED WITH ID #%s" % self._scenario_info["id"]
             )
             self.switch(Execute)
-
-    def print_scenario_info(self):
-        """Prints scenario information."""
-        self._update_scenario_info()
-        print("--------------------")
-        print("SCENARIO INFORMATION")
-        print("--------------------")
-        for key, val in self._scenario_info.items():
-            print("%s: %s" % (key, val))
 
     def set_builder(self, *args, **kwargs):
         """Alias to :func:`~powersimdata.scenario.create.Create.set_grid`"""
