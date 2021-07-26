@@ -45,6 +45,7 @@ class Launcher:
 
     def __init__(self, scenario):
         self.scenario = scenario
+        self.scenario_id = scenario.scenario_id
 
     def _launch(self, threads=None, solver=None, extract_data=True):
         """Launches simulation on target environment
@@ -102,7 +103,7 @@ class SSHLauncher(Launcher):
             "python3",
             "-u",
             path_to_script,
-            self.scenario.scenario_id,
+            self.scenario_id,
         ]
         cmd_io_redirect = ["</dev/null >/dev/null 2>&1 &"]
         cmd = cmd_pythonpath + cmd_pythoncall + extra_args + cmd_io_redirect
@@ -164,8 +165,7 @@ class HttpLauncher(Launcher):
         :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
             keys which map to stdout, stderr, and the respective scenario attributes
         """
-        scenario_id = self.scenario.scenario_id
-        url = f"{self.BASE_URL}/launch/{scenario_id}"
+        url = f"{self.BASE_URL}/launch/{self.scenario_id}"
         params = {
             "threads": threads,
             "solver": solver,
@@ -184,8 +184,7 @@ class HttpLauncher(Launcher):
         :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
             keys which map to stdout, stderr, and the respective scenario attributes
         """
-        scenario_id = self.scenario.scenario_id
-        url = f"{self.BASE_URL}/extract/{scenario_id}"
+        url = f"{self.BASE_URL}/extract/{self.scenario_id}"
         resp = requests.post(url)
         return resp.json()
 
@@ -195,8 +194,7 @@ class HttpLauncher(Launcher):
         :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
             keys which map to stdout, stderr, and the respective scenario attributes
         """
-        scenario_id = self.scenario.scenario_id
-        url = f"{self.BASE_URL}/status/{scenario_id}"
+        url = f"{self.BASE_URL}/status/{self.scenario_id}"
         resp = requests.get(url)
         return resp.json()
 
@@ -220,9 +218,7 @@ class NativeLauncher(Launcher):
         """
         from pyreisejl.utility import app
 
-        return app.launch_simulation(
-            self.scenario.scenario_id, threads, solver, extract_data
-        )
+        return app.launch_simulation(self.scenario_id, threads, solver, extract_data)
 
     def extract_simulation_output(self):
         """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL}
@@ -232,7 +228,7 @@ class NativeLauncher(Launcher):
         """
         from pyreisejl.utility import app
 
-        return app.extract_scenario(self.scenario.scenario_id)
+        return app.extract_scenario(self.scenario_id)
 
     def check_progress(self):
         """Get the status of an ongoing simulation, if possible
