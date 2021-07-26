@@ -1,7 +1,8 @@
 from powersimdata.input.grid import Grid
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.utility.distance import haversine
-
+from powersimdata.input.abstract_grid import AbstractGridFactory
+from powersimdata.network.usa_tamu.model import TAMU
 
 def calculate_mw_miles(scenario, exclude_branches=None):
     """Given a Scenario object, calculate the number of upgraded lines and
@@ -15,7 +16,7 @@ def calculate_mw_miles(scenario, exclude_branches=None):
     :return: (*dict*) -- Upgrades to the branches.
     """
 
-    original_grid = Grid(scenario.info["interconnect"].split("_"))
+    original_grid = Grid(model_data=AbstractGridFactory.get_or_create(TAMU, scenario.info["interconnect"].split("_")))
     ct = scenario.state.get_ct()
     upgrades = _calculate_mw_miles(original_grid, ct, exclude_branches)
     return upgrades

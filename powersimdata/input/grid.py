@@ -8,8 +8,6 @@ from powersimdata.network.usa_tamu.constants import storage as tamu_storage
 from powersimdata.network.usa_tamu.model import TAMU
 from powersimdata.utility.helpers import MemoryCache, cache_key
 
-_cache = MemoryCache()
-
 
 class Grid:
 
@@ -43,8 +41,6 @@ class Grid:
         self.bus = model_data.bus
         self.branch = model_data.branch
         self.storage = model_data.storage
-
-        _cache.put(key, self)
 
         self.grid_model = self._get_grid_model()
         self.model_immutables = ModelImmutables(self.grid_model)

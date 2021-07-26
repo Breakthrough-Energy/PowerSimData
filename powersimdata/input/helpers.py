@@ -11,7 +11,6 @@ from powersimdata.input.check import (
     _check_resources_are_in_grid_and_format,
 )
 from powersimdata.network.model import area_to_loadzone
-from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
 
 
 def csv_to_data_frame(data_loc, filename):
@@ -450,13 +449,3 @@ def get_storage_id_in_area(scenario, area, area_type=None):
     ].index.tolist()
 
     return storage_id
-
-
-def load_model_data_from_mat(mat_path, engine):
-    if engine == "REISE":
-        data = FromREISE(mat_path)
-    elif engine == "REISE.jl":
-        data = FromREISEjl(mat_path)
-    else:
-        raise EngineNotSupportedError(f"{engine} not supported")
-    return data

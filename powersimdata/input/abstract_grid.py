@@ -1,6 +1,7 @@
 import pandas as pd
 
 from powersimdata.input import const
+from powersimdata.utility.helpers import MemoryCache, cache_key
 
 
 class AbstractGrid:
@@ -43,3 +44,19 @@ def storage_template():
         "terminal_max": None,
     }
     return storage
+
+
+class AbstractGridFactory:
+    _cache = MemoryCache()
+
+    @classmethod
+    def get_or_create(cls, abstract_grid_class, *args):
+        assert(issubclass(abstract_grid_class, AbstractGrid))
+        key = cache_key(abstract_grid_class.__name__, *args)
+        cached = cls._cache.get(key)
+        if cached is not None:
+            return cached
+
+        new_abstract_grid = abstract_grid_class.__init__(*args)
+        cls._cache.put(key, new_abstract_grid)
+        return new_abstract_grid

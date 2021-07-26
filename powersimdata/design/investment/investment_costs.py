@@ -16,6 +16,7 @@ from powersimdata.design.investment.create_mapping_files import (
 )
 from powersimdata.design.investment.inflation import calculate_inflation
 from powersimdata.input.check import _check_grid_models_match
+from powersimdata.input.abstract_grid import AbstractGridFactory
 from powersimdata.input.grid import Grid
 from powersimdata.utility.distance import haversine
 
@@ -67,9 +68,8 @@ def calculate_ac_inv_costs(
     """
     grid = scenario.state.get_grid()
     if base_grid is None:
-        base_grid = Grid( # Why are we repeatedly regenerating the base_grid?
-                          # (There are 3 other instances of this in this file)
-            scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
+        base_grid = Grid(
+            model_data=AbstractGridFactory.get_or_create(scenario.info["grid_model"], scenario.info["interconnect"].split("_"))
         )
     else:
         _check_grid_models_match(base_grid, grid)
@@ -289,7 +289,7 @@ def calculate_dc_inv_costs(scenario, sum_results=True, base_grid=None):
     grid = scenario.state.get_grid()
     if base_grid is None:
         base_grid = Grid(
-            scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
+            model_data=AbstractGridFactory.get_or_create(scenario.info["grid_model"], scenario.info["interconnect"].split("_"))
         )
     else:
         _check_grid_models_match(base_grid, grid)
@@ -382,7 +382,7 @@ def calculate_gen_inv_costs(
     grid = scenario.state.get_grid()
     if base_grid is None:
         base_grid = Grid(
-            scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
+            model_data=AbstractGridFactory.get_or_create(scenario.info["grid_model"], scenario.info["interconnect"].split("_"))
         )
     else:
         _check_grid_models_match(base_grid, grid)

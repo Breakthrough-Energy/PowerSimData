@@ -9,11 +9,14 @@ from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData, get_bus_demand
 from powersimdata.input.transform_grid import TransformGrid
+from powersimdata.input.scenario_grid import FromREISEjl
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.execute import Execute
 from powersimdata.scenario.state import State
 from powersimdata.utility import server_setup
+from powersimdata.input.abstract_grid import AbstractGridFactory
+from powersimdata.network.usa_tamu.model import TAMU
 
 
 class Create(State):
@@ -145,7 +148,7 @@ class Create(State):
         )
         self.set_grid(*args, **kwargs)
 
-    def set_grid(self, grid_model="usa_tamu", interconnect="USA"):
+    def set_grid(self, grid_model=TAMU, interconnect="USA"):
         """Sets grid builder.
 
         :param str grid_model: name of grid model. Default is *'usa_tamu'*.
@@ -216,8 +219,7 @@ class _Builder:
 
         self.grid_model = mi.model
         self.interconnect = mi.interconnect_to_name(interconnect)
-
-        self.base_grid = Grid(interconnect, source=grid_model)
+        self.base_grid = Grid(AbstractGridFactory.get_or_create(grid_model, interconnect))
         self.change_table = ChangeTable(self.base_grid)
 
         self.existing = table[table.interconnect == self.interconnect]
@@ -356,9 +358,9 @@ class _Builder:
 
         :param str engine: simulation engine
         """
-        possible = ["REISE.jl"]
+        possible = [FromREISEjl]
         if engine not in possible:
-            print("Available engines: %s" % " | ".join(possible))
+            print("Available engines: %s" % " | ".join(possible.__name__))
             return
         else:
             self.engine = engine
