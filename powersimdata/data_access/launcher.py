@@ -1,3 +1,4 @@
+import importlib
 import posixpath
 import sys
 
@@ -202,6 +203,7 @@ class HttpLauncher(Launcher):
 class NativeLauncher(Launcher):
     def __init__(self, scenario):
         sys.path.append(server_setup.ENGINE_DIR)
+        self.app = importlib.import_module("pyreisejl.utility.app")
 
         super().__init__(scenario)
 
@@ -216,9 +218,9 @@ class NativeLauncher(Launcher):
         :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
             keys which map to stdout, stderr, and the respective scenario attributes
         """
-        from pyreisejl.utility import app
-
-        return app.launch_simulation(self.scenario_id, threads, solver, extract_data)
+        return self.app.launch_simulation(
+            self.scenario_id, threads, solver, extract_data
+        )
 
     def extract_simulation_output(self):
         """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL}
@@ -226,9 +228,7 @@ class NativeLauncher(Launcher):
         :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
             keys which map to stdout, stderr, and the respective scenario attributes
         """
-        from pyreisejl.utility import app
-
-        return app.extract_scenario(self.scenario_id)
+        return self.app.extract_scenario(self.scenario_id)
 
     def check_progress(self):
         """Get the status of an ongoing simulation, if possible
@@ -236,6 +236,4 @@ class NativeLauncher(Launcher):
         :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
             keys which map to stdout, stderr, and the respective scenario attributes
         """
-        from pyreisejl.utility import app
-
-        return app.check_progress()
+        return self.app.check_progress()
