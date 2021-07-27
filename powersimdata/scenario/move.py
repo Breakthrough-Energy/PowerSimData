@@ -2,11 +2,11 @@ from fs.copy import copy_dir
 from fs.walk import Walker
 
 from powersimdata.data_access.data_access import get_ssh_fs
-from powersimdata.scenario.state import State
+from powersimdata.scenario.ready import Ready
 from powersimdata.utility import server_setup
 
 
-class Move(State):
+class Move(Ready):
     """Moves scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
@@ -16,15 +16,7 @@ class Move(State):
     allowed = []
     exported_methods = {
         "move_scenario",
-    }
-
-    def print_scenario_info(self):
-        """Prints scenario information."""
-        print("--------------------")
-        print("SCENARIO INFORMATION")
-        print("--------------------")
-        for key, val in self._scenario_info.items():
-            print("%s: %s" % (key, val))
+    } | Ready.exported_methods
 
     def move_scenario(self, target="disk", confirm=True):
         """Move scenario.
@@ -40,11 +32,11 @@ class Move(State):
         if target != "disk":
             raise ValueError("scenario data can only be backed up to disk now")
 
-        backup = BackUpDisk(self._data_access, self._scenario_info)
+        scenario_id = self._scenario_info["id"]
+        backup = BackUpDisk(self._data_access, scenario_id)
         backup.backup_scenario(confirm=confirm)
 
-        sid = self._scenario_info["id"]
-        self._execute_list_manager.set_status(sid, "moved")
+        self._execute_list_manager.set_status(scenario_id, "moved")
 
 
 class BackUpDisk:
@@ -52,14 +44,13 @@ class BackUpDisk:
 
     :param powersimdata.data_access.data_access.DataAccess data_access:
         data access object.
-    :param dict scenario_info: scenario information.
+    :param str scenario_id: scenario id
     """
 
-    def __init__(self, data_access, scenario_info):
+    def __init__(self, data_access, scenario_id):
         """Constructor."""
         self._data_access = data_access
-        self._scenario_info = scenario_info
-        self.scenario_id = self._scenario_info["id"]
+        self.scenario_id = scenario_id
         self._join = data_access.join
 
     def backup_scenario(self, confirm=True):
