@@ -14,9 +14,7 @@ class Move(Ready):
 
     name = "move"
     allowed = []
-    exported_methods = {
-        "move_scenario",
-    } | Ready.exported_methods
+    exported_methods = {"move_scenario"} | Ready.exported_methods
 
     def move_scenario(self, target="disk", confirm=True):
         """Move scenario.
@@ -58,8 +56,7 @@ class BackUpDisk:
 
         :param bool confirm: prompt before deleting each batch of files
         """
-        _fs = get_ssh_fs()
-        src_fs, dst_fs = _fs, _fs
+        src_fs = dst_fs = get_ssh_fs()
         items = [
             (self._join(*server_setup.INPUT_DIR), f"{self.scenario_id}_*"),
             (self._join(*server_setup.OUTPUT_DIR), f"{self.scenario_id}_*"),

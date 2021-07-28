@@ -38,9 +38,12 @@ class State:
         print("--------------------")
         print("SCENARIO INFORMATION")
         print("--------------------")
-        self._update_scenario_info()
-        for key, val in self._scenario_info.items():
-            print("%s: %s" % (key, val))
+        try:
+            self._update_scenario_info()
+            for key, val in self._scenario_info.items():
+                print("%s: %s" % (key, val))
+        except AttributeError:
+            print("Scenario has been deleted")
 
     def switch(self, state):
         """Switches state.

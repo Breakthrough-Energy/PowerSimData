@@ -1,37 +1,20 @@
 from powersimdata.data_access.data_access import LocalDataAccess
-from powersimdata.scenario.state import State
+from powersimdata.scenario.ready import Ready
 from powersimdata.utility import server_setup
 
 
-class Delete(State):
+class Delete(Ready):
     """Deletes scenario."""
 
     name = "delete"
     allowed = []
-    exported_methods = {
-        "delete_scenario",
-    }
-
-    def print_scenario_info(self):
-        """Prints scenario information.
-
-        :raises AttributeError: if scenario has been deleted.
-        """
-        print("--------------------")
-        print("SCENARIO INFORMATION")
-        print("--------------------")
-        try:
-            for key, val in self._scenario_info.items():
-                print("%s: %s" % (key, val))
-        except AttributeError:
-            print("Scenario has been deleted")
+    exported_methods = {"delete_scenario"} | Ready.exported_methods
 
     def delete_scenario(self, confirm=True):
         """Deletes scenario on server.
 
         :param bool confirm: prompt before each batch
         """
-
         # Delete entry in scenario list
         scenario_id = self._scenario_info["id"]
         self._scenario_list_manager.delete_entry(scenario_id)
