@@ -22,6 +22,9 @@ def progress_bar(*args, **kwargs):
 class WrapSSHFS(SubFS):
     """Wrapper around another filesystem which is rooted at the given path and adds
     progress bar for download
+
+    :param fs.base.FS parent_fs: the filesystem instance to wrap
+    :param str path: the path which will be the root of the wrapped filesystem
     """
 
     def __init__(self, parent_fs, path):
@@ -30,6 +33,7 @@ class WrapSSHFS(SubFS):
 
     def download(self, path, file, chunk_size=None, **options):
         """Wrapper around pyfilesystem download with progress bar"""
+
         cbk, bar = progress_bar(ascii=True, unit="b", unit_scale=True)
         super().download(path, file, chunk_size=chunk_size, callback=cbk, **options)
         bar.close()
@@ -44,6 +48,7 @@ class WrapSSHFS(SubFS):
 
     def checksum(self, filepath):
         """Return the checksum of the file path (using sha1sum)
+
         :param str filepath: path to file
         :return: (*str*) -- the checksum of the file
         """

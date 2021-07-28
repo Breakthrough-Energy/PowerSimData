@@ -11,9 +11,7 @@ from powersimdata.data_access.ssh_fs import WrapSSHFS
 from powersimdata.utility import server_setup
 
 
-def get_ssh_fs(root=None):
-    if root is None:
-        root = ""
+def get_ssh_fs(root=""):
     host = server_setup.SERVER_ADDRESS
     port = server_setup.SERVER_SSH_PORT
     username = server_setup.get_server_user()
@@ -24,9 +22,9 @@ def get_ssh_fs(root=None):
 class DataAccess:
     """Interface to a local or remote data store."""
 
-    def __init__(self, root=None):
+    def __init__(self, root):
         """Constructor"""
-        self.root = server_setup.DATA_ROOT_DIR if root is None else root
+        self.root = root
         self.join = fs2.path.join
 
     def copy_from(self, file_name, from_dir):
@@ -136,8 +134,7 @@ class DataAccess:
 class LocalDataAccess(DataAccess):
     """Interface to shared data volume"""
 
-    def __init__(self, root=None):
-        root = server_setup.LOCAL_DIR if root is None else root
+    def __init__(self, root=server_setup.LOCAL_DIR):
         super().__init__(root)
         self.description = "local machine"
         self.fs = fs2.open_fs(root)
@@ -190,7 +187,7 @@ class SSHDataAccess(DataAccess):
 
     _last_attempt = 0
 
-    def __init__(self, root=None):
+    def __init__(self, root=server_setup.DATA_ROOT_DIR):
         """Constructor"""
         super().__init__(root)
         self._fs = None
