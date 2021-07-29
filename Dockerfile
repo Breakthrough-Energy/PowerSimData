@@ -10,8 +10,7 @@ WORKDIR /PowerSimData
 COPY Pipfile .
 COPY Pipfile.lock .
 RUN pip install -U pip pipenv ipython; \
-    pipenv sync --dev --system; \
-    pip install jedi==0.17.2
+    pipenv sync --dev --system;
 
 COPY . .
 RUN pip install .
