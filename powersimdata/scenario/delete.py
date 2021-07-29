@@ -31,7 +31,7 @@ class Delete(Ready):
         # Delete temporary folder enclosing simulation inputs
         print("--> Deleting temporary folder")
         tmp_dir = self._data_access.tmp_folder(scenario_id)
-        self._data_access.remove(tmp_dir, confirm=confirm)
+        self._data_access.remove(f"{tmp_dir}/**", confirm=confirm)
 
         print("--> Deleting input and output data on local machine")
         local_data_access = LocalDataAccess()

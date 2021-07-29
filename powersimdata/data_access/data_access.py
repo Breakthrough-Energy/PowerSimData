@@ -168,7 +168,7 @@ class LocalDataAccess(DataAccess):
         print(f"--> Moving file {file_name} to {to_dir}")
         self._check_file_exists(dest, should_exist=False)
         self.makedir(to_dir)
-        self.fs.copy(file_name, dest)
+        self.fs.move(file_name, dest)
 
     def get_profile_version(self, grid_model, kind):
         """Returns available raw profile from blob storage or local disk
