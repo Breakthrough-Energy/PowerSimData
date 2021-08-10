@@ -1,4 +1,3 @@
-import copy as cp
 import warnings
 
 import numpy as np
@@ -16,7 +15,6 @@ from powersimdata.design.investment.create_mapping_files import (
 )
 from powersimdata.design.investment.inflation import calculate_inflation
 from powersimdata.input.check import _check_grid_models_match
-from powersimdata.input.grid import Grid
 from powersimdata.utility.distance import haversine
 
 
@@ -65,24 +63,27 @@ def calculate_ac_inv_costs(
         float if ``sum_results``, or pandas Series indexed by branch ID.
         Whether summed or not, values are $USD, inflation-adjusted to today.
     """
-    grid = scenario.state.get_grid()
+    grid_differences = scenario.get_grid()
     if base_grid is None:
-        base_grid = Grid(
-            scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
-        )
+        base_grid = scenario.get_base_grid()
     else:
-        _check_grid_models_match(base_grid, grid)
+        _check_grid_models_match(base_grid, grid_differences)
 
-    grid_new = cp.deepcopy(grid)
     # find upgraded AC lines
-    capacity_difference = calculate_branch_difference(base_grid.branch, grid.branch)
-    grid_new.branch = grid.branch.assign(rateA=capacity_difference.diff)
-    grid_new.branch = grid_new.branch.query("rateA != 0.0")
+    capacity_difference = calculate_branch_difference(
+        base_grid.branch, grid_differences.branch
+    )
+    grid_differences.branch = grid_differences.branch.assign(
+        rateA=capacity_difference.diff
+    )
+    grid_differences.branch = grid_differences.branch.query("rateA != 0.0")
     if exclude_branches is not None:
-        present_exclude_branches = set(exclude_branches) & set(grid_new.branch.index)
-        grid_new.branch.drop(index=present_exclude_branches, inplace=True)
+        present_exclude_branches = set(exclude_branches) & set(
+            grid_differences.branch.index
+        )
+        grid_differences.branch.drop(index=present_exclude_branches, inplace=True)
 
-    costs = _calculate_ac_inv_costs(grid_new, sum_results)
+    costs = _calculate_ac_inv_costs(grid_differences, sum_results)
     return costs
 
 
@@ -285,21 +286,22 @@ def calculate_dc_inv_costs(scenario, sum_results=True, base_grid=None):
         inflation-adjusted to today. If ``sum_results``, a float is returned, otherwise
         a Series.
     """
-    grid = scenario.state.get_grid()
+    grid_differences = scenario.get_grid()
     if base_grid is None:
-        base_grid = Grid(
-            scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
-        )
+        base_grid = scenario.get_base_grid()
     else:
-        _check_grid_models_match(base_grid, grid)
+        _check_grid_models_match(base_grid, grid_differences)
 
-    grid_new = cp.deepcopy(grid)
     # find upgraded DC lines
-    capacity_difference = calculate_dcline_difference(base_grid.dcline, grid.dcline)
-    grid_new.dcline = grid.dcline.assign(Pmax=capacity_difference.diff)
-    grid_new.dcline = grid_new.dcline.query("Pmax != 0.0")
+    capacity_difference = calculate_dcline_difference(
+        base_grid.dcline, grid_differences.dcline
+    )
+    grid_differences.dcline = grid_differences.dcline.assign(
+        Pmax=capacity_difference.diff
+    )
+    grid_differences.dcline = grid_differences.dcline.query("Pmax != 0.0")
 
-    costs = _calculate_dc_inv_costs(grid_new, sum_results)
+    costs = _calculate_dc_inv_costs(grid_differences, sum_results)
     return costs
 
 
@@ -378,30 +380,31 @@ def calculate_gen_inv_costs(
         are dropped. Wind and solar will need to be fixed based on the resource supply
         curves.
     """
-    grid = scenario.state.get_grid()
+    grid_differences = scenario.get_grid()
     if base_grid is None:
-        base_grid = Grid(
-            scenario.info["interconnect"].split("_"), source=scenario.info["grid_model"]
-        )
+        base_grid = scenario.get_base_grid()
     else:
-        _check_grid_models_match(base_grid, grid)
+        _check_grid_models_match(base_grid, grid_differences)
 
-    grid_new = cp.deepcopy(grid)
     # Find change in generation capacity
-    capacity_difference = calculate_plant_difference(base_grid.plant, grid.plant)
-    grid_new.plant = grid.plant.assign(Pmax=capacity_difference.diff)
-    grid_new.plant = grid_new.plant.query("Pmax >= 0.01")
+    capacity_difference = calculate_plant_difference(
+        base_grid.plant, grid_differences.plant
+    )
+    grid_differences.plant = grid_differences.plant.assign(
+        Pmax=capacity_difference.diff
+    )
+    grid_differences.plant = grid_differences.plant.query("Pmax >= 0.01")
     # Find change in storage capacity
     # Reindex so that we don't get NaN when calculating upgrades for new storage
     base_grid.storage["gen"] = base_grid.storage["gen"].reindex(
-        grid_new.storage["gen"].index, fill_value=0
+        grid_differences.storage["gen"].index, fill_value=0
     )
-    grid_new.storage["gen"].Pmax = (
-        grid.storage["gen"].Pmax - base_grid.storage["gen"].Pmax
+    grid_differences.storage["gen"].Pmax = (
+        grid_differences.storage["gen"].Pmax - base_grid.storage["gen"].Pmax
     )
-    grid_new.storage["gen"]["type"] = "storage"
+    grid_differences.storage["gen"]["type"] = "storage"
 
-    costs = _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results)
+    costs = _calculate_gen_inv_costs(grid_differences, year, cost_case, sum_results)
     return costs
 
 

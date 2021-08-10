@@ -1,5 +1,6 @@
 import copy
 
+from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import get_bus_demand
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.scenario.state import State
@@ -9,6 +10,7 @@ class Ready(State):
     exported_methods = {
         "get_ct",
         "get_grid",
+        "get_base_grid",
         "get_bus_demand",
         "get_demand",
         "get_hydro",
@@ -35,6 +37,16 @@ class Ready(State):
         :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
         """
         return copy.deepcopy(self.grid)
+
+    def get_base_grid(self):
+        """Returns original grid.
+
+        :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
+        """
+        return Grid(
+            self._scenario_info["interconnect"].split("_"),
+            source=self._scenario_info["grid_model"],
+        )
 
     def get_profile(self, kind):
         """Returns demand, hydro, solar or wind  profile.
