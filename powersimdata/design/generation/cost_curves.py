@@ -285,6 +285,102 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
     return capacity_data, price_data
 
 
+def build_unified_supply_curve(grid, num_segments, area, area_type=None, plot=True):
+    """Builds a supply curve for a specified area and generation type.
+
+    :param powersimdata.input.grid.Grid grid: Grid object.
+    :param int num_segments: The number of segments into which the piecewise linear
+        cost curve is split.
+    :param str area: Either the load zone, state name, state abbreviation, or
+        interconnect.
+    :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*. Defaults to None, which allows
+        :func:`powersimdata.network.model.area_to_loadzone` to infer the type.
+    :param bool plot: If True, the supply curve plot is shown. If False, the plot is
+        not shown.
+    :return: (*tuple*) -- First element is a list of capacity (MW) amounts needed
+        to create supply curve. Second element is a list of bids ($/MW) in the supply
+        curve.
+    :raises TypeError: if a powersimdata.input.grid.Grid object is not input.
+    :raises ValueError: if the specified area or generator type is not applicable.
+    """
+
+    # Check that a Grid object is input
+    if not isinstance(grid, Grid):
+        raise TypeError("A Grid object must be input.")
+
+    # Check that the desired number of linearized cost curve segments is an int
+    if not isinstance(num_segments, int):
+        raise TypeError(
+            "The number of linearized cost curve segments must be input as an int."
+        )
+
+    # Obtain the desired generator cost and plant information data
+    supply_data = get_supply_data(grid, num_segments)
+
+    # Check the input supply data
+    check_supply_data(supply_data, num_segments)
+
+    # Identify the load zones that correspond to the specified area and area_type
+    returned_zones = area_to_loadzone(grid.grid_model, area, area_type)
+
+    # Trim the DataFrame to only be of the desired area and generation type
+    supply_data = supply_data.loc[supply_data.zone_name.isin(returned_zones)]
+
+    # Remove generators that have no capacity (e.g., Maine coal generators)
+    if supply_data["slope1"].isnull().values.any():
+        supply_data.dropna(subset=["slope1"], inplace=True)
+
+    # Check if the area contains generators of the specified type
+    if supply_data.empty:
+        return [], []
+
+    # Combine the p_diff and slope information for each cost segment
+    supply_df_cols = []
+    for i in range(num_segments):
+        supply_df_cols.append(
+            supply_data.loc[:, ("p_diff" + str(i + 1), "slope" + str(i + 1))]
+        )
+        supply_df_cols[i].rename(
+            columns={"p_diff" + str(i + 1): "p_diff", "slope" + str(i + 1): "slope"},
+            inplace=True,
+        )
+    supply_df = pd.concat(supply_df_cols, axis=0)
+
+    # Sort the trimmed DataFrame by slope
+    supply_df = supply_df.sort_values(by="slope")
+    supply_df = supply_df.reset_index(drop=True)
+
+    # Determine the points that comprise the supply curve
+    capacity_data = []
+    price_data = []
+    capacity_diff_sum = 0
+    for i in supply_df.index:
+        capacity_data.append(capacity_diff_sum)
+        price_data.append(supply_df["slope"][i])
+        capacity_data.append(supply_df["p_diff"][i] + capacity_diff_sum)
+        price_data.append(supply_df["slope"][i])
+        capacity_diff_sum += supply_df["p_diff"][i]
+
+    # Plot the curve
+    if plot:
+        plt = _check_import("matplotlib.pyplot")
+        plt.figure(figsize=[20, 10])
+        plt.plot(capacity_data, price_data)
+        plt.title(f"Supply curve for generators in {area}, Synthetic", fontsize=30)
+        plt.xlabel("Capacity (MW)", fontsize=20)
+        plt.ylabel("Price ($/MW)", fontsize=20)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.savefig(
+            "/Users/josephinewang/Desktop/USATestSystem/Validation Plots/Supply_Curve_synthetic"
+        )
+        plt.show()
+
+    # Return the capacity and bid amounts
+    return capacity_data, price_data
+
+
 def lower_bound_index(desired_capacity, capacity_data):
     """Determines the index of the lower capacity value that defines a price segment.
     Useful for accessing the prices associated with capacity values that aren't
