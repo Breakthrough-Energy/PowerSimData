@@ -286,7 +286,7 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
 
 
 def build_unified_supply_curve(grid, num_segments, area, area_type=None, plot=True):
-    """Builds a supply curve for a specified area and generation type.
+    """Builds an unified supply curve for a specified area for all generation types.
 
     :param powersimdata.input.grid.Grid grid: Grid object.
     :param int num_segments: The number of segments into which the piecewise linear
