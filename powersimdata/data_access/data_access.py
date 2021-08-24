@@ -318,6 +318,8 @@ class SSHDataAccess(DataAccess):
 
 
 class MemoryDataAccess(SSHDataAccess):
+    """Mimic a client server architecture using in memory filesystems"""
+
     def __init__(self):
         self.local_fs = fs2.open_fs("mem://")
         self._fs = fs2.open_fs("mem://")
@@ -326,4 +328,11 @@ class MemoryDataAccess(SSHDataAccess):
         self.join = fs2.path.join
 
     def push(self, file_name, checksum, change_name_to=None):
+        """Push file from local to remote filesystem, bypassing checksum since this is
+        in memory.
+
+        :param str file_name: the file name, located at the local root
+        :param str checksum: the checksum prior to download
+        :param str change_name_to: new name for file when copied to data store.
+        """
         self.move_to(file_name, change_name_to=change_name_to)
