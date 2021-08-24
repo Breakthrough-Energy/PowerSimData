@@ -53,9 +53,7 @@ class Analyze(Ready):
     def _set_allowed_state(self):
         """Sets allowed state."""
         if self._scenario_status == "extracted":
-            self.allowed = ["delete"]
-            if self._data_access.backup_root is not None:
-                self.allowed.append("move")
+            self.allowed = ["delete", "move"]
 
     def _set_ct_and_grid(self):
         """Sets change table and grid."""

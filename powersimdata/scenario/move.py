@@ -1,7 +1,14 @@
-from powersimdata.scenario.state import State
+from fs.copy import copy_dir
+from fs.errors import FSError
+from fs.walk import Walker
+
+from powersimdata.data_access.data_access import get_ssh_fs
+from powersimdata.scenario.ready import Ready
+from powersimdata.utility import server_setup
+from powersimdata.utility.config import DeploymentMode
 
 
-class Move(State):
+class Move(Ready):
     """Moves scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
@@ -9,17 +16,7 @@ class Move(State):
 
     name = "move"
     allowed = []
-    exported_methods = {
-        "move_scenario",
-    }
-
-    def print_scenario_info(self):
-        """Prints scenario information."""
-        print("--------------------")
-        print("SCENARIO INFORMATION")
-        print("--------------------")
-        for key, val in self._scenario_info.items():
-            print("%s: %s" % (key, val))
+    exported_methods = {"move_scenario"} | Ready.exported_methods
 
     def move_scenario(self, target="disk", confirm=True):
         """Move scenario.
@@ -27,7 +24,8 @@ class Move(State):
         :param str target: optional argument specifying the backup system.
         :param bool confirm: prompt before deleting each batch of files
         :raises TypeError: if target is not a str
-        :raises ValueError: if target is unknown (only "disk" is supported)
+        :raises ValueError: if target is unknown (only "disk" is supported) or
+            data not on server
         """
         if not isinstance(target, str):
             raise TypeError("string is expected for optional argument target")
@@ -35,21 +33,14 @@ class Move(State):
         if target != "disk":
             raise ValueError("scenario data can only be backed up to disk now")
 
-        backup = BackUpDisk(self._data_access, self._scenario_info)
+        if server_setup.DEPLOYMENT_MODE != DeploymentMode.Server:
+            raise ValueError("move state only supported for scenario data on server.")
 
-        backup.move_input_data(confirm=confirm)
-        backup.move_output_data(confirm=confirm)
-        backup.move_temporary_folder(confirm=confirm)
+        scenario_id = self._scenario_info["id"]
+        backup = BackUpDisk(self._data_access, scenario_id)
+        backup.backup_scenario(confirm=confirm)
 
-        sid = self._scenario_info["id"]
-        self._execute_list_manager.set_status(sid, "moved")
-
-        # Delete attributes
-        self._clean()
-
-    def _clean(self):
-        """Clean after move."""
-        self._data_access.close()
+        self._execute_list_manager.set_status(scenario_id, "moved")
 
 
 class BackUpDisk:
@@ -57,35 +48,34 @@ class BackUpDisk:
 
     :param powersimdata.data_access.data_access.DataAccess data_access:
         data access object.
-    :param dict scenario_info: scenario information.
+    :param str scenario_id: scenario id
     """
 
-    def __init__(self, data_access, scenario_info):
+    def __init__(self, data_access, scenario_id):
         """Constructor."""
         self._data_access = data_access
-        self._scenario_info = scenario_info
-        self.scenario_id = self._scenario_info["id"]
+        self.scenario_id = scenario_id
+        self._join = data_access.join
 
-    def move_input_data(self, confirm=True):
-        """Moves input data."""
-        print("--> Moving scenario input data to backup disk")
-        source = self._data_access.match_scenario_files(self.scenario_id, "input")
-        target = self._data_access.get_base_dir("input", backup=True)
-        self._data_access.copy(source, target, update=True)
-        self._data_access.remove(source, recursive=False, confirm=confirm)
+    def backup_scenario(self, confirm=True):
+        """Copy scenario data to backup disk and remove original
 
-    def move_output_data(self, confirm=True):
-        """Moves output data"""
-        print("--> Moving scenario output data to backup disk")
-        source = self._data_access.match_scenario_files(self.scenario_id, "output")
-        target = self._data_access.get_base_dir("output", backup=True)
-        self._data_access.copy(source, target, update=True)
-        self._data_access.remove(source, recursive=False, confirm=confirm)
+        :param bool confirm: prompt before deleting each batch of files
+        """
+        src_fs = dst_fs = get_ssh_fs()
+        items = [
+            (self._join(*server_setup.INPUT_DIR), f"{self.scenario_id}_*"),
+            (self._join(*server_setup.OUTPUT_DIR), f"{self.scenario_id}_*"),
+            (self._data_access.tmp_folder(self.scenario_id), "**"),
+        ]
+        for folder, pattern in items:
+            print(f"--> Moving files matching {pattern} from {folder}")
+            src_path = self._join(server_setup.DATA_ROOT_DIR, folder)
+            dst_path = self._join(server_setup.BACKUP_DATA_ROOT_DIR, folder)
+            walker = Walker(filter=[pattern])
+            try:
+                copy_dir(src_fs, src_path, dst_fs, dst_path, walker=walker)
+            except FSError as e:
+                print(f"Operation failed: {e}")
 
-    def move_temporary_folder(self, confirm=True):
-        """Moves temporary folder."""
-        print("--> Moving temporary folder to backup disk")
-        source = self._data_access.match_scenario_files(self.scenario_id, "tmp")
-        target = self._data_access.get_base_dir("tmp", backup=True)
-        self._data_access.copy(source, target, recursive=True, update=True)
-        self._data_access.remove(source, recursive=True, confirm=confirm)
+            self._data_access.remove(self._join(folder, pattern), confirm=confirm)
