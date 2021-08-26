@@ -194,7 +194,7 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
         cost curve is split.
     :param str area: Either the load zone, state name, state abbreviation, or
         interconnect.
-    :param str gen_type: Generation type.
+    :param str/iterable gen_type: Generation type(s).
     :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*,
         *'interconnect'*. Defaults to None, which allows
         :func:`powersimdata.network.model.area_to_loadzone` to infer the type.
@@ -217,6 +217,10 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
             "The number of linearized cost curve segments must be input as an int."
         )
 
+    # Check that whether a single generation type is specified
+    if isinstance(gen_type, str):
+        gen_type = set([gen_type])
+
     # Obtain the desired generator cost and plant information data
     supply_data = get_supply_data(grid, num_segments)
 
@@ -224,15 +228,15 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
     check_supply_data(supply_data, num_segments)
 
     # Check to make sure the generator type is valid
-    if gen_type not in supply_data["type"].unique():
-        raise ValueError(f"{gen_type} is not a valid generation type.")
+    if len(gen_type - set(supply_data["type"].unique())) > 0:
+        raise ValueError(f"{gen_type} contains invalid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
     returned_zones = area_to_loadzone(grid.grid_model, area, area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     supply_data = supply_data.loc[supply_data.zone_name.isin(returned_zones)]
-    supply_data = supply_data.loc[supply_data["type"] == gen_type]
+    supply_data = supply_data.loc[supply_data.type.isin(gen_type)]
 
     # Remove generators that have no capacity (e.g., Maine coal generators)
     if supply_data["slope1"].isnull().values.any():
@@ -274,7 +278,10 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
         plt = _check_import("matplotlib.pyplot")
         plt.figure(figsize=[20, 10])
         plt.plot(capacity_data, price_data)
-        plt.title(f"Supply curve for {gen_type} generators in {area}", fontsize=20)
+        plt.title(f"Supply curve for selected generators in {area}", fontsize=20)
+        plt.legend(
+            ["Generation types:\n{}".format("\n".join(list(gen_type)))], loc="best"
+        )
         plt.xlabel("Capacity (MW)", fontsize=20)
         plt.ylabel("Price ($/MW)", fontsize=20)
         plt.xticks(fontsize=20)
