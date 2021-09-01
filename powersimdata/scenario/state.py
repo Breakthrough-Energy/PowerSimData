@@ -2,12 +2,13 @@ class State:
     """Defines an interface for encapsulating the behavior associated with a
     particular state of the Scenario object.
 
-    :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
     :raise TypeError: if not instantiated through a derived class
     """
 
     name = "state"
     allowed = []
+    exported_methods = {"print_scenario_info"}
 
     def __init__(self, scenario):
         """Constructor."""
@@ -24,9 +25,25 @@ class State:
     def refresh(self, scenario):
         """Called during state changes to ensure instance is properly initialized
 
-        :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
+        :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
         """
         pass
+
+    def _update_scenario_info(self):
+        """Override this method if applicable"""
+        pass
+
+    def print_scenario_info(self):
+        """Prints scenario information."""
+        print("--------------------")
+        print("SCENARIO INFORMATION")
+        print("--------------------")
+        try:
+            self._update_scenario_info()
+            for key, val in self._scenario_info.items():
+                print("%s: %s" % (key, val))
+        except AttributeError:
+            print("Scenario has been deleted")
 
     def switch(self, state):
         """Switches state.

@@ -334,9 +334,7 @@ def _identify_mesh_branch_upgrades(
     # Calculate selected cost metric for congested branches
     if cost_metric == "cost":
         # Calculate costs for an upgrade dataframe containing only composite_allow_list
-        base_grid = Grid(
-            ref_scenario.info["interconnect"], ref_scenario.info["grid_model"]
-        )
+        base_grid = ref_scenario.get_base_grid()
         base_grid.branch = base_grid.branch.filter(items=congested_indices, axis=0)
         upgrade_costs = _calculate_ac_inv_costs(base_grid, sum_results=False)
         # Merge the individual line/transformer data into a single Series

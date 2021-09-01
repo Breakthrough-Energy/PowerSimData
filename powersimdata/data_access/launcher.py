@@ -1,3 +1,4 @@
+import importlib
 import posixpath
 import sys
 
@@ -32,7 +33,7 @@ def _check_solver(solver):
         return
     if not isinstance(solver, str):
         raise TypeError("solver must be a str")
-    solvers = ("gurobi", "glpk")
+    solvers = ("clp", "glpk", "gurobi")
     if solver.lower() not in solvers:
         raise ValueError(f"Invalid solver: options are {solvers}")
 
@@ -40,11 +41,12 @@ def _check_solver(solver):
 class Launcher:
     """Base class for interaction with simulation engine.
 
-    :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
     """
 
     def __init__(self, scenario):
         self.scenario = scenario
+        self.scenario_id = scenario.scenario_id
 
     def _launch(self, threads=None, solver=None, extract_data=True):
         """Launches simulation on target environment
@@ -102,7 +104,7 @@ class SSHLauncher(Launcher):
             "python3",
             "-u",
             path_to_script,
-            self.scenario.scenario_id,
+            self.scenario_id,
         ]
         cmd_io_redirect = ["</dev/null >/dev/null 2>&1 &"]
         cmd = cmd_pythonpath + cmd_pythoncall + extra_args + cmd_io_redirect
@@ -151,6 +153,8 @@ class SSHLauncher(Launcher):
 
 
 class HttpLauncher(Launcher):
+    BASE_URL = f"http://{server_setup.SERVER_ADDRESS}:5000"
+
     def _launch(self, threads=None, solver=None, extract_data=True):
         """Launch simulation in container via http call
 
@@ -162,13 +166,27 @@ class HttpLauncher(Launcher):
         :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
             keys which map to stdout, stderr, and the respective scenario attributes
         """
-        scenario_id = self.scenario.scenario_id
-        url = f"http://{server_setup.SERVER_ADDRESS}:5000/launch/{scenario_id}"
-        resp = requests.post(url, params={"threads": threads, "solver": solver})
+        url = f"{self.BASE_URL}/launch/{self.scenario_id}"
+        params = {
+            "threads": threads,
+            "solver": solver,
+            "extract-data": int(extract_data),
+        }
+        resp = requests.post(url, params=params)
         if resp.status_code != 200:
             print(
                 f"Failed to launch simulation: status={resp.status_code}. See response for details"
             )
+        return resp.json()
+
+    def extract_simulation_output(self):
+        """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL}
+
+        :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
+            keys which map to stdout, stderr, and the respective scenario attributes
+        """
+        url = f"{self.BASE_URL}/extract/{self.scenario_id}"
+        resp = requests.post(url)
         return resp.json()
 
     def check_progress(self):
@@ -177,13 +195,18 @@ class HttpLauncher(Launcher):
         :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
             keys which map to stdout, stderr, and the respective scenario attributes
         """
-        scenario_id = self.scenario.scenario_id
-        url = f"http://{server_setup.SERVER_ADDRESS}:5000/status/{scenario_id}"
+        url = f"{self.BASE_URL}/status/{self.scenario_id}"
         resp = requests.get(url)
         return resp.json()
 
 
 class NativeLauncher(Launcher):
+    def __init__(self, scenario):
+        sys.path.append(server_setup.ENGINE_DIR)
+        self.app = importlib.import_module("pyreisejl.utility.app")
+
+        super().__init__(scenario)
+
     def _launch(self, threads=None, solver=None, extract_data=True):
         """Launch simulation by importing from REISE.jl
 
@@ -195,10 +218,17 @@ class NativeLauncher(Launcher):
         :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
             keys which map to stdout, stderr, and the respective scenario attributes
         """
-        sys.path.append(server_setup.ENGINE_DIR)
-        from pyreisejl.utility import app
+        return self.app.launch_simulation(
+            self.scenario_id, threads, solver, extract_data
+        )
 
-        return app.launch_simulation(self.scenario.scenario_id, threads, solver)
+    def extract_simulation_output(self):
+        """Extracts simulation outputs {PG, PF, LMP, CONGU, CONGL}
+
+        :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
+            keys which map to stdout, stderr, and the respective scenario attributes
+        """
+        return self.app.extract_scenario(self.scenario_id)
 
     def check_progress(self):
         """Get the status of an ongoing simulation, if possible
@@ -206,7 +236,4 @@ class NativeLauncher(Launcher):
         :return: (*dict*) -- contains "output", "errors", "scenario_id", and "status"
             keys which map to stdout, stderr, and the respective scenario attributes
         """
-        sys.path.append(server_setup.ENGINE_DIR)
-        from pyreisejl.utility import app
-
-        return app.check_progress()
+        return self.app.check_progress()

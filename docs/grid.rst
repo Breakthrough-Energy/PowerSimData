@@ -29,21 +29,21 @@ A ``Grid`` object can be created as follows:
 
   .. code-block:: python
 
-    from powersimdata.input.grid import Grid
+    from powersimdata import Grid
     usa = Grid("USA")
 
 - Western interconnection
 
   .. code-block:: python
 
-      from powersimdata.input.grid import Grid
+      from powersimdata import Grid
       western = Grid("Western")
 
 - combination of two interconnections
 
   .. code-block:: python
 
-      from powersimdata.input.grid import Grid
+      from powersimdata import Grid
       eastern_western = Grid(["Eastern", "Western"])
       texas_western = Grid(["Texas", "Western"])
 

@@ -1,4 +1,3 @@
-import copy
 import os
 
 from powersimdata.data_access.context import Context
@@ -6,12 +5,12 @@ from powersimdata.input.export_data import export_case_mat, export_transformed_p
 from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
-from powersimdata.scenario.state import State
+from powersimdata.scenario.ready import Ready
 from powersimdata.utility import server_setup
 from powersimdata.utility.config import get_deployment_mode
 
 
-class Execute(State):
+class Execute(Ready):
     """Scenario is in a state of being executed.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
@@ -22,13 +21,11 @@ class Execute(State):
     exported_methods = {
         "check_progress",
         "extract_simulation_output",
-        "get_ct",
-        "get_grid",
         "launch_simulation",
         "prepare_simulation_input",
         "print_scenario_status",
         "scenario_id",
-    }
+    } | Ready.exported_methods
 
     def __init__(self, scenario):
         """Constructor."""
@@ -46,7 +43,7 @@ class Execute(State):
     def refresh(self, scenario):
         """Called during state changes to ensure instance is properly initialized
 
-        :param powrsimdata.scenario.scenario.Scenario scenario: scenario instance
+        :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
         """
         print(
             "SCENARIO: %s | %s\n"
@@ -72,20 +69,6 @@ class Execute(State):
             self.ct = {}
             self.grid = base_grid
 
-    def get_ct(self):
-        """Returns change table.
-
-        :return: (*dict*) -- change table.
-        """
-        return copy.deepcopy(self.ct)
-
-    def get_grid(self):
-        """Returns Grid.
-
-        :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
-        """
-        return copy.deepcopy(self.grid)
-
     def _update_scenario_status(self):
         """Updates scenario status."""
         self._scenario_status = self._execute_list_manager.get_status(self.scenario_id)
@@ -93,15 +76,6 @@ class Execute(State):
     def _update_scenario_info(self):
         """Updates scenario information."""
         self._scenario_info = self._scenario_list_manager.get_scenario(self.scenario_id)
-
-    def print_scenario_info(self):
-        """Prints scenario information."""
-        print("--------------------")
-        print("SCENARIO INFORMATION")
-        print("--------------------")
-        self._update_scenario_info()
-        for key, val in self._scenario_info.items():
-            print("%s: %s" % (key, val))
 
     def print_scenario_status(self):
         """Prints scenario status."""
@@ -219,16 +193,13 @@ class SimulationInput:
         self.ct = ct
         self.scenario_id = scenario_info["id"]
 
-        self.REL_TMP_DIR = self._data_access.join(
-            server_setup.EXECUTE_DIR, f"scenario_{self.scenario_id}"
-        )
-        self.TMP_DIR = self._data_access.match_scenario_files(self.scenario_id, "tmp")
+        self.REL_TMP_DIR = self._data_access.tmp_folder(self.scenario_id)
 
     def create_folder(self):
         """Creates folder on server that will enclose simulation inputs."""
         description = self._data_access.description
         print(f"--> Creating temporary folder on {description} for simulation inputs")
-        self._data_access.makedir(self.TMP_DIR)
+        self._data_access.makedir(self.REL_TMP_DIR)
 
     def prepare_mpc_file(self):
         """Creates MATPOWER case file."""
@@ -263,6 +234,6 @@ class SimulationInput:
                 file_name, self.REL_TMP_DIR, change_name_to=f"{kind}.csv"
             )
         else:
-            from_dir = self._data_access.match_scenario_files(profile_as, "tmp")
+            from_dir = self._data_access.tmp_folder(profile_as)
             src = self._data_access.join(from_dir, f"{kind}.csv")
-            self._data_access.copy(src, self.TMP_DIR)
+            self._data_access.copy(src, self.REL_TMP_DIR)

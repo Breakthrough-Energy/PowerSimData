@@ -1,6 +1,6 @@
 import os
 
-from powersimdata.utility.config import get_config
+from powersimdata.utility.config import get_config, get_deployment_mode
 
 config = get_config()
 SERVER_ADDRESS = config.SERVER_ADDRESS
@@ -13,6 +13,9 @@ OUTPUT_DIR = config.OUTPUT_DIR
 LOCAL_DIR = config.LOCAL_DIR
 MODEL_DIR = config.MODEL_DIR
 ENGINE_DIR = config.ENGINE_DIR
+DEPLOYMENT_MODE = get_deployment_mode()
+
+os.makedirs(LOCAL_DIR, exist_ok=True)
 
 
 def get_server_user():

@@ -3,7 +3,7 @@ from collections import OrderedDict
 import pytest
 
 from powersimdata.data_access.execute_table import ExecuteTable
-from powersimdata.data_access.sql_store import SqlException
+from powersimdata.data_access.sql_store import SqlError
 
 row_id = 9000
 
@@ -34,7 +34,7 @@ def store():
 @pytest.mark.integration
 @pytest.mark.db
 def test_err_handle():
-    with pytest.raises(SqlException):
+    with pytest.raises(SqlError):
         with RaiseErrorSqlStore() as store:
             store.add_entry(None)
 

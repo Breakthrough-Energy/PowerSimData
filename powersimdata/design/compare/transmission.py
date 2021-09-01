@@ -31,7 +31,7 @@ def calculate_branch_difference(branch1, branch2):
     return branch_merge
 
 
-def calculate_dcline_differences(grid1, grid2):
+def calculate_dcline_difference(grid1, grid2):
     """Calculate capacity differences between dcline tables, and add to/from lat/lon.
 
     :param powersimdata.input.grid.Grid grid1: first grid instance.

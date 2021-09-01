@@ -24,12 +24,12 @@ class Create(State):
 
     name = "create"
     allowed = []
-    default_exported_methods = (
+    default_exported_methods = {
         "create_scenario",
         "get_bus_demand",
         "set_builder",
         "set_grid",
-    )
+    } | State.exported_methods
 
     def __init__(self, scenario):
         """Constructor."""
@@ -129,15 +129,6 @@ class Create(State):
             )
             self.switch(Execute)
 
-    def print_scenario_info(self):
-        """Prints scenario information."""
-        self._update_scenario_info()
-        print("--------------------")
-        print("SCENARIO INFORMATION")
-        print("--------------------")
-        for key, val in self._scenario_info.items():
-            print("%s: %s" % (key, val))
-
     def set_builder(self, *args, **kwargs):
         """Alias to :func:`~powersimdata.scenario.create.Create.set_grid`"""
         warnings.warn(
@@ -203,6 +194,7 @@ class _Builder:
         "set_time",
         "get_ct",
         "get_grid",
+        "get_base_grid",
         "get_demand",
         "get_hydro",
         "get_solar",
@@ -381,6 +373,13 @@ class _Builder:
         :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
         """
         return TransformGrid(self.base_grid, self.change_table.ct).get_grid()
+
+    def get_base_grid(self):
+        """Returns original grid.
+
+        :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
+        """
+        return copy.deepcopy(self.base_grid)
 
     def __str__(self):
         return self.name
