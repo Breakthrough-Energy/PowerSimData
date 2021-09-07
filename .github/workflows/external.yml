@@ -2,8 +2,6 @@ name: Trigger external workflows
 
 on:
   push:
-    branches:
-      - develop
 
 jobs:
   run-workflows:
