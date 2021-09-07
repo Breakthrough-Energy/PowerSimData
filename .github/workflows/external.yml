@@ -13,11 +13,11 @@ jobs:
           repo: docs
           branch: master
           workflow_id: 2386877
-          token: ${{ secrets.CI_TOKEN_CLONE_REPO }}
+          token: 123
 
       - name: Build and publish docker image
         uses: Breakthrough-Energy/actions/workflow-trigger@main
         with:
           repo: plug
           workflow_id: 12413223
-          token: ${{ secrets.CI_TOKEN_CLONE_REPO }}
+          token: 123
