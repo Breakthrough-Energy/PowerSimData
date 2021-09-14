@@ -74,7 +74,7 @@ def calculate_ac_inv_costs(
         base_grid.branch, grid_differences.branch
     )
     grid_differences.branch = grid_differences.branch.assign(
-        rateA=capacity_difference.diff
+        rateA=capacity_difference["diff"].to_numpy()
     )
     grid_differences.branch = grid_differences.branch.query("rateA != 0.0")
     if exclude_branches is not None:
@@ -297,7 +297,7 @@ def calculate_dc_inv_costs(scenario, sum_results=True, base_grid=None):
         base_grid.dcline, grid_differences.dcline
     )
     grid_differences.dcline = grid_differences.dcline.assign(
-        Pmax=capacity_difference.diff
+        Pmax=capacity_difference["diff"].to_numpy()
     )
     grid_differences.dcline = grid_differences.dcline.query("Pmax != 0.0")
 
@@ -391,7 +391,7 @@ def calculate_gen_inv_costs(
         base_grid.plant, grid_differences.plant
     )
     grid_differences.plant = grid_differences.plant.assign(
-        Pmax=capacity_difference.diff
+        Pmax=capacity_difference["diff"].to_numpy()
     )
     grid_differences.plant = grid_differences.plant.query("Pmax >= 0.01")
     # Find change in storage capacity
