@@ -208,7 +208,7 @@ def write_bus_neem_map(base_grid):
         raise TypeError("base_grid must be a Grid instance")
     df_pts_bus = bus_to_neem_reg(base_grid.bus)
     df_pts_bus.sort_index(inplace=True)
-    os.makedirs(const.bus_neem_regions_path, exist_ok=True)
+    os.makedirs(os.path.dirname(const.bus_neem_regions_path), exist_ok=True)
     df_pts_bus.to_csv(const.bus_neem_regions_path)
 
 
@@ -222,7 +222,7 @@ def write_bus_reeds_map(base_grid):
         raise TypeError("base_grid must be a Grid instance")
     df_pts_bus = bus_to_reeds_reg(base_grid.bus)
     df_pts_bus.sort_index(inplace=True)
-    os.makedirs(const.bus_reeds_regions_path, exist_ok=True)
+    os.makedirs(os.path.dirname(const.bus_reeds_regions_path), exist_ok=True)
     df_pts_bus.to_csv(const.bus_reeds_regions_path)
 
 
