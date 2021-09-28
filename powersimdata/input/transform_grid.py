@@ -71,7 +71,7 @@ class TransformGrid:
         if "storage" in self.ct.keys():
             self._add_storage()
 
-        # Finally, scale by IDs, so that additions can be scaled.
+        # Scale by IDs, so that additions can be scaled.
         for g in self.gen_types:
             if g in self.ct.keys():
                 self._scale_gen_by_id(g)
@@ -85,6 +85,12 @@ class TransformGrid:
 
         if "dcline" in self.ct.keys():
             self._scale_dcline()
+
+        # Finally, remove elements (so that removal doesn't cause downstream errors)
+        if "remove_branch" in self.ct.keys():
+            self._remove_branch()
+        if "remove_bus" in self.ct.keys():
+            self._remove_bus()
 
     def _scale_gen_by_zone(self, gen_type):
         """Scales capacity of generators, by zone. Also scales the associated generation
@@ -472,6 +478,26 @@ class TransformGrid:
         )
         # Maintain int columns after the append converts them to float
         storage["StorageData"] = storage["StorageData"].astype({"UnitIdx": "int"})
+
+    def _remove_branch(self):
+        """Removes branches."""
+        branch = self.grid.branch
+        self.grid.branch = branch.loc[~branch.index.isin(self.ct["remove_branch"])]
+
+    def _remove_bus(self):
+        """Removes buses."""
+        bus = self.grid.bus
+        self.grid.bus = bus.loc[~bus.index.isin(self.ct["remove_bus"])]
+
+    def _remove_dcline(self):
+        """Removes DC lines."""
+        dcline = self.grid.dcline
+        self.grid.dcline = dcline.loc[~dcline.index.isin(self.ct["remove_dcline"])]
+
+    def _remove_plant(self):
+        """Removes plants."""
+        plant = self.grid.plant
+        self.grid.plant = plant.loc[~plant.index.isin(self.ct["remove_plant"])]
 
 
 def voltage_to_x_per_distance(grid):
