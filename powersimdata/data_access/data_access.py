@@ -36,9 +36,8 @@ class DataAccess:
         """Reads data from data store.
 
         :param str filepath: path to file, with extension either 'pkl', 'csv', or 'mat'.
-        :return: (*pandas.DataFrame*, *dict*, or *str*) -- demand, hydro, solar or
-            wind as a data frame, change table as a dict, or str containing a
-            local path to a matfile of grid data.
+        :return: (*pandas.DataFrame* or *dict*) -- pkl and csv files will be returned as
+            a data frame, while a mat file will be returned as a dictionary
         :raises ValueError: if extension is unknown.
         """
         ext = os.path.basename(filepath).split(".")[-1]
