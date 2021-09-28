@@ -558,3 +558,23 @@ def test_add_bus(ct):
     assert new_grid.bus.index.dtype == grid.bus.index.dtype
     assert new_grid.bus2sub.index.dtype == grid.bus2sub.index.dtype
     assert new_grid.sub.index.dtype == grid.sub.index.dtype
+
+
+def test_remove_branch(ct):
+    assert 0 in grid.branch.index
+    ct.ct["remove_branch"] = {0}
+    new_grid = TransformGrid(grid, ct.ct).get_grid()
+    assert 0 not in new_grid.branch.index
+    ct.ct["remove_branch"] = {1, 2}
+    new_grid = TransformGrid(grid, ct.ct).get_grid()
+    assert all(i not in new_grid.branch.index for i in [1, 2])
+
+
+def test_remove_bus(ct):
+    assert 1 in grid.bus.index
+    ct.ct["remove_bus"] = {1}
+    new_grid = TransformGrid(grid, ct.ct).get_grid()
+    assert 1 not in new_grid.bus.index
+    ct.ct["remove_bus"] = {2, 3}
+    new_grid = TransformGrid(grid, ct.ct).get_grid()
+    assert all(i not in new_grid.bus.index for i in [2, 3])
