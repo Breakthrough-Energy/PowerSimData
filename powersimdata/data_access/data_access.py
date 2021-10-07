@@ -1,4 +1,5 @@
 import os
+import pickle
 import posixpath
 import time
 from subprocess import Popen
@@ -6,7 +7,7 @@ from subprocess import Popen
 import fs as fs2
 import pandas as pd
 from fs.tempfs import TempFS
-from scipy.io import loadmat
+from scipy.io import loadmat, savemat
 
 from powersimdata.data_access.profile_helper import (
     get_profile_version_cloud,
@@ -55,6 +56,25 @@ class DataAccess:
                 raise ValueError("Unknown extension! %s" % ext)
 
         return data
+
+    def write(self, filepath, data):
+        """Write a file from data store,
+
+        :param str filepath: path to save data to, with extension either 'pkl', 'csv', or 'mat'.
+        :param (*pandas.DataFrame* or *dict*) data: data to save
+        :raises ValueError: if extension is unknown.
+        """
+
+        ext = os.path.basename(filepath).split(".")[-1]
+        with self.fs.openbin(filepath, mode="w") as f:
+            if ext == "pkl":
+                pickle.dump(data, f)
+            elif ext == "csv":
+                data.to_csv(f)
+            elif ext == "mat":
+                savemat(f, data, appendmat=False)
+            else:
+                raise ValueError("Unknown extension! %s" % ext)
 
     def copy_from(self, file_name, from_dir):
         """Copy a file from data store to userspace.
