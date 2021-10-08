@@ -58,7 +58,7 @@ class DataAccess:
         return data
 
     def write(self, filepath, data):
-        """Write a file from data store,
+        """Write a file to data store.
 
         :param str filepath: path to save data to, with extension either 'pkl', 'csv', or 'mat'.
         :param (*pandas.DataFrame* or *dict*) data: data to save
