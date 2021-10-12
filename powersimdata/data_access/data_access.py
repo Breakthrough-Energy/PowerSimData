@@ -1,10 +1,13 @@
 import operator
+import os
 import posixpath
 import time
 from subprocess import Popen
 
 import fs as fs2
+import pandas as pd
 from fs.tempfs import TempFS
+from scipy.io import loadmat
 
 from powersimdata.data_access.profile_helper import ProfileHelper
 from powersimdata.data_access.ssh_fs import WrapSSHFS
@@ -26,6 +29,30 @@ class DataAccess:
         """Constructor"""
         self.root = root
         self.join = fs2.path.join
+
+    def read(self, filepath):
+        """Reads data from data store.
+
+        :param str filepath: path to file, with extension either 'pkl', 'csv', or 'mat'.
+        :return: (*pandas.DataFrame* or *dict*) -- pkl and csv files will be returned as
+            a data frame, while a mat file will be returned as a dictionary
+        :raises ValueError: if extension is unknown.
+        """
+        ext = os.path.basename(filepath).split(".")[-1]
+
+        self._check_file_exists(filepath)
+
+        with self.fs.open(filepath, mode="rb") as file_object:
+            if ext == "pkl":
+                data = pd.read_pickle(file_object)
+            elif ext == "csv":
+                data = pd.read_csv(file_object, index_col=0, parse_dates=True)
+            elif ext == "mat":
+                data = loadmat(file_object, squeeze_me=True, struct_as_record=False)
+            else:
+                raise ValueError("Unknown extension! %s" % ext)
+
+        return data
 
     def copy_from(self, file_name, from_dir):
         """Copy a file from data store to userspace.
