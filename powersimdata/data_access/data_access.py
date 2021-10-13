@@ -258,7 +258,7 @@ class SSHDataAccess(DataAccess):
 
         return self._fs
 
-    def copy_from(self, file_name, from_dir=None):
+    def copy_from(self, file_name, from_dir=None, tmp_fs=None):
         """Copy a file from data store to userspace.
 
         :param str file_name: file name to copy.
