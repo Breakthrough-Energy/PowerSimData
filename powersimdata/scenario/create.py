@@ -74,12 +74,8 @@ class Create(State):
 
     def _upload_change_table(self):
         """Uploads change table to server."""
-        print("--> Writing change table on local machine")
-        self.builder.change_table.write(self._scenario_info["id"])
-        file_name = self._scenario_info["id"] + "_ct.pkl"
-        input_dir = self._data_access.join(*server_setup.INPUT_DIR)
-        self._data_access.move_to(file_name, input_dir)
-
+        InputData().save_change_table(change_table.ct)
+            
     def get_bus_demand(self):
         """Returns demand profiles, by bus.
 
