@@ -124,7 +124,7 @@ class InputData:
         file_name = os.path.join(server_setup.LOCAL_DIR, scenario_id + "_ct.pkl")
         if os.path.isfile(file_name) is False:
             print("Writing %s" % file_name)
-            pickle.dump(self.ct, open(file_name, "wb"))
+            pickle.dump(ct, open(file_name, "wb"))
         else:
             raise IOError("%s already exists" % file_name)
 
