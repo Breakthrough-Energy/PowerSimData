@@ -66,7 +66,8 @@ class InputData:
     def __init__(self, data_loc=None):
         """Constructor."""
         self.data_access = Context.get_data_access(data_loc)
-
+        
+        
     def get_data(self, scenario_info, field_name):
         """Returns data either from server or local directory.
 
@@ -113,6 +114,20 @@ class InputData:
         :return: (*list*) -- available profile version.
         """
         return self.data_access.get_profile_version(grid_model, kind)
+
+    def save_change_table(self, ct):
+        """Saves change table to the data store.
+
+        :param dict ct: a change table
+        :raises IOError: if file already exists on local machine.
+        """
+        file_name = os.path.join(server_setup.LOCAL_DIR, scenario_id + "_ct.pkl")
+        if os.path.isfile(file_name) is False:
+            print("Writing %s" % file_name)
+            pickle.dump(self.ct, open(file_name, "wb"))
+        else:
+            raise IOError("%s already exists" % file_name)
+
 
 
 def _read_data(filepath):
