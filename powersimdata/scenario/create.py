@@ -13,7 +13,6 @@ from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.execute import Execute
 from powersimdata.scenario.state import State
-from powersimdata.utility import server_setup
 
 
 class Create(State):
@@ -74,8 +73,10 @@ class Create(State):
 
     def _upload_change_table(self):
         """Uploads change table to server."""
-        InputData().save_change_table(change_table.ct)
-            
+        InputData().save_change_table(
+            self.builder.change_table.ct, self._scenario_info["id"]
+        )
+
     def get_bus_demand(self):
         """Returns demand profiles, by bus.
 
