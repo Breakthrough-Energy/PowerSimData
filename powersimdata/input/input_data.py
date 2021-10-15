@@ -66,6 +66,11 @@ class InputData:
     def __init__(self, data_loc=None):
         """Constructor."""
         self.data_access = Context.get_data_access(data_loc)
+        if type(self.data_access) != LocalDataAccess:
+            self.local_data_access = self.data_access
+        else:
+            self.local_data_access = LocalDataAccess(server_setup.DATA_ROOT_DIR)
+        
         
         
     def get_data(self, scenario_info, field_name):
@@ -115,18 +120,22 @@ class InputData:
         """
         return self.data_access.get_profile_version(grid_model, kind)
 
-    def save_change_table(self, ct):
+    def save_change_table(self, ct, scenario_id):
         """Saves change table to the data store.
 
         :param dict ct: a change table
         :raises IOError: if file already exists on local machine.
         """
-        file_name = os.path.join(server_setup.LOCAL_DIR, scenario_id + "_ct.pkl")
-        if os.path.isfile(file_name) is False:
-            print("Writing %s" % file_name)
-            pickle.dump(ct, open(file_name, "wb"))
-        else:
-            raise IOError("%s already exists" % file_name)
+        # write to local
+        # because https://docs.pyfilesystem.org/en/latest/reference/path.html
+        filepath = server_setup.INPUT_DIR + '/' + scenario_id + '_ct.pkl'
+        self.local_data_access.write(filepath, ct)
+
+        # if needed, move to cache        
+        if self.data_access != self.local_data_access:
+            # copy from local to data_access
+            fs.move.move_file(self.local_data_access.fs, filepath, self.data_access.fs, filepath)
+
 
 
 
