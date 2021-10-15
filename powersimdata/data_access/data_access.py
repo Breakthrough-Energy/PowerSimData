@@ -66,6 +66,11 @@ class DataAccess:
         """
 
         ext = os.path.basename(filepath).split(".")[-1]
+
+        self._check_file_exists(filepath, should_exist=False)
+
+        print("Writing %s" % filepath)
+
         with self.fs.openbin(filepath, mode="w") as f:
             if ext == "pkl":
                 pickle.dump(data, f)
@@ -258,7 +263,7 @@ class SSHDataAccess(DataAccess):
 
         return self._fs
 
-    def copy_from(self, file_name, from_dir=None, tmp_fs=None):
+    def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
 
         :param str file_name: file name to copy.

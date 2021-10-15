@@ -1,8 +1,10 @@
 import os
 
+import fs
 import pandas as pd
 
 from powersimdata.data_access.context import Context
+from powersimdata.data_access.data_access import LocalDataAccess
 from powersimdata.data_access.profile_helper import ProfileHelper
 from powersimdata.utility import server_setup
 from powersimdata.utility.helpers import MemoryCache, cache_key
@@ -67,12 +69,10 @@ class InputData:
         """Constructor."""
         self.data_access = Context.get_data_access(data_loc)
         if type(self.data_access) != LocalDataAccess:
-            self.local_data_access = self.data_access
+            self.local_data_access = LocalDataAccess(server_setup.LOCAL_DIR)
         else:
-            self.local_data_access = LocalDataAccess(server_setup.DATA_ROOT_DIR)
-        
-        
-        
+            self.local_data_access = self.data_access
+
     def get_data(self, scenario_info, field_name):
         """Returns data either from server or local directory.
 
@@ -124,19 +124,19 @@ class InputData:
         """Saves change table to the data store.
 
         :param dict ct: a change table
-        :raises IOError: if file already exists on local machine.
+        :param str scenario_id: scenario id, used for file name
         """
         # write to local
         # because https://docs.pyfilesystem.org/en/latest/reference/path.html
-        filepath = server_setup.INPUT_DIR + '/' + scenario_id + '_ct.pkl'
+        print(server_setup.INPUT_DIR)
+        filepath = "/".join(server_setup.INPUT_DIR) + "/" + scenario_id + "_ct.pkl"
         self.local_data_access.write(filepath, ct)
 
-        # if needed, move to cache        
         if self.data_access != self.local_data_access:
             # copy from local to data_access
-            fs.move.move_file(self.local_data_access.fs, filepath, self.data_access.fs, filepath)
-
-
+            fs.move.move_file(
+                self.local_data_access.fs, filepath, self.data_access.fs, filepath
+            )
 
 
 def _read_data(filepath):

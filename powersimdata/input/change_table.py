@@ -1,6 +1,4 @@
 import copy
-import os
-import pickle
 from itertools import chain
 
 from powersimdata.design.transmission.upgrade import (
@@ -8,7 +6,6 @@ from powersimdata.design.transmission.upgrade import (
     scale_renewable_stubs,
 )
 from powersimdata.input.transform_grid import TransformGrid
-from powersimdata.utility import server_setup
 from powersimdata.utility.distance import find_closest_neighbor
 
 _resources = (
@@ -956,16 +953,3 @@ class ChangeTable:
         diff = load_buses - connected_buses
         if len(diff) > 0:
             print(f"Warning: load buses connected to no lines exist: {sorted(diff)}")
-
-    def write(self, scenario_id):
-        """Saves change table to disk.
-
-        :param str scenario_id: scenario index.
-        :raises IOError: if file already exists on local machine.
-        """
-        file_name = os.path.join(server_setup.LOCAL_DIR, scenario_id + "_ct.pkl")
-        if os.path.isfile(file_name) is False:
-            print("Writing %s" % file_name)
-            pickle.dump(self.ct, open(file_name, "wb"))
-        else:
-            raise IOError("%s already exists" % file_name)
