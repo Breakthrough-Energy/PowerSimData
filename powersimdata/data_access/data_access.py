@@ -1,4 +1,3 @@
-import operator
 import posixpath
 import time
 from subprocess import Popen
@@ -84,11 +83,11 @@ class DataAccess:
         :param bool should_exist: whether the file is expected to exist
         :raises OSError: if the expected condition is not met
         """
-        result = self.fs.exists(path)
-        compare = operator.ne if should_exist else operator.eq
-        if compare(result, True):
-            msg = "not found" if should_exist else "already exists"
-            raise OSError(f"{path} {msg} on {self.description}")
+        exists = self.fs.exists(path)
+        if should_exist and not exists:
+            raise OSError(f"{path} not found on {self.description}")
+        if not should_exist and exists:
+            raise OSError(f"{path} already exists on {self.description}")
 
     def makedir(self, path):
         """Create path in current environment
@@ -128,7 +127,9 @@ class DataAccess:
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
         :return: (*list*) -- available profile version.
         """
-        return ProfileHelper.get_profile_version_cloud(grid_model, kind)
+        blob_version = ProfileHelper.get_profile_version_cloud(grid_model, kind)
+        local_version = ProfileHelper.get_profile_version_local(grid_model, kind)
+        return list(set(blob_version + local_version))
 
 
 class LocalDataAccess(DataAccess):
@@ -169,17 +170,6 @@ class LocalDataAccess(DataAccess):
         self._check_file_exists(dest, should_exist=False)
         self.makedir(to_dir)
         self.fs.move(file_name, dest)
-
-    def get_profile_version(self, grid_model, kind):
-        """Returns available raw profile from blob storage or local disk
-
-        :param str grid_model: grid model.
-        :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
-        :return: (*list*) -- available profile version.
-        """
-        blob_version = super().get_profile_version(grid_model, kind)
-        local_version = ProfileHelper.get_profile_version_local(grid_model, kind)
-        return list(set(blob_version + local_version))
 
 
 class SSHDataAccess(DataAccess):
