@@ -46,7 +46,10 @@ class Launcher:
 
     def __init__(self, scenario):
         self.scenario = scenario
-        self.scenario_id = scenario.scenario_id
+
+    @property
+    def scenario_id(self):
+        return self.scenario.scenario_id
 
     def _launch(self, threads=None, solver=None, extract_data=True):
         """Launches simulation on target environment
