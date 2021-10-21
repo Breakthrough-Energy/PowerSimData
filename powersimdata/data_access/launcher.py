@@ -96,7 +96,7 @@ class SSHLauncher(Launcher):
         if extra_args is None:
             extra_args = []
 
-        engine = self.scenario._scenario_info["engine"]
+        engine = self.scenario.state._scenario_info["engine"]
         path_to_package = posixpath.join(server_setup.MODEL_DIR, engine)
         folder = "pyreise" if engine == "REISE" else "pyreisejl"
 
@@ -111,7 +111,7 @@ class SSHLauncher(Launcher):
         ]
         cmd_io_redirect = ["</dev/null >/dev/null 2>&1 &"]
         cmd = cmd_pythonpath + cmd_pythoncall + extra_args + cmd_io_redirect
-        process = self.scenario._data_access.execute_command_async(cmd)
+        process = self.scenario.data_access.execute_command_async(cmd)
         print("PID: %s" % process.pid)
         return process
 
