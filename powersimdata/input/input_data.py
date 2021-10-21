@@ -1,10 +1,8 @@
 import os
 
-import fs
 import pandas as pd
 
 from powersimdata.data_access.context import Context
-from powersimdata.data_access.data_access import LocalDataAccess
 from powersimdata.data_access.profile_helper import ProfileHelper
 from powersimdata.utility import server_setup
 from powersimdata.utility.helpers import MemoryCache, cache_key
@@ -68,10 +66,6 @@ class InputData:
     def __init__(self, data_loc=None):
         """Constructor."""
         self.data_access = Context.get_data_access(data_loc)
-        if type(self.data_access) != LocalDataAccess:
-            self.local_data_access = LocalDataAccess(server_setup.LOCAL_DIR)
-        else:
-            self.local_data_access = self.data_access
 
     def get_data(self, scenario_info, field_name):
         """Returns data either from server or local directory.
@@ -126,17 +120,11 @@ class InputData:
         :param dict ct: a change table
         :param str scenario_id: scenario id, used for file name
         """
-        # write to local
-        # because https://docs.pyfilesystem.org/en/latest/reference/path.html
-        print(server_setup.INPUT_DIR)
-        filepath = "/".join(server_setup.INPUT_DIR) + "/" + scenario_id + "_ct.pkl"
-        self.local_data_access.write(filepath, ct)
 
-        if self.data_access != self.local_data_access:
-            # copy from local to data_access
-            fs.move.move_file(
-                self.local_data_access.fs, filepath, self.data_access.fs, filepath
-            )
+        # note pyfilesystem path conventions:
+        # https://docs.pyfilesystem.org/en/latest/reference/path.html
+        filepath = "/".join([*server_setup.INPUT_DIR, f"{scenario_id}_ct.pkl"])
+        self.data_access.write(filepath, ct)
 
 
 def _read_data(filepath):

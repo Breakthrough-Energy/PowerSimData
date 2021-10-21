@@ -32,6 +32,7 @@ class DataAccess:
         """Constructor"""
         self.root = root
         self.join = fs2.path.join
+        self.local_fs = None
 
     def read(self, filepath):
         """Reads data from data store.
@@ -71,7 +72,7 @@ class DataAccess:
 
         print("Writing %s" % filepath)
 
-        with self.fs.openbin(filepath, mode="w") as f:
+        with self.local_fs.openbin(filepath, mode="w") as f:
             if ext == "pkl":
                 pickle.dump(data, f)
             elif ext == "csv":
@@ -80,6 +81,9 @@ class DataAccess:
                 savemat(f, data, appendmat=False)
             else:
                 raise ValueError("Unknown extension! %s" % ext)
+
+        if self.local_fs != self.fs:
+            fs2.copy.copy_file(self.local_fs, filepath, self.fs, filepath)
 
     def copy_from(self, file_name, from_dir):
         """Copy a file from data store to userspace.
@@ -194,6 +198,7 @@ class LocalDataAccess(DataAccess):
         super().__init__(root)
         self.description = "local machine"
         self.fs = fs2.open_fs(root)
+        self.local_fs = self.fs
 
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
