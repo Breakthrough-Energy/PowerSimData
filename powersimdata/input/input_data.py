@@ -114,6 +114,18 @@ class InputData:
         """
         return self.data_access.get_profile_version(grid_model, kind)
 
+    def save_change_table(self, ct, scenario_id):
+        """Saves change table to the data store.
+
+        :param dict ct: a change table
+        :param str scenario_id: scenario id, used for file name
+        """
+
+        # note pyfilesystem path conventions:
+        # https://docs.pyfilesystem.org/en/latest/reference/path.html
+        filepath = "/".join([*server_setup.INPUT_DIR, f"{scenario_id}_ct.pkl"])
+        self.data_access.write(filepath, ct)
+
 
 def _read_data(filepath):
     """Reads data from local machine.

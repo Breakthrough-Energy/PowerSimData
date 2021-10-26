@@ -1,13 +1,10 @@
 import copy
-import os
-import pickle
 
 from powersimdata.design.transmission.upgrade import (
     scale_congested_mesh_branches,
     scale_renewable_stubs,
 )
 from powersimdata.input.transform_grid import TransformGrid
-from powersimdata.utility import server_setup
 from powersimdata.utility.distance import find_closest_neighbor
 
 _resources = (
@@ -799,16 +796,3 @@ class ChangeTable:
             transformed = getattr(TransformGrid(self.grid, self.ct).get_grid(), table)
             self._new_element_caches[table][new_elements_tuple] = transformed
             return transformed.copy()
-
-    def write(self, scenario_id):
-        """Saves change table to disk.
-
-        :param str scenario_id: scenario index.
-        :raises IOError: if file already exists on local machine.
-        """
-        file_name = os.path.join(server_setup.LOCAL_DIR, scenario_id + "_ct.pkl")
-        if os.path.isfile(file_name) is False:
-            print("Writing %s" % file_name)
-            pickle.dump(self.ct, open(file_name, "wb"))
-        else:
-            raise IOError("%s already exists" % file_name)
