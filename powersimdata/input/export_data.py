@@ -6,12 +6,16 @@ from scipy.io import savemat
 from powersimdata.input.transform_profile import TransformProfile
 
 
-def export_case_mat(grid, filepath, storage_filepath=None):
+def export_case_mat(grid, filepath=None, storage_filepath=None):
     """Export a grid to a format suitable for loading into simulation engine.
+    If optional filepath arguments are used, the results will also be saved to
+    the filepaths provided
 
     :param powersimdata.input.grid.Grid grid: Grid instance.
-    :param str filepath: path where main grid file will be saved.
+    :param str filepath: path where main grid file will be saved, if present
     :param str storage_filepath: path where storage data file will be saved, if present.
+    :return: (*tuple*) -- the mpc data as a dictionary and the mpc storage data
+        as a dictionary, if present. The storage data will be None if not present.
     """
     grid = copy.deepcopy(grid)
 
@@ -105,6 +109,8 @@ def export_case_mat(grid, filepath, storage_filepath=None):
         mpc["mpc"]["dclineid"] = dclineid
 
     # energy storage
+    mpc_storage = None
+    
     if len(grid.storage["gen"]) > 0:
         storage = grid.storage.copy()
 
@@ -118,10 +124,14 @@ def export_case_mat(grid, filepath, storage_filepath=None):
                 },
             }
         }
+        
 
-        savemat(storage_filepath, mpc_storage, appendmat=False)
-
-    savemat(filepath, mpc, appendmat=False)
+    if filepath:
+        savemat(filepath, mpc, appendmat=False)
+        if mpc_storage:
+            savemat(storage_filepath, mpc_storage, appendmat=False)
+    
+    return mpc, mpc_storage
 
 
 def export_transformed_profile(kind, scenario_info, grid, ct, filepath):
