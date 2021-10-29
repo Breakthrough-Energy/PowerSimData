@@ -467,3 +467,28 @@ def test_change_table_clear_bad_type(ct):
 def test_change_table_clear_bad_key(ct):
     with pytest.raises(ValueError):
         ct.clear({"plantttt"})
+
+
+def test_remove_branch(ct):
+    ct.remove_branch({0})
+    with pytest.raises(ValueError):
+        # Can't remove again, because it shouldn't exist
+        ct.remove_branch({0})
+
+
+def test_remove_bus(ct):
+    with pytest.raises(ValueError):
+        # Can't remove, because there are branches attached to it
+        ct.remove_bus({1})
+    ct.remove_branch({0, 1, 2})
+    ct.remove_bus({1})
+    with pytest.raises(ValueError):
+        # Can't remove again, because it shouldn't exist
+        ct.remove_bus({1})
+    # Evan after we remove the branch connected to bus 845...
+    ct.remove_branch({1094})
+    with pytest.raises(ValueError):
+        # We can't remove this bus, since there's a generator with non-zero capacity
+        ct.remove_bus({845})
+    ct.scale_plant_capacity(resource="ng", plant_id={0: 0})
+    ct.remove_bus({845})

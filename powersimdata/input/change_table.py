@@ -1,6 +1,7 @@
 import copy
 import os
 import pickle
+from itertools import chain
 
 from powersimdata.design.transmission.upgrade import (
     scale_congested_mesh_branches,
@@ -124,6 +125,14 @@ class ChangeTable:
         keys in the dictionary are: *'lat'*, *'lon'*, one of *'zone_id'*/*'zone_name'*,
         and optionally *'Pd'*, specifying the location of the bus, the demand zone, and
         optionally the nominal demand at that bus (defaults to 0).
+    * *'remove_branch'*:
+        value is a set. Each entry in this set is a branch ID to be removed.
+    * *'remove_bus'*:
+        value is a set. Each entry in this set is a bus ID to be removed.
+    * *'remove_dcline'*:
+        value is a set. Each entry in this set is a DC line ID to be removed.
+    * *'remove_plant'*:
+        value is a set. Each entry in this set is a plant ID to be removed.
     """
 
     def __init__(self, grid):
@@ -133,7 +142,9 @@ class ChangeTable:
         """
         self.grid = grid
         self.ct = {}
-        self._new_element_caches = {k: {} for k in {"branch", "bus", "dcline", "plant"}}
+        self._new_element_caches = {
+            k: {} for k in {"branch", "bus", "dcline", "plant", "storage_gen"}
+        }
 
     @staticmethod
     def _check_resource(resource):
@@ -199,7 +210,7 @@ class ChangeTable:
             self.ct.clear()
             return
         # Input validation
-        allowed = {"branch", "dcline", "demand", "plant", "storage"}
+        allowed = {"branch", "bus", "dcline", "demand", "plant", "storage"}
         if isinstance(which, str):
             which = {which}
         if not isinstance(which, set):
@@ -213,13 +224,19 @@ class ChangeTable:
         # Clear multiple keys for each entry in which
         for line_type in {"branch", "dcline"}:
             if line_type in which:
-                for prefix in {"", "new_"}:
+                for prefix in {"", "new_", "remove_"}:
                     key = prefix + line_type
                     if key in self.ct:
                         del self.ct[key]
+        if "bus" in which:
+            for prefix in {"new_", "remove_"}:
+                key = prefix + "bus"
+                if key in self.ct:
+                    del self.ct[key]
         if "plant" in which:
-            if "new_plant" in self.ct:
-                del self.ct["new_plant"]
+            for key in {"new_plant", "remove_plant"}:
+                if key in self.ct:
+                    del self.ct[key]
             for r in _resources:
                 for suffix in {"", "_cost", "_pmin"}:
                     key = r + suffix
@@ -262,7 +279,7 @@ class ChangeTable:
                 if len(self.ct[ct_key]["zone_id"]) == 0:
                     self.ct.pop(ct_key)
             if plant_id is not None:
-                anticipated_plant = self._get_df_with_new_elements("plant")
+                anticipated_plant = self._get_transformed_df("plant")
                 diff = set(plant_id.keys()) - set(anticipated_plant.index)
                 if len(diff) != 0:
                     err_msg = f"No {resource} plant(s) with the following id: "
@@ -352,7 +369,7 @@ class ChangeTable:
             is (are) the id of the line(s) and the associated value is the
             scaling factor for the increase/decrease in capacity of the line(s).
         """
-        anticipated_branch = self._get_df_with_new_elements("branch")
+        anticipated_branch = self._get_transformed_df("branch")
         if bool(zone_name) or bool(branch_id) is True:
             if "branch" not in self.ct:
                 self.ct["branch"] = {}
@@ -392,7 +409,7 @@ class ChangeTable:
         """
         if "dcline" not in self.ct:
             self.ct["dcline"] = {}
-        anticipated_dcline = self._get_df_with_new_elements("dcline")
+        anticipated_dcline = self._get_transformed_df("dcline")
         diff = set(dcline_id.keys()) - set(anticipated_dcline.index)
         if len(diff) != 0:
             print("No dc line with the following id:")
@@ -505,7 +522,7 @@ class ChangeTable:
             "terminal_min",
             "terminal_max",
         }
-        anticipated_bus = self._get_df_with_new_elements("bus")
+        anticipated_bus = self._get_transformed_df("bus")
         for i, storage in enumerate(info):
             self._check_entry_keys(storage, i, "storage", required, None, optional)
             if storage["bus_id"] not in anticipated_bus.index:
@@ -609,7 +626,7 @@ class ChangeTable:
         :raises ValueError: if any of the new lines to be added have nonsensical values.
         """
         info = copy.deepcopy(info)
-        anticipated_bus = self._get_df_with_new_elements("bus")
+        anticipated_bus = self._get_transformed_df("bus")
         new_lines = []
         required = {"from_bus_id", "to_bus_id"}
         xor_sets = {("capacity", "Pmax"), ("capacity", "Pmin")}
@@ -684,7 +701,7 @@ class ChangeTable:
             raise TypeError("Argument enclosing new plant(s) must be a list")
 
         info = copy.deepcopy(info)
-        anticipated_bus = self._get_df_with_new_elements("bus")
+        anticipated_bus = self._get_transformed_df("bus")
         new_plants = []
         required = {"bus_id", "Pmax", "type"}
         optional = {"c0", "c1", "c2", "Pmin"}
@@ -781,24 +798,164 @@ class ChangeTable:
             self.ct["new_bus"] = []
         self.ct["new_bus"] += new_buses
 
-    def _get_df_with_new_elements(self, table):
+    def _get_transformed_df(self, table):
         """Get a post-transformation data table, for use with adding elements at new
-        buses, or scaling new elements.
+        buses, or scaling new elements. Transformed tables are cached to avoid
+        unnecessary re-calculation of identical tables.
 
         :param str table: the table of the grid to be fetched:
-            'branch', 'bus', 'dcline', or 'plant'.
+            'branch', 'bus', 'dcline', 'plant', or 'storage_gen'.
         :return: (*pandas.DataFrame*) -- the post-transformation table.
         """
-        add_key = f"new_{table}"
-        if add_key not in self.ct:
+        if table == "storage_gen":
+            # Storage is a special case, since it's a dict of data frames
+            modification_keys = ["storage"]
+            try:
+                cache_key = tuple(tuple(sorted(b.items())) for b in self.ct["storage"])
+            except KeyError:
+                # No 'storage' key, so we can just return the original 'gen' table
+                return self.grid.storage["gen"]
+            if cache_key in self._new_element_caches[table]:
+                return self._new_element_caches[table][cache_key]
+            else:
+                gen = TransformGrid(self.grid, self.ct).get_grid().storage["gen"]
+                self._new_element_caches[table][cache_key] = gen
+                return gen.copy()
+        # For all other tables, look at change table keys for additions & deletions
+        modification_keys = [f"new_{table}", f"remove_{table}"]
+        cache_key = tuple(
+            tuple(sorted(b.items())) for b in self.ct.get(f"new_{table}", {})
+        )
+        cache_key += (
+            f"remove_{table}",
+            tuple(sorted(self.ct.get(f"remove_{table}", {}))),
+        )
+        if table == "plant":
+            # For the plant table, also look at scaling (potentially to zero)
+            # These are needed to validate whether buses can be removed
+            modification_keys += sorted(self.grid.plant["type"].unique())
+            cache_key += tuple(
+                chain.from_iterable(
+                    [
+                        tuple([subkey] + sorted(subdict.items()))
+                        for k in modification_keys[1:]
+                        for subkey, subdict in self.ct.get(k, {}).items()
+                    ]
+                )
+            )
+        if not any(m in self.ct for m in modification_keys):
             return getattr(self.grid, table)
-        new_elements_tuple = tuple(tuple(sorted(b.items())) for b in self.ct[add_key])
-        if new_elements_tuple in self._new_element_caches[table]:
-            return self._new_element_caches[table][new_elements_tuple]
+        if cache_key in self._new_element_caches[table]:
+            return self._new_element_caches[table][cache_key]
         else:
             transformed = getattr(TransformGrid(self.grid, self.ct).get_grid(), table)
-            self._new_element_caches[table][new_elements_tuple] = transformed
+            self._new_element_caches[table][cache_key] = transformed
             return transformed.copy()
+
+    def remove_branch(self, info):
+        """Remove one or more branches.
+
+        :param int/iterable info: iterable of branch indices, or a single branch index.
+        :raises ValueError: if ``info`` contains one or more entries not present in the
+            branch table index.
+        """
+        if isinstance(info, int):
+            info = {info}
+        diff = set(info) - set(self._get_transformed_df("branch").index)
+        if len(diff) != 0:
+            raise ValueError(f"No branch with the following id(s): {sorted(diff)}")
+        if "remove_branch" not in self.ct:
+            self.ct["remove_branch"] = set()
+        self.ct["remove_branch"] |= set(info)
+        self._check_for_islanded_load_buses()
+
+    def remove_bus(self, info):
+        """Remove one or more buses.
+
+        :param int/iterable info: iterable of bus indices, or a single bus index.
+        :raises ValueError: if ``info`` contains one or more entries not present in the
+            bus table index.
+        """
+        if isinstance(info, int):
+            info = {info}
+        # Check whether all buses to be removed are present in the grid
+        diff = set(info) - set(self._get_transformed_df("bus").index)
+        if len(diff) != 0:
+            raise ValueError(f"No bus with the following id(s): {sorted(diff)}")
+        # Check whether there exist any plants with non-zero capacity at these buses
+        anticipated_plant = self._get_transformed_df("plant").query("Pmax > 0")
+        plants_at_removal_buses = set(info) & set(anticipated_plant.bus_id)
+        if len(plants_at_removal_buses) > 0:
+            raise ValueError(
+                f"Generators exist at bus id(s): {sorted(plants_at_removal_buses)}"
+            )
+        # Check whether storage exists at these buses
+        anticipated_storage = self._get_transformed_df("storage_gen")
+        storage_at_removal_buses = set(info) & set(anticipated_storage.bus_id)
+        if len(storage_at_removal_buses) > 0:
+            raise ValueError(
+                f"Storage units exist at bus id(s): {sorted(storage_at_removal_buses)}"
+            )
+        # Check whether there exist branches or DC lines at these buses
+        for table in ("branch", "dcline"):
+            anticipated = self._get_transformed_df(table)
+            overlap = anticipated.query("from_bus_id in @info or to_bus_id in @info")
+            if len(overlap) > 0:
+                raise ValueError(
+                    f"These {table} IDs connect to a bus to be removed: {overlap.index}"
+                )
+        # All checks have passed, and we can add this to the change table
+        if "remove_bus" not in self.ct:
+            self.ct["remove_bus"] = set()
+        self.ct["remove_bus"] |= set(info)
+
+    def remove_dcline(self, info):
+        """Remove one or more DC lines.
+
+        :param int/iterable info: iterable of DC line indices, or a single index.
+        :raises ValueError: if ``info`` contains one or more entries not present in the
+            dcline table index.
+        """
+        if isinstance(info, int):
+            info = {info}
+        diff = set(info) - set(self._get_transformed_df("dcline").index)
+        if len(diff) != 0:
+            raise ValueError(f"No DC line with the following id(s): {sorted(diff)}")
+        if "remove_dcline" not in self.ct:
+            self.ct["remove_dcline"] = set()
+        self.ct["remove_dcline"] |= set(info)
+
+    def remove_plant(self, info):
+        """Remove one or more plants.
+
+        :param int/iterable info: iterable of plant indices, or a single plant index.
+        :raises ValueError: if ``info`` contains one or more entries not present in the
+            plant table index.
+        """
+        if isinstance(info, int):
+            info = {info}
+        diff = set(info) - set(self._get_transformed_df("plant").index)
+        if len(diff) != 0:
+            raise ValueError(f"No plant with the following id(s): {sorted(diff)}")
+        if "remove_plant" not in self.ct:
+            self.ct["remove_plant"] = set()
+        self.ct["remove_plant"] |= set(info)
+
+    def _check_for_islanded_load_buses(self):
+        """Identifies buses with non-zero demand, with no connected lines, and warns."""
+        bus = self._get_transformed_df("bus")
+        connected_buses = set().union(
+            *[
+                set(self.grid.branch["from_bus_id"]),
+                set(self.grid.branch["to_bus_id"]),
+                set(self.grid.dcline["from_bus_id"]),
+                set(self.grid.dcline["to_bus_id"]),
+            ]
+        )
+        load_buses = set(bus.query("Pd > 0").index)
+        diff = load_buses - connected_buses
+        if len(diff) > 0:
+            print(f"Warning: load buses connected to no lines exist: {sorted(diff)}")
 
     def write(self, scenario_id):
         """Saves change table to disk.
