@@ -58,7 +58,7 @@ class DataAccess:
 
         return data
 
-    def write(self, filepath, data):
+    def write(self, filepath, data, save_local=True):
         """Write a file to data store.
 
         :param str filepath: path to save data to, with extension either 'pkl', 'csv', or 'mat'.
@@ -72,17 +72,23 @@ class DataAccess:
 
         print("Writing %s" % filepath)
 
-        with self.local_fs.openbin(filepath, mode="w") as f:
-            if ext == "pkl":
-                pickle.dump(data, f)
-            elif ext == "csv":
-                data.to_csv(f)
-            elif ext == "mat":
-                savemat(f, data, appendmat=False)
-            else:
-                raise ValueError("Unknown extension! %s" % ext)
+        if save_local:
+            f = self.local_fs.openbin(filepath, mode="w")
+        else:
+            f = self.fs.openbin(filepath, mode="w")
+            
+        if ext == "pkl":
+            pickle.dump(data, f)
+        elif ext == "csv":
+            data.to_csv(f)
+        elif ext == "mat":
+            savemat(f, data, appendmat=False)
+        else:
+            raise ValueError("Unknown extension! %s" % ext)
 
-        if self.local_fs != self.fs:
+        f.close()
+
+        if save_local and self.local_fs != self.fs:
             fs2.copy.copy_file(self.local_fs, filepath, self.fs, filepath)
 
     def copy_from(self, file_name, from_dir):
