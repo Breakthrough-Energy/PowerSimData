@@ -74,7 +74,7 @@ class DataAccess:
             f = self.local_fs.openbin(filepath, mode="w")
         else:
             f = self.fs.openbin(filepath, mode="w")
-            
+
         if ext == "pkl":
             pickle.dump(data, f)
         elif ext == "csv":
