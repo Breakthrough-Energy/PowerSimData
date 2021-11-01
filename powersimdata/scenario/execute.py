@@ -205,17 +205,16 @@ class SimulationInput:
         """Creates MATPOWER case file."""
         file_name = f"{self.scenario_id}_case.mat"
         storage_file_name = f"{self.scenario_id}_case_storage.mat"
-        file_path = os.path.join(server_setup.LOCAL_DIR, file_name)
-        storage_file_path = os.path.join(server_setup.LOCAL_DIR, storage_file_name)
+        file_path = "/".join(server_setup.LOCAL_DIR, file_name)
+        storage_file_path = "/".join(server_setup.LOCAL_DIR, storage_file_name)
+        
         print("Building MPC file")
-        export_case_mat(self.grid, file_path, storage_file_path)
-        self._data_access.move_to(
-            file_name, self.REL_TMP_DIR, change_name_to="case.mat"
-        )
-        if len(self.grid.storage["gen"]) > 0:
-            self._data_access.move_to(
-                storage_file_name, self.REL_TMP_DIR, change_name_to="case_storage.mat"
-            )
+        mpc, mpc_storage = export_case_mat(self.grid, file_path, storage_file_path)
+
+        self.data_access.write(file_path, mpc)
+
+        if mpc_storage:
+            self.data_access.write(storage_file_path, mpc_storage)
 
     def prepare_profile(self, kind, profile_as=None):
         """Prepares profile for simulation.
