@@ -110,7 +110,7 @@ def export_case_mat(grid, filepath=None, storage_filepath=None):
 
     # energy storage
     mpc_storage = None
-    
+
     if len(grid.storage["gen"]) > 0:
         storage = grid.storage.copy()
 
@@ -124,13 +124,12 @@ def export_case_mat(grid, filepath=None, storage_filepath=None):
                 },
             }
         }
-        
 
     if filepath:
         savemat(filepath, mpc, appendmat=False)
         if mpc_storage:
             savemat(storage_filepath, mpc_storage, appendmat=False)
-    
+
     return mpc, mpc_storage
 
 
