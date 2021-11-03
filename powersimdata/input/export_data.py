@@ -125,9 +125,9 @@ def export_case_mat(grid, filepath=None, storage_filepath=None):
             }
         }
 
-    if filepath:
+    if filepath is not None:
         savemat(filepath, mpc, appendmat=False)
-        if mpc_storage:
+        if mpc_storage is not None:
             savemat(storage_filepath, mpc_storage, appendmat=False)
 
     return mpc, mpc_storage
