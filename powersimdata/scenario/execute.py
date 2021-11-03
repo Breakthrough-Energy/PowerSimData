@@ -1,5 +1,3 @@
-import os
-
 from powersimdata.data_access.context import Context
 from powersimdata.input.export_data import export_case_mat
 from powersimdata.input.grid import Grid
@@ -7,7 +5,6 @@ from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.scenario.ready import Ready
-from powersimdata.utility import server_setup
 from powersimdata.utility.config import get_deployment_mode
 
 
@@ -206,16 +203,16 @@ class SimulationInput:
         """Creates MATPOWER case file."""
         file_name = f"{self.scenario_id}_case.mat"
         storage_file_name = f"{self.scenario_id}_case_storage.mat"
-        file_path = "/".join(server_setup.LOCAL_DIR, file_name)
-        storage_file_path = "/".join(server_setup.LOCAL_DIR, storage_file_name)
+        file_path = "/".join([self.REL_TMP_DIR, file_name])
+        storage_file_path = "/".join([self.REL_TMP_DIR, storage_file_name])
 
         print("Building MPC file")
-        mpc, mpc_storage = export_case_mat(self.grid, file_path, storage_file_path)
+        mpc, mpc_storage = export_case_mat(self.grid)
 
-        self.data_access.write(file_path, mpc)
+        self._data_access.write(file_path, mpc, save_local=False)
 
         if mpc_storage:
-            self.data_access.write(storage_file_path, mpc_storage, save_local=False)
+            self._data_access.write(storage_file_path, mpc_storage, save_local=False)
 
     def prepare_profile(self, kind, profile_as=None):
         """Prepares profile for simulation.
@@ -225,12 +222,12 @@ class SimulationInput:
         """
         if profile_as is None:
             file_name = "%s_%s.csv" % (self.scenario_id, kind)
-            filepath = os.path.join(server_setup.LOCAL_DIR, file_name)
+            filepath = "/".join([self.REL_TMP_DIR, file_name])
 
             tp = TransformProfile(self._scenario_info, self.grid, self.ct)
             profile = tp.get_profile(kind)
-            print(f"Writing scaled {kind} profile to {filepath} on local machine")
-            self.data_access_write(filepath, profile, save_local=False)
+            print(f"Writing scaled {kind} profile to {filepath}")
+            self._data_access.write(filepath, profile, save_local=False)
         else:
             from_dir = self._data_access.tmp_folder(profile_as)
             src = self._data_access.join(from_dir, f"{kind}.csv")
