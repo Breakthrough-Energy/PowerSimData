@@ -211,7 +211,7 @@ class SimulationInput:
 
         self._data_access.write(file_path, mpc, save_local=False)
 
-        if mpc_storage:
+        if mpc_storage is not None:
             self._data_access.write(storage_file_path, mpc_storage, save_local=False)
 
     def prepare_profile(self, kind, profile_as=None, slice=False):

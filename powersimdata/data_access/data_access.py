@@ -105,15 +105,6 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def move_to(self, file_name, to_dir, change_name_to=None):
-        """Copy a file from userspace to data store.
-
-        :param str file_name: file name to copy.
-        :param str to_dir: data store directory to copy file to.
-        :param str change_name_to: new name for file when copied to data store.
-        """
-        raise NotImplementedError
-
     def tmp_folder(self, scenario_id):
         """Get path to temporary scenario folder
 
@@ -180,14 +171,14 @@ class DataAccess:
         :param str relative_path: path relative to root
         :return: (*str*) -- the checksum of the file
         """
-        return "dummy_value"
+        return self.fs.hash(relative_path, "sha256")
 
-    def push(self, file_name, checksum, change_name_to=None):
+    def push(self, file_name, checksum, rename):
         """Push the file from local to remote root folder, ensuring integrity
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
-        :param str change_name_to: new name for file when copied to data store.
+        :param str rename: the new filename
         """
         raise NotImplementedError
 
@@ -219,28 +210,16 @@ class LocalDataAccess(DataAccess):
         """
         pass
 
-    def push(self, file_name, checksum, change_name_to=None):
-        """Nothing to be done due to symlink
+    def push(self, file_name, checksum, rename):
+        """Rename the file.
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
-        :param str change_name_to: new name for file when copied to data store.
+        :param str rename: the new filename
         """
-        pass
-
-    def move_to(self, file_name, to_dir, change_name_to=None):
-        """Copy a file from userspace to data store.
-
-        :param str file_name: file name to copy.
-        :param str to_dir: data store directory to copy file to.
-        :param str change_name_to: new name for file when copied to data store.
-        """
-        change_name_to = file_name if change_name_to is None else change_name_to
-        dest = self.join(to_dir, change_name_to)
-        print(f"--> Moving file {file_name} to {to_dir}")
-        self._check_file_exists(dest, should_exist=False)
-        self.makedir(to_dir)
-        self.fs.move(file_name, dest)
+        if checksum != self.checksum(rename):
+            raise ValueError("Checksums do not match")
+        self.fs.move(file_name, rename, overwrite=True)
 
 
 class SSHDataAccess(DataAccess):
@@ -296,29 +275,6 @@ class SSHDataAccess(DataAccess):
             fs2.copy.copy_file(self.fs, from_path, tmp_fs, from_path)
             fs2.move.move_file(tmp_fs, from_path, self.local_fs, from_path)
 
-    def move_to(self, file_name, to_dir=None, change_name_to=None):
-        """Copy a file from userspace to data store.
-
-        :param str file_name: file name to copy.
-        :param str to_dir: data store directory to copy file to.
-        :param str change_name_to: new name for file when copied to data store.
-        :raises FileNotFoundError: if specified file does not exist
-        """
-        if not self.local_fs.isfile(file_name):
-            raise FileNotFoundError(
-                f"{file_name} not found in {self.local_root} on local machine"
-            )
-
-        change_name_to = file_name if change_name_to is None else change_name_to
-        to_dir = "" if to_dir is None else to_dir
-        self.makedir(to_dir)
-
-        to_path = self.join(to_dir, change_name_to)
-        self._check_file_exists(to_path, should_exist=False)
-
-        print(f"Transferring {change_name_to} to server")
-        fs2.move.move_file(self.local_fs, file_name, self.fs, to_path)
-
     def execute_command_async(self, command):
         """Execute a command via ssh, without waiting for completion.
 
@@ -342,20 +298,22 @@ class SSHDataAccess(DataAccess):
 
         return self.fs.checksum(full_path)
 
-    def push(self, file_name, checksum, change_name_to=None):
+    def push(self, file_name, checksum, rename):
         """Push file to server and verify the checksum matches a prior value
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
-        :param str change_name_to: new name for file when copied to data store.
+        :param str rename: the new filename
         :raises IOError: if command generated stderr
         """
-        new_name = file_name if change_name_to is None else change_name_to
-        backup = f"{new_name}.temp"
-        self.move_to(file_name, change_name_to=backup)
+        backup = f"{rename}.temp"
+
+        self._check_file_exists(backup, should_exist=False)
+        print(f"Transferring {backup} to server")
+        fs2.move.move_file(self.local_fs, file_name, self.fs, backup)
 
         values = {
-            "original": posixpath.join(self.root, new_name),
+            "original": posixpath.join(self.root, rename),
             "updated": posixpath.join(self.root, backup),
             "lockfile": posixpath.join(self.root, "scenario.lockfile"),
             "checksum": checksum,
@@ -388,12 +346,12 @@ class MemoryDataAccess(SSHDataAccess):
         self.local_root = self.root = "dummy"
         self.join = fs2.path.join
 
-    def push(self, file_name, checksum, change_name_to=None):
+    def push(self, file_name, checksum, rename):
         """Push file from local to remote filesystem, bypassing checksum since this is
         in memory.
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
-        :param str change_name_to: new name for file when copied to data store.
+        :param str rename: the new filename
         """
-        self.move_to(file_name, change_name_to=change_name_to)
+        fs2.move.move_file(self.local_fs, file_name, self.fs, rename)

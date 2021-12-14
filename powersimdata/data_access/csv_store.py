@@ -1,6 +1,5 @@
 import functools
 import os
-import shutil
 from pathlib import Path
 from tempfile import mkstemp
 
@@ -76,9 +75,6 @@ class CsvStore:
         """
         tmp_file, tmp_path = mkstemp(dir=server_setup.LOCAL_DIR)
         table.to_csv(tmp_path)
-        shutil.copy(tmp_path, os.path.join(server_setup.LOCAL_DIR, self._FILE_NAME))
-        os.close(tmp_file)
         tmp_name = os.path.basename(tmp_path)
-        self.data_access.push(tmp_name, checksum, change_name_to=self._FILE_NAME)
-        if os.path.exists(tmp_path):  # only required if data_access is LocalDataAccess
-            os.remove(tmp_path)
+        self.data_access.push(tmp_name, checksum, rename=self._FILE_NAME)
+        # os.close(tmp_file) # not sure if we need this anymore?
