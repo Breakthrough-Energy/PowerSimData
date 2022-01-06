@@ -1,9 +1,11 @@
 import os
+from collections import defaultdict
 
 import pandas as pd
 
 _exports = [
     "abv",
+    "abv2id",
     "abv2interconnect",
     "abv2loadzone",
     "abv2state",
@@ -129,6 +131,10 @@ interconnect2id = {
 # Map load zone id to state abbreviations
 id2abv = {k: state2abv[v] for k, v in zone_df.state.to_dict().items()}
 
+# Map state abbreviations to load zone IDs
+abv2id = defaultdict(set)
+for k, v in id2abv.items():
+    abv2id[v].add(k)
 
 # Map state abbreviations to load zone name
 abv2loadzone = {
