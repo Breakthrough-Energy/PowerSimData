@@ -3,7 +3,7 @@ name: Bug report
 about: Create a report to help us improve
 title: Bug report
 labels: bug
-assignees: ahurli, BainanXia, danielolsen, jon-hagg, rouille
+assignees: BainanXia, danielolsen, jon-hagg, rouille
 
 ---
 

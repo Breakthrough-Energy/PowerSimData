@@ -3,7 +3,7 @@ name: Feature request
 about: Suggest an idea for this project
 title: Feature request
 labels: feature request
-assignees: ahurli, BainanXia, danielolsen, jon-hagg, rouille
+assignees: BainanXia, danielolsen, jon-hagg, rouille
 
 ---
 
