@@ -201,10 +201,8 @@ class SimulationInput:
 
     def prepare_mpc_file(self):
         """Creates MATPOWER case file."""
-        file_name = f"{self.scenario_id}_case.mat"
-        storage_file_name = f"{self.scenario_id}_case_storage.mat"
-        file_path = "/".join([self.REL_TMP_DIR, file_name])
-        storage_file_path = "/".join([self.REL_TMP_DIR, storage_file_name])
+        file_path = "/".join([self.REL_TMP_DIR, "case.mat"])
+        storage_file_path = "/".join([self.REL_TMP_DIR, "case_storage.mat"])
 
         print("Building MPC file")
         mpc, mpc_storage = export_case_mat(self.grid)
@@ -221,8 +219,8 @@ class SimulationInput:
         :param int/str profile_as: if given, copy profile from this scenario.
         :param bool slice: whether to slice the profiles by the Scenario's time range.
         """
+        file_name = f"{kind}.csv"
         if profile_as is None:
-            file_name = "%s_%s.csv" % (self.scenario_id, kind)
             filepath = "/".join([self.REL_TMP_DIR, file_name])
 
             tp = TransformProfile(self._scenario_info, self.grid, self.ct, slice)
@@ -231,5 +229,5 @@ class SimulationInput:
             self._data_access.write(filepath, profile, save_local=False)
         else:
             from_dir = self._data_access.tmp_folder(profile_as)
-            src = self._data_access.join(from_dir, f"{kind}.csv")
+            src = self._data_access.join(from_dir, file_name)
             self._data_access.copy(src, self.REL_TMP_DIR)

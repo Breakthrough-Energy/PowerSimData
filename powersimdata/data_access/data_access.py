@@ -87,7 +87,7 @@ class DataAccess:
 
         ext = os.path.basename(filepath).split(".")[-1]
 
-        with fs.openbin(filepath) as f:
+        with fs.openbin(filepath, "w") as f:
             if ext == "pkl":
                 pickle.dump(data, f)
             elif ext == "csv":
