@@ -77,4 +77,4 @@ class CsvStore:
         table.to_csv(tmp_path)
         tmp_name = os.path.basename(tmp_path)
         self.data_access.push(tmp_name, checksum, rename=self._FILE_NAME)
-        # os.close(tmp_file) # not sure if we need this anymore?
+        os.close(tmp_file)

@@ -43,7 +43,6 @@ class DataAccess:
         :raises ValueError: if extension is unknown.
         """
         ext = os.path.basename(filepath).split(".")[-1]
-
         self._check_file_exists(filepath)
 
         with self.fs.open(filepath, mode="rb") as file_object:
@@ -66,11 +65,8 @@ class DataAccess:
         :param bool save_local: whether a copy should also be saved to the local filesystem, if
             such a filesystem is configured. Defaults to True.
         """
-
         self._check_file_exists(filepath, should_exist=False)
-
         print("Writing %s" % filepath)
-
         self._write(self.fs, filepath, data)
 
         if save_local and self.local_fs is not None:
@@ -84,8 +80,9 @@ class DataAccess:
         :param (*pandas.DataFrame* or *dict*) data: data to save
         :raises ValueError: if extension is unknown.
         """
-
         ext = os.path.basename(filepath).split(".")[-1]
+        dirpath = fs2.path.dirname(filepath)
+        fs.makedirs(dirpath, recreate=True)
 
         with fs.openbin(filepath, "w") as f:
             if ext == "pkl":
@@ -119,7 +116,7 @@ class DataAccess:
         :param str src: path to file
         :param str dest: destination folder
         """
-        if self.fs.exists(dest) and self.fs.isdir(dest):
+        if self.fs.isdir(dest):
             dest = self.join(dest, fs2.path.basename(src))
 
         self.fs.copy(src, dest)
@@ -150,13 +147,6 @@ class DataAccess:
             raise OSError(f"{path} not found on {self.description}")
         if not should_exist and exists:
             raise OSError(f"{path} already exists on {self.description}")
-
-    def makedir(self, path):
-        """Create path in current environment
-
-        :param str path: the relative path, excluding filename
-        """
-        self.fs.makedirs(path, recreate=True)
 
     def execute_command_async(self, command):
         """Execute a command locally at the DataAccess, without waiting for completion.
@@ -309,7 +299,7 @@ class SSHDataAccess(DataAccess):
         backup = f"{rename}.temp"
 
         self._check_file_exists(backup, should_exist=False)
-        print(f"Transferring {backup} to server")
+        print(f"Transferring {rename} to server")
         fs2.move.move_file(self.local_fs, file_name, self.fs, backup)
 
         values = {

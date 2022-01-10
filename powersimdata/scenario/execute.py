@@ -101,7 +101,6 @@ class Execute(Ready):
             si = SimulationInput(
                 self._data_access, self._scenario_info, self.grid, self.ct
             )
-            si.create_folder()
             for p in ["demand", "hydro", "solar", "wind"]:
                 si.prepare_profile(p, profiles_as)
 
@@ -193,12 +192,6 @@ class SimulationInput:
 
         self.REL_TMP_DIR = self._data_access.tmp_folder(self.scenario_id)
 
-    def create_folder(self):
-        """Creates folder on server that will enclose simulation inputs."""
-        description = self._data_access.description
-        print(f"--> Creating temporary folder on {description} for simulation inputs")
-        self._data_access.makedir(self.REL_TMP_DIR)
-
     def prepare_mpc_file(self):
         """Creates MATPOWER case file."""
         file_path = "/".join([self.REL_TMP_DIR, "case.mat"])
@@ -229,5 +222,5 @@ class SimulationInput:
             self._data_access.write(filepath, profile, save_local=False)
         else:
             from_dir = self._data_access.tmp_folder(profile_as)
-            src = self._data_access.join(from_dir, file_name)
+            src = "/".join([from_dir, file_name])
             self._data_access.copy(src, self.REL_TMP_DIR)

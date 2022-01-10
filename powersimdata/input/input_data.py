@@ -120,9 +120,6 @@ class InputData:
         :param dict ct: a change table
         :param str scenario_id: scenario id, used for file name
         """
-
-        # note pyfilesystem path conventions:
-        # https://docs.pyfilesystem.org/en/latest/reference/path.html
         filepath = "/".join([*server_setup.INPUT_DIR, f"{scenario_id}_ct.pkl"])
         self.data_access.write(filepath, ct)
 
