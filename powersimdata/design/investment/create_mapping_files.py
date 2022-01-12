@@ -4,6 +4,7 @@ import pandas as pd
 
 from powersimdata.design.investment import const
 from powersimdata.input.grid import Grid
+from powersimdata.utility.distance import haversine
 from powersimdata.utility.helpers import _check_import
 
 
@@ -66,6 +67,29 @@ def sjoin_nearest(left_df, right_df, search_dist=0.06):
     # Make spatial join between points that fall inside the Polygons
     points_in_regions = gpd.sjoin(left_df=left_df, right_df=right_df, op="intersects")
     points_in_regions["dist"] = 0
+
+    # Since polygons may overlap, there can be duplicated buses that we want to filter
+    duplicated = points_in_regions.loc[points_in_regions.index.duplicated(keep=False)]
+    to_drop = set()
+    for bus in set(duplicated["bus_id"]):
+        entries = duplicated.query("bus_id == @bus")
+        coords = entries["geometry"].iloc[0].coords[0]  # First duped entry, only point
+        regions = set(entries["name_abbr"])  # noqa: F841
+        candidates = points_in_regions.query(
+            "index not in @duplicated.index and name_abbr in @regions"
+        )
+        neighbor = candidates.apply(
+            lambda x: haversine((x.geometry.x, x.geometry.y), coords), axis=1
+        ).idxmin()
+        closest_region = candidates.loc[neighbor, "name_abbr"]  # noqa: F841
+        # There may be more than two overlapping geometries, capture all but the closest
+        drop_regions = set(entries.query("name_abbr != @closest_region")["name_abbr"])
+        # Since indices are duplicated, we need to drop via two-column tuples
+        to_drop |= {(bus, d) for d in drop_regions}
+
+    points_in_regions = points_in_regions.loc[
+        ~points_in_regions.set_index(["bus_id", "name_abbr"]).index.isin(to_drop)
+    ]
 
     # Find closest Polygons, for points that don't fall within any
     missing_indices = set(left_df.index) - set(points_in_regions.index)
@@ -184,7 +208,7 @@ def write_bus_neem_map(base_grid):
         raise TypeError("base_grid must be a Grid instance")
     df_pts_bus = bus_to_neem_reg(base_grid.bus)
     df_pts_bus.sort_index(inplace=True)
-    os.makedirs(const.bus_neem_regions_path, exist_ok=True)
+    os.makedirs(os.path.dirname(const.bus_neem_regions_path), exist_ok=True)
     df_pts_bus.to_csv(const.bus_neem_regions_path)
 
 
@@ -198,7 +222,7 @@ def write_bus_reeds_map(base_grid):
         raise TypeError("base_grid must be a Grid instance")
     df_pts_bus = bus_to_reeds_reg(base_grid.bus)
     df_pts_bus.sort_index(inplace=True)
-    os.makedirs(const.bus_reeds_regions_path, exist_ok=True)
+    os.makedirs(os.path.dirname(const.bus_reeds_regions_path), exist_ok=True)
     df_pts_bus.to_csv(const.bus_reeds_regions_path)
 
 

@@ -20,11 +20,5 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Start postgres container
-        run: |
-          docker-compose -f stack.yml up -d
-          while ! nc -z localhost 5432; do sleep 1; done;
-        working-directory: powersimdata/data_access
-
       - run: python -m pip install --upgrade pip tox
-      - run: tox -e pytest-ci
+      - run: tox -e pytest-local

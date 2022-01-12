@@ -1,6 +1,6 @@
-import json
 import os
 
+import fs
 import requests
 from tqdm.auto import tqdm
 
@@ -87,10 +87,7 @@ class ProfileHelper:
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
         :return: (*list*) -- available profile version.
         """
-
-        version_file = os.path.join(server_setup.LOCAL_DIR, "version.json")
-        if not os.path.exists(version_file):
-            return []
-        with open(version_file) as f:
-            version = json.load(f)
-            return ProfileHelper.parse_version(grid_model, kind, version)
+        profile_dir = fs.path.join(server_setup.LOCAL_DIR, "raw", grid_model)
+        lfs = fs.open_fs(profile_dir)
+        matching = [f for f in lfs.listdir(".") if kind in f]
+        return [f.lstrip(f"{kind}_").rstrip(".csv") for f in matching]

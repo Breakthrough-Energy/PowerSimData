@@ -1,6 +1,6 @@
-
 ![logo](https://raw.githubusercontent.com/Breakthrough-Energy/docs/master/source/_static/img/BE_Sciences_RGB_Horizontal_Color.svg)
 
+[![PyPI](https://img.shields.io/pypi/v/powersimdata?color=purple)](https://pypi.org/project/powersimdata/)
 [![codecov](https://codecov.io/gh/Breakthrough-Energy/PowerSimData/branch/develop/graph/badge.svg?token=5A20TCV5XL)](https://codecov.io/gh/Breakthrough-Energy/PowerSimData)
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -32,7 +32,8 @@ A detailed tutorial can be found on our [docs].
 
 
 ## Where to get it
-For now, only the source code is available. Clone or Fork the code here on GitHub.
+* Clone or Fork the source code on [GitHub](https://github.com/Breakthrough-Energy/PowerSimData)
+* Get latest release from PyPi: `pip install powersimdata`
 
 
 ## Dependencies
@@ -66,7 +67,8 @@ pip install -r requirements.txt
 
 
 ## Documentation
-The official documentation can be found [here][docs].
+[Code documentation][docstrings] in form of Python docstrings along with an overview of
+the [package][docs] are available on our [website][website].
 
 
 ## Communication Channels
@@ -81,4 +83,6 @@ Guide](https://breakthrough-energy.github.io/docs/dev/contribution_guide.html).
 
 
 
-[docs]: https://breakthrough-energy.github.io/docs/index.html
+[docs]: https://breakthrough-energy.github.io/docs/powersimdata/index.html
+[docstrings]: https://breakthrough-energy.github.io/docs/powersimdata.html
+[website]: https://breakthrough-energy.github.io/docs/

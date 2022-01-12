@@ -42,7 +42,7 @@ def test_tmp_folder(ssh_data_access):
 @pytest.mark.integration
 @pytest.mark.ssh
 def test_setup_server_connection(ssh_data_access):
-    _, stdout, _ = ssh_data_access.ssh.exec_command("whoami")
+    _, stdout, _ = ssh_data_access.fs.exec_command("whoami")
     assert stdout.read().decode("utf-8").strip() == server_setup.get_server_user()
 
 
