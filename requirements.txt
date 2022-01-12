@@ -11,3 +11,4 @@ coverage
 pytest-cov
 fs
 fs.sshfs
+fs-azureblob
