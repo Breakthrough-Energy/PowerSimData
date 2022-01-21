@@ -7,6 +7,7 @@ from subprocess import Popen
 import fs as fs2
 import pandas as pd
 from fs.multifs import MultiFS
+from fs.path import basename, dirname
 from fs.tempfs import TempFS
 from scipy.io import savemat
 
@@ -34,9 +35,12 @@ def get_ssh_fs(root=""):
 def get_multi_fs(root):
     scenario_data = get_blob_fs("scenariodata")
     profiles = get_blob_fs("profiles")
-    ssh_fs = get_ssh_fs(root)
     mfs = MultiFS()
-    mfs.add_fs("ssh_fs", ssh_fs, write=True, priority=1)
+    try:
+        ssh_fs = get_ssh_fs(root)
+        mfs.add_fs("ssh_fs", ssh_fs, write=True, priority=1)
+    except:  # noqa
+        print("Could not connect to ssh server")
     mfs.add_fs("profile_fs", profiles, priority=2)
     mfs.add_fs("scenario_fs", scenario_data, priority=3)
     return mfs
@@ -59,22 +63,23 @@ class DataAccess:
             a data frame, while a mat file will be returned as a dictionary
         :raises ValueError: if extension is unknown.
         """
-
-        if self.local_fs.exists(filepath):
-            return self._read(self.local_fs, filepath)
-        return self._read(self.fs, filepath)
+        if not self.local_fs.exists(filepath):
+            print(f"{filepath} not found on local machine")
+            from_dir, filename = dirname(filepath), basename(filepath)
+            self.copy_from(filename, from_dir)
+        return self._read(self.local_fs, filepath)
 
     def _read(self, fs, filepath):
         ext = os.path.basename(filepath).split(".")[-1]
-        with fs.open(filepath, mode="rb") as file_object:
+        with fs.open(filepath, mode="rb") as f:
             if ext == "pkl":
-                data = pd.read_pickle(file_object)
+                data = pd.read_pickle(f)
             elif ext == "csv":
-                data = pd.read_csv(file_object, index_col=0, parse_dates=True)
+                data = pd.read_csv(f, index_col=0, parse_dates=True)
+                data.columns = data.columns.astype(int)
             elif ext == "mat":
-                # Try to load the matfile, just to check if it exists locally
-                open(filepath, "r")
-                data = filepath
+                # get fully qualified local path to matfile
+                data = self.local_fs.getsyspath(filepath)
             else:
                 raise ValueError("Unknown extension! %s" % ext)
 
@@ -104,8 +109,7 @@ class DataAccess:
         :raises ValueError: if extension is unknown.
         """
         ext = os.path.basename(filepath).split(".")[-1]
-        dirpath = fs2.path.dirname(filepath)
-        fs.makedirs(dirpath, recreate=True)
+        fs.makedirs(dirname(filepath), recreate=True)
 
         with fs.openbin(filepath, "w") as f:
             if ext == "pkl":

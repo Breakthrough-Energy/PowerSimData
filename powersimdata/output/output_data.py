@@ -1,6 +1,3 @@
-import os
-import pickle
-
 import numpy as np
 import pandas as pd
 from scipy.sparse import coo_matrix
@@ -35,20 +32,8 @@ class OutputData:
 
         print("--> Loading %s" % field_name)
         file_name = scenario_id + "_" + field_name + ".pkl"
-        from_dir = server_setup.OUTPUT_DIR
-        filepath = os.path.join(server_setup.LOCAL_DIR, *from_dir, file_name)
-
-        try:
-            return pd.read_pickle(filepath)
-        except pickle.UnpicklingError:
-            err_msg = f"Unable to unpickle {file_name}, possibly corrupted in download."
-            raise ValueError(err_msg)
-        except FileNotFoundError:
-            print(f"{filepath} not found on local machine")
-
-        remote_dir = self._data_access.join(*from_dir)
-        self._data_access.copy_from(file_name, remote_dir)
-        return pd.read_pickle(filepath)
+        filepath = "/".join([*server_setup.OUTPUT_DIR, file_name])
+        return self._data_access.read(filepath)
 
 
 def _check_field(field_name):
