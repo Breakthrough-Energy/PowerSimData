@@ -6,8 +6,9 @@ from subprocess import Popen
 
 import fs as fs2
 import pandas as pd
+from fs.multifs import MultiFS
 from fs.tempfs import TempFS
-from scipy.io import loadmat, savemat
+from scipy.io import savemat
 
 from powersimdata.data_access.profile_helper import (
     get_profile_version_cloud,
@@ -17,12 +18,28 @@ from powersimdata.data_access.ssh_fs import WrapSSHFS
 from powersimdata.utility import server_setup
 
 
+def get_blob_fs(container):
+    account = "besciences"
+    return fs2.open_fs(f"azblob://{account}@{container}")
+
+
 def get_ssh_fs(root=""):
     host = server_setup.SERVER_ADDRESS
     port = server_setup.SERVER_SSH_PORT
     username = server_setup.get_server_user()
     base_fs = fs2.open_fs(f"ssh://{username}@{host}:{port}")
     return WrapSSHFS(base_fs, root)
+
+
+def get_multi_fs(root):
+    scenario_data = get_blob_fs("scenariodata")
+    profiles = get_blob_fs("profiles")
+    ssh_fs = get_ssh_fs(root)
+    mfs = MultiFS()
+    mfs.add_fs("ssh_fs", ssh_fs, write=True, priority=1)
+    mfs.add_fs("profile_fs", profiles, priority=2)
+    mfs.add_fs("scenario_fs", scenario_data, priority=3)
+    return mfs
 
 
 class DataAccess:
@@ -42,16 +59,22 @@ class DataAccess:
             a data frame, while a mat file will be returned as a dictionary
         :raises ValueError: if extension is unknown.
         """
-        ext = os.path.basename(filepath).split(".")[-1]
-        self._check_file_exists(filepath)
 
-        with self.fs.open(filepath, mode="rb") as file_object:
+        if self.local_fs.exists(filepath):
+            return self._read(self.local_fs, filepath)
+        return self._read(self.fs, filepath)
+
+    def _read(self, fs, filepath):
+        ext = os.path.basename(filepath).split(".")[-1]
+        with fs.open(filepath, mode="rb") as file_object:
             if ext == "pkl":
                 data = pd.read_pickle(file_object)
             elif ext == "csv":
                 data = pd.read_csv(file_object, index_col=0, parse_dates=True)
             elif ext == "mat":
-                data = loadmat(file_object, squeeze_me=True, struct_as_record=False)
+                # Try to load the matfile, just to check if it exists locally
+                open(filepath, "r")
+                data = filepath
             else:
                 raise ValueError("Unknown extension! %s" % ext)
 
@@ -191,6 +214,7 @@ class LocalDataAccess(DataAccess):
         super().__init__(root)
         self.description = "local machine"
         self.fs = fs2.open_fs(root)
+        self.local_fs = self.fs
 
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
@@ -231,7 +255,7 @@ class SSHDataAccess(DataAccess):
         """Get or create the filesystem object, with attempts rate limited.
 
         :raises IOError: if connection failed or still within retry window
-        :return: (*powersimdata.data_access.ssh_fs.WrapSSHFS) -- filesystem instance
+        :return: (*fs.multifs.MultiFS*) -- filesystem instance
         """
         if self._fs is None:
             should_attempt = (
@@ -239,7 +263,7 @@ class SSHDataAccess(DataAccess):
             )
             if should_attempt:
                 try:
-                    self._fs = get_ssh_fs(self.root)
+                    self._fs = get_multi_fs(self.root)
                     return self._fs
                 except:  # noqa
                     SSHDataAccess._last_attempt = time.time()
@@ -283,9 +307,8 @@ class SSHDataAccess(DataAccess):
         :param str relative_path: path relative to root
         :return: (*str*) -- the checksum of the file
         """
-        full_path = self.join(self.root, relative_path)
         self._check_file_exists(relative_path)
-
+        full_path = self.join(self.root, relative_path)
         return self.fs.checksum(full_path)
 
     def push(self, file_name, checksum, rename):
