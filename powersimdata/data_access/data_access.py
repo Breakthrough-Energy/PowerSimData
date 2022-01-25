@@ -1,10 +1,9 @@
 import os
 import pickle
 import posixpath
-import time
 from subprocess import Popen
 
-import fs as fs2
+import fs
 import pandas as pd
 from fs.multifs import MultiFS
 from fs.path import basename, dirname
@@ -21,14 +20,14 @@ from powersimdata.utility import server_setup
 
 def get_blob_fs(container):
     account = "besciences"
-    return fs2.open_fs(f"azblob://{account}@{container}")
+    return fs.open_fs(f"azblob://{account}@{container}")
 
 
 def get_ssh_fs(root=""):
     host = server_setup.SERVER_ADDRESS
     port = server_setup.SERVER_SSH_PORT
     username = server_setup.get_server_user()
-    base_fs = fs2.open_fs(f"ssh://{username}@{host}:{port}")
+    base_fs = fs.open_fs(f"ssh://{username}@{host}:{port}")
     return WrapSSHFS(base_fs, root)
 
 
@@ -38,11 +37,11 @@ def get_multi_fs(root):
     mfs = MultiFS()
     try:
         ssh_fs = get_ssh_fs(root)
-        mfs.add_fs("ssh_fs", ssh_fs, write=True, priority=1)
+        mfs.add_fs("ssh_fs", ssh_fs, write=True, priority=3)
     except:  # noqa
         print("Could not connect to ssh server")
     mfs.add_fs("profile_fs", profiles, priority=2)
-    mfs.add_fs("scenario_fs", scenario_data, priority=3)
+    mfs.add_fs("scenario_fs", scenario_data, priority=1)
     return mfs
 
 
@@ -52,7 +51,7 @@ class DataAccess:
     def __init__(self, root):
         """Constructor"""
         self.root = root
-        self.join = fs2.path.join
+        self.join = fs.path.join
         self.local_fs = None
 
     def read(self, filepath):
@@ -121,13 +120,23 @@ class DataAccess:
             else:
                 raise ValueError("Unknown extension! %s" % ext)
 
-    def copy_from(self, file_name, from_dir):
+    def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
 
         :param str file_name: file name to copy.
         :param str from_dir: data store directory to copy file from.
         """
-        raise NotImplementedError
+        from_dir = "" if from_dir is None else from_dir
+        from_path = self.join(from_dir, file_name)
+        self._check_file_exists(from_path, should_exist=True)
+
+        location, _ = self.fs.which(from_path)
+        print(f"Transferring {file_name} from {location}")
+        with TempFS() as tmp_fs:
+            self.local_fs.makedirs(from_dir, recreate=True)
+            tmp_fs.makedirs(from_dir, recreate=True)
+            fs.copy.copy_file(self.fs, from_path, tmp_fs, from_path)
+            fs.move.move_file(tmp_fs, from_path, self.local_fs, from_path)
 
     def tmp_folder(self, scenario_id):
         """Get path to temporary scenario folder
@@ -144,7 +153,7 @@ class DataAccess:
         :param str dest: destination folder
         """
         if self.fs.isdir(dest):
-            dest = self.join(dest, fs2.path.basename(src))
+            dest = self.join(dest, fs.path.basename(src))
 
         self.fs.copy(src, dest)
 
@@ -169,18 +178,23 @@ class DataAccess:
         :param bool should_exist: whether the file is expected to exist
         :raises OSError: if the expected condition is not met
         """
-        exists = self.fs.exists(path)
+        location, _ = self.fs.which(path)
+        exists = location is not None
         if should_exist and not exists:
-            raise OSError(f"{path} not found on {self.description}")
+            raise OSError(f"{path} not found on {location}")
         if not should_exist and exists:
-            raise OSError(f"{path} already exists on {self.description}")
+            raise OSError(f"{path} already exists on {location}")
 
-    def execute_command_async(self, command):
-        """Execute a command locally at the DataAccess, without waiting for completion.
+    def get_profile_version(self, grid_model, kind):
+        """Returns available raw profile from blob storage
 
-        :param list command: list of str to be passed to command line.
+        :param str grid_model: grid model.
+        :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
+        :return: (*list*) -- available profile version.
         """
-        raise NotImplementedError
+        blob_version = get_profile_version_cloud(grid_model, kind)
+        local_version = get_profile_version_local(grid_model, kind)
+        return list(set(blob_version + local_version))
 
     def checksum(self, relative_path):
         """Return the checksum of the file path
@@ -199,34 +213,21 @@ class DataAccess:
         """
         raise NotImplementedError
 
-    def get_profile_version(self, grid_model, kind):
-        """Returns available raw profile from blob storage
-
-        :param str grid_model: grid model.
-        :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
-        :return: (*list*) -- available profile version.
-        """
-        blob_version = get_profile_version_cloud(grid_model, kind)
-        local_version = get_profile_version_local(grid_model, kind)
-        return list(set(blob_version + local_version))
-
 
 class LocalDataAccess(DataAccess):
     """Interface to shared data volume"""
 
     def __init__(self, root=server_setup.LOCAL_DIR):
         super().__init__(root)
-        self.description = "local machine"
-        self.fs = fs2.open_fs(root)
-        self.local_fs = self.fs
+        self.local_fs = fs.open_fs(root)
+        self.fs = self._get_fs()
 
-    def copy_from(self, file_name, from_dir=None):
-        """Copy a file from data store to userspace.
-
-        :param str file_name: file name to copy.
-        :param str from_dir: data store directory to copy file from.
-        """
-        pass
+    def _get_fs(self):
+        mfs = MultiFS()
+        profiles = get_blob_fs("profiles")
+        mfs.add_fs("profile_fs", profiles, priority=2)
+        mfs.add_fs("local_fs", self.local_fs, write=True, priority=3)
+        return mfs
 
     def push(self, file_name, checksum, rename):
         """Rename the file.
@@ -243,55 +244,23 @@ class LocalDataAccess(DataAccess):
 class SSHDataAccess(DataAccess):
     """Interface to a remote data store, accessed via SSH."""
 
-    _last_attempt = 0
-
     def __init__(self, root=server_setup.DATA_ROOT_DIR):
         """Constructor"""
         super().__init__(root)
         self._fs = None
-        self._retry_after = 5
         self.local_root = server_setup.LOCAL_DIR
-        self.local_fs = fs2.open_fs(self.local_root)
-        self.description = "server"
+        self.local_fs = fs.open_fs(self.local_root)
 
     @property
     def fs(self):
-        """Get or create the filesystem object, with attempts rate limited.
+        """Get or create the filesystem object
 
         :raises IOError: if connection failed or still within retry window
         :return: (*fs.multifs.MultiFS*) -- filesystem instance
         """
         if self._fs is None:
-            should_attempt = (
-                time.time() - SSHDataAccess._last_attempt > self._retry_after
-            )
-            if should_attempt:
-                try:
-                    self._fs = get_multi_fs(self.root)
-                    return self._fs
-                except:  # noqa
-                    SSHDataAccess._last_attempt = time.time()
-            msg = f"Could not connect to server, will try again after {self._retry_after} seconds"
-            raise IOError(msg)
-
+            self._fs = get_multi_fs(self.root)
         return self._fs
-
-    def copy_from(self, file_name, from_dir=None):
-        """Copy a file from data store to userspace.
-
-        :param str file_name: file name to copy.
-        :param str from_dir: data store directory to copy file from.
-        """
-        from_dir = "" if from_dir is None else from_dir
-        from_path = self.join(from_dir, file_name)
-        self._check_file_exists(from_path, should_exist=True)
-
-        print(f"Transferring {file_name} from server")
-        with TempFS() as tmp_fs:
-            self.local_fs.makedirs(from_dir, recreate=True)
-            tmp_fs.makedirs(from_dir, recreate=True)
-            fs2.copy.copy_file(self.fs, from_path, tmp_fs, from_path)
-            fs2.move.move_file(tmp_fs, from_path, self.local_fs, from_path)
 
     def execute_command_async(self, command):
         """Execute a command via ssh, without waiting for completion.
@@ -327,7 +296,7 @@ class SSHDataAccess(DataAccess):
 
         self._check_file_exists(backup, should_exist=False)
         print(f"Transferring {rename} to server")
-        fs2.move.move_file(self.local_fs, file_name, self.fs, backup)
+        fs.move.move_file(self.local_fs, file_name, self.fs, backup)
 
         values = {
             "original": posixpath.join(self.root, rename),
@@ -357,11 +326,15 @@ class MemoryDataAccess(SSHDataAccess):
     """Mimic a client server architecture using in memory filesystems"""
 
     def __init__(self):
-        self.local_fs = fs2.open_fs("mem://")
-        self._fs = fs2.open_fs("mem://")
-        self.description = "in-memory"
+        self.local_fs = fs.open_fs("mem://")
+        self._fs = self._get_fs()
         self.local_root = self.root = "dummy"
-        self.join = fs2.path.join
+        self.join = fs.path.join
+
+    def _get_fs(self):
+        mfs = MultiFS()
+        mfs.add_fs("in_memory", fs.open_fs("mem://"), write=True)
+        return mfs
 
     def push(self, file_name, checksum, rename):
         """Push file from local to remote filesystem, bypassing checksum since this is
@@ -371,4 +344,4 @@ class MemoryDataAccess(SSHDataAccess):
         :param str checksum: the checksum prior to download
         :param str rename: the new filename
         """
-        fs2.move.move_file(self.local_fs, file_name, self.fs, rename)
+        fs.move.move_file(self.local_fs, file_name, self.fs, rename)
