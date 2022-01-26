@@ -1,6 +1,10 @@
 name: Pytest
 
-on: push
+on:
+  push:
+  pull_request:
+    branches:
+      - develop
 
 jobs:
   test:
