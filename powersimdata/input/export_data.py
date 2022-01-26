@@ -1,4 +1,5 @@
 import copy
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -159,8 +160,7 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
     """Export a Scenario/Grid instance to a PyPSA network.
 
     .. note:: 
-        This function does not import storages yet as well as 
-        this function does not import subs yet! 
+        This function does not import storages yet. 
 
     :param scenario powersimdata.input.grid.Grid/
         powersimdata.scenario.scenrario.Scenario: 
@@ -216,11 +216,22 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
     buses = grid.bus.rename(columns=bus_rename)
     buses.control.replace([1, 2, 3, 4], ["PQ", "PV", "slack", ""], inplace=True)
     buses["zone_name"] = buses.zone_id.map({v: k for k, v in grid.zone2id.items()})
-    buses["substation"] = grid.bus2sub["sub_id"]
+    buses["substation"] = "sub" + grid.bus2sub["sub_id"].astype(str)
+    buses["zone_name"] = buses.substation.map({v: k for k, v in grid.zone2id.items()})
+
+    # ensure compatibility with substations (these are imported later)
+    buses['is_substation'] = False
+    buses['interconnect_sub_id'] = -1
+    buses['name'] = ''
 
     loads = {"proportionality_factor": buses["Pd"]}
 
     shunts = {k: buses.pop(k) for k in ["b_pu", "g_pu"]}
+
+    substations = grid.sub.copy().rename(columns={'lat': 'y', 'lon': 'x'})
+    substations.index = "sub" + substations.index.astype(str)
+    substations['is_substation'] = True
+    substations['substation'] = substations.index
 
     buses = buses.drop(columns=drop_cols, errors="ignore").sort_index(axis=1)
 
@@ -397,14 +408,17 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
         links_t = {}
     else:
         links_t = {v: links.pop(k).to_frame("now").T for k, v in link_rename_t.items()}
+    
+    # TODO: add storage export
+    if not grid.storage['gen'].empty:
+        warnings.warn("The export of storages are not implemented yet.")
 
-    # TODO: Storages
-
-    # Import everything
+    # Import everything to a new pypsa network
     n = Network()
     if scenario:
         n.snapshots = loads_t["p_set"].index
     n.madd("Bus", buses.index, **buses, **buses_t)
+    n.madd("Bus", substations.index, **substations)
     n.madd("Load", buses.index, bus=buses.index, **loads, **loads_t)
     n.madd("ShuntImpedance", buses.index, bus=buses.index, **shunts)
     n.madd("Generator", generators.index, **generators, **generators_t)

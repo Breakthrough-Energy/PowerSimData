@@ -30,10 +30,12 @@ def test_export_grid_to_pypsa():
     assert len(n.snapshots) == 1
     assert not n.loads_t.p.empty
     assert not n.generators_t.p.empty
+    assert len(n.buses) == len(grid.sub) + len(grid.bus)
     assert_columns_deleted(n)
 
     n = export_to_pypsa(grid, preserve_all_columns=True)
     assert len(n.snapshots) == 1
     assert not n.loads_t.p.empty
     assert not n.generators_t.p.empty
+    assert len(n.buses) == len(grid.sub) + len(grid.bus)
     assert_columns_preserved(n)
