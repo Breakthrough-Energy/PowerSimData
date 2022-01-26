@@ -54,7 +54,7 @@ class DataAccess:
         self.join = fs.path.join
         self.local_fs = None
 
-    def read(self, filepath):
+    def read(self, filepath, callback=None):
         """Reads data from data store.
 
         :param str filepath: path to file, with extension either 'pkl', 'csv', or 'mat'.
@@ -66,21 +66,24 @@ class DataAccess:
             print(f"{filepath} not found on local machine")
             from_dir, filename = dirname(filepath), basename(filepath)
             self.copy_from(filename, from_dir)
-        return self._read(self.local_fs, filepath)
 
-    def _read(self, fs, filepath):
+        if callback is None:
+            callback = self._read
+        with self.local_fs.openbin(filepath) as f:
+            return callback(f, filepath)
+
+    def _read(self, f, filepath):
         ext = os.path.basename(filepath).split(".")[-1]
-        with fs.open(filepath, mode="rb") as f:
-            if ext == "pkl":
-                data = pd.read_pickle(f)
-            elif ext == "csv":
-                data = pd.read_csv(f, index_col=0, parse_dates=True)
-                data.columns = data.columns.astype(int)
-            elif ext == "mat":
-                # get fully qualified local path to matfile
-                data = self.local_fs.getsyspath(filepath)
-            else:
-                raise ValueError("Unknown extension! %s" % ext)
+        if ext == "pkl":
+            data = pd.read_pickle(f)
+        elif ext == "csv":
+            data = pd.read_csv(f, index_col=0, parse_dates=True)
+            data.columns = data.columns.astype(int)
+        elif ext == "mat":
+            # get fully qualified local path to matfile
+            data = self.local_fs.getsyspath(filepath)
+        else:
+            raise ValueError("Unknown extension! %s" % ext)
 
         return data
 
@@ -181,7 +184,8 @@ class DataAccess:
         location, _ = self.fs.which(path)
         exists = location is not None
         if should_exist and not exists:
-            raise OSError(f"{path} not found on {location}")
+            remotes = [f[0] for f in self.fs.iterate_fs()]
+            raise OSError(f"{path} not found on any of {remotes}")
         if not should_exist and exists:
             raise OSError(f"{path} already exists on {location}")
 

@@ -1,6 +1,5 @@
 import functools
 import os
-from pathlib import Path
 from tempfile import mkstemp
 
 import pandas as pd
@@ -24,6 +23,19 @@ def verify_hash(func):
     return wrapper
 
 
+def _parse_csv(file_object):
+    """Read file from disk into data frame
+
+    :param str, path object or file-like object file_object: a reference to
+    the csv file
+    :return: (*pandas.DataFrame*) -- the specified file as a data frame.
+    """
+    table = pd.read_csv(file_object)
+    table.set_index("id", inplace=True)
+    table.fillna("", inplace=True)
+    return table.astype(str)
+
+
 class CsvStore:
     """Base class for common functionality used to manage scenario and execute
     list stored as csv files on the server
@@ -42,30 +54,14 @@ class CsvStore:
         :return: (*pandas.DataFrame*) -- the specified table as a data frame.
         """
         filename = self._FILE_NAME
-        local_path = Path(server_setup.LOCAL_DIR, filename)
-
         try:
-            self.data_access.copy_from(filename)
+            return self._get_table(filename)
         except:  # noqa
-            print(f"Failed to download {filename} from server")
-            print("Falling back to local cache...")
+            return self._get_table(filename + ".2")
 
-        if local_path.is_file():
-            return self._parse_csv(local_path)
-        else:
-            raise FileNotFoundError(f"{filename} does not exist locally.")
-
-    def _parse_csv(self, file_object):
-        """Read file from disk into data frame
-
-        :param str, path object or file-like object file_object: a reference to
-        the csv file
-        :return: (*pandas.DataFrame*) -- the specified file as a data frame.
-        """
-        table = pd.read_csv(file_object)
-        table.set_index("id", inplace=True)
-        table.fillna("", inplace=True)
-        return table.astype(str)
+    def _get_table(self, filename):
+        self.data_access.copy_from(filename)
+        return self.data_access.read(filename, callback=lambda f, _: _parse_csv(f))
 
     def commit(self, table, checksum):
         """Save to local directory and upload if needed
