@@ -1,9 +1,12 @@
 import copy
 
 import numpy as np
+import pandas as pd
 from scipy.io import savemat
 
 from powersimdata.input.transform_profile import TransformProfile
+from powersimdata.input.grid import Grid
+from powersimdata.network.usa_tamu.constants import plants as plantconstants
 
 
 def export_case_mat(grid, filepath=None, storage_filepath=None):
@@ -150,3 +153,264 @@ def export_transformed_profile(kind, scenario_info, grid, ct, filepath, slice=Tr
     profile = tp.get_profile(kind)
     print(f"Writing scaled {kind} profile to {filepath} on local machine")
     profile.to_csv(filepath)
+
+
+def export_to_pypsa(scenario, preserve_all_columns=False):
+    """Export a Scenario/Grid instance to a PyPSA network.
+
+    .. note:: 
+        This function does not import storages yet as well as 
+        this function does not import subs yet! 
+
+    :param scenario powersimdata.input.grid.Grid/
+        powersimdata.scenario.scenrario.Scenario: 
+        Input object. If a Grid instance is passed, operational values 
+        will be used for the single snapshot "now".
+        If a Scenario instance is passed, all available time-series will be  
+        imported.
+    :param preserve_all_columns bool: Whether to import all columns 
+        of the corresponding component. If true, this will also 
+        import columns that PyPSA does not process. The default 
+        is False.
+
+    """
+    from pypsa import Network # pypsa is not a required package
+    from powersimdata.scenario.scenario import Scenario # avoid circular import 
+    
+    if isinstance(scenario, Grid):
+        grid = scenario
+        scenario = None
+    elif isinstance(scenario, Scenario):
+        grid = scenario.get_grid()
+    else:
+        raise TypeError(
+            "Expected type powersimdata.Grid or powersimdata.Scenario, "
+            f"get {type(scenario)}."
+        )
+
+    drop_cols = []
+
+    # BUS, LOAD & SUBSTATION
+    bus_rename = {
+        "lat": "y",
+        "lon": "x",
+        "baseKV": "v_nom",
+        "type": "control",
+        "Gs": "g_pu",
+        "Bs": "b_pu",
+    }
+
+    bus_rename_t = {
+        "Pd": "p",
+        "Qd": "q",
+        "Vm": "v_mag_pu",
+        "Va": "v_ang",
+    }
+
+    if not preserve_all_columns:
+        drop_cols = ["Vmax", "Vmin", "lam_P", "lam_Q", "mu_Vmax", "mu_Vmin"]
+
+        if scenario:
+            drop_cols += list(bus_rename_t)
+
+    buses = grid.bus.rename(columns=bus_rename)
+    buses.control.replace([1, 2, 3, 4], ["PQ", "PV", "slack", ""], inplace=True)
+    buses["zone_name"] = buses.zone_id.map({v: k for k, v in grid.zone2id.items()})
+    buses["substation"] = grid.bus2sub["sub_id"]
+
+    loads = {"proportionality_factor": buses["Pd"]}
+
+    shunts = {k: buses.pop(k) for k in ["b_pu", "g_pu"]}
+
+    buses = buses.drop(columns=drop_cols, errors="ignore").sort_index(axis=1)
+
+    # now time-dependent
+    if scenario:
+        buses_t = {}
+        loads_t = {"p_set": scenario.get_bus_demand()}
+    else:
+        buses_t = {v: buses.pop(k).to_frame("now").T for k, v in bus_rename_t.items()}
+        buses_t["v_ang"] = np.deg2rad(buses_t["v_ang"])
+
+        loads_t = {"p": buses_t.pop("p"), "q": buses_t.pop("q")}
+
+    # GENERATOR & COSTS
+    generator_rename = {
+        "bus_id": "bus",
+        "Pmax": "p_nom",
+        "Pmin": "p_min_pu",
+        "GenFuelCost": "marginal_cost",
+        "ramp_30": "ramp_limit",
+        "type": "carrier",
+    }
+    generator_rename_t = {
+        "Pg": "p",
+        "Qg": "q",
+        "status": "status",
+    }
+
+    if not preserve_all_columns:
+        drop_cols = [
+            "ramp_10",
+            "mu_Pmax",
+            "mu_Pmin",
+            "mu_Qmax",
+            "mu_Qmin",
+            "ramp_agc",
+            "Pc1",
+            "Pc2",
+            "Qc1min",
+            "Qc1max",
+            "Qc2min",
+            "Qc2max",
+            "GenIOB",
+            "GenIOC",
+            "GenIOD",
+        ]
+
+        if scenario:
+            drop_cols += list(generator_rename_t)
+
+    generators = grid.plant.rename(columns=generator_rename)
+    generators.p_min_pu /= generators.p_nom
+    generators["ramp_limit_down"] = generators.ramp_limit
+    generators["ramp_limit_up"] = generators.ramp_limit
+    generators.drop(columns=drop_cols + ["ramp_limit"], inplace=True)
+
+    cost_rename = {
+        "startup": "startup_cost",
+        "shutdown": "shutdown_cost",
+        "c1": "marginal_cost",
+    }
+    cost = grid.gencost["before"]
+    cost.rename(columns=cost_rename)
+
+    carriers = pd.DataFrame(index=generators.carrier.unique(), dtype=object)
+    if "usa_tamu" in grid.SUPPORTED_MODELS:
+        cars = carriers.index
+        carriers["color"] = pd.Series(plantconstants.type2color).reindex(cars)
+        carriers["nice_name"] = pd.Series(plantconstants.type2label).reindex(cars)
+        carriers["co2_emissions"] = pd.Series(plantconstants.carbon_per_mwh).reindex(cars)
+
+    # now time-dependent
+    if scenario:
+        dfs = [scenario.get_wind(), scenario.get_solar(), scenario.get_hydro()]
+        p_max_pu = pd.concat(dfs, axis=1)
+        generators_t = {"p_max_pu": p_max_pu}
+    else:
+        generators_t = {
+            v: generators.pop(k).to_frame("now").T
+            for k, v in generator_rename_t.items()
+        }
+
+    # BRANCHES
+    branch_rename = {
+        "from_bus_id": "bus0",
+        "to_bus_id": "bus1",
+        "rateA": "s_nom",
+        "ratio": "tap_ratio",
+        "x": "x_pu",
+        "r": "r_pu",
+        "g": "g_pu",
+        "b": "b_pu",
+    }
+    branch_rename_t = {
+        "Pf": "p0",
+        "Qf": "q0",
+        "Pt": "p1",
+        "Qt": "q1",
+    }
+
+    if not preserve_all_columns:
+        drop_cols = [
+            "rateB",
+            "rateC",
+            "mu_St",
+            "mu_angmin",
+            "mu_angmax",
+        ]
+
+        if scenario:
+            drop_cols += list(branch_rename_t)
+
+    branches = grid.branch.rename(columns=branch_rename).drop(columns=drop_cols)
+
+    lines = branches.query("branch_device_type == 'Line'")
+    lines = lines.drop(columns="branch_device_type")
+
+    transformer_types = ["TransformerWinding", "Transformer"]
+    transformers = branches.query("branch_device_type in @transformer_types")
+    transformers = transformers.drop(columns="branch_device_type")
+
+    if scenario:
+        lines_t = {}
+        transformers_t = {}
+    else:
+        lines_t = {
+            v: lines.pop(k).to_frame("now").T for k, v in branch_rename_t.items()
+        }
+        transformers_t = {
+            v: transformers.pop(k).to_frame("now").T for k, v in branch_rename_t.items()
+        }
+
+    # DC LINES
+    link_rename = {
+        "from_bus_id": "bus0",
+        "to_bus_id": "bus1",
+        "rateA": "s_nom",
+        "ratio": "tap_ratio",
+        "x": "x_pu",
+        "r": "r_pu",
+        "g": "g_pu",
+        "b": "b_pu",
+        "Pmin": "p_min_pu",
+        "Pmax": "p_nom",
+    }
+    link_rename_t = {
+        "Pf": "p0",
+        "Qf": "q0",
+        "Pt": "p1",
+        "Qt": "q1",
+    }
+
+    if not preserve_all_columns:
+        drop_cols = [
+            "QminF",
+            "QmaxF",
+            "QminT",
+            "QmaxT",
+            "muPmin",
+            "muPmax",
+            "muQminF",
+            "muQmaxF",
+            "muQminT",
+            "muQmaxT",
+        ]
+
+        if scenario:
+            drop_cols += list(link_rename_t)
+
+    links = grid.dcline.rename(columns=link_rename).drop(columns=drop_cols)
+    links.p_min_pu /= links.p_nom
+
+    if scenario:
+        links_t = {}
+    else:
+        links_t = {v: links.pop(k).to_frame("now").T for k, v in link_rename_t.items()}
+
+    # TODO: Storages
+
+    # Import everything
+    n = Network()
+    if scenario:
+        n.snapshots = loads_t["p_set"].index
+    n.madd("Bus", buses.index, **buses, **buses_t)
+    n.madd("Load", buses.index, bus=buses.index, **loads, **loads_t)
+    n.madd("ShuntImpedance", buses.index, bus=buses.index, **shunts)
+    n.madd("Generator", generators.index, **generators, **generators_t)
+    n.madd("Carrier", carriers.index, **carriers)
+    n.madd("Line", lines.index, **lines, **lines_t)
+    n.madd("Transformer", transformers.index, **transformers, **transformers_t)
+    n.madd("Link", links.index, **links, **links_t)
+
+    return n
