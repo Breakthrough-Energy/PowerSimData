@@ -29,6 +29,7 @@ def check_grid(grid):
         _check_line_voltages,
         _check_plant_against_gencost,
         _check_connected_components,
+        _check_for_loop_branches,
     ]:
         try:
             check(grid, error_messages)
@@ -223,6 +224,18 @@ def _check_connected_components(grid, error_messages):
             f"but is specified as having {num_interconnects} interconnects: "
             f"{grid.interconnect}."
         )
+
+
+def _check_for_loop_branches(grid, error_messages):
+    """Check whether any branches in a grid have the same start and end bus.
+
+    :param powersimdata.input.grid.Grid grid: grid or grid-like object to check.
+    :param list error_messages: list, to be appended to with a str if:
+        there are any branches with the same start and end bus.
+    """
+    if not all(grid.branch.from_bus_id != grid.branch.to_bus_id):
+        loop_lines = grid.branch.query("from_bus_id == to_bus_id").index  # noqa: F841
+        error_messages.append(f"This grid contains loop lines: {list(loop_lines)}")
 
 
 def _check_grid_models_match(grid1, grid2):
