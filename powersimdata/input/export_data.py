@@ -307,9 +307,9 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
 
     cars = carriers.index
     constants = grid.model_immutables.plants
-    carriers["color"] = pd.Series(constants.type2color).reindex(cars)
-    carriers["nice_name"] = pd.Series(constants.type2label).reindex(cars)
-    carriers["co2_emissions"] = pd.Series(constants.carbon_per_mwh).reindex(cars)
+    carriers["color"] = pd.Series(constants["type2color"]).reindex(cars)
+    carriers["nice_name"] = pd.Series(constants["type2label"]).reindex(cars)
+    carriers["co2_emissions"] = pd.Series(constants["carbon_per_mwh"]).reindex(cars)
 
     # now time-dependent
     if scenario:
