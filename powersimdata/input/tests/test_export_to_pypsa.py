@@ -5,8 +5,8 @@ Created on Wed Jan 26 10:15:01 2022
 
 @author: fabian
 """
-from powersimdata.input.grid import Grid
 from powersimdata.input.export_data import export_to_pypsa
+from powersimdata.input.grid import Grid
 
 
 def assert_columns_preserved(n):

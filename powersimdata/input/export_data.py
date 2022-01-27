@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 from scipy.io import savemat
 
-from powersimdata.input.transform_profile import TransformProfile
 from powersimdata import Grid
+from powersimdata.input.transform_profile import TransformProfile
 
 
 def export_case_mat(grid, filepath=None, storage_filepath=None):
@@ -174,6 +174,7 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
 
     """
     from pypsa import Network  # pypsa is not a required package
+
     from powersimdata.scenario.scenario import Scenario  # avoid circular import
 
     if isinstance(scenario, Grid):
