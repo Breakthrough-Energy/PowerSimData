@@ -6,8 +6,7 @@ import pandas as pd
 from scipy.io import savemat
 
 from powersimdata.input.transform_profile import TransformProfile
-from powersimdata.input.grid import Grid
-from powersimdata.network.usa_tamu.constants import plants as plantconstants
+from powersimdata import Grid
 
 
 def export_case_mat(grid, filepath=None, storage_filepath=None):
@@ -297,13 +296,12 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
     cost.rename(columns=cost_rename)
 
     carriers = pd.DataFrame(index=generators.carrier.unique(), dtype=object)
-    if "usa_tamu" in grid.SUPPORTED_MODELS:
-        cars = carriers.index
-        carriers["color"] = pd.Series(plantconstants.type2color).reindex(cars)
-        carriers["nice_name"] = pd.Series(plantconstants.type2label).reindex(cars)
-        carriers["co2_emissions"] = pd.Series(plantconstants.carbon_per_mwh).reindex(
-            cars
-        )
+
+    cars = carriers.index
+    constants = grid.model_immutables.plants
+    carriers["color"] = pd.Series(constants.type2color).reindex(cars)
+    carriers["nice_name"] = pd.Series(constants.type2label).reindex(cars)
+    carriers["co2_emissions"] = pd.Series(constants.carbon_per_mwh).reindex(cars)
 
     # now time-dependent
     if scenario:
