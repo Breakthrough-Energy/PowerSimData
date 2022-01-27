@@ -25,7 +25,7 @@ def assert_columns_deleted(n):
 
 def test_export_grid_to_pypsa():
     grid = Grid("USA")
-    
+
     n = export_to_pypsa(grid)
     assert len(n.snapshots) == 1
     assert not n.loads_t.p.empty
