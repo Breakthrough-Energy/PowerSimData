@@ -8,6 +8,12 @@ from scipy.io import savemat
 from powersimdata import Grid
 from powersimdata.input.transform_profile import TransformProfile
 
+pypsa_available = True
+try:
+    import pypsa
+except ImportError:
+    pypsa_available = False
+
 
 def export_case_mat(grid, filepath=None, storage_filepath=None):
     """Export a grid to a format suitable for loading into simulation engine.
@@ -173,9 +179,10 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
         is False.
 
     """
-    from pypsa import Network  # pypsa is not a required package
-
     from powersimdata.scenario.scenario import Scenario  # avoid circular import
+
+    if not pypsa_available:
+        raise ImportError("PyPSA is not installed.")
 
     if isinstance(scenario, Grid):
         grid = scenario
@@ -416,7 +423,7 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
         warnings.warn("The export of storages are not implemented yet.")
 
     # Import everything to a new pypsa network
-    n = Network()
+    n = pypsa.Network()
     if scenario:
         n.snapshots = loads_t["p_set"].index
     n.madd("Bus", buses.index, **buses, **buses_t)
