@@ -159,24 +159,24 @@ def export_transformed_profile(kind, scenario_info, grid, ct, filepath, slice=Tr
 def export_to_pypsa(scenario, preserve_all_columns=False):
     """Export a Scenario/Grid instance to a PyPSA network.
 
-    .. note:: 
-        This function does not import storages yet. 
+    .. note::
+        This function does not import storages yet.
 
     :param scenario powersimdata.input.grid.Grid/
-        powersimdata.scenario.scenrario.Scenario: 
-        Input object. If a Grid instance is passed, operational values 
+        powersimdata.scenario.scenrario.Scenario:
+        Input object. If a Grid instance is passed, operational values
         will be used for the single snapshot "now".
-        If a Scenario instance is passed, all available time-series will be  
+        If a Scenario instance is passed, all available time-series will be
         imported.
-    :param preserve_all_columns bool: Whether to import all columns 
-        of the corresponding component. If true, this will also 
-        import columns that PyPSA does not process. The default 
+    :param preserve_all_columns bool: Whether to import all columns
+        of the corresponding component. If true, this will also
+        import columns that PyPSA does not process. The default
         is False.
 
     """
-    from pypsa import Network # pypsa is not a required package
-    from powersimdata.scenario.scenario import Scenario # avoid circular import 
-    
+    from pypsa import Network  # pypsa is not a required package
+    from powersimdata.scenario.scenario import Scenario  # avoid circular import
+
     if isinstance(scenario, Grid):
         grid = scenario
         scenario = None
@@ -220,18 +220,18 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
     buses["zone_name"] = buses.substation.map({v: k for k, v in grid.zone2id.items()})
 
     # ensure compatibility with substations (these are imported later)
-    buses['is_substation'] = False
-    buses['interconnect_sub_id'] = -1
-    buses['name'] = ''
+    buses["is_substation"] = False
+    buses["interconnect_sub_id"] = -1
+    buses["name"] = ""
 
     loads = {"proportionality_factor": buses["Pd"]}
 
     shunts = {k: buses.pop(k) for k in ["b_pu", "g_pu"]}
 
-    substations = grid.sub.copy().rename(columns={'lat': 'y', 'lon': 'x'})
+    substations = grid.sub.copy().rename(columns={"lat": "y", "lon": "x"})
     substations.index = "sub" + substations.index.astype(str)
-    substations['is_substation'] = True
-    substations['substation'] = substations.index
+    substations["is_substation"] = True
+    substations["substation"] = substations.index
 
     buses = buses.drop(columns=drop_cols, errors="ignore").sort_index(axis=1)
 
@@ -301,7 +301,9 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
         cars = carriers.index
         carriers["color"] = pd.Series(plantconstants.type2color).reindex(cars)
         carriers["nice_name"] = pd.Series(plantconstants.type2label).reindex(cars)
-        carriers["co2_emissions"] = pd.Series(plantconstants.carbon_per_mwh).reindex(cars)
+        carriers["co2_emissions"] = pd.Series(plantconstants.carbon_per_mwh).reindex(
+            cars
+        )
 
     # now time-dependent
     if scenario:
@@ -349,8 +351,9 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
     lines = branches.query("branch_device_type == 'Line'")
     lines = lines.drop(columns="branch_device_type")
 
-    transformer_types = ["TransformerWinding", "Transformer"]
-    transformers = branches.query("branch_device_type in @transformer_types")
+    transformers = branches.query(
+        "branch_device_type in ['TransformerWinding', 'Transformer']"
+    )
     transformers = transformers.drop(columns="branch_device_type")
 
     if scenario:
@@ -408,9 +411,9 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
         links_t = {}
     else:
         links_t = {v: links.pop(k).to_frame("now").T for k, v in link_rename_t.items()}
-    
+
     # TODO: add storage export
-    if not grid.storage['gen'].empty:
+    if not grid.storage["gen"].empty:
         warnings.warn("The export of storages are not implemented yet.")
 
     # Import everything to a new pypsa network
