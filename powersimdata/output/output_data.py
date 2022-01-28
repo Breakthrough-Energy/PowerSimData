@@ -33,7 +33,8 @@ class OutputData:
         print("--> Loading %s" % field_name)
         file_name = scenario_id + "_" + field_name + ".pkl"
         filepath = "/".join([*server_setup.OUTPUT_DIR, file_name])
-        return self._data_access.read(filepath)
+        with self._data_access.get(filepath) as (f, _):
+            return pd.read_pickle(f)
 
 
 def _check_field(field_name):

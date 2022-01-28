@@ -61,7 +61,8 @@ class CsvStore:
 
     def _get_table(self, filename):
         self.data_access.copy_from(filename)
-        return self.data_access.read(filename, callback=lambda f, _: _parse_csv(f))
+        with self.data_access.get(filename) as (f, _):
+            return _parse_csv(f)
 
     def commit(self, table, checksum):
         """Save to local directory and upload if needed

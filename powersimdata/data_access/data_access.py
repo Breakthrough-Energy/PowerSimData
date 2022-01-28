@@ -1,10 +1,9 @@
-import os
 import pickle
 import posixpath
+from contextlib import contextmanager
 from subprocess import Popen
 
 import fs
-import pandas as pd
 from fs.multifs import MultiFS
 from fs.path import basename, dirname
 from fs.tempfs import TempFS
@@ -32,6 +31,10 @@ def get_ssh_fs(root=""):
 
 
 def get_multi_fs(root):
+    """Create filesystem combining the server (if connected) with profile and scenario
+    containers in blob storage. The priority is in descending order, so the server will
+    be used first if possible
+    """
     scenario_data = get_blob_fs("scenariodata")
     profiles = get_blob_fs("profiles")
     mfs = MultiFS()
@@ -54,74 +57,64 @@ class DataAccess:
         self.join = fs.path.join
         self.local_fs = None
 
-    def read(self, filepath, callback=None):
-        """Reads data from data store.
+    @contextmanager
+    def get(self, filepath):
+        """Copy file from remote filesystem if needed and read into memory
 
-        :param str filepath: path to file, with extension either 'pkl', 'csv', or 'mat'.
-        :return: (*pandas.DataFrame* or *dict*) -- pkl and csv files will be returned as
-            a data frame, while a mat file will be returned as a dictionary
-        :raises ValueError: if extension is unknown.
+        :param str filepath: path to file
+        :return: (*tuple*) -- file object and filepath to be handled by caller
         """
         if not self.local_fs.exists(filepath):
             print(f"{filepath} not found on local machine")
             from_dir, filename = dirname(filepath), basename(filepath)
             self.copy_from(filename, from_dir)
 
-        if callback is None:
-            callback = self._read
         with self.local_fs.openbin(filepath) as f:
-            return callback(f, filepath)
+            filepath = self.local_fs.getsyspath(filepath)
+            yield f, filepath
 
-    def _read(self, f, filepath):
-        ext = os.path.basename(filepath).split(".")[-1]
-        if ext == "pkl":
-            data = pd.read_pickle(f)
-        elif ext == "csv":
-            data = pd.read_csv(f, index_col=0, parse_dates=True)
-            data.columns = data.columns.astype(int)
-        elif ext == "mat":
-            # get fully qualified local path to matfile
-            data = self.local_fs.getsyspath(filepath)
-        else:
-            raise ValueError("Unknown extension! %s" % ext)
-
-        return data
-
-    def write(self, filepath, data, save_local=True):
+    def write(self, filepath, data, save_local=True, callback=None):
         """Write a file to data store.
 
-        :param str filepath: path to save data to, with extension either 'pkl', 'csv', or 'mat'.
-        :param (*pandas.DataFrame* or *dict*) data: data to save
+        :param str filepath: path to save data to
+        :param object data: data to save
         :param bool save_local: whether a copy should also be saved to the local filesystem, if
             such a filesystem is configured. Defaults to True.
+        :param callable callback: the specific persistence implementation
         """
         self._check_file_exists(filepath, should_exist=False)
+        if callback is None:
+            callback = self._callback
+
         print("Writing %s" % filepath)
-        self._write(self.fs, filepath, data)
+        self._write(self.fs, filepath, data, callback)
+        if save_local:
+            self._write(self.local_fs, filepath, data, callback)
 
-        if save_local and self.local_fs is not None:
-            self._write(self.local_fs, filepath, data)
-
-    def _write(self, fs, filepath, data):
+    def _write(self, fs, filepath, data, callback=None):
         """Write a file to given data store.
 
-        :param fs fs: pyfilesystem to which to write data
-        :param str filepath: path to save data to, with extension either 'pkl', 'csv', or 'mat'.
-        :param (*pandas.DataFrame* or *dict*) data: data to save
+        :param fs.base.FS fs: pyfilesystem to which to write data
+        :param str filepath: path to save data to
+        :param object data: data to save
+        :param callable callback: the specific persistence implementation
         :raises ValueError: if extension is unknown.
         """
-        ext = os.path.basename(filepath).split(".")[-1]
         fs.makedirs(dirname(filepath), recreate=True)
 
         with fs.openbin(filepath, "w") as f:
-            if ext == "pkl":
-                pickle.dump(data, f)
-            elif ext == "csv":
-                data.to_csv(f)
-            elif ext == "mat":
-                savemat(f, data, appendmat=False)
-            else:
-                raise ValueError("Unknown extension! %s" % ext)
+            callback(f, filepath, data)
+
+    def _callback(self, f, filepath, data):
+        ext = basename(filepath).split(".")[-1]
+        if ext == "pkl":
+            pickle.dump(data, f)
+        elif ext == "csv":
+            data.to_csv(f)
+        elif ext == "mat":
+            savemat(f, data, appendmat=False)
+        else:
+            raise ValueError("Unknown extension! %s" % ext)
 
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
@@ -252,8 +245,7 @@ class SSHDataAccess(DataAccess):
         """Constructor"""
         super().__init__(root)
         self._fs = None
-        self.local_root = server_setup.LOCAL_DIR
-        self.local_fs = fs.open_fs(self.local_root)
+        self.local_fs = fs.open_fs(server_setup.LOCAL_DIR)
 
     @property
     def fs(self):
@@ -286,7 +278,8 @@ class SSHDataAccess(DataAccess):
         """
         self._check_file_exists(relative_path)
         full_path = self.join(self.root, relative_path)
-        return self.fs.checksum(full_path)
+        ssh_fs = self.fs.get_fs("ssh_fs")
+        return ssh_fs.checksum(full_path)
 
     def push(self, file_name, checksum, rename):
         """Push file to server and verify the checksum matches a prior value
@@ -332,7 +325,7 @@ class MemoryDataAccess(SSHDataAccess):
     def __init__(self):
         self.local_fs = fs.open_fs("mem://")
         self._fs = self._get_fs()
-        self.local_root = self.root = "dummy"
+        self.root = "foo"
         self.join = fs.path.join
 
     def _get_fs(self):

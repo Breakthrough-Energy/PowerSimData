@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 
 from powersimdata.data_access.context import Context
@@ -43,6 +45,29 @@ def _check_field(field_name):
         raise ValueError("Only %s data can be loaded" % " | ".join(possible))
 
 
+def _read(f, filepath):
+    """Read data from file object
+
+    :param io.IOBase f: a file handle
+    :param str filepath: the filepath corresponding to f
+    :raises ValueError: if extension is unknown.
+    :return: object -- the result
+    """
+    ext = os.path.basename(filepath).split(".")[-1]
+    if ext == "pkl":
+        data = pd.read_pickle(f)
+    elif ext == "csv":
+        data = pd.read_csv(f, index_col=0, parse_dates=True)
+        data.columns = data.columns.astype(int)
+    elif ext == "mat":
+        # get fully qualified local path to matfile
+        data = os.path.abspath(filepath)
+    else:
+        raise ValueError("Unknown extension! %s" % ext)
+
+    return data
+
+
 class InputData:
     """Load input data.
 
@@ -79,7 +104,8 @@ class InputData:
         cached = _cache.get(key)
         if cached is not None:
             return cached
-        data = self.data_access.read(filepath)
+        with self.data_access.get(filepath) as (f, path):
+            data = _read(f, path)
         _cache.put(key, data)
         return data
 
