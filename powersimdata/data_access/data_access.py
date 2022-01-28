@@ -1,4 +1,3 @@
-import pickle
 import posixpath
 from contextlib import contextmanager
 from subprocess import Popen
@@ -7,7 +6,6 @@ import fs
 from fs.multifs import MultiFS
 from fs.path import basename, dirname
 from fs.tempfs import TempFS
-from scipy.io import savemat
 
 from powersimdata.data_access.profile_helper import (
     get_profile_version_cloud,
@@ -45,6 +43,8 @@ def get_multi_fs(root):
         print("Could not connect to ssh server")
     mfs.add_fs("profile_fs", profiles, priority=2)
     mfs.add_fs("scenario_fs", scenario_data, priority=1)
+    remotes = ",".join([f[0] for f in mfs.iterate_fs()])
+    print(f"Initialized remote filesystem with {remotes}")
     return mfs
 
 
@@ -73,48 +73,34 @@ class DataAccess:
             filepath = self.local_fs.getsyspath(filepath)
             yield f, filepath
 
-    def write(self, filepath, data, save_local=True, callback=None):
+    @contextmanager
+    def write(self, filepath, save_local=True):
         """Write a file to data store.
 
         :param str filepath: path to save data to
-        :param object data: data to save
         :param bool save_local: whether a copy should also be saved to the local filesystem, if
             such a filesystem is configured. Defaults to True.
-        :param callable callback: the specific persistence implementation
         """
         self._check_file_exists(filepath, should_exist=False)
-        if callback is None:
-            callback = self._callback
 
         print("Writing %s" % filepath)
-        self._write(self.fs, filepath, data, callback)
-        if save_local:
-            self._write(self.local_fs, filepath, data, callback)
+        with fs.open_fs("mem://") as mem_fs:
+            mem_fs.makedirs(dirname(filepath), recreate=True)
+            with mem_fs.open(filepath, "wb") as f:
+                yield f
+            self._copy(mem_fs, self.fs, filepath)
+            if save_local:
+                self._copy(mem_fs, self.local_fs, filepath)
 
-    def _write(self, fs, filepath, data, callback=None):
-        """Write a file to given data store.
+    def _copy(self, src_fs, dst_fs, filepath):
+        """Copy file from one filesystem to another.
 
-        :param fs.base.FS fs: pyfilesystem to which to write data
-        :param str filepath: path to save data to
-        :param object data: data to save
-        :param callable callback: the specific persistence implementation
-        :raises ValueError: if extension is unknown.
+        :param fs.base.FS src_fs: source filesystem
+        :param fs.base.FS dst_fs: destination filesystem
+        :param str filepath: path to file
         """
-        fs.makedirs(dirname(filepath), recreate=True)
-
-        with fs.openbin(filepath, "w") as f:
-            callback(f, filepath, data)
-
-    def _callback(self, f, filepath, data):
-        ext = basename(filepath).split(".")[-1]
-        if ext == "pkl":
-            pickle.dump(data, f)
-        elif ext == "csv":
-            data.to_csv(f)
-        elif ext == "mat":
-            savemat(f, data, appendmat=False)
-        else:
-            raise ValueError("Unknown extension! %s" % ext)
+        dst_fs.makedirs(dirname(filepath), recreate=True)
+        fs.copy.copy_file(src_fs, filepath, dst_fs, filepath)
 
     def copy_from(self, file_name, from_dir=None):
         """Copy a file from data store to userspace.
@@ -310,7 +296,8 @@ class SSHDataAccess(DataAccess):
                 200>{lockfile}"
 
         command = template.format(**values)
-        _, _, stderr = self.fs.exec_command(command)
+        ssh_fs = self.fs.get_fs("ssh_fs")
+        _, _, stderr = ssh_fs.exec_command(command)
 
         errors = stderr.readlines()
         if len(errors) > 0:

@@ -1,3 +1,5 @@
+from scipy.io import savemat
+
 from powersimdata.data_access.context import Context
 from powersimdata.input.export_data import export_case_mat
 from powersimdata.input.grid import Grid
@@ -200,10 +202,12 @@ class SimulationInput:
         print("Building MPC file")
         mpc, mpc_storage = export_case_mat(self.grid)
 
-        self._data_access.write(file_path, mpc, save_local=False)
+        with self._data_access.write(file_path, save_local=False) as f:
+            savemat(f, mpc, appendmat=False)
 
         if mpc_storage is not None:
-            self._data_access.write(storage_file_path, mpc_storage, save_local=False)
+            with self._data_access.write(storage_file_path, save_local=False) as f:
+                savemat(f, mpc, appendmat=False)
 
     def prepare_profile(self, kind, profile_as=None, slice=False):
         """Prepares profile for simulation.
@@ -219,7 +223,8 @@ class SimulationInput:
             tp = TransformProfile(self._scenario_info, self.grid, self.ct, slice)
             profile = tp.get_profile(kind)
             print(f"Writing scaled {kind} profile to {filepath}")
-            self._data_access.write(filepath, profile, save_local=False)
+            with self._data_access.write(filepath, save_local=False) as f:
+                profile.to_csv(f)
         else:
             from_dir = self._data_access.tmp_folder(profile_as)
             src = "/".join([from_dir, file_name])

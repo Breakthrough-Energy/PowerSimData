@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import pandas as pd
 
@@ -125,7 +126,8 @@ class InputData:
         :param str scenario_id: scenario id, used for file name
         """
         filepath = "/".join([*server_setup.INPUT_DIR, f"{scenario_id}_ct.pkl"])
-        self.data_access.write(filepath, ct)
+        with self.data_access.write(filepath) as f:
+            pickle.dump(ct, f)
 
 
 def distribute_demand_from_zones_to_buses(zone_demand, bus):
