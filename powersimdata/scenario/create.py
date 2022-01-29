@@ -1,5 +1,4 @@
 import copy
-import pickle
 import warnings
 
 import numpy as np
@@ -355,18 +354,6 @@ class _Builder:
             return
         else:
             self.engine = engine
-
-    def load_change_table(self, filename):
-        """Uploads change table.
-
-        :param str filename: full path to change table pickle file.
-        :raises FileNotFoundError: if file not found.
-        """
-        try:
-            ct = pickle.load(open(filename, "rb"))
-            self.change_table.ct = ct
-        except FileNotFoundError:
-            raise ("%s not found. " % filename)
 
     def get_grid(self):
         """Returns a transformed grid.

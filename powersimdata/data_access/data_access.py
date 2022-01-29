@@ -279,6 +279,7 @@ class SSHDataAccess(DataAccess):
 
         self._check_file_exists(backup, should_exist=False)
         print(f"Transferring {rename} to server")
+        fs.copy.copy_file(self.local_fs, file_name, self.local_fs, rename)
         fs.move.move_file(self.local_fs, file_name, self.fs, backup)
 
         values = {
