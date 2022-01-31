@@ -8,11 +8,135 @@ from scipy.io import savemat
 from powersimdata import Grid
 from powersimdata.input.transform_profile import TransformProfile
 
-pypsa_available = True
+PYPSA_AVAILABLE = True
 try:
     import pypsa
 except ImportError:
-    pypsa_available = False
+    PYPSA_AVAILABLE = False
+
+
+PYPSA_CONST = {
+    "bus": {
+        "rename": {
+            "lat": "y",
+            "lon": "x",
+            "baseKV": "v_nom",
+            "type": "control",
+            "Gs": "g_pu",
+            "Bs": "b_pu",
+        },
+        "rename_t": {
+            "Pd": "p",
+            "Qd": "q",
+            "Vm": "v_mag_pu",
+            "Va": "v_ang",
+        },
+        "default_drop_cols": [
+            "Vmax",
+            "Vmin",
+            "lam_P",
+            "lam_Q",
+            "mu_Vmax",
+            "mu_Vmin",
+        ],
+    },
+    "generator": {
+        "rename": {
+            "bus_id": "bus",
+            "Pmax": "p_nom",
+            "Pmin": "p_min_pu",
+            "GenFuelCost": "marginal_cost",
+            "ramp_30": "ramp_limit",
+            "type": "carrier",
+        },
+        "rename_t": {
+            "Pg": "p",
+            "Qg": "q",
+            "status": "status",
+        },
+        "default_drop_cols": [
+            "ramp_10",
+            "mu_Pmax",
+            "mu_Pmin",
+            "mu_Qmax",
+            "mu_Qmin",
+            "ramp_agc",
+            "Pc1",
+            "Pc2",
+            "Qc1min",
+            "Qc1max",
+            "Qc2min",
+            "Qc2max",
+            "GenIOB",
+            "GenIOC",
+            "GenIOD",
+        ],
+    },
+    "cost": {
+        "rename": {
+            "startup": "startup_cost",
+            "shutdown": "shutdown_cost",
+            "c1": "marginal_cost",
+        }
+    },
+    "branch": {
+        "rename": {
+            "from_bus_id": "bus0",
+            "to_bus_id": "bus1",
+            "rateA": "s_nom",
+            "ratio": "tap_ratio",
+            "x": "x_pu",
+            "r": "r_pu",
+            "g": "g_pu",
+            "b": "b_pu",
+        },
+        "rename_t": {
+            "Pf": "p0",
+            "Qf": "q0",
+            "Pt": "p1",
+            "Qt": "q1",
+        },
+        "default_drop_cols": [
+            "rateB",
+            "rateC",
+            "mu_St",
+            "mu_angmin",
+            "mu_angmax",
+        ],
+    },
+    "link": {
+        "rename": {
+            "from_bus_id": "bus0",
+            "to_bus_id": "bus1",
+            "rateA": "s_nom",
+            "ratio": "tap_ratio",
+            "x": "x_pu",
+            "r": "r_pu",
+            "g": "g_pu",
+            "b": "b_pu",
+            "Pmin": "p_min_pu",
+            "Pmax": "p_nom",
+        },
+        "rename_t": {
+            "Pf": "p0",
+            "Qf": "q0",
+            "Pt": "p1",
+            "Qt": "q1",
+        },
+        "default_drop_cols": [
+            "QminF",
+            "QmaxF",
+            "QminT",
+            "QmaxT",
+            "muPmin",
+            "muPmax",
+            "muQminF",
+            "muQmaxF",
+            "muQminT",
+            "muQmaxT",
+        ],
+    },
+}
 
 
 def export_case_mat(grid, filepath=None, storage_filepath=None):
@@ -161,7 +285,7 @@ def export_transformed_profile(kind, scenario_info, grid, ct, filepath, slice=Tr
     profile.to_csv(filepath)
 
 
-def export_to_pypsa(scenario, preserve_all_columns=False):
+def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
     """Export a Scenario/Grid instance to a PyPSA network.
 
     .. note::
@@ -181,14 +305,15 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
     """
     from powersimdata.scenario.scenario import Scenario  # avoid circular import
 
-    if not pypsa_available:
+    if not PYPSA_AVAILABLE:
         raise ImportError("PyPSA is not installed.")
 
-    if isinstance(scenario, Grid):
-        grid = scenario
+    if isinstance(scenario_or_grid, Grid):
+        grid = scenario_or_grid
         scenario = None
-    elif isinstance(scenario, Scenario):
-        grid = scenario.get_grid()
+    elif isinstance(scenario_or_grid, Scenario):
+        grid = scenario_or_grid.get_grid()
+        scenario = scenario_or_grid
     else:
         raise TypeError(
             "Expected type powersimdata.Grid or powersimdata.Scenario, "
@@ -198,25 +323,11 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
     drop_cols = []
 
     # BUS, LOAD & SUBSTATION
-    bus_rename = {
-        "lat": "y",
-        "lon": "x",
-        "baseKV": "v_nom",
-        "type": "control",
-        "Gs": "g_pu",
-        "Bs": "b_pu",
-    }
-
-    bus_rename_t = {
-        "Pd": "p",
-        "Qd": "q",
-        "Vm": "v_mag_pu",
-        "Va": "v_ang",
-    }
+    bus_rename = PYPSA_CONST["bus"]["rename"]
+    bus_rename_t = PYPSA_CONST["bus"]["rename_t"]
 
     if not preserve_all_columns:
-        drop_cols = ["Vmax", "Vmin", "lam_P", "lam_Q", "mu_Vmax", "mu_Vmin"]
-
+        drop_cols = PYPSA_CONST["bus"]["default_drop_cols"]
         if scenario:
             drop_cols += list(bus_rename_t)
 
@@ -253,39 +364,11 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
         loads_t = {"p": buses_t.pop("p"), "q": buses_t.pop("q")}
 
     # GENERATOR & COSTS
-    generator_rename = {
-        "bus_id": "bus",
-        "Pmax": "p_nom",
-        "Pmin": "p_min_pu",
-        "GenFuelCost": "marginal_cost",
-        "ramp_30": "ramp_limit",
-        "type": "carrier",
-    }
-    generator_rename_t = {
-        "Pg": "p",
-        "Qg": "q",
-        "status": "status",
-    }
+    generator_rename = PYPSA_CONST["generator"]["rename"]
+    generator_rename_t = PYPSA_CONST["generator"]["rename_t"]
 
     if not preserve_all_columns:
-        drop_cols = [
-            "ramp_10",
-            "mu_Pmax",
-            "mu_Pmin",
-            "mu_Qmax",
-            "mu_Qmin",
-            "ramp_agc",
-            "Pc1",
-            "Pc2",
-            "Qc1min",
-            "Qc1max",
-            "Qc2min",
-            "Qc2max",
-            "GenIOB",
-            "GenIOC",
-            "GenIOD",
-        ]
-
+        drop_cols = PYPSA_CONST["generator"]["default_drop_cols"]
         if scenario:
             drop_cols += list(generator_rename_t)
 
@@ -295,13 +378,8 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
     generators["ramp_limit_up"] = generators.ramp_limit
     generators.drop(columns=drop_cols + ["ramp_limit"], inplace=True)
 
-    cost_rename = {
-        "startup": "startup_cost",
-        "shutdown": "shutdown_cost",
-        "c1": "marginal_cost",
-    }
     cost = grid.gencost["before"]
-    cost.rename(columns=cost_rename)
+    cost.rename(columns=PYPSA_CONST["cost"]["rename"])
 
     carriers = pd.DataFrame(index=generators.carrier.unique(), dtype=object)
 
@@ -323,32 +401,11 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
         }
 
     # BRANCHES
-    branch_rename = {
-        "from_bus_id": "bus0",
-        "to_bus_id": "bus1",
-        "rateA": "s_nom",
-        "ratio": "tap_ratio",
-        "x": "x_pu",
-        "r": "r_pu",
-        "g": "g_pu",
-        "b": "b_pu",
-    }
-    branch_rename_t = {
-        "Pf": "p0",
-        "Qf": "q0",
-        "Pt": "p1",
-        "Qt": "q1",
-    }
+    branch_rename = PYPSA_CONST["branch"]["rename"]
+    branch_rename_t = PYPSA_CONST["branch"]["rename_t"]
 
     if not preserve_all_columns:
-        drop_cols = [
-            "rateB",
-            "rateC",
-            "mu_St",
-            "mu_angmin",
-            "mu_angmax",
-        ]
-
+        drop_cols = PYPSA_CONST["branch"]["default_drop_cols"]
         if scenario:
             drop_cols += list(branch_rename_t)
 
@@ -374,39 +431,11 @@ def export_to_pypsa(scenario, preserve_all_columns=False):
         }
 
     # DC LINES
-    link_rename = {
-        "from_bus_id": "bus0",
-        "to_bus_id": "bus1",
-        "rateA": "s_nom",
-        "ratio": "tap_ratio",
-        "x": "x_pu",
-        "r": "r_pu",
-        "g": "g_pu",
-        "b": "b_pu",
-        "Pmin": "p_min_pu",
-        "Pmax": "p_nom",
-    }
-    link_rename_t = {
-        "Pf": "p0",
-        "Qf": "q0",
-        "Pt": "p1",
-        "Qt": "q1",
-    }
+    link_rename = PYPSA_CONST["link"]["rename"]
+    link_rename_t = PYPSA_CONST["link"]["rename_t"]
 
     if not preserve_all_columns:
-        drop_cols = [
-            "QminF",
-            "QmaxF",
-            "QminT",
-            "QmaxT",
-            "muPmin",
-            "muPmax",
-            "muQminF",
-            "muQmaxF",
-            "muQminT",
-            "muQmaxT",
-        ]
-
+        drop_cols = PYPSA_CONST["link"]["default_drop_cols"]
         if scenario:
             drop_cols += list(link_rename_t)
 

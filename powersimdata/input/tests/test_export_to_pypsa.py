@@ -7,7 +7,7 @@ Created on Wed Jan 26 10:15:01 2022
 """
 import pytest
 
-from powersimdata.input.export_data import export_to_pypsa, pypsa_available
+from powersimdata.input.export_data import PYPSA_AVAILABLE, export_to_pypsa
 from powersimdata.input.grid import Grid
 
 
@@ -25,7 +25,7 @@ def assert_columns_deleted(n):
     assert "QminF" not in n.links
 
 
-@pytest.mark.skipif(not pypsa_available, reason="Package PyPSA not available.")
+@pytest.mark.skipif(not PYPSA_AVAILABLE, reason="Package PyPSA not available.")
 def test_export_grid_to_pypsa():
     grid = Grid("USA")
 
