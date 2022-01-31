@@ -15,7 +15,7 @@ except ImportError:
     PYPSA_AVAILABLE = False
 
 
-PYPSA_CONST = {
+pypsa_const = {
     "bus": {
         "rename": {
             "lat": "y",
@@ -323,11 +323,11 @@ def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
     drop_cols = []
 
     # BUS, LOAD & SUBSTATION
-    bus_rename = PYPSA_CONST["bus"]["rename"]
-    bus_rename_t = PYPSA_CONST["bus"]["rename_t"]
+    bus_rename = pypsa_const["bus"]["rename"]
+    bus_rename_t = pypsa_const["bus"]["rename_t"]
 
     if not preserve_all_columns:
-        drop_cols = PYPSA_CONST["bus"]["default_drop_cols"]
+        drop_cols = pypsa_const["bus"]["default_drop_cols"]
         if scenario:
             drop_cols += list(bus_rename_t)
 
@@ -364,11 +364,11 @@ def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
         loads_t = {"p": buses_t.pop("p"), "q": buses_t.pop("q")}
 
     # GENERATOR & COSTS
-    generator_rename = PYPSA_CONST["generator"]["rename"]
-    generator_rename_t = PYPSA_CONST["generator"]["rename_t"]
+    generator_rename = pypsa_const["generator"]["rename"]
+    generator_rename_t = pypsa_const["generator"]["rename_t"]
 
     if not preserve_all_columns:
-        drop_cols = PYPSA_CONST["generator"]["default_drop_cols"]
+        drop_cols = pypsa_const["generator"]["default_drop_cols"]
         if scenario:
             drop_cols += list(generator_rename_t)
 
@@ -379,7 +379,7 @@ def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
     generators.drop(columns=drop_cols + ["ramp_limit"], inplace=True)
 
     cost = grid.gencost["before"]
-    cost.rename(columns=PYPSA_CONST["cost"]["rename"])
+    cost.rename(columns=pypsa_const["cost"]["rename"])
 
     carriers = pd.DataFrame(index=generators.carrier.unique(), dtype=object)
 
@@ -401,11 +401,11 @@ def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
         }
 
     # BRANCHES
-    branch_rename = PYPSA_CONST["branch"]["rename"]
-    branch_rename_t = PYPSA_CONST["branch"]["rename_t"]
+    branch_rename = pypsa_const["branch"]["rename"]
+    branch_rename_t = pypsa_const["branch"]["rename_t"]
 
     if not preserve_all_columns:
-        drop_cols = PYPSA_CONST["branch"]["default_drop_cols"]
+        drop_cols = pypsa_const["branch"]["default_drop_cols"]
         if scenario:
             drop_cols += list(branch_rename_t)
 
@@ -431,11 +431,11 @@ def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
         }
 
     # DC LINES
-    link_rename = PYPSA_CONST["link"]["rename"]
-    link_rename_t = PYPSA_CONST["link"]["rename_t"]
+    link_rename = pypsa_const["link"]["rename"]
+    link_rename_t = pypsa_const["link"]["rename_t"]
 
     if not preserve_all_columns:
-        drop_cols = PYPSA_CONST["link"]["default_drop_cols"]
+        drop_cols = pypsa_const["link"]["default_drop_cols"]
         if scenario:
             drop_cols += list(link_rename_t)
 
