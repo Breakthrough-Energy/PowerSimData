@@ -187,12 +187,11 @@ class DataAccess:
         """
         return self.fs.hash(relative_path, "sha256")
 
-    def push(self, file_name, checksum, rename):
+    def push(self, file_name, checksum):
         """Push the file from local to remote root folder, ensuring integrity
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
-        :param str rename: the new filename
         """
         raise NotImplementedError
 
@@ -212,16 +211,19 @@ class LocalDataAccess(DataAccess):
         mfs.add_fs("local_fs", self.local_fs, write=True, priority=3)
         return mfs
 
-    def push(self, file_name, checksum, rename):
+    @contextmanager
+    def push(self, file_name, checksum):
         """Rename the file.
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
-        :param str rename: the new filename
         """
-        if checksum != self.checksum(rename):
+        if checksum != self.checksum(file_name):
             raise ValueError("Checksums do not match")
-        self.fs.move(file_name, rename, overwrite=True)
+        with fs.open_fs("temp://") as tfs:
+            with tfs.openbin(file_name, "w") as f:
+                yield f
+            fs.move.move_file(tfs, file_name, self.local_fs, file_name)
 
 
 class SSHDataAccess(DataAccess):
@@ -267,23 +269,26 @@ class SSHDataAccess(DataAccess):
         ssh_fs = self.fs.get_fs("ssh_fs")
         return ssh_fs.checksum(full_path)
 
-    def push(self, file_name, checksum, rename):
+    @contextmanager
+    def push(self, file_name, checksum):
         """Push file to server and verify the checksum matches a prior value
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
-        :param str rename: the new filename
         :raises IOError: if command generated stderr
         """
-        backup = f"{rename}.temp"
+        backup = f"{file_name}.temp"
 
         self._check_file_exists(backup, should_exist=False)
-        print(f"Transferring {rename} to server")
-        fs.copy.copy_file(self.local_fs, file_name, self.local_fs, rename)
-        fs.move.move_file(self.local_fs, file_name, self.fs, backup)
+        print(f"Transferring {file_name} to server")
+        with fs.open_fs("temp://") as tfs:
+            with tfs.openbin(file_name, "w") as f:
+                yield f
+            fs.move.move_file(tfs, file_name, self.local_fs, file_name)
+            fs.move.move_file(self.local_fs, file_name, self.fs, backup)
 
         values = {
-            "original": posixpath.join(self.root, rename),
+            "original": posixpath.join(self.root, file_name),
             "updated": posixpath.join(self.root, backup),
             "lockfile": posixpath.join(self.root, "scenario.lockfile"),
             "checksum": checksum,
@@ -329,15 +334,19 @@ class _DataAccessTemplate(SSHDataAccess):
         """
         return self.fs.hash(relative_path, "sha256")
 
-    def push(self, file_name, checksum, rename):
+    @contextmanager
+    def push(self, file_name, checksum):
         """Push file from local to remote filesystem, bypassing checksum since this is
         in memory.
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
-        :param str rename: the new filename
         """
-        fs.move.move_file(self.local_fs, file_name, self.fs, rename)
+        with fs.open_fs("temp://") as tfs:
+            with tfs.openbin(file_name, "w") as f:
+                yield f
+            fs.move.move_file(tfs, file_name, self.local_fs, file_name)
+            fs.move.move_file(self.local_fs, file_name, self.fs, file_name)
 
 
 class TempDataAccess(_DataAccessTemplate):

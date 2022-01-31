@@ -1,10 +1,6 @@
 import functools
-import os
-from tempfile import mkstemp
 
 import pandas as pd
-
-from powersimdata.utility import server_setup
 
 
 def verify_hash(func):
@@ -70,8 +66,5 @@ class CsvStore:
         :param pandas.DataFrame table: the data frame to save
         :param str checksum: the checksum prior to download
         """
-        tmp_file, tmp_path = mkstemp(dir=server_setup.LOCAL_DIR)
-        table.to_csv(tmp_path)
-        tmp_name = os.path.basename(tmp_path)
-        self.data_access.push(tmp_name, checksum, rename=self._FILE_NAME)
-        os.close(tmp_file)
+        with self.data_access.push(self._FILE_NAME, checksum) as f:
+            table.to_csv(f)
