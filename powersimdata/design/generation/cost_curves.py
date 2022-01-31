@@ -55,7 +55,7 @@ def linearize_gencost(input_grid, num_segments=1):
             price_label = "f" + str(i + 1)
             capacity_data = plant.Pmin + power_step * i
             price_data = (
-                quad_term * capacity_data ** 2 + lin_term * capacity_data + const_term
+                quad_term * capacity_data**2 + lin_term * capacity_data + const_term
             )
             gencost_after.loc[dispatchable_gens, capacity_label] = capacity_data[
                 dispatchable_gens
@@ -76,7 +76,7 @@ def linearize_gencost(input_grid, num_segments=1):
             nondispatchable_gens, "n"
         ]
         power = plant.Pmax
-        price_data = quad_term * power ** 2 + lin_term * power + const_term
+        price_data = quad_term * power**2 + lin_term * power + const_term
         gencost_after.loc[nondispatchable_gens, ["c2", "c1"]] = 0
         gencost_after.loc[nondispatchable_gens, "c0"] = price_data[nondispatchable_gens]
 
