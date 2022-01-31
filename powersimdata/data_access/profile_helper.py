@@ -32,7 +32,7 @@ def get_profile_version_local(grid_model, kind):
     :return: (*list*) -- available profile version.
     """
     profile_dir = fs.path.join(server_setup.LOCAL_DIR, "raw", grid_model)
-    lfs = fs.open_fs(profile_dir)
+    lfs = fs.open_fs(profile_dir, create=True)
     return _get_profile_version(lfs, kind)
 
 

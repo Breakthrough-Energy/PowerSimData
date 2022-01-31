@@ -307,19 +307,27 @@ class SSHDataAccess(DataAccess):
             raise IOError("Failed to push file - most likely a conflict was detected.")
 
 
-class MemoryDataAccess(SSHDataAccess):
-    """Mimic a client server architecture using in memory filesystems"""
+class _DataAccessTemplate(SSHDataAccess):
+    """Template for data access object using temp or in memory filesystems"""
 
-    def __init__(self):
-        self.local_fs = fs.open_fs("mem://")
-        self._fs = self._get_fs()
+    def __init__(self, fs_url):
+        self.local_fs = fs.open_fs(fs_url)
+        self._fs = self._get_fs(fs_url)
         self.root = "foo"
         self.join = fs.path.join
 
-    def _get_fs(self):
+    def _get_fs(self, fs_url):
         mfs = MultiFS()
-        mfs.add_fs("in_memory", fs.open_fs("mem://"), write=True)
+        mfs.add_fs("remotefs", fs.open_fs(fs_url), write=True)
         return mfs
+
+    def checksum(self, relative_path):
+        """Return the checksum of the file path
+
+        :param str relative_path: path relative to root
+        :return: (*str*) -- the checksum of the file
+        """
+        return self.fs.hash(relative_path, "sha256")
 
     def push(self, file_name, checksum, rename):
         """Push file from local to remote filesystem, bypassing checksum since this is
@@ -330,3 +338,17 @@ class MemoryDataAccess(SSHDataAccess):
         :param str rename: the new filename
         """
         fs.move.move_file(self.local_fs, file_name, self.fs, rename)
+
+
+class TempDataAccess(_DataAccessTemplate):
+    """Mimic a client server architecture using temp filesystems"""
+
+    def __init__(self):
+        super().__init__("temp://")
+
+
+class MemoryDataAccess(_DataAccessTemplate):
+    """Mimic a client server architecture using in memory filesystems"""
+
+    def __init__(self):
+        super().__init__("mem://")
