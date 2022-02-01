@@ -213,7 +213,7 @@ class LocalDataAccess(DataAccess):
 
     @contextmanager
     def push(self, file_name, checksum):
-        """Rename the file.
+        """Write file if checksum matches
 
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
@@ -323,7 +323,7 @@ class _DataAccessTemplate(SSHDataAccess):
 
     def _get_fs(self, fs_url):
         mfs = MultiFS()
-        mfs.add_fs("remotefs", fs.open_fs(fs_url), write=True)
+        mfs.add_fs("remotefs", fs.open_fs(fs_url), write=True, priority=3)
         return mfs
 
     def checksum(self, relative_path):
@@ -342,11 +342,9 @@ class _DataAccessTemplate(SSHDataAccess):
         :param str file_name: the file name, located at the local root
         :param str checksum: the checksum prior to download
         """
-        with fs.open_fs("temp://") as tfs:
-            with tfs.openbin(file_name, "w") as f:
-                yield f
-            fs.move.move_file(tfs, file_name, self.local_fs, file_name)
-            fs.move.move_file(self.local_fs, file_name, self.fs, file_name)
+        with self.local_fs.openbin(file_name, "w") as f:
+            yield f
+        fs.move.move_file(self.local_fs, file_name, self.fs, file_name)
 
 
 class TempDataAccess(_DataAccessTemplate):

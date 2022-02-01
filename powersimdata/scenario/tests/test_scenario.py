@@ -3,7 +3,7 @@ import os
 import pytest
 
 from powersimdata.data_access.context import Context
-from powersimdata.data_access.data_access import TempDataAccess
+from powersimdata.data_access.data_access import TempDataAccess, get_blob_fs
 from powersimdata.scenario.scenario import Scenario
 from powersimdata.utility import templates
 
@@ -16,17 +16,26 @@ def test_bad_scenario_name():
         Scenario("this_scenario_does_not_exist")
 
 
-def _mock_return(x=None):
-    tda = TempDataAccess()
-    for path in ("ExecuteList.csv", "ScenarioList.csv"):
-        orig = os.path.join(templates.__path__[0], path)
-        with open(orig, "rb") as f:
-            tda.fs.upload(path, f)
-    return tda
+class MockContext:
+    def __init__(self):
+        self.data_access = self._setup()
+
+    def get_data_access(self, ignored=None):
+        return self.data_access
+
+    def _setup(self):
+        tda = TempDataAccess()
+        tda.fs.add_fs("profile_fs", get_blob_fs("profiles"), priority=2)
+        for path in ("ExecuteList.csv", "ScenarioList.csv"):
+            orig = os.path.join(templates.__path__[0], path)
+            with open(orig, "rb") as f:
+                tda.fs.upload(path, f)
+        return tda
 
 
 def test_scenario_workflow(monkeypatch):
-    monkeypatch.setattr(Context, "get_data_access", _mock_return)
+    mock_context = MockContext()
+    monkeypatch.setattr(Context, "get_data_access", mock_context.get_data_access)
 
     s = Scenario()
     print(s.state.name)
@@ -57,5 +66,8 @@ def test_scenario_workflow(monkeypatch):
     s.get_ct()
 
     s.print_scenario_info()
-    # s.create_scenario()
-    # s.prepare_simulation_input()
+    s.create_scenario()
+
+    # hack to use truncated profiles so the test runs quickly
+    s.info["grid_model"] = "test_usa_tamu"
+    s.prepare_simulation_input()
