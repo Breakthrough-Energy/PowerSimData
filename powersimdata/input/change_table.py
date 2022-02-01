@@ -133,7 +133,15 @@ class ChangeTable:
         self.grid = grid
         self.ct = {}
         self._new_element_caches = {
-            k: {} for k in {"branch", "bus", "dcline", "plant", "storage_gen"}
+            k: {}
+            for k in {
+                "branch",
+                "bus",
+                "dcline",
+                "plant",
+                "storage_gen",
+                "demand_flexibility",
+            }
         }
 
     @staticmethod
@@ -505,30 +513,23 @@ class ChangeTable:
         """
         add_storage_capacity(self, info)
 
-    def add_demand_flexibility(self, info, granularity):
+    def add_demand_flexibility(self, info):
         """Adds demand flexibility to the system.
 
         :param dict info: Each key refers to a different component required to
             parameterize the demand flexibility model. Each value associated with the
             keys corresponds to the profile version of the profile in question.
             Required keys: "demand_flexibility_up", "demand_flexibility_dn".
-            Optional keys: "duration", "demand_flexibility_cost_up",
+            Optional keys: "demand_flexibility_duration", "demand_flexibility_cost_up",
                 "demand_flexibility_cost_dn".
-        :param str granularity: Specifies whether the demand flexibility data is
-            provided at the area level (*'area'*) or bus level (*'bus'*).
+        :raises TypeError:
+        :raises ValueError:
         """
 
         # Check inputs
         if not isinstance(info, dict):
             raise TypeError(
                 "Argument enclosing new demand flexibility info must be a dictionary."
-            )
-        if not isinstance(granularity, str):
-            raise TypeError("The granularity parameter must be input as a string.")
-        if not granularity.issubset({"area", "bus"}):
-            raise ValueError(
-                "Demand flexibility granularity can only be specified at the area or "
-                + "bus levels."
             )
         info = copy.deepcopy(info)
         required = {"demand_flexibility_up", "demand_flexibility_dn"}
@@ -539,22 +540,31 @@ class ChangeTable:
         }
         self._check_entry_keys(info, 1, "demand_flexibility", required, None, optional)
 
+        # Add a key for demand flexibility in the change table, if necessary
+        if "demand_flexibility" not in self.ct:
+            self.ct["demand_flexibility"] = {}
+
         # Access the specified demand flexibility profiles that are required
         for k in required | (optional & info.keys()):
-            # Determine the available profile versions
-            possible = InputData().get_profile_version(self.grid.grid_model, k)
-
-            # Add the profile to the change table
-            if len(possible) == 0:
-                del self.ct["demand_flexibility"]
-                raise ValueError("No %s profile available" % k)
-            elif info[k] in possible:
-                self.ct["demand_flexibility"][k] = info[k]
+            if k == "demand_flexibility_duration":
+                # Check that demand flexibility duration is an integer and positive
+                if not isinstance(info[k], int):
+                    raise ValueError(f"The value of {k} is not integer-valued.")
+                if info[k] > 0:
+                    raise ValueError(f"The value of {k} is no positive.")
             else:
-                del self.ct["demand_flexibility"]
-                raise ValueError(
-                    "Available %s profiles: %s" % (k, " | ".join(possible))
-                )
+                # Determine the available profile versions
+                possible = InputData().get_profile_version(self.grid.grid_model, k)
+
+                # Add the profile to the change table
+                if len(possible) == 0:
+                    del self.ct["demand_flexibility"]
+                    raise ValueError(f"No {k} profile available.")
+                elif info[k] in possible:
+                    self.ct["demand_flexibility"][k] = info[k]
+                else:
+                    del self.ct["demand_flexibility"]
+                    raise ValueError(f"Available {k} profiles: {', '.join(possible)}")
 
     def add_dcline(self, info):
         """Adds HVDC line(s).

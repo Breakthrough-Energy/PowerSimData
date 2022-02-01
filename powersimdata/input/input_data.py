@@ -17,7 +17,6 @@ profile_kind = {
     "wind",
     "demand_flexibility_up",
     "demand_flexibility_dn",
-    "demand_flexibility_duration",
     "demand_flexibility_cost_up",
     "demand_flexibility_cost_dn",
 }
@@ -48,12 +47,12 @@ def _check_field(field_name):
 
     :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
         *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
-        *'demand_flexibility_duration'*, *'demand_flexibility_cost_up'*,
-        *'demand_flexibility_cost_dn'*, *'ct'*, or *'grid'*.
+        *'demand_flexibility_cost_up'*, *'demand_flexibility_cost_dn'*, *'ct'*, or
+        *'grid'*.
     :raises ValueError: if not *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
         *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
-        *'demand_flexibility_duration'*, *'demand_flexibility_cost_up'*,
-        *'demand_flexibility_cost_dn'*, *'ct'*, or *'grid'*.
+        *'demand_flexibility_cost_up'*, *'demand_flexibility_cost_dn'*, *'ct'*, or
+        *'grid'*.
     """
     possible = list(_file_extension.keys())
     if field_name not in possible:
@@ -96,13 +95,12 @@ class InputData:
         :param dict scenario_info: scenario information.
         :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
             *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
-            *'demand_flexibility_duration'*, *'demand_flexibility_cost_up'*,
-            *'demand_flexibility_cost_dn'*, *'ct'*, or *'grid'*.
+            *'demand_flexibility_cost_up'*, *'demand_flexibility_cost_dn'*, *'ct'*, or
+            *'grid'*.
         :return: (*pandas.DataFrame*, *dict*, or *str*) -- demand, hydro, solar, wind,
-            demand_flexibility_up, demand_flexibility_dn, demand_flexibility_duration,
-            demand_flexibility_cost_up, or demand_flexibility_cost_dn as a data frame;
-            change table as a dictionary; or the path to a matfile enclosing the grid
-            data.
+            demand_flexibility_up, demand_flexibility_dn, demand_flexibility_cost_up,
+            or demand_flexibility_cost_dn as a data frame; change table as a dictionary;
+            or the path to a matfile enclosing the grid data.
         :raises FileNotFoundError: if file not found on local machine.
         """
         _check_field(field_name)
@@ -131,8 +129,7 @@ class InputData:
         :param str grid_model: grid model.
         :param str kind: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
             *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
-            *'demand_flexibility_duration'*, *'demand_flexibility_cost_up'*,
-            or *'demand_flexibility_cost_dn'*.
+            *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
         :return: (*list*) -- available profile version.
         """
         return self.data_access.get_profile_version(grid_model, kind)
