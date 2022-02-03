@@ -1,11 +1,8 @@
-import os
-
 import pytest
 
 from powersimdata.data_access.context import Context
-from powersimdata.data_access.data_access import TempDataAccess, get_blob_fs
 from powersimdata.scenario.scenario import Scenario
-from powersimdata.utility import templates
+from powersimdata.tests.mock_context import MockContext
 
 
 @pytest.mark.integration
@@ -14,23 +11,6 @@ def test_bad_scenario_name():
     # This test will fail if we do add a scenario with this name
     with pytest.raises(ValueError):
         Scenario("this_scenario_does_not_exist")
-
-
-class MockContext:
-    def __init__(self):
-        self.data_access = self._setup()
-
-    def get_data_access(self, ignored=None):
-        return self.data_access
-
-    def _setup(self):
-        tda = TempDataAccess()
-        tda.fs.add_fs("profile_fs", get_blob_fs("profiles"), priority=2)
-        for path in ("ExecuteList.csv", "ScenarioList.csv"):
-            orig = os.path.join(templates.__path__[0], path)
-            with open(orig, "rb") as f:
-                tda.fs.upload(path, f)
-        return tda
 
 
 def test_scenario_workflow(monkeypatch):
