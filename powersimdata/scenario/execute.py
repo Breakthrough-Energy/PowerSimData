@@ -217,17 +217,18 @@ class SimulationInput:
                 storage_file_name, self.REL_TMP_DIR, change_name_to="case_storage.mat"
             )
 
-    def prepare_profile(self, kind, profile_as=None):
+    def prepare_profile(self, kind, profile_as=None, slice=False):
         """Prepares profile for simulation.
 
         :param kind: one of *demand*, *'hydro'*, *'solar'* or *'wind'*.
         :param int/str profile_as: if given, copy profile from this scenario.
+        :param bool slice: whether to slice the profiles by the Scenario's time range.
         """
         if profile_as is None:
             file_name = "%s_%s.csv" % (self.scenario_id, kind)
             filepath = os.path.join(server_setup.LOCAL_DIR, file_name)
             export_transformed_profile(
-                kind, self._scenario_info, self.grid, self.ct, filepath
+                kind, self._scenario_info, self.grid, self.ct, filepath, slice
             )
 
             self._data_access.move_to(

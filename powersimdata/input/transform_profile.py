@@ -6,16 +6,20 @@ from powersimdata.input.input_data import InputData
 class TransformProfile:
     """Transform profile according to operations listed in change table."""
 
-    def __init__(self, scenario_info, grid, ct):
+    _default_dates = {"start_date": "2016-01-01 00:00", "end_date": "2016-12-31 23:00"}
+
+    def __init__(self, scenario_info, grid, ct, slice=True):
         """Constructor.
 
         :param dict scenario_info: scenario information.
         :param powersimdata.input.grid.Grid grid: a Grid object previously
             transformed.
         :param dict ct: change table.
+        :param bool slice: whether to slice the profiles by the Scenario's time range.
         """
+        self.slice = slice
         self._input_data = InputData()
-        self.scenario_info = scenario_info
+        self.scenario_info = {**self._default_dates, **scenario_info}
 
         self.ct = copy.deepcopy(ct)
         self.grid = copy.deepcopy(grid)
@@ -113,6 +117,17 @@ class TransformProfile:
                 demand.loc[:, key] *= value
         return demand
 
+    def _slice_df(self, df):
+        """Return dataframe, sliced by the times specified in scenario_info if and only
+        if ``self.slice`` = True.
+
+        :param pandas.DataFrame df: data frame to be sliced.
+        :return: (*pandas.DataFrame*) -- sliced data frame.
+        """
+        if not self.slice:
+            return df
+        return df.loc[self.scenario_info["start_date"] : self.scenario_info["end_date"]]
+
     def get_profile(self, name):
         """Return profile.
 
@@ -125,6 +140,6 @@ class TransformProfile:
         if name not in possible:
             raise ValueError("Choose from %s" % " | ".join(possible))
         elif name == "demand":
-            return self._get_demand_profile()
+            return self._slice_df(self._get_demand_profile())
         else:
-            return self._get_renewable_profile(name)
+            return self._slice_df(self._get_renewable_profile(name))
