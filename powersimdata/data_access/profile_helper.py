@@ -7,6 +7,39 @@ from tqdm.auto import tqdm
 from powersimdata.utility import server_setup
 
 
+def _get_profile_version(_fs, kind):
+    """Returns available raw profiles from the give filesystem
+    :param fs.base.FS _fs: filesystem instance
+    :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
+    :return: (*list*) -- available profile version.
+    """
+    matching = [f for f in _fs.listdir(".") if kind in f]
+    return [f.lstrip(f"{kind}_").rstrip(".csv") for f in matching]
+
+
+def get_profile_version_cloud(grid_model, kind):
+    """Returns available raw profile from blob storage.
+
+    :param str grid_model: grid model.
+    :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
+    :return: (*list*) -- available profile version.
+    """
+    bfs = fs.open_fs("azblob://besciences@profiles").opendir(f"raw/{grid_model}")
+    return _get_profile_version(bfs, kind)
+
+
+def get_profile_version_local(grid_model, kind):
+    """Returns available raw profile from local file.
+
+    :param str grid_model: grid model.
+    :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
+    :return: (*list*) -- available profile version.
+    """
+    profile_dir = fs.path.join(server_setup.LOCAL_DIR, "raw", grid_model)
+    lfs = fs.open_fs(profile_dir)
+    return _get_profile_version(lfs, kind)
+
+
 class ProfileHelper:
     BASE_URL = "https://besciences.blob.core.windows.net/profiles"
 
@@ -52,42 +85,3 @@ class ProfileHelper:
                     pbar.update(len(chunk))
 
         return dest
-
-    @staticmethod
-    def parse_version(grid_model, kind, version):
-        """Parse available versions from the given spec.
-
-        :param str grid_model: grid model.
-        :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
-        :param dict version: version information per grid model.
-        :return: (*list*) -- available profile version.
-        """
-        if grid_model in version and kind in version[grid_model]:
-            return version[grid_model][kind]
-        print("No %s profiles available." % kind)
-        return []
-
-    @staticmethod
-    def get_profile_version_cloud(grid_model, kind):
-        """Returns available raw profile from blob storage.
-
-        :param str grid_model: grid model.
-        :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
-        :return: (*list*) -- available profile version.
-        """
-
-        resp = requests.get(f"{ProfileHelper.BASE_URL}/version.json")
-        return ProfileHelper.parse_version(grid_model, kind, resp.json())
-
-    @staticmethod
-    def get_profile_version_local(grid_model, kind):
-        """Returns available raw profile from local file.
-
-        :param str grid_model: grid model.
-        :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
-        :return: (*list*) -- available profile version.
-        """
-        profile_dir = fs.path.join(server_setup.LOCAL_DIR, "raw", grid_model)
-        lfs = fs.open_fs(profile_dir)
-        matching = [f for f in lfs.listdir(".") if kind in f]
-        return [f.lstrip(f"{kind}_").rstrip(".csv") for f in matching]

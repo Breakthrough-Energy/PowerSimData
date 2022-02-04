@@ -140,20 +140,28 @@ def _read_data(filepath):
     return data
 
 
-def get_bus_demand(scenario_info, grid):
-    """Returns demand profiles by bus.
+def distribute_demand_from_zones_to_buses(zone_demand, bus):
+    """Decomposes zone demand to bus demand based on bus 'Pd' column.
 
-    :param dict scenario_info: scenario information.
-    :param powersimdata.input.grid.Grid grid: grid to construct bus demand for.
-    :return: (*pandas.DataFrame*) -- data frame of demand.
+    :param pandas.DataFrame zone_demand: demand by zone. Index is timestamp, columns are
+        zone IDs, values are zone demand (MW).
+    :param pandas.DataFrame bus: table of bus data, containing at least 'zone_id' and
+        'Pd' columns.
+    :return: (*pandas.DataFrame*) -- data frame of demand. Index is timestamp, columns
+        are bus IDs, values are bus demand (MW).
+    :raises ValueError: if the columns of ``zone_demand`` don't match the set of zone
+        IDs within the 'zone_id' column of ``bus``.
     """
-    bus = grid.bus.copy()
-    demand = InputData().get_data(scenario_info, "demand")[bus.zone_id.unique()]
-    bus["zone_Pd"] = bus.groupby("zone_id")["Pd"].transform("sum")
-    bus["zone_share"] = bus["Pd"] / bus["zone_Pd"]
-    zone_bus_shares = pd.DataFrame(
-        {z: bus.groupby("zone_id").get_group(z).zone_share for z in demand.columns}
-    ).fillna(0)
-    bus_demand = demand.dot(zone_bus_shares.T)
+    if set(bus["zone_id"].unique()) != set(zone_demand.columns):
+        raise ValueError("zones don't match between zone_demand and bus dataframes")
+    grouped_buses = bus.groupby("zone_id")
+    bus_zone_pd = grouped_buses["Pd"].transform("sum")
+    bus_zone_share = pd.concat(
+        [pd.Series(bus["Pd"] / bus_zone_pd, name="zone_share"), bus["zone_id"]], axis=1
+    )
+    zone_bus_shares = bus_zone_share.pivot_table(
+        index="bus_id", columns="zone_id", values="zone_share", fill_value=0
+    )
+    bus_demand = zone_demand.dot(zone_bus_shares.T)
 
     return bus_demand

@@ -6,7 +6,8 @@ import pandas as pd
 from scipy.sparse import coo_matrix
 
 from powersimdata.data_access.context import Context
-from powersimdata.input.input_data import get_bus_demand
+from powersimdata.input.input_data import distribute_demand_from_zones_to_buses
+from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.utility import server_setup
 
 
@@ -76,11 +77,12 @@ def _check_field(field_name):
         raise ValueError("Only %s data can be loaded" % " | ".join(possible))
 
 
-def construct_load_shed(scenario_info, grid, infeasibilities=None):
+def construct_load_shed(scenario_info, grid, ct, infeasibilities=None):
     """Constructs load_shed dataframe from relevant scenario/grid data.
 
     :param dict scenario_info: info attribute of Scenario object.
     :param powersimdata.input.grid.Grid grid: grid to construct load_shed for.
+    :param dict ct: ChangeTable dictionary.
     :param dict/None infeasibilities: dictionary of
         {interval (int): load shed percentage (int)}, or None.
     :return: (*pandas.DataFrame*) -- data frame of load_shed.
@@ -95,7 +97,8 @@ def construct_load_shed(scenario_info, grid, infeasibilities=None):
         load_shed = pd.DataFrame.sparse.from_spmatrix(load_shed_data)
     else:
         print("Infeasibilities, constructing DataFrame")
-        bus_demand = get_bus_demand(scenario_info, grid)
+        zone_demand = TransformProfile(scenario_info, grid, ct)
+        bus_demand = distribute_demand_from_zones_to_buses(zone_demand, grid.bus)
         load_shed = np.zeros((len(hours), len(buses)))
         # Convert '24H' to 24
         interval = int(scenario_info["interval"][:-1])
