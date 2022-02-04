@@ -373,7 +373,7 @@ def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
             drop_cols += list(generator_rename_t)
 
     generators = grid.plant.rename(columns=generator_rename)
-    generators.p_min_pu /= generators.p_nom
+    generators.p_min_pu /= generators.p_nom.where(generators.p_nom != 0, 1)
     generators["ramp_limit_down"] = generators.ramp_limit
     generators["ramp_limit_up"] = generators.ramp_limit
     generators.drop(columns=drop_cols + ["ramp_limit"], inplace=True)
@@ -393,6 +393,7 @@ def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
     if scenario:
         dfs = [scenario.get_wind(), scenario.get_solar(), scenario.get_hydro()]
         p_max_pu = pd.concat(dfs, axis=1)
+        p_max_pu = p_max_pu / generators.p_nom[p_max_pu.columns]
         generators_t = {"p_max_pu": p_max_pu}
     else:
         generators_t = {
@@ -410,6 +411,9 @@ def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
             drop_cols += list(branch_rename_t)
 
     branches = grid.branch.rename(columns=branch_rename).drop(columns=drop_cols)
+    branches["v_nom"] = branches.bus0.map(buses.v_nom)
+    branches["x"] = branches.x_pu * branches.v_nom ** 2
+    branches["r"] = branches.r_pu * branches.v_nom ** 2
 
     lines = branches.query("branch_device_type == 'Line'")
     lines = lines.drop(columns="branch_device_type")
@@ -440,7 +444,14 @@ def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
             drop_cols += list(link_rename_t)
 
     links = grid.dcline.rename(columns=link_rename).drop(columns=drop_cols)
-    links.p_min_pu /= links.p_nom
+    links.p_min_pu /= links.p_nom.where(links.p_nom != 0, 1)
+
+    # SUBSTATION CONNECTORS
+    sublinks = dict(
+        bus0=buses.index, bus1=buses.substation.values, p_nom=np.inf, p_min_pu=-1
+    )
+    index = "sub" + pd.RangeIndex(len(buses)).astype(str)
+    sublinks = pd.DataFrame(sublinks, index=index)
 
     if scenario:
         links_t = {}
@@ -464,5 +475,6 @@ def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
     n.madd("Line", lines.index, **lines, **lines_t)
     n.madd("Transformer", transformers.index, **transformers, **transformers_t)
     n.madd("Link", links.index, **links, **links_t)
+    n.madd("Link", sublinks.index, **sublinks)
 
     return n
