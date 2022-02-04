@@ -1,6 +1,7 @@
 import pytest
 
 from powersimdata.data_access.context import Context
+from powersimdata.scenario.delete import Delete
 from powersimdata.scenario.scenario import Scenario
 from powersimdata.tests.mock_context import MockContext
 
@@ -45,9 +46,32 @@ def test_scenario_workflow(monkeypatch):
     s.get_grid()
     s.get_ct()
 
+    rfs = s.data_access.fs
+    lfs = s.data_access.local_fs
+    tmp_dir = s.data_access.tmp_folder(1)
+
     s.print_scenario_info()
     s.create_scenario()
+
+    scenario_list = s.get_scenario_table()
+    assert 1 == scenario_list.shape[0]
+
+    for fs in (lfs, rfs):
+        assert fs.exists("data/input/1_ct.pkl")
 
     # hack to use truncated profiles so the test runs quickly
     s.info["grid_model"] = "test_usa_tamu"
     s.prepare_simulation_input()
+
+    tmp_files = rfs.listdir(tmp_dir)
+    assert len(tmp_files) > 0
+
+    s.change(Delete)
+    s.delete_scenario(confirm=False)
+
+    for fs in (rfs, lfs):
+        assert not fs.exists(tmp_dir)
+        assert len(fs.listdir("data/input")) == 0
+
+    scenario_list = Scenario().get_scenario_table()
+    assert 0 == scenario_list.shape[0]

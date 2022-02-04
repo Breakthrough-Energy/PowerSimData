@@ -144,14 +144,17 @@ class DataAccess:
 
         :param str pattern: glob specifying files to remove
         :param bool confirm: prompt before executing command
+        :return: (*bool*) -- True if the operation is completed
         """
         if confirm:
             confirmed = input(f"Delete '{pattern}'? [y/n] (default is 'n')")
             if confirmed.lower() != "y":
                 print("Operation cancelled.")
-                return
+                return False
         self.fs.glob(pattern).remove()
+        self.local_fs.glob(pattern).remove()
         print("--> Done!")
+        return True
 
     def _check_file_exists(self, path, should_exist=True):
         """Check that file exists (or not) at the given path

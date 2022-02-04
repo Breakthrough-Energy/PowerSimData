@@ -18,7 +18,7 @@ class Analyze(Ready):
     """
 
     name = "analyze"
-    allowed = []
+    allowed = ["delete"]
     exported_methods = {
         "get_averaged_cong",
         "get_congl",
@@ -53,7 +53,7 @@ class Analyze(Ready):
     def _set_allowed_state(self):
         """Sets allowed state."""
         if self._scenario_status == "extracted":
-            self.allowed = ["delete", "move"]
+            self.allowed.append("move")
 
     def _set_ct_and_grid(self):
         """Sets change table and grid."""

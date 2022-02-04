@@ -17,7 +17,7 @@ class Execute(Ready):
     """
 
     name = "execute"
-    allowed = []
+    allowed = ["delete"]
     exported_methods = {
         "check_progress",
         "extract_simulation_output",
