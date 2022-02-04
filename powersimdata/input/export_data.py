@@ -402,7 +402,8 @@ def export_to_pypsa(
     if scenario:
         dfs = [scenario.get_wind(), scenario.get_solar(), scenario.get_hydro()]
         p_max_pu = pd.concat(dfs, axis=1)
-        p_max_pu = p_max_pu / generators.p_nom[p_max_pu.columns]
+        p_nom = generators.p_nom[p_max_pu.columns]
+        p_max_pu = p_max_pu / p_nom.where(p_nom != 0, 1)
         generators_t = {"p_max_pu": p_max_pu}
     else:
         generators_t = {
