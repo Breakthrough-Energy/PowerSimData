@@ -7,7 +7,10 @@ import pandas as pd
 
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.grid import Grid
-from powersimdata.input.input_data import InputData, get_bus_demand
+from powersimdata.input.input_data import (
+    InputData,
+    distribute_demand_from_zones_to_buses,
+)
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.network.model import ModelImmutables
@@ -86,8 +89,9 @@ class Create(State):
         :return: (*pandas.DataFrame*) -- data frame of demand (hour, bus).
         """
         self._update_scenario_info()
+        demand = self.get_demand()
         grid = self.get_grid()
-        return get_bus_demand(self._scenario_info, grid)
+        return distribute_demand_from_zones_to_buses(demand, grid.bus)
 
     def create_scenario(self):
         """Creates scenario."""

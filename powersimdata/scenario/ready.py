@@ -1,7 +1,7 @@
 import copy
 
 from powersimdata.input.grid import Grid
-from powersimdata.input.input_data import get_bus_demand
+from powersimdata.input.input_data import distribute_demand_from_zones_to_buses
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.scenario.state import State
 
@@ -120,5 +120,6 @@ class Ready(State):
 
         :return: (*pandas.DataFrame*) -- data frame of demand (hour, bus).
         """
+        zone_demand = self.get_demand()
         grid = self.get_grid()
-        return get_bus_demand(self._scenario_info, grid)
+        return distribute_demand_from_zones_to_buses(zone_demand, grid.bus)
