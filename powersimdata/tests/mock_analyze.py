@@ -43,6 +43,7 @@ class MockAnalyze:
         "get_congl",
         "get_congu",
         "get_ct",
+        "get_bus_demand",
         "get_demand",
         "get_grid",
         "get_lmp",
@@ -63,6 +64,7 @@ class MockAnalyze:
         congu=None,
         ct=None,
         demand=None,
+        bus_demand=None,
         lmp=None,
         pf=None,
         pg=None,
@@ -79,6 +81,7 @@ class MockAnalyze:
         self.congu = _ensure_ts_index(congu)
         self.ct = ct if ct is not None else {}
         self.demand = _ensure_ts_index(demand)
+        self.bus_demand = _ensure_ts_index(bus_demand)
         self.lmp = _ensure_ts_index(lmp)
         self.pf = _ensure_ts_index(pf)
         self.dcline_pf = _ensure_ts_index(dcline_pf)
@@ -113,6 +116,12 @@ class MockAnalyze:
         :return: (pandas.DataFrame) -- dummy demand
         """
         return self.demand
+
+    def get_bus_demand(self):
+        """Get bus demand.
+        :return: (pandas.DataFrame) -- dummy bus demand
+        """
+        return self.bus_demand
 
     def get_grid(self):
         """Get grid.

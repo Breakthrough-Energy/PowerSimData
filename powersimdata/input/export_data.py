@@ -124,7 +124,7 @@ def export_case_mat(grid, filepath, storage_filepath=None):
     savemat(filepath, mpc, appendmat=False)
 
 
-def export_transformed_profile(kind, scenario_info, grid, ct, filepath):
+def export_transformed_profile(kind, scenario_info, grid, ct, filepath, slice=True):
     """Apply transformation to the given kind of profile and save the result locally.
 
     :param str kind: which profile to export. This parameter is passed to
@@ -135,8 +135,9 @@ def export_transformed_profile(kind, scenario_info, grid, ct, filepath):
         transformed.
     :param dict ct: change table.
     :param str filepath: path to save the result, including the filename
+    :param bool slice: whether to slice the profiles by the Scenario's time range.
     """
-    tp = TransformProfile(scenario_info, grid, ct)
+    tp = TransformProfile(scenario_info, grid, ct, slice)
     profile = tp.get_profile(kind)
     print(f"Writing scaled {kind} profile to {filepath} on local machine")
     profile.to_csv(filepath)
