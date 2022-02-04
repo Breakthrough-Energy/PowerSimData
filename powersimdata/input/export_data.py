@@ -285,7 +285,9 @@ def export_transformed_profile(kind, scenario_info, grid, ct, filepath, slice=Tr
     profile.to_csv(filepath)
 
 
-def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
+def export_to_pypsa(
+    scenario_or_grid, preserve_all_columns=False, skip_substations=False
+):
     """Export a Scenario/Grid instance to a PyPSA network.
 
     .. note::
@@ -301,6 +303,13 @@ def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
         of the corresponding component. If true, this will also
         import columns that PyPSA does not process. The default
         is False.
+    :param skip_substations bool: Whether to export substations. If set
+        to True, artificial links of infinite capacity are added from each bus
+        to its substation. This is necessary as the substations are imported
+        as regualar buses in pypsa and thus require a connection to the network.
+        If set to False, the substations will not be exported. This is
+        helpful when there are no branches or dclinks connecting the
+        substations.
 
     """
     from powersimdata.scenario.scenario import Scenario  # avoid circular import
@@ -467,7 +476,6 @@ def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
     if scenario:
         n.snapshots = loads_t["p_set"].index
     n.madd("Bus", buses.index, **buses, **buses_t)
-    n.madd("Bus", substations.index, **substations)
     n.madd("Load", buses.index, bus=buses.index, **loads, **loads_t)
     n.madd("ShuntImpedance", buses.index, bus=buses.index, **shunts)
     n.madd("Generator", generators.index, **generators, **generators_t)
@@ -475,6 +483,9 @@ def export_to_pypsa(scenario_or_grid, preserve_all_columns=False):
     n.madd("Line", lines.index, **lines, **lines_t)
     n.madd("Transformer", transformers.index, **transformers, **transformers_t)
     n.madd("Link", links.index, **links, **links_t)
-    n.madd("Link", sublinks.index, **sublinks)
+
+    if not skip_substations:
+        n.madd("Bus", substations.index, **substations)
+        n.madd("Link", sublinks.index, **sublinks)
 
     return n
