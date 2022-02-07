@@ -15,19 +15,20 @@ class Delete(Ready):
         :param bool confirm: prompt before each batch
         """
         scenario_id = self._scenario_info["id"]
+        _join = self._data_access.join
 
-        print("--> Deleting scenario input data")
-        target = self._data_access.join(*server_setup.INPUT_DIR, f"{scenario_id}_*")
-        self._data_access.remove(target, confirm=confirm)
-
-        print("--> Deleting scenario output data")
-        target = self._data_access.join(*server_setup.OUTPUT_DIR, f"{scenario_id}_*")
-        self._data_access.remove(target, confirm=confirm)
-
-        # Delete temporary folder enclosing simulation inputs
-        print("--> Deleting temporary folder")
+        input_dir = _join(*server_setup.INPUT_DIR, f"{scenario_id}_*")
+        output_dir = _join(*server_setup.OUTPUT_DIR, f"{scenario_id}_*")
         tmp_dir = self._data_access.tmp_folder(scenario_id)
-        self._data_access.remove(f"{tmp_dir}/**", confirm=confirm)
+
+        proceed = True
+        for target in (input_dir, output_dir, f"{ tmp_dir }/**"):
+            if proceed:
+                proceed = self._data_access.remove(target, confirm=confirm)
+
+        if not proceed:
+            print("Cancelling deletion.")
+            return
 
         print("--> Deleting entries in scenario and execute list")
         self._scenario_list_manager.delete_entry(scenario_id)

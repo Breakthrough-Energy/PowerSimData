@@ -151,7 +151,7 @@ class DataAccess:
             if confirmed.lower() != "y":
                 print("Operation cancelled.")
                 return False
-        self.fs.glob(pattern).remove()
+        self.fs.write_fs.glob(pattern).remove()
         self.local_fs.glob(pattern).remove()
         print("--> Done!")
         return True
