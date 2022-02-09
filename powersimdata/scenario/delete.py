@@ -17,14 +17,21 @@ class Delete(Ready):
         scenario_id = self._scenario_info["id"]
         _join = self._data_access.join
 
-        input_dir = _join(*server_setup.INPUT_DIR, f"{scenario_id}_*")
-        output_dir = _join(*server_setup.OUTPUT_DIR, f"{scenario_id}_*")
-        tmp_dir = self._data_access.tmp_folder(scenario_id)
+        input_dir = _join(*server_setup.INPUT_DIR)
+        output_dir = _join(*server_setup.OUTPUT_DIR)
 
-        proceed = True
-        for target in (input_dir, output_dir, f"{ tmp_dir }/**"):
-            if proceed:
-                proceed = self._data_access.remove(target, confirm=confirm)
+        proceed = self._data_access.remove(
+            input_dir, f"{scenario_id}_*", confirm=confirm
+        )
+        if proceed:
+            proceed = self._data_access.remove(
+                output_dir, f"{scenario_id}_*", confirm=confirm
+            )
+        if proceed:
+            pattern = f"scenario_{scenario_id}/*"
+            proceed = self._data_access.remove(
+                server_setup.EXECUTE_DIR, pattern, confirm=confirm
+            )
 
         if not proceed:
             print("Cancelling deletion.")

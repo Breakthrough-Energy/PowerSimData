@@ -3,6 +3,8 @@ from contextlib import contextmanager
 from subprocess import Popen
 
 import fs
+from fs import errors
+from fs.glob import Globber
 from fs.multifs import MultiFS
 from fs.path import basename, dirname
 from fs.tempfs import TempFS
@@ -139,20 +141,26 @@ class DataAccess:
 
         self.fs.copy(src, dest)
 
-    def remove(self, pattern, confirm=True):
+    def remove(self, base_dir, pattern, confirm=True):
         """Delete files in current environment
 
+        :param str base_dir: root within which to search
         :param str pattern: glob specifying files to remove
         :param bool confirm: prompt before executing command
         :return: (*bool*) -- True if the operation is completed
         """
         if confirm:
-            confirmed = input(f"Delete '{pattern}'? [y/n] (default is 'n')")
+            target = self.join(base_dir, pattern)
+            confirmed = input(f"Delete '{target}'? [y/n] (default is 'n')")
             if confirmed.lower() != "y":
                 print("Operation cancelled.")
                 return False
-        self.fs.write_fs.glob(pattern).remove()
-        self.local_fs.glob(pattern).remove()
+
+        for _fs in (self.fs.write_fs, self.local_fs):
+            try:
+                Globber(_fs.opendir(base_dir), pattern).remove()
+            except errors.ResourceNotFound:
+                print(f"Skipping {base_dir} not found on {_fs}")
         print("--> Done!")
         return True
 
@@ -288,7 +296,7 @@ class SSHDataAccess(DataAccess):
             with tfs.openbin(file_name, "w") as f:
                 yield f
             fs.move.move_file(tfs, file_name, self.local_fs, file_name)
-            fs.move.move_file(self.local_fs, file_name, self.fs, backup)
+            fs.copy.copy_file(self.local_fs, file_name, self.fs, backup)
 
         values = {
             "original": posixpath.join(self.root, file_name),
