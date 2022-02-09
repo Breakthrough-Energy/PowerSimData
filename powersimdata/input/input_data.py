@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import pandas as pd
 
@@ -19,9 +20,6 @@ _file_extension = {
 
 
 class InputHelper:
-    def __init__(self, data_access):
-        self.data_access = data_access
-
     @staticmethod
     def get_file_components(scenario_info, field_name):
         """Get the file name and relative path for either ct or grid.
@@ -33,15 +31,6 @@ class InputHelper:
         ext = _file_extension[field_name]
         file_name = scenario_info["id"] + "_" + field_name + "." + ext
         return file_name, server_setup.INPUT_DIR
-
-    def download_file(self, file_name, from_dir):
-        """Download the file if using server, otherwise no-op.
-
-        :param str file_name: either grid or ct file name.
-        :param tuple from_dir: tuple of path components.
-        """
-        from_dir = self.data_access.join(*from_dir)
-        self.data_access.copy_from(file_name, from_dir)
 
 
 def _check_field(field_name):
@@ -55,6 +44,29 @@ def _check_field(field_name):
     possible = list(_file_extension.keys())
     if field_name not in possible:
         raise ValueError("Only %s data can be loaded" % " | ".join(possible))
+
+
+def _read(f, filepath):
+    """Read data from file object
+
+    :param io.IOBase f: a file handle
+    :param str filepath: the filepath corresponding to f
+    :raises ValueError: if extension is unknown.
+    :return: object -- the result
+    """
+    ext = os.path.basename(filepath).split(".")[-1]
+    if ext == "pkl":
+        data = pd.read_pickle(f)
+    elif ext == "csv":
+        data = pd.read_csv(f, index_col=0, parse_dates=True)
+        data.columns = data.columns.astype(int)
+    elif ext == "mat":
+        # get fully qualified local path to matfile
+        data = os.path.abspath(filepath)
+    else:
+        raise ValueError("Unknown extension! %s" % ext)
+
+    return data
 
 
 class InputData:
@@ -84,24 +96,17 @@ class InputData:
         if field_name in profile_kind:
             helper = ProfileHelper
         else:
-            helper = InputHelper(self.data_access)
+            helper = InputHelper
 
         file_name, from_dir = helper.get_file_components(scenario_info, field_name)
 
-        filepath = os.path.join(server_setup.LOCAL_DIR, *from_dir, file_name)
+        filepath = "/".join([*from_dir, file_name])
         key = cache_key(filepath)
         cached = _cache.get(key)
         if cached is not None:
             return cached
-        try:
-            data = _read_data(filepath)
-        except FileNotFoundError:
-            print(
-                "%s not found in %s on local machine"
-                % (file_name, server_setup.LOCAL_DIR)
-            )
-            helper.download_file(file_name, from_dir)
-            data = _read_data(filepath)
+        with self.data_access.get(filepath) as (f, path):
+            data = _read(f, path)
         _cache.put(key, data)
         return data
 
@@ -120,36 +125,9 @@ class InputData:
         :param dict ct: a change table
         :param str scenario_id: scenario id, used for file name
         """
-
-        # note pyfilesystem path conventions:
-        # https://docs.pyfilesystem.org/en/latest/reference/path.html
         filepath = "/".join([*server_setup.INPUT_DIR, f"{scenario_id}_ct.pkl"])
-        self.data_access.write(filepath, ct)
-
-
-def _read_data(filepath):
-    """Reads data from local machine.
-
-    :param str filepath: path to file, with extension either 'pkl', 'csv', or 'mat'.
-    :return: (*pandas.DataFrame*, *dict*, or *str*) -- demand, hydro, solar or
-        wind as a data frame, change table as a dict, or str containing a
-        local path to a matfile of grid data.
-    :raises ValueError: if extension is unknown.
-    """
-    ext = os.path.basename(filepath).split(".")[-1]
-    if ext == "pkl":
-        data = pd.read_pickle(filepath)
-    elif ext == "csv":
-        data = pd.read_csv(filepath, index_col=0, parse_dates=True)
-        data.columns = data.columns.astype(int)
-    elif ext == "mat":
-        # Try to load the matfile, just to check if it exists locally
-        open(filepath, "r")
-        data = filepath
-    else:
-        raise ValueError("Unknown extension! %s" % ext)
-
-    return data
+        with self.data_access.write(filepath) as f:
+            pickle.dump(ct, f)
 
 
 def distribute_demand_from_zones_to_buses(zone_demand, bus):

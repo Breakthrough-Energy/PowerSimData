@@ -25,4 +25,4 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - run: python -m pip install --upgrade pip tox
-      - run: tox -e pytest-local
+      - run: tox -e pytest-local -- --cov=powersimdata

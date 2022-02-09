@@ -58,25 +58,3 @@ def test_copy_from_multi_path(data_access):
     make_temp(data_access.fs, filepath)
     data_access.copy_from(FILE_NAME, src_path)
     _check_content(data_access.local_fs, filepath)
-
-
-def test_move_to(data_access):
-    make_temp(data_access.local_fs, FILE_NAME)
-    data_access.move_to(FILE_NAME)
-    _check_content(data_access.fs, FILE_NAME)
-
-
-def test_move_to_multi_path(data_access):
-    rel_path = _join(data_access.local_root, "foo", "bar")
-    filepath = _join(rel_path, FILE_NAME)
-    make_temp(data_access.local_fs, FILE_NAME)
-    data_access.move_to(FILE_NAME, rel_path)
-    _check_content(data_access.fs, filepath)
-
-
-def test_move_to_rename(data_access):
-    make_temp(data_access.local_fs, FILE_NAME)
-
-    new_fname = "foo.txt"
-    data_access.move_to(FILE_NAME, change_name_to=new_fname)
-    _check_content(data_access.fs, new_fname)

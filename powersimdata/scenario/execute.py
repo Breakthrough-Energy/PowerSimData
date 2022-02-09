@@ -1,3 +1,5 @@
+from scipy.io import savemat
+
 from powersimdata.data_access.context import Context
 from powersimdata.input.export_data import export_case_mat
 from powersimdata.input.grid import Grid
@@ -15,7 +17,7 @@ class Execute(Ready):
     """
 
     name = "execute"
-    allowed = []
+    allowed = ["delete"]
     exported_methods = {
         "check_progress",
         "extract_simulation_output",
@@ -101,7 +103,6 @@ class Execute(Ready):
             si = SimulationInput(
                 self._data_access, self._scenario_info, self.grid, self.ct
             )
-            si.create_folder()
             for p in ["demand", "hydro", "solar", "wind"]:
                 si.prepare_profile(p, profiles_as)
 
@@ -193,26 +194,20 @@ class SimulationInput:
 
         self.REL_TMP_DIR = self._data_access.tmp_folder(self.scenario_id)
 
-    def create_folder(self):
-        """Creates folder on server that will enclose simulation inputs."""
-        description = self._data_access.description
-        print(f"--> Creating temporary folder on {description} for simulation inputs")
-        self._data_access.makedir(self.REL_TMP_DIR)
-
     def prepare_mpc_file(self):
         """Creates MATPOWER case file."""
-        file_name = f"{self.scenario_id}_case.mat"
-        storage_file_name = f"{self.scenario_id}_case_storage.mat"
-        file_path = "/".join([self.REL_TMP_DIR, file_name])
-        storage_file_path = "/".join([self.REL_TMP_DIR, storage_file_name])
+        file_path = "/".join([self.REL_TMP_DIR, "case.mat"])
+        storage_file_path = "/".join([self.REL_TMP_DIR, "case_storage.mat"])
 
         print("Building MPC file")
         mpc, mpc_storage = export_case_mat(self.grid)
 
-        self._data_access.write(file_path, mpc, save_local=False)
+        with self._data_access.write(file_path, save_local=False) as f:
+            savemat(f, mpc, appendmat=False)
 
-        if mpc_storage:
-            self._data_access.write(storage_file_path, mpc_storage, save_local=False)
+        if mpc_storage is not None:
+            with self._data_access.write(storage_file_path, save_local=False) as f:
+                savemat(f, mpc, appendmat=False)
 
     def prepare_profile(self, kind, profile_as=None, slice=False):
         """Prepares profile for simulation.
@@ -221,15 +216,16 @@ class SimulationInput:
         :param int/str profile_as: if given, copy profile from this scenario.
         :param bool slice: whether to slice the profiles by the Scenario's time range.
         """
+        file_name = f"{kind}.csv"
         if profile_as is None:
-            file_name = "%s_%s.csv" % (self.scenario_id, kind)
             filepath = "/".join([self.REL_TMP_DIR, file_name])
 
             tp = TransformProfile(self._scenario_info, self.grid, self.ct, slice)
             profile = tp.get_profile(kind)
             print(f"Writing scaled {kind} profile to {filepath}")
-            self._data_access.write(filepath, profile, save_local=False)
+            with self._data_access.write(filepath, save_local=False) as f:
+                profile.to_csv(f)
         else:
             from_dir = self._data_access.tmp_folder(profile_as)
-            src = self._data_access.join(from_dir, f"{kind}.csv")
+            src = "/".join([from_dir, file_name])
             self._data_access.copy(src, self.REL_TMP_DIR)
