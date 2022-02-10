@@ -286,7 +286,9 @@ def export_transformed_profile(kind, scenario_info, grid, ct, filepath, slice=Tr
 
 
 def export_to_pypsa(
-    scenario_or_grid, preserve_all_columns=False, skip_substations=False
+    scenario_or_grid,
+    preserve_all_columns=False,
+    skip_substations=False,
 ):
     """Export a Scenario/Grid instance to a PyPSA network.
 
@@ -310,6 +312,7 @@ def export_to_pypsa(
         If set to False, the substations will not be exported. This is
         helpful when there are no branches or dclinks connecting the
         substations.
+
 
     """
     from powersimdata.scenario.scenario import Scenario  # avoid circular import
@@ -383,8 +386,8 @@ def export_to_pypsa(
 
     generators = grid.plant.rename(columns=generator_rename)
     generators.p_min_pu /= generators.p_nom.where(generators.p_nom != 0, 1)
-    generators["ramp_limit_down"] = generators.ramp_limit
-    generators["ramp_limit_up"] = generators.ramp_limit
+    generators["ramp_limit_down"] = generators.ramp_limit.replace(0, np.nan)
+    generators["ramp_limit_up"] = generators.ramp_limit.replace(0, np.nan)
     generators.drop(columns=drop_cols + ["ramp_limit"], inplace=True)
 
     cost = grid.gencost["before"]
@@ -422,8 +425,10 @@ def export_to_pypsa(
 
     branches = grid.branch.rename(columns=branch_rename).drop(columns=drop_cols)
     branches["v_nom"] = branches.bus0.map(buses.v_nom)
-    branches["x"] = branches.x_pu * branches.v_nom ** 2
-    branches["r"] = branches.r_pu * branches.v_nom ** 2
+    # BE model assumes a 100 MVA base, pypsa "assumes" a 1 MVA base
+    branches[["x_pu", "r_pu"]] /= 100
+    branches["x"] = branches.x_pu * branches.v_nom**2
+    branches["r"] = branches.r_pu * branches.v_nom**2
 
     lines = branches.query("branch_device_type == 'Line'")
     lines = lines.drop(columns="branch_device_type")
