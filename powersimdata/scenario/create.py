@@ -1,5 +1,4 @@
 import copy
-import pickle
 import warnings
 
 import numpy as np
@@ -16,7 +15,6 @@ from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.execute import Execute
 from powersimdata.scenario.state import State
-from powersimdata.utility import server_setup
 
 
 class Create(State):
@@ -77,11 +75,9 @@ class Create(State):
 
     def _upload_change_table(self):
         """Uploads change table to server."""
-        print("--> Writing change table on local machine")
-        self.builder.change_table.write(self._scenario_info["id"])
-        file_name = self._scenario_info["id"] + "_ct.pkl"
-        input_dir = self._data_access.join(*server_setup.INPUT_DIR)
-        self._data_access.move_to(file_name, input_dir)
+        InputData().save_change_table(
+            self.builder.change_table.ct, self._scenario_info["id"]
+        )
 
     def get_bus_demand(self):
         """Returns demand profiles, by bus.
@@ -358,18 +354,6 @@ class _Builder:
             return
         else:
             self.engine = engine
-
-    def load_change_table(self, filename):
-        """Uploads change table.
-
-        :param str filename: full path to change table pickle file.
-        :raises FileNotFoundError: if file not found.
-        """
-        try:
-            ct = pickle.load(open(filename, "rb"))
-            self.change_table.ct = ct
-        except FileNotFoundError:
-            raise ("%s not found. " % filename)
 
     def get_grid(self):
         """Returns a transformed grid.
