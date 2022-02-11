@@ -60,7 +60,10 @@ class ProfileHelper:
         :param str field_name: the kind of profile.
         :return: (*tuple*) -- file name and list of path components.
         """
-        version = scenario_info["base_" + field_name]
+        if "demand_flexibility" in field_name:
+            version = scenario_info[field_name]
+        else:
+            version = scenario_info["base_" + field_name]
         file_name = field_name + "_" + version + ".csv"
         grid_model = scenario_info["grid_model"]
         return file_name, ("raw", grid_model)

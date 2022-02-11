@@ -131,15 +131,31 @@ class TransformProfile:
     def get_profile(self, name):
         """Return profile.
 
-        :param str name: either *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :param str name: either *demand*, *'hydro'*, *'solar'*, *'wind'*,
+            *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
+            *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
         :return: (*pandas.DataFrame*) -- profile.
-        :raises ValueError: if argument not one of *'demand'*, *'hydro'*, *'solar'* or
-            *'wind'*.
+        :raises ValueError: if argument not one of *'demand'*, *'hydro'*, *'solar'*,
+            *'wind'*, *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
+            *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
         """
-        possible = ["demand", "hydro", "solar", "wind"]
+        possible = [
+            "demand",
+            "hydro",
+            "solar",
+            "wind",
+            "demand_flexibility_up",
+            "demand_flexibility_dn",
+            "demand_flexibility_cost_up",
+            "demand_flexibility_cost_dn",
+        ]
         if name not in possible:
             raise ValueError("Choose from %s" % " | ".join(possible))
         elif name == "demand":
             return self._slice_df(self._get_demand_profile())
+        elif "demand_flexibility" in name:
+            flex_dem_dict = self.ct["demand_flexibility"]
+            flex_dem_dict["grid_model"] = self.scenario_info["grid_model"]
+            return self._input_data.get_data(flex_dem_dict, name)
         else:
             return self._slice_df(self._get_renewable_profile(name))

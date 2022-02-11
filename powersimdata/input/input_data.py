@@ -72,7 +72,10 @@ def _read(f, filepath):
         data = pd.read_pickle(f)
     elif ext == "csv":
         data = pd.read_csv(f, index_col=0, parse_dates=True)
-        data.columns = data.columns.astype(int)
+        if "demand_flexibility" in filepath:
+            data.columns = data.columns.astype(str)
+        else:
+            data.columns = data.columns.astype(int)
     elif ext == "mat":
         # get fully qualified local path to matfile
         data = os.path.abspath(filepath)

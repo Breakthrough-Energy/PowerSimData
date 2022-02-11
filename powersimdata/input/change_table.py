@@ -550,8 +550,9 @@ class ChangeTable:
                 # Check that demand flexibility duration is an integer and positive
                 if not isinstance(info[k], int):
                     raise ValueError(f"The value of {k} is not integer-valued.")
-                if info[k] > 0:
-                    raise ValueError(f"The value of {k} is no positive.")
+                if info[k] <= 0:
+                    raise ValueError(f"The value of {k} is not positive.")
+                self.ct["demand_flexibility"][k] = info[k]
             else:
                 # Determine the available profile versions
                 possible = InputData().get_profile_version(self.grid.grid_model, k)
