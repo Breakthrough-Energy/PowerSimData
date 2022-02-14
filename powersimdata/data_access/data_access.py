@@ -257,6 +257,10 @@ class SSHDataAccess(DataAccess):
             self._fs = get_multi_fs(self.root)
         return self._fs
 
+    def exec_command(self, command):
+        ssh_fs = self.fs.get_fs("ssh_fs")
+        return ssh_fs.exec_command(command)
+
     def execute_command_async(self, command):
         """Execute a command via ssh, without waiting for completion.
 
