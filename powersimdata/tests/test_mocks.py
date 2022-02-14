@@ -1,7 +1,9 @@
+import numpy as np
 import pandas as pd
 import pytest
 
 from powersimdata.tests.mock_grid import MockGrid
+from powersimdata.tests.mock_input_data import MockInputData
 from powersimdata.tests.mock_scenario import MockScenario
 from powersimdata.tests.mock_scenario_info import MockScenarioInfo
 
@@ -120,3 +122,131 @@ class TestMockScenarioInfo:
         mock_scenario = MockScenario()
         mock_s_info = MockScenarioInfo(mock_scenario)
         assert mock_scenario.state.get_grid() == mock_s_info.grid
+
+
+class TestMockInputData:
+    @pytest.fixture
+    def grid(self):
+        grid = MockGrid(grid_attrs={"plant": mock_plant})
+        return grid
+
+    def test_create_mock_input_data(self, grid):
+        assert MockInputData(grid) is not None
+
+    def test_happy_case(self, grid):
+        mock_input_data = MockInputData(grid, periods=3)
+
+        demand = mock_input_data.get_data({}, "demand")
+        expected_demand_values = np.array(
+            [
+                [0.355565, 0.453391, 0.563135],
+                [0.873873, 0.342370, 0.766953],
+                [0.802850, 0.125095, 0.150314],
+            ]
+        )
+        expected_zone_ids = np.array([1, 2, 3])
+        self._assert_profile(demand, expected_demand_values, expected_zone_ids)
+
+        wind = mock_input_data.get_data({}, "wind")
+        expected_wind_values = np.array(
+            [
+                [0.460527],
+                [0.054347],
+                [0.278840],
+            ]
+        )
+        expected_wind_plant_ids = np.array([102])
+        self._assert_profile(wind, expected_wind_values, expected_wind_plant_ids)
+
+        solar = mock_input_data.get_data({}, "solar")
+        expected_solar_values = np.array(
+            [
+                [0.305825],
+                [0.219366],
+                [0.091358],
+            ]
+        )
+        expected_solar_plant_ids = np.array([101])
+        self._assert_profile(solar, expected_solar_values, expected_solar_plant_ids)
+
+        hydro = mock_input_data.get_data({}, "hydro")
+        expected_hydro_values = np.array(
+            [
+                [0.577557],
+                [0.867702],
+                [0.927690],
+            ]
+        )
+        expected_hydro_plant_ids = np.array([106])
+        self._assert_profile(hydro, expected_hydro_values, expected_hydro_plant_ids)
+
+    def test_multiple_get_data_calls_returns_same_data(self, grid):
+        mock_input_data = MockInputData(grid)
+
+        for type in ("demand", "wind", "solar", "hydro"):
+            profile1 = mock_input_data.get_data({}, type)
+            profile2 = mock_input_data.get_data({}, type)
+            pd.testing.assert_frame_equal(profile1, profile2)
+
+    def test_no_start_time(self, grid):
+        mock_input_data = MockInputData(
+            grid, start_time=None, end_time="2016-01-01 02:00", periods=3, freq="H"
+        )
+        demand = mock_input_data.get_data({}, "demand")
+        self._assert_dates(demand.index)
+
+    def test_no_end_time(self, grid):
+        mock_input_data = MockInputData(
+            grid, start_time="2016-01-01 00:00", end_time=None, periods=3, freq="H"
+        )
+        demand = mock_input_data.get_data({}, "demand")
+        self._assert_dates(demand.index)
+
+    def test_no_period(self, grid):
+        mock_input_data = MockInputData(
+            grid,
+            start_time="2016-01-01 00:00",
+            end_time="2016-01-01 02:00",
+            periods=None,
+            freq="H",
+        )
+        demand = mock_input_data.get_data({}, "demand")
+        self._assert_dates(demand.index)
+
+    def test_no_freq(self, grid):
+        mock_input_data = MockInputData(
+            grid,
+            start_time="2016-01-01 00:00",
+            end_time="2016-01-01 02:00",
+            periods=3,
+            freq=None,
+        )
+        demand = mock_input_data.get_data({}, "demand")
+        self._assert_dates(demand.index)
+
+    def test_raise_if_no_profile_specified(self, grid):
+        with pytest.raises(ValueError) as exc:
+            mock_input_data = MockInputData(grid)
+            mock_input_data.get_data({}, "fusion")
+        assert "No profile specified for fusion!" in str(exc.value)
+
+    def test_raise_if_all_date_range_fields_present(self, grid):
+        with pytest.raises(ValueError):
+            MockInputData(
+                grid,
+                start_time="2016-01-01 00:00",
+                end_time="2016-01-01 02:00",
+                freq="H",
+                periods=3,
+            )
+
+    def _assert_profile(self, profile, expected_values, expected_columns):
+        np.testing.assert_almost_equal(profile.values, expected_values, decimal=5)
+        np.testing.assert_almost_equal(profile.columns, expected_columns)
+        self._assert_dates(profile.index)
+
+    def _assert_dates(self, dates):
+        expected_dates = pd.to_datetime(
+            ["2016-01-01 00:00", "2016-01-01 01:00", "2016-01-01 02:00"]
+        )
+        np.testing.assert_array_equal(dates, expected_dates)
