@@ -232,6 +232,8 @@ class _Builder:
                 {
                     "grid_model": self.grid_model,
                     "base_%s" % kind: getattr(self, kind),
+                    "start_date": self.start_date,
+                    "end_date": self.end_date,
                 },
                 self.get_grid(),
                 self.get_ct(),
