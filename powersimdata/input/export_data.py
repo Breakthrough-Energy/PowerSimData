@@ -38,6 +38,7 @@ pypsa_const = {
             "lam_Q",
             "mu_Vmax",
             "mu_Vmin",
+            "GenFuelCost",
         ],
     },
     "generator": {
@@ -45,7 +46,6 @@ pypsa_const = {
             "bus_id": "bus",
             "Pmax": "p_nom",
             "Pmin": "p_min_pu",
-            "GenFuelCost": "marginal_cost",
             "ramp_30": "ramp_limit",
             "type": "carrier",
         },
@@ -347,7 +347,6 @@ def export_to_pypsa(
     buses.control.replace([1, 2, 3, 4], ["PQ", "PV", "slack", ""], inplace=True)
     buses["zone_name"] = buses.zone_id.map({v: k for k, v in grid.zone2id.items()})
     buses["substation"] = "sub" + grid.bus2sub["sub_id"].astype(str)
-    buses["zone_name"] = buses.substation.map({v: k for k, v in grid.zone2id.items()})
 
     # ensure compatibility with substations (these are imported later)
     buses["is_substation"] = False
@@ -390,8 +389,9 @@ def export_to_pypsa(
     generators["ramp_limit_up"] = generators.ramp_limit.replace(0, np.nan)
     generators.drop(columns=drop_cols + ["ramp_limit"], inplace=True)
 
-    cost = grid.gencost["before"]
-    cost.rename(columns=pypsa_const["cost"]["rename"])
+    gencost = grid.gencost["before"]
+    gencost = gencost.rename(columns=pypsa_const["cost"]["rename"])
+    gencost = gencost[pypsa_const["cost"]["rename"].values()]
 
     carriers = pd.DataFrame(index=generators.carrier.unique(), dtype=object)
 
@@ -484,7 +484,7 @@ def export_to_pypsa(
     n.madd("Bus", buses.index, **buses, **buses_t)
     n.madd("Load", buses.index, bus=buses.index, **loads, **loads_t)
     n.madd("ShuntImpedance", buses.index, bus=buses.index, **shunts)
-    n.madd("Generator", generators.index, **generators, **generators_t)
+    n.madd("Generator", generators.index, **generators, **gencost, **generators_t)
     n.madd("Carrier", carriers.index, **carriers)
     n.madd("Line", lines.index, **lines, **lines_t)
     n.madd("Transformer", transformers.index, **transformers, **transformers_t)
