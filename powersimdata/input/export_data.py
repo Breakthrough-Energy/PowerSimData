@@ -293,10 +293,10 @@ def export_to_pypsa(
     """Export a Scenario/Grid instance to a PyPSA network.
 
     .. note::
-        This function does not import storages yet.
+        This function does not export storages yet.
 
-    :param scenario powersimdata.input.grid.Grid/
-        powersimdata.scenario.scenrario.Scenario:
+    :param scenario_or_grid powersimdata.scenario.scenrario.Scenario/
+        powersimdata.input.grid.Grid:
         Input object. If a Grid instance is passed, operational values
         will be used for the single snapshot "now".
         If a Scenario instance is passed, all available time-series will be
