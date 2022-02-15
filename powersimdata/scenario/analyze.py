@@ -26,6 +26,8 @@ class Analyze(Ready):
         "get_dcline_pf",
         "get_lmp",
         "get_load_shed",
+        "get_load_shift_up",
+        "get_load_shift_dn",
         "get_pf",
         "get_pg",
         "get_storage_e",
@@ -199,6 +201,33 @@ class Analyze(Ready):
                 pickle.dump(load_shed, f)
 
         return load_shed
+
+        def get_load_shift_up(self):
+            """Returns LOAD_SHIFT_UP data frame. This is the amount that flexible demand
+            deviates above (e.g., recovers) the base demand.
+
+            :return: (*pandas.DataFrame*) -- data frame of load shifted up (hour x bus).
+            """
+            output_data = OutputData(data_loc=self.data_loc)
+            load_shift_up = output_data.get_data(
+                self._scenario_info["id"], "LOAD_SHIFT_UP"
+            )
+
+            return load_shift_up
+
+        def get_load_shift_dn(self):
+            """Returns LOAD_SHIFT_DN data frame. This is the amount that flexible demand
+            deviates below (e.g., curtails) the base demand.
+
+            :return: (*pandas.DataFrame*) -- data frame of load shifted down (hour x
+                bus).
+            """
+            output_data = OutputData(data_loc=self.data_loc)
+            load_shift_dn = output_data.get_data(
+                self._scenario_info["id"], "LOAD_SHIFT_DN"
+            )
+
+            return load_shift_dn
 
     def get_demand(self, original=True):
         """Returns demand profiles.

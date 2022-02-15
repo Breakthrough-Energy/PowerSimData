@@ -20,7 +20,8 @@ class OutputData:
 
         :param str scenario_id: scenario id.
         :param str field_name: *'PG'*, *'PF'*, *'LMP'*, *'CONGU'*, *'CONGL'*,
-            *'AVERAGED_CONG'*, *'STORAGE_PG'* or *'STORAGE_E'*.
+            *'AVERAGED_CONG'*, *'STORAGE_PG'*, *'STORAGE_E'*, *'LOAD_SHIFT_UP'*,
+            or *'LOAD_SHIFT_DN'*.
         :return: (*pandas.DataFrame*) -- specified field as a data frame.
         :raises FileNotFoundError: if file not found on local machine.
         :raises ValueError: if second argument is not an allowable field.
@@ -38,11 +39,11 @@ def _check_field(field_name):
     """Checks field name.
 
     :param str field_name: *'PG'*, *'PF'*, *'PF_DCLINE'*, *'LMP'*, *'CONGU'*,
-        *'CONGL'*, *'AVERAGED_CONG'*, *'STORAGE_PG'*, *'STORAGE_E'*,
-        or *'LOAD_SHED'*
+        *'CONGL'*, *'AVERAGED_CONG'*, *'STORAGE_PG'*, *'STORAGE_E'*, *'LOAD_SHED'*,
+        *'LOAD_SHIFT_UP'*, or *'LOAD_SHIFT_DN'*.
     :raises ValueError: if not *'PG'*, *'PF'*, *'PF_DCLINE'*, *'LMP'*,
         *'CONGU'*, or *'CONGL'*, *'AVERAGED_CONG'*, *'STORAGE_PG'*,
-        *'STORAGE_E'*, or *'LOAD_SHED'*.
+        *'STORAGE_E'*, *'LOAD_SHED'*, *'LOAD_SHIFT_UP'*, or *'LOAD_SHIFT_DN'*.
     """
     possible = [
         "PG",
@@ -55,6 +56,8 @@ def _check_field(field_name):
         "STORAGE_PG",
         "STORAGE_E",
         "LOAD_SHED",
+        "LOAD_SHIFT_UP",
+        "LOAD_SHIFT_DN",
     ]
     if field_name not in possible:
         raise ValueError("Only %s data can be loaded" % " | ".join(possible))
