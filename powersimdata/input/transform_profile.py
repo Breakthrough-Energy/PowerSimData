@@ -117,6 +117,29 @@ class TransformProfile:
                 demand.loc[:, key] *= value
         return demand
 
+    def _get_demand_flexibility_profile(self, name):
+        """Return the appropriately pruned demand flexibility profiles.
+
+        :param string name: The type of demand flexibility profile being specified. Can
+            be one of: *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
+            *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
+        :return: (*pandas.DataFrame*) -- data frame of a demand flexibility profile.
+        """
+        # Access the specified demand flexibility profile
+        flex_dem_dict = self.ct["demand_flexibility"]
+        flex_dem_dict["grid_model"] = self.scenario_info["grid_model"]
+        df = self._input_data.get_data(flex_dem_dict, name)
+
+        # Determine if the demand flexibility profile is indexed by zone, bus, or both
+        area_indicator = [1 if "zone." in x else 0 for x in df.columns]
+        if sum(area_indicator) == len(area_indicator):
+            # Identify the zone IDs from the grid model and prune accordingly
+            zone_id = sorted(self.grid.bus.zone_id.unique())
+            zone_id = [f"zone.{x}" for x in zone_id]
+            return df.loc[:, zone_id]
+        else:
+            return df
+
     def _slice_df(self, df):
         """Return dataframe, sliced by the times specified in scenario_info if and only
         if ``self.slice`` = True.
@@ -154,8 +177,6 @@ class TransformProfile:
         elif name == "demand":
             return self._slice_df(self._get_demand_profile())
         elif "demand_flexibility" in name:
-            flex_dem_dict = self.ct["demand_flexibility"]
-            flex_dem_dict["grid_model"] = self.scenario_info["grid_model"]
-            return self._input_data.get_data(flex_dem_dict, name)
+            return self._slice_df(self._get_demand_flexibility_profile(name))
         else:
             return self._slice_df(self._get_renewable_profile(name))
