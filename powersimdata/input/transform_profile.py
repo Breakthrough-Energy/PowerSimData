@@ -118,7 +118,8 @@ class TransformProfile:
         return demand
 
     def _get_demand_flexibility_profile(self, name):
-        """Return the appropriately pruned demand flexibility profiles.
+        """Return the appropriately pruned demand flexibility profiles. Provides support
+        for profiles that might have a mixed input of zones and buses.
 
         :param string name: The type of demand flexibility profile being specified. Can
             be one of: *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
@@ -132,13 +133,31 @@ class TransformProfile:
 
         # Determine if the demand flexibility profile is indexed by zone, bus, or both
         area_indicator = [1 if "zone." in x else 0 for x in df.columns]
-        if sum(area_indicator) == len(area_indicator):
-            # Identify the zone IDs from the grid model and prune accordingly
+        if len(area_indicator) == sum(area_indicator):
+            # Demand flexibility profile only contains zones; prune accordingly
             zone_id = sorted(self.grid.bus.zone_id.unique())
             zone_id = [f"zone.{x}" for x in zone_id]
-            return df.loc[:, zone_id]
+            df = df.loc[:, df.columns.isin(zone_id)]
         else:
-            return df
+            bus_id = sorted(self.grid.bus.bus_id.unique())
+            bus_id = [str(x) for x in bus_id]
+            if len(area_indicator) > 0:
+                # Demand flexibility profile contains zones and buses; prune accordingly
+                zone_id = sorted(self.grid.bus.zone_id.unique())
+                zone_id = [f"zone.{x}" for x in zone_id]
+                df = df.loc[:, df.columns.isin(zone_id + bus_id)]
+            else:
+                # Demand flexibility profile only contains buses; prune accordingly
+                df = df.loc[:, df.columns.isin(bus_id)]
+
+        # Warn if data frame is now empty (i.e., no relevant zones/buses were provided)
+        if len(df.columns) == 0:
+            print(
+                f"WARNING: The {name} profile does not contain relevant zones or buses."
+            )
+
+        # Return the pruned data frame
+        return df
 
     def _slice_df(self, df):
         """Return dataframe, sliced by the times specified in scenario_info if and only
