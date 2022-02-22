@@ -288,7 +288,7 @@ def export_transformed_profile(kind, scenario_info, grid, ct, filepath, slice=Tr
 def export_to_pypsa(
     scenario_or_grid,
     preserve_all_columns=False,
-    skip_substations=False,
+    skip_substations=True,
 ):
     """Export a Scenario/Grid instance to a PyPSA network.
 
@@ -311,7 +311,8 @@ def export_to_pypsa(
         as regualar buses in pypsa and thus require a connection to the network.
         If set to False, the substations will not be exported. This is
         helpful when there are no branches or dclinks connecting the
-        substations.
+        substations. Note that the voltage level of the substation buses is set
+        to the first bus connected to that substation.
 
 
     """
@@ -361,6 +362,8 @@ def export_to_pypsa(
     substations.index = "sub" + substations.index.astype(str)
     substations["is_substation"] = True
     substations["substation"] = substations.index
+    v_nom = buses.groupby("substation").v_nom.first().reindex(substations.index)
+    substations["v_nom"] = v_nom
 
     buses = buses.drop(columns=drop_cols, errors="ignore").sort_index(axis=1)
 
