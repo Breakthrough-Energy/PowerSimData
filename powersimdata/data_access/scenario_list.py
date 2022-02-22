@@ -75,7 +75,7 @@ class ScenarioListManager(CsvStore):
         scenario_info.move_to_end("id", last=False)
         table.reset_index(inplace=True)
         entry = pd.DataFrame({k: [v] for k, v in scenario_info.items()})
-        table = table.append(entry)
+        table = pd.concat([table, entry])
         table.set_index("id", inplace=True)
 
         print("--> Adding entry in %s" % self._FILE_NAME)
