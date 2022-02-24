@@ -90,9 +90,8 @@ class MockInputData:
         :param str resource_type: Can be any of *'hydro'*, *'solar'*, or *'wind'*.
         :return: (*list*) -- list of plant_ids
         """
-        plant_ids = list(
-            self._grid.plant.query("type in @self._RESOURCES[@resource_type]").index
-        )
+        resources = self._RESOURCES[resource_type]
+        plant_ids = list(self._grid.plant[lambda ds: ds.type.isin(resources)].index)
         return plant_ids
 
     def _create_fake_profile(self, columns):
