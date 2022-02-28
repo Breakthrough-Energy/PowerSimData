@@ -505,4 +505,20 @@ def export_to_pypsa(
         n.madd("Bus", substations.index, **substations)
         n.madd("Link", sublinks.index, **sublinks)
 
+    if add_load_shedding:
+        # Load shedding is moddelled by very costy generators whos power output
+        # is measured in kW (see the factor `sign`). This keeps the coefficient
+        # range in the LOPF low.
+        n.madd(
+            "Generator",
+            buses.index,
+            suffix=" load shedding",
+            bus=buses.index,
+            sign=1e-3,
+            marginal_cost=1e2,
+            p_nom=1e9,
+            carrier="load",
+        )
+        n.add("Carrier", "load", nice_name="Load Shedding", color="red")
+
     return n
