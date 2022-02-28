@@ -438,13 +438,26 @@ def test_add_new_elements_at_new_buses(ct):
 
 def test_change_table_clear_success(ct):
     fake_scaling = {"demand", "branch", "solar", "ng_cost", "coal_pmin", "dcline"}
-    fake_additions = {"storage", "new_dcline", "new_branch", "new_plant"}
+    fake_additions = {
+        "storage",
+        "new_dcline",
+        "new_branch",
+        "new_plant",
+        "demand_flexibility",
+    }
     all_fakes = fake_scaling | fake_additions
     original_dict_object = ct.ct
     for fake in all_fakes:
         ct.ct[fake] = {}
     # Test that each individual clear makes a change, and the ct ends up empty
-    clear_keys = {"branch", "dcline", "demand", "plant", "storage"}
+    clear_keys = {
+        "branch",
+        "dcline",
+        "demand",
+        "plant",
+        "storage",
+        "demand_flexibility",
+    }
     for key in clear_keys:
         old_keys = set(ct.ct.keys())
         ct.clear(key)
@@ -492,3 +505,21 @@ def test_remove_bus(ct):
         ct.remove_bus({845})
     ct.scale_plant_capacity(resource="ng", plant_id={0: 0})
     ct.remove_bus({845})
+
+
+def test_add_demand_flexibility(ct):
+    with pytest.raises(Exception):
+        # Fails because "demand_flexibility_dn", a required key, is not included
+        ct.add_demand_flexibility(
+            {"demand_flexibility_up": "test", "demand_flexibility_duration": 6}
+        )
+
+    with pytest.raises(Exception):
+        # Fails because
+        ct.add_demand_flexibility(
+            {
+                "demand_flexibility_up": "test",
+                "demand_flexibility_dn": "test",
+                "demand_flexibility_duration": 6,
+            }
+        )
