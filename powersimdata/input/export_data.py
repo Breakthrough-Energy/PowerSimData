@@ -425,6 +425,10 @@ def export_to_pypsa(
             for k, v in generator_rename_t.items()
         }
 
+    # drop p_min_pu for renewables, set them to non-commitables
+    generators.loc[generators_t.p, 'p_min_pu'] = 0
+    generators.loc[generators_t.p, 'committable'] = False
+
     # BRANCHES
     branch_rename = pypsa_const["branch"]["rename"]
     branch_rename_t = pypsa_const["branch"]["rename_t"]
