@@ -419,15 +419,14 @@ def export_to_pypsa(
         p_nom = generators.p_nom[p_max_pu.columns]
         p_max_pu = p_max_pu / p_nom.where(p_nom != 0, 1)
         generators_t = {"p_max_pu": p_max_pu}
+        # drop p_nom_min of renewables, make them non-committable
+        generators.loc[p_max_pu.columns, "p_min_pu"] = 0
+        generators.loc[p_max_pu.columns, "committable"] = False
     else:
         generators_t = {
             v: generators.pop(k).to_frame("now").T
             for k, v in generator_rename_t.items()
         }
-
-    # drop p_min_pu for renewables, set them to non-commitables
-    generators.loc[generators_t.p, 'p_min_pu'] = 0
-    generators.loc[generators_t.p, 'committable'] = False
 
     # BRANCHES
     branch_rename = pypsa_const["branch"]["rename"]
