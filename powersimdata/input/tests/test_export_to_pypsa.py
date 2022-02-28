@@ -29,19 +29,19 @@ def assert_columns_deleted(n):
 def test_export_grid_to_pypsa():
     grid = Grid("USA")
 
-    n = export_to_pypsa(grid, skip_substations=True)
+    n = export_to_pypsa(grid, add_substations=False)
     assert len(n.snapshots) == 1
     assert not n.loads_t.p.empty
     assert not n.generators_t.p.empty
     assert len(n.buses) == len(grid.bus)
     assert_columns_deleted(n)
 
-    n = export_to_pypsa(grid, preserve_all_columns=True, skip_substations=True)
+    n = export_to_pypsa(grid, add_all_columns=True, add_substations=False)
     assert len(n.snapshots) == 1
     assert not n.loads_t.p.empty
     assert not n.generators_t.p.empty
     assert len(n.buses) == len(grid.bus)
     assert_columns_preserved(n)
 
-    n = export_to_pypsa(grid, skip_substations=False)
+    n = export_to_pypsa(grid, add_substations=True)
     assert len(n.buses) == len(grid.sub) + len(grid.bus)

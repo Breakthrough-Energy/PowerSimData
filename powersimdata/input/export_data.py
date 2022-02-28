@@ -289,8 +289,9 @@ def export_transformed_profile(kind, scenario_info, grid, ct, filepath, slice=Tr
 
 def export_to_pypsa(
     scenario_or_grid,
-    preserve_all_columns=False,
-    skip_substations=True,
+    add_all_columns=False,
+    add_substations=False,
+    add_load_shedding=True,
 ):
     """Export a Scenario/Grid instance to a PyPSA network.
 
@@ -303,18 +304,20 @@ def export_to_pypsa(
         will be used for the single snapshot "now".
         If a Scenario instance is passed, all available time-series will be
         imported.
-    :param preserve_all_columns bool: Whether to import all columns
-        of the corresponding component. If true, this will also
-        import columns that PyPSA does not process. The default
-        is False.
-    :param skip_substations bool: Whether to export substations. If set
+    :param add_all_columns bool: Whether to add all columns of the
+        corresponding component. If true, this will also import columns
+        that PyPSA does not process. The default is False.
+    :param add_substations bool: Whether to export substations. If set
         to True, artificial links of infinite capacity are added from each bus
         to its substation. This is necessary as the substations are imported
         as regualar buses in pypsa and thus require a connection to the network.
         If set to False, the substations will not be exported. This is
         helpful when there are no branches or dclinks connecting the
         substations. Note that the voltage level of the substation buses is set
-        to the first bus connected to that substation.
+        to the first bus connected to that substation. The default is False.
+    :param add_load_shedding bool: Whether to add artificial load shedding
+        generators to the exported pypsa network. This ensures feasibility when
+        optimizing the exported pypsa network as is. The default is True.
 
 
     """
@@ -341,7 +344,7 @@ def export_to_pypsa(
     bus_rename = pypsa_const["bus"]["rename"]
     bus_rename_t = pypsa_const["bus"]["rename_t"]
 
-    if not preserve_all_columns:
+    if not add_all_columns:
         drop_cols = pypsa_const["bus"]["default_drop_cols"]
         if scenario:
             drop_cols += list(bus_rename_t)
@@ -383,7 +386,7 @@ def export_to_pypsa(
     generator_rename = pypsa_const["generator"]["rename"]
     generator_rename_t = pypsa_const["generator"]["rename_t"]
 
-    if not preserve_all_columns:
+    if not add_all_columns:
         drop_cols = pypsa_const["generator"]["default_drop_cols"]
         if scenario:
             drop_cols += list(generator_rename_t)
@@ -392,7 +395,9 @@ def export_to_pypsa(
     generators.p_min_pu /= generators.p_nom.where(generators.p_nom != 0, 1)
     generators["committable"] = np.where(generators.p_min_pu > 0, True, False)
     generators["ramp_limit_down"] = generators.ramp_limit.replace(0, np.nan)
-    generators["ramp_limit_up"] = generators.ramp_limit.replace(0, np.nan)
+    generators["rpreserve_all_columnsamp_limit_up"] = generators.ramp_limit.replace(
+        0, np.nan
+    )
     generators.drop(columns=drop_cols + ["ramp_limit"], inplace=True)
 
     gencost = grid.gencost["before"]
@@ -424,7 +429,7 @@ def export_to_pypsa(
     branch_rename = pypsa_const["branch"]["rename"]
     branch_rename_t = pypsa_const["branch"]["rename_t"]
 
-    if not preserve_all_columns:
+    if not add_all_columns:
         drop_cols = pypsa_const["branch"]["default_drop_cols"]
         if scenario:
             drop_cols += list(branch_rename_t)
@@ -459,7 +464,7 @@ def export_to_pypsa(
     link_rename = pypsa_const["link"]["rename"]
     link_rename_t = pypsa_const["link"]["rename_t"]
 
-    if not preserve_all_columns:
+    if not add_all_columns:
         drop_cols = pypsa_const["link"]["default_drop_cols"]
         if scenario:
             drop_cols += list(link_rename_t)
@@ -496,7 +501,7 @@ def export_to_pypsa(
     n.madd("Transformer", transformers.index, **transformers, **transformers_t)
     n.madd("Link", links.index, **links, **links_t)
 
-    if not skip_substations:
+    if add_substations:
         n.madd("Bus", substations.index, **substations)
         n.madd("Link", sublinks.index, **sublinks)
 
