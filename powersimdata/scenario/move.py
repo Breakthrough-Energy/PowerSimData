@@ -18,21 +18,12 @@ class Move(Ready):
     allowed = []
     exported_methods = {"move_scenario"} | Ready.exported_methods
 
-    def move_scenario(self, target="disk", confirm=True):
+    def move_scenario(self, confirm=True):
         """Move scenario.
 
-        :param str target: optional argument specifying the backup system.
         :param bool confirm: prompt before deleting each batch of files
-        :raises TypeError: if target is not a str
-        :raises ValueError: if target is unknown (only "disk" is supported) or
-            data not on server
+        :raises ValueError: if current deployment mode not supported
         """
-        if not isinstance(target, str):
-            raise TypeError("string is expected for optional argument target")
-
-        if target != "disk":
-            raise ValueError("scenario data can only be backed up to disk now")
-
         if server_setup.DEPLOYMENT_MODE != DeploymentMode.Server:
             raise ValueError("move state only supported for scenario data on server.")
 
