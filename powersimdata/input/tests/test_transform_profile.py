@@ -1,6 +1,10 @@
+import os
+import shutil
+from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 import pytest
 from numpy.testing import assert_almost_equal
 
@@ -226,6 +230,16 @@ def raw_demand(input_data):
     return input_data.get_data({}, "demand")
 
 
+@pytest.fixture(scope="module")
+def raw_demand_flexibility_up(input_data):
+    return input_data.get_data({}, "demand_flexibility_up")
+
+
+@pytest.fixture(scope="module")
+def raw_demand_flexibility_dn(input_data):
+    return input_data.get_data({}, "demand_flexibility_dn")
+
+
 def test_demand_is_scaled(base_grid, raw_demand):
     base_demand = raw_demand[base_grid.id2zone.keys()]
 
@@ -349,3 +363,53 @@ def test_new_wind_profile(base_grid, raw_wind):
 
 def test_new_hydro_profile(base_grid, raw_hydro):
     _check_profile_of_new_plants_are_produced_correctly(base_grid, raw_hydro, "hydro")
+
+
+def test_flexible_demand_profiles_are_trimmed(
+    base_grid, raw_demand_flexibility_up, raw_demand_flexibility_dn
+):
+    # Specify the fake demand flexibility profiles from MockInputData
+    zone_keys = [f"zone.{z}" for z in base_grid.id2zone.keys()]
+    base_demand_flexibility_up = raw_demand_flexibility_up[zone_keys]
+    base_demand_flexibility_dn = raw_demand_flexibility_dn[zone_keys]
+
+    # Create fake files in the expected directory path
+    exp_path = os.path.join(
+        Path.home(), "ScenarioData", "raw", str(base_grid.grid_model)
+    )
+    dir_exists_prev = True
+    if not os.path.isdir(exp_path):
+        os.makedirs(exp_path)
+        dir_exists_prev = False
+    fake_df = pd.DataFrame()
+    fake_df.to_csv(os.path.join(exp_path, "demand_flexibility_up_Test.csv"))
+    fake_df.to_csv(os.path.join(exp_path, "demand_flexibility_dn_Test.csv"))
+
+    # Specify the change table
+    ct = ChangeTable(base_grid)
+    ct.add_demand_flexibility(
+        {
+            "demand_flexibility_up": "Test",
+            "demand_flexibility_dn": "Test",
+            "demand_flexibility_duration": 6,
+        }
+    )
+
+    # Transform the grid object accordingly
+    tg = TransformGrid(base_grid, ct.ct)
+    transformed_grid = tg.get_grid()
+
+    # Test that the demand flexibility profiles are pruned
+    empty_scenario_info = {"grid_model": base_grid.grid_model}
+    tp = TransformProfile(empty_scenario_info, transformed_grid, ct.ct)
+    transformed_demand_flexibility_up = tp.get_profile("demand_flexibility_up")
+    transformed_demand_flexibility_dn = tp.get_profile("demand_flexibility_dn")
+    assert base_demand_flexibility_up.equals(transformed_demand_flexibility_up)
+    assert base_demand_flexibility_dn.equals(transformed_demand_flexibility_dn)
+
+    # Delete the created directory and fake data
+    if dir_exists_prev:
+        os.remove(os.path.join(exp_path, "demand_flexibility_up_Test.csv"))
+        os.remove(os.path.join(exp_path, "demand_flexibility_dn_Test.csv"))
+    else:
+        shutil.rmtree(os.path.join(Path.home(), "ScenarioData"))

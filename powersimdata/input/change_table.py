@@ -538,7 +538,7 @@ class ChangeTable:
             "demand_flexibility_cost_up",
             "demand_flexibility_cost_dn",
         }
-        self._check_entry_keys(info, 1, "demand_flexibility", required, None, optional)
+        self._check_entry_keys(info, 0, "demand_flexibility", required, None, optional)
 
         # Add a key for demand flexibility in the change table, if necessary
         if "demand_flexibility" not in self.ct:

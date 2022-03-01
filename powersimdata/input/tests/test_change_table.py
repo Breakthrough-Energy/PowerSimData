@@ -1,3 +1,8 @@
+import os
+import shutil
+from pathlib import Path
+
+import pandas as pd
 import pytest
 
 from powersimdata.input.change_table import ChangeTable
@@ -511,15 +516,60 @@ def test_add_demand_flexibility(ct):
     with pytest.raises(Exception):
         # Fails because "demand_flexibility_dn", a required key, is not included
         ct.add_demand_flexibility(
-            {"demand_flexibility_up": "test", "demand_flexibility_duration": 6}
+            {"demand_flexibility_up": "Test", "demand_flexibility_duration": 6}
         )
 
     with pytest.raises(Exception):
-        # Fails because
+        # Fails because there is a key that should not be there
         ct.add_demand_flexibility(
             {
-                "demand_flexibility_up": "test",
-                "demand_flexibility_dn": "test",
+                "demand_flexibility_up": "Test",
+                "demand_flexibility_dn": "Test",
+                "demand_flexibility_duration": 6,
+                "demand_flexibility_wrong_key": "Test",
+            }
+        )
+
+    with pytest.raises(Exception):
+        # Fails because there are no profiles available that match the specified version
+        ct.add_demand_flexibility(
+            {
+                "demand_flexibility_up": "Test",
+                "demand_flexibility_dn": "Test",
                 "demand_flexibility_duration": 6,
             }
         )
+
+    # Create fake files in the expected directory path
+    exp_path = os.path.join(Path.home(), "ScenarioData", "raw", str(grid.grid_model))
+    dir_exists_prev = True
+    if not os.path.isdir(exp_path):
+        os.makedirs(exp_path)
+        dir_exists_prev = False
+    fake_df = pd.DataFrame()
+    fake_df.to_csv(os.path.join(exp_path, "demand_flexibility_up_Test.csv"))
+    fake_df.to_csv(os.path.join(exp_path, "demand_flexibility_dn_Test.csv"))
+
+    # Add a test instance of demand flexibility to the change table
+    ct.add_demand_flexibility(
+        {
+            "demand_flexibility_up": "Test",
+            "demand_flexibility_dn": "Test",
+            "demand_flexibility_duration": 6,
+        }
+    )
+    exp_dict = {
+        "demand_flexibility": {
+            "demand_flexibility_up": "Test",
+            "demand_flexibility_dn": "Test",
+            "demand_flexibility_duration": 6,
+        },
+    }
+    assert ct.ct == exp_dict
+
+    # Delete the created directory and fake data
+    if dir_exists_prev:
+        os.remove(os.path.join(exp_path, "demand_flexibility_up_Test.csv"))
+        os.remove(os.path.join(exp_path, "demand_flexibility_dn_Test.csv"))
+    else:
+        shutil.rmtree(os.path.join(Path.home(), "ScenarioData"))
