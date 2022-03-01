@@ -70,14 +70,11 @@ def _read(f, filepath):
 
 
 class InputData:
-    """Load input data.
+    """Load input data."""
 
-    :param str data_loc: data location.
-    """
-
-    def __init__(self, data_loc=None):
+    def __init__(self):
         """Constructor."""
-        self.data_access = Context.get_data_access(data_loc)
+        self.data_access = Context.get_data_access()
 
     def get_data(self, scenario_info, field_name):
         """Returns data either from server or local directory.
