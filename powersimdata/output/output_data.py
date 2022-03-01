@@ -9,14 +9,11 @@ from powersimdata.utility import server_setup
 
 
 class OutputData:
-    """Load output data.
+    """Load output data."""
 
-    :param str data_loc: data location.
-    """
-
-    def __init__(self, data_loc=None):
+    def __init__(self):
         """Constructor"""
-        self._data_access = Context.get_data_access(data_loc)
+        self._data_access = Context.get_data_access()
 
     def get_data(self, scenario_id, field_name):
         """Returns data either from server or from local directory.
