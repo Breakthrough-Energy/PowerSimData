@@ -50,12 +50,14 @@ class MockInputData:
                 for resource in self._RESOURCES.keys()
             },
         }
+        self._profiles.update(self._get_demand_flexibility())
 
     def get_data(self, scenario_info, field_name):
         """Returns fake profile data.
 
         :param dict scenario_info: not used.
-        :param str field_name: Can be any of *'demand'*, *'hydro'*, *'solar'*, or *'wind'*.
+        :param str field_name: Can be any of *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
+            *'demand_flexibility_up'*, or *'demand_flexibility_dn'*.
         :return: (*pandas.DataFrame*) -- fake profile data
         """
         profile = self._profiles.get(field_name)
@@ -73,6 +75,22 @@ class MockInputData:
         zone_ids = set(self._grid.plant["zone_id"])
         fake_demand_profile = self._create_fake_profile(zone_ids)
         return fake_demand_profile
+
+    def _get_demand_flexibility(self):
+        """Returns fake flexible demand data.
+
+        :return: (*dict*) -- dictionary of fake flexibile demand data
+        """
+        zone_ids = set(self._grid.plant["zone_id"])
+        demand_flexibility_profile_types = [
+            "demand_flexibility_up",
+            "demand_flexibility_dn",
+        ]
+        fake_demand_flexibility_profiles = {
+            p: self._create_fake_profile(zone_ids, demand_flexibility=True)
+            for p in demand_flexibility_profile_types
+        }
+        return fake_demand_flexibility_profiles
 
     def _get_resource_profile(self, resource_type):
         """Returns fake data for given resource_type.
@@ -94,10 +112,12 @@ class MockInputData:
         plant_ids = list(self._grid.plant[lambda ds: ds.type.isin(resources)].index)
         return plant_ids
 
-    def _create_fake_profile(self, columns):
+    def _create_fake_profile(self, columns, demand_flexibility=False):
         """Generates a fake profile.
 
         :param list columns: columns for the DataFrame
+        :param bool demand_flexibility: indicates whether the fake profile being created
+            is a demand flexibility profile.
         :return: (*pandas.DataFrame*) -- a fake profile
         """
         times = pd.date_range(
@@ -109,4 +129,6 @@ class MockInputData:
         index = pd.Index(times, name="UTC Time")
         data = self._random.uniform(low=0, high=1, size=(len(times), len(columns)))
         fake_profile = pd.DataFrame(data=data, index=index, columns=columns)
+        if demand_flexibility:
+            fake_profile.columns = [f"zone.{z}" for z in columns]
         return fake_profile
