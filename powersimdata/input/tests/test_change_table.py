@@ -513,13 +513,13 @@ def test_remove_bus(ct):
 
 
 def test_add_demand_flexibility(ct):
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         # Fails because "demand_flexibility_dn", a required key, is not included
         ct.add_demand_flexibility(
             {"demand_flexibility_up": "Test", "demand_flexibility_duration": 6}
         )
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         # Fails because there is a key that should not be there
         ct.add_demand_flexibility(
             {
@@ -530,7 +530,7 @@ def test_add_demand_flexibility(ct):
             }
         )
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         # Fails because there are no profiles available that match the specified version
         ct.add_demand_flexibility(
             {
