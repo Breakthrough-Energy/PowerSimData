@@ -150,8 +150,10 @@ class TransformProfile:
 
         # Warn if data frame is now empty (i.e., no relevant zones/buses were provided)
         if len(df.columns) == 0:
-            print(
-                f"WARNING: The {name} profile does not contain relevant zones or buses."
+            raise ValueError(
+                f"The {name} profile does not contain zone or buse IDs located in the "
+                + f"{self.scenario_info['interconnect']} interconnect of the "
+                + f"{self.scenario_info['grid_model']} grid model."
             )
 
         # Return the pruned data frame
