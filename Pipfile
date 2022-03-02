@@ -8,6 +8,7 @@ black = "*"
 pytest = "*"
 coverage = "*"
 pytest-cov = "*"
+pypsa = "*"
 
 [packages]
 networkx = "~=2.5"
