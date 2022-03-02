@@ -1,51 +1,20 @@
-import fs
+def get_profile_version(_fs, grid_model, kind):
+    """Returns available raw profile from the given filesystem
 
-from powersimdata.utility import server_setup
-
-
-def _get_profile_version(_fs, kind):
-    """Returns available raw profiles from the given filesystem
     :param fs.base.FS _fs: filesystem instance
+    :param str grid_model: grid model.
     :param str kind: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
         *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
         *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
     :return: (*list*) -- available profile version.
     """
+    _fs = _fs.makedirs(f"raw/{grid_model}", recreate=True)
     matching = [f for f in _fs.listdir(".") if kind in f]
 
     # Don't include demand flexibility profiles as possible demand profiles
     if kind == "demand":
-        matching_ = [p for p in matching if "demand_flexibility" not in p]
-        return [f.lstrip(f"{kind}_").rstrip(".csv") for f in matching_]
-    else:
-        return [f.lstrip(f"{kind}_").rstrip(".csv") for f in matching]
-
-
-def get_profile_version_cloud(grid_model, kind):
-    """Returns available raw profile from blob storage.
-
-    :param str grid_model: grid model.
-    :param str kind: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
-        *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
-        *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
-    :return: (*list*) -- available profile version.
-    """
-    bfs = fs.open_fs("azblob://besciences@profiles").opendir(f"raw/{grid_model}")
-    return _get_profile_version(bfs, kind)
-
-
-def get_profile_version_local(grid_model, kind):
-    """Returns available raw profile from local file.
-
-    :param str grid_model: grid model.
-    :param str kind: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
-        *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
-        *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
-    :return: (*list*) -- available profile version.
-    """
-    profile_dir = fs.path.join(server_setup.LOCAL_DIR, "raw", grid_model)
-    lfs = fs.open_fs(profile_dir, create=True)
-    return _get_profile_version(lfs, kind)
+        matching = [p for p in matching if "demand_flexibility" not in p]
+    return [f.lstrip(f"{kind}_").rstrip(".csv") for f in matching]
 
 
 class ProfileHelper:

@@ -1,6 +1,3 @@
-import os
-import shutil
-from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
@@ -8,10 +5,12 @@ import pandas as pd
 import pytest
 from numpy.testing import assert_almost_equal
 
+from powersimdata.data_access.context import Context
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.grid import Grid
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
+from powersimdata.tests.mock_context import MockContext
 from powersimdata.tests.mock_input_data import MockInputData
 
 interconnect = ["Western"]
@@ -366,24 +365,25 @@ def test_new_hydro_profile(base_grid, raw_hydro):
 
 
 def test_flexible_demand_profiles_are_trimmed(
-    base_grid, raw_demand_flexibility_up, raw_demand_flexibility_dn
+    base_grid, raw_demand_flexibility_up, raw_demand_flexibility_dn, monkeypatch
 ):
+    monkeypatch.setattr(Context, "get_data_access", MockContext().get_data_access)
+    data_access = Context.get_data_access()
+
     # Specify the fake demand flexibility profiles from MockInputData
     zone_keys = [f"zone.{z}" for z in base_grid.id2zone.keys()]
     base_demand_flexibility_up = raw_demand_flexibility_up[zone_keys]
     base_demand_flexibility_dn = raw_demand_flexibility_dn[zone_keys]
 
     # Create fake files in the expected directory path
-    exp_path = os.path.join(
-        Path.home(), "ScenarioData", "raw", str(base_grid.grid_model)
-    )
-    dir_exists_prev = True
-    if not os.path.isdir(exp_path):
-        os.makedirs(exp_path)
-        dir_exists_prev = False
-    fake_df = pd.DataFrame()
-    fake_df.to_csv(os.path.join(exp_path, "demand_flexibility_up_Test.csv"))
-    fake_df.to_csv(os.path.join(exp_path, "demand_flexibility_dn_Test.csv"))
+    exp_path = f"raw/{base_grid.grid_model}"
+
+    for csv_file in (
+        "demand_flexibility_up_Test.csv",
+        "demand_flexibility_dn_Test.csv",
+    ):
+        with data_access.write(exp_path + "/" + csv_file) as f:
+            pd.DataFrame().to_csv(f)
 
     # Specify the change table
     ct = ChangeTable(base_grid)
@@ -406,10 +406,3 @@ def test_flexible_demand_profiles_are_trimmed(
     transformed_demand_flexibility_dn = tp.get_profile("demand_flexibility_dn")
     assert base_demand_flexibility_up.equals(transformed_demand_flexibility_up)
     assert base_demand_flexibility_dn.equals(transformed_demand_flexibility_dn)
-
-    # Delete the created directory and fake data
-    if dir_exists_prev:
-        os.remove(os.path.join(exp_path, "demand_flexibility_up_Test.csv"))
-        os.remove(os.path.join(exp_path, "demand_flexibility_dn_Test.csv"))
-    else:
-        shutil.rmtree(os.path.join(Path.home(), "ScenarioData"))
