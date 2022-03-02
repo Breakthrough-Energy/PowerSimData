@@ -133,22 +133,20 @@ class TransformProfile:
 
         # Determine if the demand flexibility profile is indexed by zone, bus, or both
         area_indicator = [1 if "zone." in x else 0 for x in df.columns]
-        if len(area_indicator) == sum(area_indicator):
-            # Demand flexibility profile only contains zones; prune accordingly
+        area_ids = []
+        if sum(area_indicator) > 0:
+            # Demand flexibility profile contains zone IDs
             zone_id = sorted(self.grid.bus.zone_id.unique())
             zone_id = [f"zone.{x}" for x in zone_id]
-            df = df.loc[:, df.columns.isin(zone_id)]
-        else:
-            bus_id = sorted(self.grid.bus.bus_id.unique())
+            area_ids += zone_id
+        if sum(area_indicator) < len(area_indicator):
+            # Demand flexibility profile contains bus IDs
+            bus_id = sorted(self.grid.bus.index.unique().values)
             bus_id = [str(x) for x in bus_id]
-            if len(area_indicator) > 0:
-                # Demand flexibility profile contains zones and buses; prune accordingly
-                zone_id = sorted(self.grid.bus.zone_id.unique())
-                zone_id = [f"zone.{x}" for x in zone_id]
-                df = df.loc[:, df.columns.isin(zone_id + bus_id)]
-            else:
-                # Demand flexibility profile only contains buses; prune accordingly
-                df = df.loc[:, df.columns.isin(bus_id)]
+            area_ids += bus_id
+
+        # Prune the data frame according to the mix of zone IDs and bus IDs
+        df = df.loc[:, df.columns.isin(area_ids)]
 
         # Warn if data frame is now empty (i.e., no relevant zones/buses were provided)
         if len(df.columns) == 0:
