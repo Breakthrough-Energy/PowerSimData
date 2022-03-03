@@ -5,6 +5,8 @@ from powersimdata.design.transmission.upgrade import (
     scale_congested_mesh_branches,
     scale_renewable_stubs,
 )
+from powersimdata.input.changes.helpers import ordinal
+from powersimdata.input.changes.storage import add_storage_capacity
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.utility.distance import find_closest_neighbor
 
@@ -23,16 +25,6 @@ _resources = (
 )
 
 _renewable_resource = {"hydro", "solar", "wind", "wind_offshore"}
-
-
-def ordinal(n):
-    """Translate a 0-based index into a 1-based ordinal, e.g. 0 -> 1st, 1 -> 2nd, etc.
-
-    :param int n: the index to be translated.
-    :return: (*str*) -- Ordinal.
-    """
-    ord_dict = {1: "st", 2: "nd", 3: "rd"}
-    return str(n + 1) + ord_dict.get((n + 1) if (n + 1) < 20 else (n + 1) % 10, "th")
 
 
 class ChangeTable:
@@ -502,50 +494,7 @@ class ChangeTable:
         :raises TypeError: if ``info`` is not a list.
         :raises ValueError: if any of the new storages to be added have bad values.
         """
-        if not isinstance(info, list):
-            raise TypeError("Argument enclosing new storage(s) must be a list")
-
-        info = copy.deepcopy(info)
-        new_storages = []
-        required = {"bus_id", "capacity"}
-        optional = {
-            "duration",
-            "min_stor",
-            "max_stor",
-            "energy_value",
-            "InEff",
-            "OutEff",
-            "LossFactor",
-            "terminal_min",
-            "terminal_max",
-        }
-        anticipated_bus = self._get_transformed_df("bus")
-        for i, storage in enumerate(info):
-            self._check_entry_keys(storage, i, "storage", required, None, optional)
-            if storage["bus_id"] not in anticipated_bus.index:
-                raise ValueError(
-                    f"No bus id {storage['bus_id']} available for {ordinal(i)} storage"
-                )
-            for o in optional:
-                if o not in storage:
-                    storage[o] = self.grid.storage[o]
-            for k, v in storage.items():
-                if not isinstance(v, (int, float)):
-                    err_msg = f"values must be numeric, bad type for {ordinal(i)} {k}"
-                    raise ValueError(err_msg)
-                if v < 0:
-                    raise ValueError(
-                        f"values must be non-negative, bad value for {ordinal(i)} {k}"
-                    )
-            for k in {"min_stor", "max_stor", "InEff", "OutEff", "LossFactor"}:
-                if storage[k] > 1:
-                    raise ValueError(
-                        f"value for {k} must be <=1, bad value for {ordinal(i)} storage"
-                    )
-            new_storages.append(storage)
-        if "storage" not in self.ct:
-            self.ct["storage"] = []
-        self.ct["storage"] += new_storages
+        add_storage_capacity(self, info)
 
     def add_dcline(self, info):
         """Adds HVDC line(s).
