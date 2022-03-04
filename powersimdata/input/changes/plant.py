@@ -8,6 +8,7 @@ _renewable_resource = {"hydro", "solar", "wind", "wind_offshore"}
 def add_plant(obj, info):
     """Sets parameters of new generator(s) in change table.
 
+    :param powersimdata.input.change_table.ChangeTable obj: change table
     :param list info: each entry is a dictionary. The dictionary gathers
         the information needed to create a new generator.
         Required keys: "bus_id", "Pmax", "type".
@@ -65,6 +66,7 @@ def add_plant(obj, info):
 def remove_plant(obj, info):
     """Remove one or more plants.
 
+    :param powersimdata.input.change_table.ChangeTable obj: change table
     :param int/iterable info: iterable of plant indices, or a single plant index.
     :raises ValueError: if ``info`` contains one or more entries not present in the
         plant table index.

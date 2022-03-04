@@ -5,6 +5,7 @@ from powersimdata.design.transmission.upgrade import (
     scale_congested_mesh_branches,
     scale_renewable_stubs,
 )
+from powersimdata.input.changes.bus import add_bus, remove_bus
 from powersimdata.input.changes.helpers import ordinal
 from powersimdata.input.changes.plant import add_plant, remove_plant
 from powersimdata.input.changes.storage import add_storage_capacity
@@ -724,51 +725,7 @@ class ChangeTable:
         :raises TypeError: if ``info`` is not a list.
         :raises ValueError: if any new bus doesn't have appropriate keys/values.
         """
-        if not isinstance(info, list):
-            raise TypeError("Argument enclosing new bus(es) must be a list")
-
-        info = copy.deepcopy(info)
-        new_buses = []
-        required = {"lat", "lon"}
-        xor_sets = {("zone_id", "zone_name")}
-        defaults = {"Pd": 0, "baseKV": 230}
-        for i, new_bus in enumerate(info):
-            self._check_entry_keys(
-                new_bus, i, "new_bus", required, xor_sets, defaults.keys()
-            )
-            for l in {"lat", "lon"}:
-                if not isinstance(new_bus[l], (int, float)):
-                    raise ValueError(f"{l} must be numeric (int/float)")
-            if abs(new_bus["lat"]) > 90:
-                raise ValueError("'lat' must be between -90 and +90")
-            if abs(new_bus["lon"]) > 180:
-                raise ValueError("'lon' must be between -180 and +180")
-            if "zone_id" in new_bus and new_bus["zone_id"] not in self.grid.id2zone:
-                zone_id = new_bus["zone_id"]
-                raise ValueError(f"zone_id {zone_id} not present in Grid")
-            if "zone_name" in new_bus:
-                try:
-                    new_bus["zone_id"] = self.grid.zone2id[new_bus["zone_name"]]
-                except KeyError:
-                    zone_name = new_bus["zone_name"]
-                    raise ValueError(f"zone_name {zone_name} not present in Grid")
-                del new_bus["zone_name"]
-            if "Pd" in new_bus:
-                if not isinstance(new_bus["Pd"], (int, float)):
-                    raise ValueError("Pd must be numeric (int/float)")
-            else:
-                new_bus["Pd"] = defaults["Pd"]
-            if "baseKV" in new_bus:
-                if not isinstance(new_bus["baseKV"], (int, float)):
-                    raise ValueError("baseKV must be numeric (int/float)")
-                if new_bus["baseKV"] <= 0:
-                    raise ValueError("baseKV must be positive")
-            else:
-                new_bus["baseKV"] = defaults["baseKV"]
-            new_buses.append(new_bus)
-        if "new_bus" not in self.ct:
-            self.ct["new_bus"] = []
-        self.ct["new_bus"] += new_buses
+        add_bus(self, info)
 
     def _get_transformed_df(self, table):
         """Get a post-transformation data table, for use with adding elements at new
@@ -848,38 +805,7 @@ class ChangeTable:
         :raises ValueError: if ``info`` contains one or more entries not present in the
             bus table index.
         """
-        if isinstance(info, int):
-            info = {info}
-        # Check whether all buses to be removed are present in the grid
-        diff = set(info) - set(self._get_transformed_df("bus").index)
-        if len(diff) != 0:
-            raise ValueError(f"No bus with the following id(s): {sorted(diff)}")
-        # Check whether there exist any plants with non-zero capacity at these buses
-        anticipated_plant = self._get_transformed_df("plant").query("Pmax > 0")
-        plants_at_removal_buses = set(info) & set(anticipated_plant.bus_id)
-        if len(plants_at_removal_buses) > 0:
-            raise ValueError(
-                f"Generators exist at bus id(s): {sorted(plants_at_removal_buses)}"
-            )
-        # Check whether storage exists at these buses
-        anticipated_storage = self._get_transformed_df("storage_gen")
-        storage_at_removal_buses = set(info) & set(anticipated_storage.bus_id)
-        if len(storage_at_removal_buses) > 0:
-            raise ValueError(
-                f"Storage units exist at bus id(s): {sorted(storage_at_removal_buses)}"
-            )
-        # Check whether there exist branches or DC lines at these buses
-        for table in ("branch", "dcline"):
-            anticipated = self._get_transformed_df(table)
-            overlap = anticipated.query("from_bus_id in @info or to_bus_id in @info")
-            if len(overlap) > 0:
-                raise ValueError(
-                    f"These {table} IDs connect to a bus to be removed: {overlap.index}"
-                )
-        # All checks have passed, and we can add this to the change table
-        if "remove_bus" not in self.ct:
-            self.ct["remove_bus"] = set()
-        self.ct["remove_bus"] |= set(info)
+        remove_bus(self, info)
 
     def remove_dcline(self, info):
         """Remove one or more DC lines.
