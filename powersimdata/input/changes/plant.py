@@ -1,5 +1,6 @@
 import copy
 
+from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.utility.distance import find_closest_neighbor
 
 _renewable_resource = {"hydro", "solar", "wind", "wind_offshore"}
@@ -61,6 +62,41 @@ def add_plant(obj, info):
     if "new_plant" not in obj.ct:
         obj.ct["new_plant"] = []
     obj.ct["new_plant"] += new_plants
+
+
+def scale_plant_pmin(obj, resource, zone_name=None, plant_id=None):
+    """Sets plant cost scaling factor in change table.
+
+    :param powersimdata.input.change_table.ChangeTable obj: change table
+    :param str resource: type of generator to consider.
+    :param dict zone_name: load zones. The key(s) is (are) the name of the
+        load zone(s) and the associated value is the scaling factor for the
+        minimum generation for all generators fueled by
+        specified resource in the load zone.
+    :param dict plant_id: identification numbers of plants. The key(s) is
+        (are) the id of the plant(s) and the associated value is the
+        scaling factor for the minimum generation of the generator.
+    """
+    obj._add_plant_entries(resource, f"{resource}_pmin", zone_name, plant_id)
+    # Check for situations where Pmin would be scaled above Pmax
+    candidate_grid = TransformGrid(obj.grid, obj.ct).get_grid()
+    pmax_pmin_ratio = candidate_grid.plant.Pmax / candidate_grid.plant.Pmin
+    to_be_clipped = pmax_pmin_ratio < 1
+    num_clipped = to_be_clipped.sum()
+    if num_clipped > 0:
+        err_msg = (
+            f"{num_clipped} plants would have Pmin > Pmax; "
+            "these plants will have Pmin scaling clipped so that Pmin = Pmax"
+        )
+        print(err_msg)
+        # Add by-plant correction factors as necessary
+        for plant_id, correction in pmax_pmin_ratio[to_be_clipped].items():
+            if "plant_id" not in obj.ct[f"{resource}_pmin"]:
+                obj.ct[f"{resource}_pmin"]["plant_id"] = {}
+            if plant_id in obj.ct[f"{resource}_pmin"]["plant_id"]:
+                obj.ct[f"{resource}_pmin"]["plant_id"][plant_id] *= correction
+            else:
+                obj.ct[f"{resource}_pmin"]["plant_id"][plant_id] = correction
 
 
 def remove_plant(obj, info):

@@ -7,7 +7,7 @@ from powersimdata.design.transmission.upgrade import (
 )
 from powersimdata.input.changes.bus import add_bus, remove_bus
 from powersimdata.input.changes.helpers import ordinal
-from powersimdata.input.changes.plant import add_plant, remove_plant
+from powersimdata.input.changes.plant import add_plant, remove_plant, scale_plant_pmin
 from powersimdata.input.changes.storage import add_storage_capacity
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
@@ -342,26 +342,7 @@ class ChangeTable:
             (are) the id of the plant(s) and the associated value is the
             scaling factor for the minimum generation of the generator.
         """
-        self._add_plant_entries(resource, f"{resource}_pmin", zone_name, plant_id)
-        # Check for situations where Pmin would be scaled above Pmax
-        candidate_grid = TransformGrid(self.grid, self.ct).get_grid()
-        pmax_pmin_ratio = candidate_grid.plant.Pmax / candidate_grid.plant.Pmin
-        to_be_clipped = pmax_pmin_ratio < 1
-        num_clipped = to_be_clipped.sum()
-        if num_clipped > 0:
-            err_msg = (
-                f"{num_clipped} plants would have Pmin > Pmax; "
-                "these plants will have Pmin scaling clipped so that Pmin = Pmax"
-            )
-            print(err_msg)
-            # Add by-plant correction factors as necessary
-            for plant_id, correction in pmax_pmin_ratio[to_be_clipped].items():
-                if "plant_id" not in self.ct[f"{resource}_pmin"]:
-                    self.ct[f"{resource}_pmin"]["plant_id"] = {}
-                if plant_id in self.ct[f"{resource}_pmin"]["plant_id"]:
-                    self.ct[f"{resource}_pmin"]["plant_id"][plant_id] *= correction
-                else:
-                    self.ct[f"{resource}_pmin"]["plant_id"][plant_id] = correction
+        scale_plant_pmin(self, resource, zone_name, plant_id)
 
     def scale_branch_capacity(self, zone_name=None, branch_id=None):
         """Sets branch capacity scaling factor in change table.
