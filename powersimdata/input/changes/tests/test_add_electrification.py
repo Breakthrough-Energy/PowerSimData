@@ -29,14 +29,20 @@ def test_add_electrification_by_zone():
     kind = "building"
 
     info = {
-        "New York City": {"standard_heat_pump_v1": 0.3, "advanced_heat_pump_v2": 0.7},
+        "New York City": {"advanced_heat_pump_v2": 0.7},
         "Western North Carolina": {
             "standard_heat_pump_v1": 0.5,
             "advanced_heat_pump_v2": 0.5,
         },
-        "Maine": {"standard_heat_pump_v1": 0.2, "advanced_heat_pump_v2": 0.8},
     }
     add_electrification(obj, kind, info)
+    assert 2 == len(obj.ct[kind].keys())
+
+    info = {"Maine": {"standard_heat_pump_v1": 0.2, "advanced_heat_pump_v2": 0.8}}
+    add_electrification(obj, kind, info)
+    result = obj.ct[kind]
+    assert 3 == len(result.keys())
+    assert "Maine" in result
 
     with pytest.raises(ValueError):
         info = {1: {"foo": 3}, "wrong": {}}
