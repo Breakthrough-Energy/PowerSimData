@@ -47,3 +47,18 @@ def test_add_electrification_by_zone():
     with pytest.raises(ValueError):
         info = {1: {"foo": 3}, "wrong": {}}
         add_electrification(obj, kind, info)
+
+
+def test_add_electrification_combined():
+    obj = ChangeTable(Grid("Eastern"))
+    kind = "building"
+
+    info = {"Maine": {"standard_heat_pump_v1": 0.2, "advanced_heat_pump_v2": 0.8}}
+    add_electrification(obj, kind, info)
+
+    info = {"standard_heat_pump_v1": 0.7}
+    add_electrification(obj, kind, info)
+
+    result = obj.ct[kind]
+    assert "Maine" in result
+    assert "standard_heat_pump_v1" in result
