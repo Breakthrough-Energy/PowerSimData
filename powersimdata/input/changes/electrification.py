@@ -1,6 +1,31 @@
 import copy
 
 
+def _check_scale_factors(scale_factors):
+    for sf in scale_factors:
+        vals = list(sf.values())
+        if any(v < 0 for v in vals):
+            raise ValueError("scaling factor must be non negative")
+        if sum(vals) > 1:
+            raise ValueError("scaling factors must sum to between 0 and 1")
+
+
+def _check_zone_scaling(obj, info):
+    if not all(isinstance(k, str) for k in info):
+        raise ValueError("unrecognized structure")
+    if all(isinstance(d, dict) for d in info.values()):
+        obj._check_zone(info.keys())
+    _check_scale_factors(list(info.values()))
+
+
+def _check_grid_scaling(info):
+    if not all(isinstance(k, str) for k in info):
+        raise ValueError("keys must be str")
+    if not all(isinstance(d, (int, float)) for d in info.values()):
+        raise ValueError("scale factors must be numeric")
+    _check_scale_factors([info])
+
+
 def add_electrification(obj, kind, info):
     """TODO"""
 
@@ -10,32 +35,16 @@ def add_electrification(obj, kind, info):
 
     info = copy.deepcopy(info)
 
-    # list of dictionaries, each of which must have scaling factors sum
-    # between 0 and 1
-    scale_factors = []
+    if not set(info) <= {"zone", "grid"}:
+        raise ValueError("unrecognized scaling key")
 
-    if all(isinstance(k, str) for k in info):
-        # scale by zone
-        if all(isinstance(d, dict) for d in info.values()):
-            obj._check_zone(info.keys())
-            scale_factors.extend(info.values())
-        # scale entire grid by same factor
-        elif all(isinstance(d, (int, float)) for d in info.values()):
-            scale_factors.append(info)
-        else:
-            raise ValueError("unrecognized structure")
-    else:
-        raise ValueError("unrecognized structure")
-
-    for sf in scale_factors:
-        vals = list(sf.values())
-        if any(v < 0 for v in vals):
-            raise ValueError("scaling factor must be non negative")
-        if sum(vals) > 1:
-            raise ValueError("scaling factors must sum to between 0 and 1")
+    if "zone" in info:
+        _check_zone_scaling(obj, info["zone"])
+    if "grid" in info:
+        _check_grid_scaling(info["grid"])
 
     curr = obj.ct.get(kind)
     if curr is None:
-        obj.ct[kind] = info
-    else:
-        obj.ct[kind].update(info)
+        obj.ct[kind] = {"grid": {}, "zone": {}}
+    obj.ct[kind]["grid"].update(info.get("grid", {}))
+    obj.ct[kind]["zone"].update(info.get("zone", {}))

@@ -1,8 +1,38 @@
 import pytest
 
 from powersimdata.input.change_table import ChangeTable
-from powersimdata.input.changes.electrification import add_electrification
+from powersimdata.input.changes.electrification import (
+    _check_grid_scaling,
+    _check_scale_factors,
+    _check_zone_scaling,
+    add_electrification,
+)
 from powersimdata.input.grid import Grid
+
+
+def test_check_grid():
+    info = {"tech1": 0.8}
+    _check_grid_scaling(info)
+
+    with pytest.raises(ValueError):
+        info = {"tech1": 4}
+        _check_grid_scaling(info)
+
+
+def test_check_zone():
+    obj = ChangeTable(Grid("Texas"))
+    info = {"Coast": {"standard_heat_pump_v1": 0.2}}
+    _check_zone_scaling(obj, info)
+
+    with pytest.raises(ValueError):
+        info = {"Maine": {"standard_heat_pump_v1": 0.2}}
+        _check_zone_scaling(obj, info)
+
+
+def test_check_scale_factors():
+    info = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": -3}
+    with pytest.raises(ValueError):
+        _check_scale_factors([info])
 
 
 def test_add_electrification():
@@ -10,18 +40,18 @@ def test_add_electrification():
     kind = "building"
 
     info = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": 0.3}
-    add_electrification(obj, kind, info)
+    add_electrification(obj, kind, {"grid": info})
 
     with pytest.raises(ValueError):
-        add_electrification(obj, "foo", info)
+        add_electrification(obj, "foo", {"grid": info})
 
     with pytest.raises(ValueError):
         info = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": -3}
-        add_electrification(obj, kind, info)
+        add_electrification(obj, kind, {"grid": info})
 
     with pytest.raises(ValueError):
         info = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": 0.8}
-        add_electrification(obj, kind, info)
+        add_electrification(obj, kind, {"grid": info})
 
 
 def test_add_electrification_by_zone():
@@ -35,18 +65,17 @@ def test_add_electrification_by_zone():
             "advanced_heat_pump_v2": 0.5,
         },
     }
-    add_electrification(obj, kind, info)
-    assert 2 == len(obj.ct[kind].keys())
-
-    info = {"Maine": {"standard_heat_pump_v1": 0.2, "advanced_heat_pump_v2": 0.8}}
-    add_electrification(obj, kind, info)
-    result = obj.ct[kind]
-    assert 3 == len(result.keys())
-    assert "Maine" in result
 
     with pytest.raises(ValueError):
-        info = {1: {"foo": 3}, "wrong": {}}
         add_electrification(obj, kind, info)
+
+    add_electrification(obj, kind, {"zone": info})
+
+    info = {"Maine": {"standard_heat_pump_v1": 0.2, "advanced_heat_pump_v2": 0.8}}
+    add_electrification(obj, kind, {"zone": info})
+    result = obj.ct[kind]
+    assert "Maine" in result["zone"]
+    assert "New York City" in result["zone"]
 
 
 def test_add_electrification_combined():
@@ -54,11 +83,11 @@ def test_add_electrification_combined():
     kind = "building"
 
     info = {"Maine": {"standard_heat_pump_v1": 0.2, "advanced_heat_pump_v2": 0.8}}
-    add_electrification(obj, kind, info)
+    add_electrification(obj, kind, {"zone": info})
 
     info = {"standard_heat_pump_v1": 0.7}
-    add_electrification(obj, kind, info)
+    add_electrification(obj, kind, {"grid": info})
 
     result = obj.ct[kind]
-    assert "Maine" in result
-    assert "standard_heat_pump_v1" in result
+    assert "Maine" in result["zone"]
+    assert "standard_heat_pump_v1" in result["grid"]
