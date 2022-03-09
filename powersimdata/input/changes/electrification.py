@@ -38,13 +38,13 @@ def add_electrification(obj, kind, info):
     if not set(info) <= {"zone", "grid"}:
         raise ValueError("unrecognized scaling key")
 
-    if "zone" in info:
-        _check_zone_scaling(obj, info["zone"])
-    if "grid" in info:
-        _check_grid_scaling(info["grid"])
+    zone = info.get("zone", {})
+    grid = info.get("grid", {})
+    _check_zone_scaling(obj, zone)
+    _check_grid_scaling(grid)
 
     curr = obj.ct.get(kind)
     if curr is None:
         obj.ct[kind] = {"grid": {}, "zone": {}}
-    obj.ct[kind]["grid"].update(info.get("grid", {}))
-    obj.ct[kind]["zone"].update(info.get("zone", {}))
+    obj.ct[kind]["grid"].update(grid)
+    obj.ct[kind]["zone"].update(zone)
