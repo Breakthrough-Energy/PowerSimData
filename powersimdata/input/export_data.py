@@ -298,16 +298,15 @@ def export_to_pypsa(
     .. note::
         This function does not export storages yet.
 
-    :param scenario_or_grid powersimdata.scenario.scenrario.Scenario/
-        powersimdata.input.grid.Grid:
-        Input object. If a Grid instance is passed, operational values
-        will be used for the single snapshot "now".
+    :param powersimdata.scenario.scenario.Scenario/
+        powersimdata.input.grid.Grid scenario_or_grid: input object. If a Grid instance
+        is passed, operational values will be used for the single snapshot "now".
         If a Scenario instance is passed, all available time-series will be
         imported.
-    :param add_all_columns bool: Whether to add all columns of the
+    :param bool add_all_columns: whether to add all columns of the
         corresponding component. If true, this will also import columns
         that PyPSA does not process. The default is False.
-    :param add_substations bool: Whether to export substations. If set
+    :param bool add_substations: whether to export substations. If set
         to True, artificial links of infinite capacity are added from each bus
         to its substation. This is necessary as the substations are imported
         as regualar buses in pypsa and thus require a connection to the network.
@@ -315,11 +314,9 @@ def export_to_pypsa(
         helpful when there are no branches or dclinks connecting the
         substations. Note that the voltage level of the substation buses is set
         to the first bus connected to that substation. The default is False.
-    :param add_load_shedding bool: Whether to add artificial load shedding
+    :param bool add_load_shedding: whether to add artificial load shedding
         generators to the exported pypsa network. This ensures feasibility when
         optimizing the exported pypsa network as is. The default is True.
-
-
     """
     from powersimdata.scenario.scenario import Scenario  # avoid circular import
 

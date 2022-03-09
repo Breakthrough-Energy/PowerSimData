@@ -478,7 +478,7 @@ class ChangeTable:
             Required keys: "bus_id", "capacity".
             "capacity" denotes the symmetric input and output power limits (MW).
             Optional keys: "duration", "min_stor", "max_stor", "energy_value", "InEff",
-                "OutEff", "LossFactor", "terminal_min", "terminal_max".
+            "OutEff", "LossFactor", "terminal_min", "terminal_max".
             "duration" denotes the energy to power ratio (hours).
             "min_stor" denotes the minimum energy limit (unitless), e.g. 0.05 = 5%.
             "max_stor" denotes the maximum energy limit (unitless), e.g. 0.95 = 95%.
