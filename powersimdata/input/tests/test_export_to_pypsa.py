@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jan 26 10:15:01 2022
-
-@author: fabian
-"""
 import pytest
 
 from powersimdata.input.export_data import PYPSA_AVAILABLE, export_to_pypsa
