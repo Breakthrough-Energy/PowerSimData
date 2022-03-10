@@ -2,28 +2,27 @@ import copy
 
 
 def _check_scale_factors(scale_factors):
-    for sf in scale_factors:
-        vals = list(sf.values())
-        if any(v < 0 for v in vals):
-            raise ValueError("scaling factor must be non negative")
-        if sum(vals) > 1:
-            raise ValueError("scaling factors must sum to between 0 and 1")
+    if not all(isinstance(k, str) for k in scale_factors):
+        raise ValueError("profile name must be str")
+    if not all(isinstance(d, (int, float)) for d in scale_factors.values()):
+        raise ValueError("scale factors must be numeric")
+    vals = list(scale_factors.values())
+    if any(v < 0 for v in vals):
+        raise ValueError("scaling factor must be non negative")
+    if sum(vals) > 1:
+        raise ValueError("scaling factors must sum to between 0 and 1")
 
 
 def _check_zone_scaling(obj, info):
     if not all(isinstance(k, str) for k in info):
-        raise ValueError("unrecognized structure")
+        raise ValueError("zone name must be str")
     if all(isinstance(d, dict) for d in info.values()):
         obj._check_zone(info.keys())
-    _check_scale_factors(list(info.values()))
+    else:
+        raise ValueError("zone scaling must be specified via a dict")
 
-
-def _check_grid_scaling(info):
-    if not all(isinstance(k, str) for k in info):
-        raise ValueError("keys must be str")
-    if not all(isinstance(d, (int, float)) for d in info.values()):
-        raise ValueError("scale factors must be numeric")
-    _check_scale_factors([info])
+    for sf in list(info.values()):
+        _check_scale_factors(sf)
 
 
 def add_electrification(obj, kind, info):
@@ -41,7 +40,7 @@ def add_electrification(obj, kind, info):
     zone = info.get("zone", {})
     grid = info.get("grid", {})
     _check_zone_scaling(obj, zone)
-    _check_grid_scaling(grid)
+    _check_scale_factors(grid)
 
     curr = obj.ct.get(kind)
     if curr is None:

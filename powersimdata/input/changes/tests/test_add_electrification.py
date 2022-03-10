@@ -2,21 +2,11 @@ import pytest
 
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.changes.electrification import (
-    _check_grid_scaling,
     _check_scale_factors,
     _check_zone_scaling,
     add_electrification,
 )
 from powersimdata.input.grid import Grid
-
-
-def test_check_grid():
-    info = {"tech1": 0.8}
-    _check_grid_scaling(info)
-
-    with pytest.raises(ValueError):
-        info = {"tech1": 4}
-        _check_grid_scaling(info)
 
 
 def test_check_zone():
@@ -30,13 +20,17 @@ def test_check_zone():
 
 
 def test_check_scale_factors():
+    with pytest.raises(ValueError):
+        info = {"tech1": "foo"}
+        _check_scale_factors(info)
+
     info = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": -3}
     with pytest.raises(ValueError):
-        _check_scale_factors([info])
+        _check_scale_factors(info)
 
     with pytest.raises(ValueError):
         info = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": 0.8}
-        _check_scale_factors([info])
+        _check_scale_factors(info)
 
 
 def test_add_electrification():

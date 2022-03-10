@@ -6,6 +6,7 @@ from powersimdata.design.transmission.upgrade import (
     scale_renewable_stubs,
 )
 from powersimdata.input.changes.bus import add_bus, remove_bus
+from powersimdata.input.changes.electrification import add_electrification
 from powersimdata.input.changes.helpers import ordinal
 from powersimdata.input.changes.plant import add_plant, remove_plant, scale_plant_pmin
 from powersimdata.input.changes.storage import add_storage_capacity
@@ -520,6 +521,10 @@ class ChangeTable:
                 else:
                     del self.ct["demand_flexibility"]
                     raise ValueError(f"Available {k} profiles: {', '.join(possible)}")
+
+    def add_electrification(self, kind, info):
+        """TODO"""
+        add_electrification(self, kind, info)
 
     def add_dcline(self, info):
         """Adds HVDC line(s).
