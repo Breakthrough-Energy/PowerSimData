@@ -249,11 +249,16 @@ class SimulationInput:
         params = {}
         params["enabled"] = [True]
         params["interval_balance"] = [True]
-        if "demand_flexibility_duration" in self.ct["demand_flexibility"]:
-            params["rolling_balance"] = [True]
-            params["duration"] = [
-                self.ct["demand_flexibility"]["demand_flexibility_duration"]
-            ]
+        params["rolling_balance"] = [
+            True
+            if "demand_flexibility_duration" in self.ct["demand_flexibility"]
+            else False
+        ]
+        params["duration"] = [
+            self.ct["demand_flexibility"]["demand_flexibility_duration"]
+            if "demand_flexibility_duration" in self.ct["demand_flexibility"]
+            else 0
+        ]
 
         # Convert the dictionary to a DataFrame to more easily save as a .csv file
         params = pd.DataFrame.from_dict(params)
