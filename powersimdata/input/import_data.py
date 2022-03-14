@@ -3,8 +3,8 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from .abstract_grid import AbstractGrid
-from .export_data import pypsa_const as pypsa_export_const
+from powersimdata.input.abstract_grid import AbstractGrid
+from powersimdata.input.export_data import pypsa_const as pypsa_export_const
 
 pypsa_import_const = {
     "bus": {
@@ -157,7 +157,7 @@ class FromPyPSA(AbstractGrid):
             zone2id = (
                 n.buses[uniques].set_index("zone_name").zone_id.astype(int).to_dict()
             )
-            id2zone = revert_dict(zone2id)
+            id2zone = _revert_dict(zone2id)
 
         if "is_substation" in bus:
             cols = pypsa_import_const["sub"]["default_select_cols"]
@@ -236,6 +236,7 @@ class FromPyPSA(AbstractGrid):
         for df in (bus, sub, gencost, plant, branch, dcline):
             df.index = pd.to_numeric(df.index, errors="ignore")
 
+        self.data_loc = ""
         self.interconnect = interconnect
         self.bus = bus
         self.sub = sub
@@ -253,17 +254,32 @@ def _drop_cols(df, key):
 
 
 def _translate_df(df, key):
-    translators = revert_dict(pypsa_export_const[key]["rename"])
+    translators = _revert_dict(pypsa_export_const[key]["rename"])
     return df.rename(columns=translators)
 
 
 def _translate_pnl(pnl, key):
-    translators = revert_dict(pypsa_export_const[key]["rename_t"])
+    translators = _revert_dict(pypsa_export_const[key]["rename_t"])
     df = pd.concat(
         {v: pnl[k].iloc[0] for k, v in translators.items() if k in pnl}, axis=1
     )
     return df
 
 
-def revert_dict(d):
+def _revert_dict(d):
     return {v: k for (k, v) in d.items()}
+
+
+def is_pypsa_network(obj):
+    """
+    Check whether object is a pypsa.Network or not.
+
+    If pypsa is not installed the function returns False.
+    """
+    from powersimdata.input.export_data import PYPSA_AVAILABLE
+
+    if not PYPSA_AVAILABLE:
+        return False
+    from pypsa import Network
+
+    return isinstance(obj, Network)

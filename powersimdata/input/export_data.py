@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from scipy.io import savemat
 
-from powersimdata import Grid
 from powersimdata.input.transform_profile import TransformProfile
 
 PYPSA_AVAILABLE = True
@@ -317,6 +316,7 @@ def export_to_pypsa(
         generators to the exported pypsa network. This ensures feasibility when
         optimizing the exported pypsa network as is. The default is True.
     """
+    from powersimdata.input.grid import Grid  # avoid circular import
     from powersimdata.scenario.scenario import Scenario  # avoid circular import
 
     if not PYPSA_AVAILABLE:
