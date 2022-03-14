@@ -1,8 +1,10 @@
+import warnings
+
+import numpy as np
+import pandas as pd
+
 from .abstract_grid import AbstractGrid
 from .export_data import pypsa_const as pypsa_export_const
-import pandas as pd
-import numpy as np
-import warnings
 
 pypsa_import_const = {
     "bus": {
@@ -71,14 +73,14 @@ pypsa_import_const = {
         ]
     },
     "branch": {
-        # these need to be dropped as they appear in both pypsa and powersimdata but need 
+        # these need to be dropped as they appear in both pypsa and powersimdata but need
         # to be translated at the same time
         "drop_cols_in_advance": [
             "x",
             "r",
             "b",
             "g",
-        ],  
+        ],
         "default_drop_cols": [
             "build_year",
             "capital_cost",
