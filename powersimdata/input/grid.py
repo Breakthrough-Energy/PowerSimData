@@ -2,6 +2,7 @@ import os
 
 from powersimdata.data_access.context import Context
 from powersimdata.data_access.scenario_list import ScenarioListManager
+from powersimdata.input.import_data import FromPyPSA, is_pypsa_network
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
 from powersimdata.network.model import ModelImmutables
 from powersimdata.network.usa_tamu.constants import storage as tamu_storage
@@ -43,10 +44,18 @@ class Grid:
                 f"Engine must be one of {','.join(self.SUPPORTED_ENGINES)}"
             )
 
-        key = cache_key(interconnect, source)
-        cached = _cache.get(key)
+        use_cache = not is_pypsa_network(interconnect)
+
+        if use_cache:
+            key = cache_key(interconnect, source)
+            cached = _cache.get(key)
+        else:
+            cached = None
+
         if cached is not None:
             data = cached
+        elif is_pypsa_network(interconnect):
+            data = FromPyPSA(interconnect)
         elif source == "usa_tamu":
             data = TAMU(interconnect)
         elif os.path.splitext(source)[1] == ".mat":
@@ -68,7 +77,8 @@ class Grid:
         self.branch = data.branch
         self.storage = data.storage
 
-        _cache.put(key, self)
+        if use_cache:
+            _cache.put(key, self)
 
         self.grid_model = self._get_grid_model()
         self.model_immutables = ModelImmutables(self.grid_model)
