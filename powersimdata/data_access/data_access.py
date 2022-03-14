@@ -9,10 +9,7 @@ from fs.multifs import MultiFS
 from fs.path import basename, dirname
 from fs.tempfs import TempFS
 
-from powersimdata.data_access.profile_helper import (
-    get_profile_version_cloud,
-    get_profile_version_local,
-)
+from powersimdata.data_access.profile_helper import get_profile_version
 from powersimdata.data_access.ssh_fs import WrapSSHFS
 from powersimdata.utility import server_setup
 
@@ -186,8 +183,9 @@ class DataAccess:
         :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
         :return: (*list*) -- available profile version.
         """
-        blob_version = get_profile_version_cloud(grid_model, kind)
-        local_version = get_profile_version_local(grid_model, kind)
+        bfs = fs.open_fs("azblob://besciences@profiles")
+        blob_version = get_profile_version(bfs, grid_model, kind)
+        local_version = get_profile_version(self.local_fs, grid_model, kind)
         return list(set(blob_version + local_version))
 
     def checksum(self, relative_path):

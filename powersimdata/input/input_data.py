@@ -10,7 +10,16 @@ from powersimdata.utility.helpers import MemoryCache, cache_key
 
 _cache = MemoryCache()
 
-profile_kind = {"demand", "hydro", "solar", "wind"}
+profile_kind = {
+    "demand",
+    "hydro",
+    "solar",
+    "wind",
+    "demand_flexibility_up",
+    "demand_flexibility_dn",
+    "demand_flexibility_cost_up",
+    "demand_flexibility_cost_dn",
+}
 
 
 _file_extension = {
@@ -37,9 +46,13 @@ def _check_field(field_name):
     """Checks field name.
 
     :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
-        *'ct'* or *'grid'*.
-    :raises ValueError: if not *'demand'*, *'hydro'*, *'solar'*, *'wind'*
-        *'ct'* or *'grid'*.
+        *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
+        *'demand_flexibility_cost_up'*, *'demand_flexibility_cost_dn'*, *'ct'*, or
+        *'grid'*.
+    :raises ValueError: if not *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
+        *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
+        *'demand_flexibility_cost_up'*, *'demand_flexibility_cost_dn'*, *'ct'*, or
+        *'grid'*.
     """
     possible = list(_file_extension.keys())
     if field_name not in possible:
@@ -59,7 +72,10 @@ def _read(f, filepath):
         data = pd.read_pickle(f)
     elif ext == "csv":
         data = pd.read_csv(f, index_col=0, parse_dates=True)
-        data.columns = data.columns.astype(int)
+        if "demand_flexibility" in filepath:
+            data.columns = data.columns.astype(str)
+        else:
+            data.columns = data.columns.astype(int)
     elif ext == "mat":
         # get fully qualified local path to matfile
         data = os.path.abspath(filepath)
@@ -81,10 +97,13 @@ class InputData:
 
         :param dict scenario_info: scenario information.
         :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
-            *'ct'* or *'grid'*.
-        :return: (*pandas.DataFrame*, *dict*, or *str*) --
-            demand, hydro, solar or wind as a data frame, change table as a
-            dictionary, or the path to a matfile enclosing the grid data.
+            *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
+            *'demand_flexibility_cost_up'*, *'demand_flexibility_cost_dn'*, *'ct'*, or
+            *'grid'*.
+        :return: (*pandas.DataFrame*, *dict*, or *str*) -- demand, hydro, solar, wind,
+            demand_flexibility_up, demand_flexibility_dn, demand_flexibility_cost_up,
+            or demand_flexibility_cost_dn as a data frame; change table as a dictionary;
+            or the path to a matfile enclosing the grid data.
         :raises FileNotFoundError: if file not found on local machine.
         """
         _check_field(field_name)
@@ -111,7 +130,9 @@ class InputData:
         """Returns available raw profile from blob storage or local disk.
 
         :param str grid_model: grid model.
-        :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
+        :param str kind: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
+            *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
+            *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
         :return: (*list*) -- available profile version.
         """
         return self.data_access.get_profile_version(grid_model, kind)

@@ -1,3 +1,4 @@
+import pandas as pd
 from scipy.io import savemat
 
 from powersimdata.data_access.context import Context
@@ -108,6 +109,15 @@ class Execute(Ready):
 
             si.prepare_mpc_file()
 
+            if "demand_flexibility" in self.ct:
+                # Prepare all specified demand flexibility profiles
+                for p in list(self.ct["demand_flexibility"]):
+                    if p != "demand_flexibility_duration":
+                        si.prepare_profile(p, profiles_as)
+
+                # Create the demand_flexibility_parameters file
+                si.prepare_demand_flexibility_parameters_file()
+
             prepared = "prepared"
             self._execute_list_manager.set_status(self.scenario_id, prepared)
             self._scenario_status = prepared
@@ -212,7 +222,9 @@ class SimulationInput:
     def prepare_profile(self, kind, profile_as=None, slice=False):
         """Prepares profile for simulation.
 
-        :param kind: one of *demand*, *'hydro'*, *'solar'* or *'wind'*.
+        :param kind: one of *demand*, *'hydro'*, *'solar'*, *'wind'*,
+            *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
+            *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
         :param int/str profile_as: if given, copy profile from this scenario.
         :param bool slice: whether to slice the profiles by the Scenario's time range.
         """
@@ -229,3 +241,29 @@ class SimulationInput:
             from_dir = self._data_access.tmp_folder(profile_as)
             src = "/".join([from_dir, file_name])
             self._data_access.copy(src, self.REL_TMP_DIR)
+
+    def prepare_demand_flexibility_parameters_file(self):
+        """Creates the demand_flexibility_parameters file."""
+        # Construct a dictionary of the necessary parameters
+        print("Building demand flexibility parameters file")
+        params = {}
+        params["enabled"] = [True]
+        params["interval_balance"] = [True]
+        params["rolling_balance"] = [
+            True
+            if "demand_flexibility_duration" in self.ct["demand_flexibility"]
+            else False
+        ]
+        params["duration"] = [
+            self.ct["demand_flexibility"]["demand_flexibility_duration"]
+            if "demand_flexibility_duration" in self.ct["demand_flexibility"]
+            else 0
+        ]
+
+        # Convert the dictionary to a DataFrame to more easily save as a .csv file
+        params = pd.DataFrame.from_dict(params)
+
+        # Save the parameters as a .csv file and move the file to the correct location
+        file_path = "/".join([self.REL_TMP_DIR, "demand_flexibility_parameters.csv"])
+        with self._data_access.write(file_path, save_local=False) as f:
+            params.to_csv(f)
