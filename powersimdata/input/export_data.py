@@ -392,9 +392,7 @@ def export_to_pypsa(
     generators.p_min_pu /= generators.p_nom.where(generators.p_nom != 0, 1)
     generators["committable"] = np.where(generators.p_min_pu > 0, True, False)
     generators["ramp_limit_down"] = generators.ramp_limit.replace(0, np.nan)
-    generators["rpreserve_all_columnsamp_limit_up"] = generators.ramp_limit.replace(
-        0, np.nan
-    )
+    generators["ramp_limit_up"] = generators.ramp_limit.replace(0, np.nan)
     generators.drop(columns=drop_cols + ["ramp_limit"], inplace=True)
 
     gencost = grid.gencost["before"]
