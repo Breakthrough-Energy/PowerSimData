@@ -20,6 +20,15 @@ pypsa_import_const = {
             "sub_network",
         ]
     },
+    "sub": {
+        "default_select_cols": [
+            "name",
+            "interconnect_sub_id",
+            "lat",
+            "lon",
+            "interconnect",
+        ]
+    },
     "generator": {
         "default_drop_cols": [
             "build_year",
@@ -49,7 +58,27 @@ pypsa_import_const = {
             "up_time_before",
         ]
     },
+    "gencost": {
+        "default_select_cols": [
+            "type",
+            "startup",
+            "shutdown",
+            "n",
+            "c2",
+            "c1",
+            "c0",
+            "interconnect",
+        ]
+    },
     "branch": {
+        # these need to be dropped as they appear in both pypsa and powersimdata but need 
+        # to be translated at the same time
+        "drop_cols_in_advance": [
+            "x",
+            "r",
+            "b",
+            "g",
+        ],  
         "default_drop_cols": [
             "build_year",
             "capital_cost",
@@ -75,7 +104,7 @@ pypsa_import_const = {
             "v_ang_min",
             "v_nom",
             "x_pu_eff",
-        ]
+        ],
     },
     "link": {
         "default_drop_cols": [
@@ -129,8 +158,7 @@ class FromPyPSA(AbstractGrid):
             id2zone = revert_dict(zone2id)
 
         if "is_substation" in bus:
-            # TODO: Hard-coded:
-            cols = ["name", "interconnect_sub_id", "lat", "lon", "interconnect"]
+            cols = pypsa_import_const["sub"]["default_select_cols"]
             sub = bus[bus.is_substation][cols]
             sub.index = sub[sub.index.str.startswith("sub")].index.str[3:]
             sub.index.name = "sub_id"
@@ -151,25 +179,14 @@ class FromPyPSA(AbstractGrid):
         plant["bus_id"] = pd.to_numeric(plant.bus_id, errors="ignore")
         plant.index.name = "plant_id"
 
-        # TODO: Hard-coded:
-        keep_cols = [
-            "type",
-            "startup",
-            "shutdown",
-            "n",
-            "c2",
-            "c1",
-            "c0",
-            "interconnect",
-        ]
+        cols = pypsa_import_const["gencost"]["default_select_cols"]
         gencost = _translate_df(df, "cost")
         gencost = gencost.assign(type=2, n=3, c0=0, c2=0)
-        gencost = gencost[keep_cols]
+        gencost = gencost[cols]
         gencost.index.name = "plant_id"
 
         # BRANCHES
-        # TODO: Hard-coded:
-        drop_cols = ["x", "r", "b", "g"]  # drop these in advance
+        drop_cols = pypsa_import_const["branch"]["drop_cols_in_advance"]
         df = n.lines.drop(columns=drop_cols)
         lines = _translate_df(df, "branch")
         lines["branch_device_type"] = "Line"
