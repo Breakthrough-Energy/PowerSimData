@@ -9,6 +9,8 @@ from powersimdata.input.grid import Grid
 def test_import_arbitrary_network_from_pypsa():
     import pypsa
 
+    # TODO: How to deal with immutables and data_loc which is not in
+    # powersimdata.grid.Grid.SUPPORTED_MODELS?
     n = pypsa.examples.ac_dc_meshed()
     grid = Grid(n)
 
