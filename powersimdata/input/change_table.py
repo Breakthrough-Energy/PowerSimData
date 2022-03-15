@@ -333,14 +333,7 @@ class ChangeTable:
     def scale_plant_pmin(self, resource, zone_name=None, plant_id=None):
         """Sets plant cost scaling factor in change table.
 
-        :param str resource: type of generator to consider.
-        :param dict zone_name: load zones. The key(s) is (are) the name of the
-            load zone(s) and the associated value is the scaling factor for the
-            minimum generation for all generators fueled by
-            specified resource in the load zone.
-        :param dict plant_id: identification numbers of plants. The key(s) is
-            (are) the id of the plant(s) and the associated value is the
-            scaling factor for the minimum generation of the generator.
+        See :func:`powersimdata.input.changes.plant.scale_plant_pmin`
         """
         scale_plant_pmin(self, resource, zone_name, plant_id)
 
@@ -470,26 +463,7 @@ class ChangeTable:
     def add_storage_capacity(self, info):
         """Sets storage parameters in change table.
 
-        :param list info: each entry is a dictionary. The dictionary gathers
-            the information needed to create a new storage device.
-            Required keys: "bus_id", "capacity".
-            "capacity" denotes the symmetric input and output power limits (MW).
-            Optional keys: "duration", "min_stor", "max_stor", "energy_value", "InEff",
-            "OutEff", "LossFactor", "terminal_min", "terminal_max".
-            "duration" denotes the energy to power ratio (hours).
-            "min_stor" denotes the minimum energy limit (unitless), e.g. 0.05 = 5%.
-            "max_stor" denotes the maximum energy limit (unitless), e.g. 0.95 = 95%.
-            "energy_value" denotes the value of stored energy at interval end ($/MWh).
-            "InEff" denotes the input efficiency (unitless), e.g. 0.95 = 95%.
-            "OutEff" denotes the output efficiency (unitless), e.g. 0.95 = 95%.
-            "LossFactor" denotes the per-hour relative losses,
-            e.g. 0.01 means that 1% of the current state of charge is lost per hour).
-            "terminal_min" denotes the minimum state of charge at interval end,
-            e.g. 0.5 means that the storage must end the interval with at least 50%.
-            "terminal_max" denotes the maximum state of charge at interval end,
-            e.g. 0.9 means that the storage must end the interval with no more than 90%.
-        :raises TypeError: if ``info`` is not a list.
-        :raises ValueError: if any of the new storages to be added have bad values.
+        See :func:`powersimdata.input.changes.storage.add_storage_capacity`
         """
         add_storage_capacity(self, info)
 
@@ -684,27 +658,14 @@ class ChangeTable:
     def add_plant(self, info):
         """Sets parameters of new generator(s) in change table.
 
-        :param list info: each entry is a dictionary. The dictionary gathers
-            the information needed to create a new generator.
-            Required keys: "bus_id", "Pmax", "type".
-            Optional keys: "c0", "c1", "c2", "Pmin".
-            "c0", "c1", and "c2" are the coefficients for the cost curve, representing
-            the fixed cost ($/hour), linear cost ($/MWh), and quadratic cost ($/MW^2·h).
-            These are optional for hydro, solar, and wind, and required for other types.
-        :raises TypeError: if ``info`` is not a list.
-        :raises ValueError: if any of the new plants to be added have bad values.
+        See :func:`powersimdata.input.changes.plant.add_plant`
         """
         add_plant(self, info)
 
     def add_bus(self, info):
         """Sets parameters of new bus(es) in change table.
 
-        :param list info: each entry is a dictionary. The dictionary gathers
-            the information needed to create a new bus.
-            Required keys: "lat", "lon", ["zone_id" XOR "zone_name"].
-            Optional key: "Pd", "baseKV".
-        :raises TypeError: if ``info`` is not a list.
-        :raises ValueError: if any new bus doesn't have appropriate keys/values.
+        See :func:`powersimdata.input.changes.bus.add_bus`
         """
         add_bus(self, info)
 
@@ -782,9 +743,7 @@ class ChangeTable:
     def remove_bus(self, info):
         """Remove one or more buses.
 
-        :param int/iterable info: iterable of bus indices, or a single bus index.
-        :raises ValueError: if ``info`` contains one or more entries not present in the
-            bus table index.
+        See :func:`powersimdata.input.changes.bus.remove_bus`
         """
         remove_bus(self, info)
 
@@ -807,9 +766,7 @@ class ChangeTable:
     def remove_plant(self, info):
         """Remove one or more plants.
 
-        :param int/iterable info: iterable of plant indices, or a single plant index.
-        :raises ValueError: if ``info`` contains one or more entries not present in the
-            plant table index.
+        See :func:`powersimdata.input.changes.plant.remove_plant`
         """
         remove_plant(self, info)
 
