@@ -32,6 +32,7 @@ pypsa_import_const = {
         ]
     },
     "generator": {
+        "drop_cols_in_advance": ["type"],
         "default_drop_cols": [
             "build_year",
             "capital_cost",
@@ -58,7 +59,7 @@ pypsa_import_const = {
             "sign",
             "startup_cost",
             "up_time_before",
-        ]
+        ],
     },
     "gencost": {
         "default_select_cols": [
@@ -145,8 +146,15 @@ class FromPyPSA(AbstractGrid):
 
     def _read_network(self, n, drop_cols=True):
 
-        # BUS, INTERCONNECT, SUB, SHUNTS
+        # INTERCONNECT, BUS, SUB, SHUNTS
         interconnect = n.name.split(", ")
+        if len(interconnect) > 1:
+            data_loc = interconnect.pop(0)
+        else:
+            # TODO: How to deal with immutables and data_loc which is not in
+            # powersimdata.grid.Grid.SUPPORTED_MODELS?
+            data_loc = "usa_tamu"
+
         df = n.df("Bus").drop(columns="type")
         bus = _translate_df(df, "bus")
         bus["type"] = bus.type.replace(["PQ", "PV", "slack", ""], [1, 2, 3, 4])
@@ -158,6 +166,9 @@ class FromPyPSA(AbstractGrid):
                 n.buses[uniques].set_index("zone_name").zone_id.astype(int).to_dict()
             )
             id2zone = _revert_dict(zone2id)
+        else:
+            zone2id = {}
+            id2zone = {}
 
         if "is_substation" in bus:
             cols = pypsa_import_const["sub"]["default_select_cols"]
@@ -165,16 +176,22 @@ class FromPyPSA(AbstractGrid):
             sub.index = sub[sub.index.str.startswith("sub")].index.str[3:]
             sub.index.name = "sub_id"
             bus = bus[~bus.is_substation]
+            bus2sub = bus[["substation", "interconnect"]].copy()
+            bus2sub["sub_id"] = pd.to_numeric(
+                bus2sub.pop("substation").str[3:], errors="ignore"
+            )
         else:
             warnings.warn("Substations could not be parsed.")
             sub = pd.DataFrame()
+            bus2sub = pd.DataFrame()
 
         if not n.shunt_impedances.empty:
             shunts = _translate_df(n.shunt_impedances, "bus")
             bus[["Bs", "Gs"]] = shunts[["Bs", "Gs"]]
 
         # PLANT & GENCOST
-        df = n.generators.drop(columns=["type"])
+        drop_cols = pypsa_import_const["generator"]["drop_cols_in_advance"]
+        df = n.generators.drop(columns=drop_cols)
         plant = _translate_df(df, "generator")
         plant["ramp_30"] = n.generators["ramp_limit_up"].fillna(0)
         plant["Pmin"] *= plant["Pmax"]  # from relative to absolute value
@@ -184,16 +201,16 @@ class FromPyPSA(AbstractGrid):
         cols = pypsa_import_const["gencost"]["default_select_cols"]
         gencost = _translate_df(df, "cost")
         gencost = gencost.assign(type=2, n=3, c0=0, c2=0)
-        gencost = gencost[cols]
+        gencost = gencost.reindex(columns=cols)
         gencost.index.name = "plant_id"
 
         # BRANCHES
         drop_cols = pypsa_import_const["branch"]["drop_cols_in_advance"]
-        df = n.lines.drop(columns=drop_cols)
+        df = n.lines.drop(columns=drop_cols, errors="ignore")
         lines = _translate_df(df, "branch")
         lines["branch_device_type"] = "Line"
 
-        df = n.transformers.drop(columns=drop_cols)
+        df = n.transformers.drop(columns=drop_cols, errors="ignore")
         transformers = _translate_df(df, "branch")
         transformers["branch_device_type"] = "Transformer"
 
@@ -208,6 +225,8 @@ class FromPyPSA(AbstractGrid):
         df = n.df("Link")[lambda df: df.index.str[:3] != "sub"]
         dcline = _translate_df(df, "link")
         dcline["Pmin"] *= dcline["Pmax"]  # convert relative to absolute
+        dcline["from_bus_id"] = pd.to_numeric(dcline.from_bus_id, errors="ignore")
+        dcline["to_bus_id"] = pd.to_numeric(dcline.to_bus_id, errors="ignore")
 
         # STORAGES
         if not n.storage_units.empty or not n.stores.empty:
@@ -233,13 +252,14 @@ class FromPyPSA(AbstractGrid):
             dcline = dcline.assign(**_translate_pnl(n.pnl("Link"), "link"))
 
         # Convert to numeric
-        for df in (bus, sub, gencost, plant, branch, dcline):
+        for df in (bus, sub, bus2sub, gencost, plant, branch, dcline):
             df.index = pd.to_numeric(df.index, errors="ignore")
 
-        self.data_loc = ""
+        self.data_loc = data_loc
         self.interconnect = interconnect
         self.bus = bus
         self.sub = sub
+        self.bus2sub = bus2sub
         self.branch = branch.sort_index()
         self.dcline = dcline
         self.zone2id = zone2id
@@ -250,7 +270,8 @@ class FromPyPSA(AbstractGrid):
 
 
 def _drop_cols(df, key):
-    df.drop(columns=pypsa_import_const[key]["default_drop_cols"], inplace=True)
+    cols = pypsa_import_const[key]["default_drop_cols"]
+    df.drop(columns=cols, inplace=True, errors="ignore")
 
 
 def _translate_df(df, key):
