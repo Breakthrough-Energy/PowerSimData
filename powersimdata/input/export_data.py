@@ -524,5 +524,5 @@ def export_to_pypsa(
         )
         n.add("Carrier", "load", nice_name="Load Shedding", color="red")
 
-    n.name = ", ".join(grid.interconnect)
+    n.name = ", ".join([grid.data_loc] + grid.interconnect)
     return n
