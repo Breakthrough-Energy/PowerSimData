@@ -3,7 +3,7 @@ import copy
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.utility.distance import find_closest_neighbor
 
-_renewable_resource = {"hydro", "solar", "wind", "wind_offshore"}
+_profile_resource = {"hydro", "solar", "wind", "wind_offshore"}
 
 
 def add_plant(obj, info):
@@ -42,7 +42,7 @@ def add_plant(obj, info):
         if plant["Pmin"] < 0 or plant["Pmin"] > plant["Pmax"]:
             err_msg = f"0 <= Pmin <= Pmax must be satisfied for plant #{i + 1}"
             raise ValueError(err_msg)
-        if plant["type"] in _renewable_resource:
+        if plant["type"] in _profile_resource:
             lon = anticipated_bus.loc[plant["bus_id"]].lon
             lat = anticipated_bus.loc[plant["bus_id"]].lat
             plant_same_type = obj.grid.plant.groupby("type").get_group(plant["type"])
