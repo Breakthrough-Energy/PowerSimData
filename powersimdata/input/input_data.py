@@ -168,7 +168,11 @@ def distribute_demand_from_zones_to_buses(zone_demand, bus):
         [pd.Series(bus["Pd"] / bus_zone_pd, name="zone_share"), bus["zone_id"]], axis=1
     )
     zone_bus_shares = bus_zone_share.pivot_table(
-        index="bus_id", columns="zone_id", values="zone_share", fill_value=0
+        index="bus_id",
+        columns="zone_id",
+        values="zone_share",
+        dropna=False,
+        fill_value=0,
     )
     bus_demand = zone_demand.dot(zone_bus_shares.T)
 
