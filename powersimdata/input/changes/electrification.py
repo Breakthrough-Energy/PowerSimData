@@ -1,4 +1,6 @@
 import copy
+from dataclasses import dataclass
+from typing import Dict
 
 
 def _check_scale_factors(scale_factors):
@@ -17,21 +19,63 @@ def _check_scale_factors(scale_factors):
         raise ValueError("scaling factors must sum to between 0 and 1")
 
 
-def _check_zone_scaling(obj, info):
-    """Validate schema for zone scaling
+@dataclass
+class ScaleFactors:
+    """Map profile to adoption"""
 
-    :param powersimdata.input.change_table.ChangeTable obj: change table
-    :param dict info: see :func:`add_electrification`
-    """
-    if not all(isinstance(k, str) for k in info):
-        raise ValueError("zone name must be str")
-    if all(isinstance(d, dict) for d in info.values()):
-        obj._check_zone(info.keys())
-    else:
-        raise ValueError("zone scaling must be specified via a dict")
+    sf: Dict[str, float]
 
-    for sf in list(info.values()):
-        _check_scale_factors(sf)
+    def value(self):
+        return self.sf
+
+    @staticmethod
+    def from_dict(scale_factors):
+        _check_scale_factors(scale_factors)
+        return ScaleFactors(sf=scale_factors)
+
+
+@dataclass
+class AreaScaling:
+    """Map end uses to adoption rates of each technology"""
+
+    end_uses: Dict[str, ScaleFactors]
+
+    def value(self):
+        return {k: v.value() for k, v in self.end_uses.items()}
+
+    @staticmethod
+    def from_dict(info):
+        if not isinstance(info, dict):
+            raise ValueError("scale factors must be a dict")
+        if not all(isinstance(k, str) for k in info):
+            raise ValueError("end use must be str")
+        end_uses = {k: ScaleFactors.from_dict(v) for k, v in info.items()}
+        return AreaScaling(end_uses=end_uses)
+
+
+@dataclass
+class ElectrifiedDemand:
+    grid_info: AreaScaling
+    zone_info: Dict[str, AreaScaling]
+
+    def value(self):
+        zones = {k: v.value() for k, v in self.zone_info.items()}
+        return {"grid": self.grid_info.value(), "zone": zones}
+
+    @staticmethod
+    def from_dict(obj, info):
+        if not isinstance(info, dict):
+            raise ValueError("info must be a dict")
+        grid = info.get("grid", {})
+        grid_info = AreaScaling.from_dict(grid)
+
+        zone = info.get("zone", {})
+        if not all(isinstance(k, str) for k in zone):
+            raise ValueError("zone name must be str")
+        obj._check_zone(list(zone.keys()))
+
+        zone_info = {k: AreaScaling.from_dict(v) for k, v in zone.items()}
+        return ElectrifiedDemand(grid_info=grid_info, zone_info=zone_info)
 
 
 def add_electrification(obj, kind, info):
@@ -55,13 +99,10 @@ def add_electrification(obj, kind, info):
     if not set(info) <= {"zone", "grid"}:
         raise ValueError("unrecognized scaling key")
 
-    zone = info.get("zone", {})
-    grid = info.get("grid", {})
-    _check_zone_scaling(obj, zone)
-    _check_scale_factors(grid)
+    result = ElectrifiedDemand.from_dict(obj, info).value()
 
     curr = obj.ct.get(kind)
     if curr is None:
         obj.ct[kind] = {"grid": {}, "zone": {}}
-    obj.ct[kind]["grid"].update(grid)
-    obj.ct[kind]["zone"].update(zone)
+    obj.ct[kind]["grid"].update(result["grid"])
+    obj.ct[kind]["zone"].update(result["zone"])

@@ -2,21 +2,34 @@ import pytest
 
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.changes.electrification import (
+    AreaScaling,
+    ScaleFactors,
     _check_scale_factors,
-    _check_zone_scaling,
     add_electrification,
 )
 from powersimdata.input.grid import Grid
 
 
-def test_check_zone():
-    obj = ChangeTable(Grid("Texas"))
-    info = {"Coast": {"standard_heat_pump_v1": 0.2}}
-    _check_zone_scaling(obj, info)
-
+def test_scale_factors():
+    info = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": -3}
     with pytest.raises(ValueError):
-        info = {"Maine": {"standard_heat_pump_v1": 0.2}}
-        _check_zone_scaling(obj, info)
+        ScaleFactors.from_dict(info)
+
+    info["advanced_heat_pump_v2"] = 0.3
+    result = ScaleFactors.from_dict(info)
+    assert info == result.value()
+
+
+def test_area_scaling():
+    with pytest.raises(ValueError):
+        AreaScaling.from_dict([])
+    with pytest.raises(ValueError):
+        AreaScaling.from_dict({1: 2})
+
+    sf = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": 0.2}
+    info = {"res_heating": sf}
+    result = AreaScaling.from_dict(info)
+    assert info == result.value()
 
 
 def test_check_scale_factors():
@@ -37,7 +50,8 @@ def test_add_electrification():
     obj = ChangeTable(Grid("Texas"))
     kind = "building"
 
-    info = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": 0.3}
+    sf = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": 0.3}
+    info = {"res_heating": sf}
     add_electrification(obj, kind, {"grid": info})
 
     with pytest.raises(ValueError):
@@ -49,15 +63,18 @@ def test_add_electrification_by_zone():
     kind = "building"
 
     info = {
-        "New York City": {"advanced_heat_pump_v2": 0.7},
+        "New York City": {"res_cooking": {"advanced_heat_pump_v2": 0.7}},
         "Western North Carolina": {
-            "standard_heat_pump_v1": 0.5,
-            "advanced_heat_pump_v2": 0.5,
+            "com_hot_water": {
+                "standard_heat_pump_v1": 0.5,
+                "advanced_heat_pump_v2": 0.5,
+            }
         },
     }
     add_electrification(obj, kind, {"zone": info})
 
-    info = {"Maine": {"standard_heat_pump_v1": 0.2, "advanced_heat_pump_v2": 0.8}}
+    sf = {"standard_heat_pump_v1": 0.2, "advanced_heat_pump_v2": 0.8}
+    info = {"Maine": {"res_cooking": sf}}
     add_electrification(obj, kind, {"zone": info})
 
     result = obj.ct[kind]
@@ -68,11 +85,11 @@ def test_add_electrification_by_zone():
 def test_add_electrification_combined():
     obj = ChangeTable(Grid("Eastern"))
     kind = "building"
+    sf = {"standard_heat_pump_v1": 0.2, "advanced_heat_pump_v2": 0.8}
+    zone = {"Maine": {"res_cooking": sf}}
+    grid = {"res_heating": sf}
 
-    zone = {"Maine": {"standard_heat_pump_v1": 0.2, "advanced_heat_pump_v2": 0.8}}
-    grid = {"standard_heat_pump_v1": 0.7}
-    add_electrification(obj, kind, {"grid": grid, "zone": zone})
+    info = {"grid": grid, "zone": zone}
+    add_electrification(obj, kind, info)
 
-    result = obj.ct[kind]
-    assert "Maine" in result["zone"]
-    assert "standard_heat_pump_v1" in result["grid"]
+    assert info == obj.ct[kind]
