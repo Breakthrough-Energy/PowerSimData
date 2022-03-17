@@ -2,6 +2,10 @@ import copy
 
 
 def _check_scale_factors(scale_factors):
+    """Validate schema of scale factors dict
+
+    :param dict scale_factors: see :func:`add_electrification`
+    """
     if not all(isinstance(k, str) for k in scale_factors):
         raise ValueError("profile name must be str")
     if not all(isinstance(d, (int, float)) for d in scale_factors.values()):
@@ -14,6 +18,11 @@ def _check_scale_factors(scale_factors):
 
 
 def _check_zone_scaling(obj, info):
+    """Validate schema for zone scaling
+
+    :param powersimdata.input.change_table.ChangeTable obj: change table
+    :param dict info: see :func:`add_electrification`
+    """
     if not all(isinstance(k, str) for k in info):
         raise ValueError("zone name must be str")
     if all(isinstance(d, dict) for d in info.values()):
