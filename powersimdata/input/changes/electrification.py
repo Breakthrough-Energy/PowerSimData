@@ -26,7 +26,16 @@ def _check_zone_scaling(obj, info):
 
 
 def add_electrification(obj, kind, info):
-    """TODO"""
+    """Add profiles and scaling factors for electrified demand.
+
+    :param powersimdata.input.change_table.ChangeTable obj: change table
+    :param str kind: the kind of demand, e.g. building
+    :param dict info: Keys are *'grid'* and *'zone'*, to specify the scale factors in
+        the given area. For grid scaling, the value is a *dict*, which maps a *str* to
+        *float*. This dict is referred to as *scale_factors* here. The values in
+        *scale_factors* must be nonnegative and sum to at most 1. For zone scaling, the
+        value is also a *dict*, mapping zone names (*str*) to *scale_factors*.
+    """
 
     allowed = ["building", "transportation"]
     if kind not in allowed:

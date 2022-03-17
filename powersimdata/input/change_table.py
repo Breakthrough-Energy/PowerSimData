@@ -523,7 +523,10 @@ class ChangeTable:
                     raise ValueError(f"Available {k} profiles: {', '.join(possible)}")
 
     def add_electrification(self, kind, info):
-        """TODO"""
+        """Add profiles and scaling factors for electrified demand.
+
+        See :func:`powersimdata.input.changes.electrification.add_electrification`
+        """
         add_electrification(self, kind, info)
 
     def add_dcline(self, info):
