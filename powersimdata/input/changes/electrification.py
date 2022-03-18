@@ -21,61 +21,71 @@ def _check_scale_factors(scale_factors):
 
 @dataclass
 class ScaleFactors:
-    """Map profile to adoption"""
+    """Map profile(s) to adoption rate
+
+    :param dict sf: a dictionary mapping profiles names to adoption rate
+    """
 
     sf: Dict[str, float]
+
+    def __init__(self, sf):
+        _check_scale_factors(sf)
+        self.sf = sf
 
     def value(self):
         return self.sf
 
-    @staticmethod
-    def from_dict(scale_factors):
-        _check_scale_factors(scale_factors)
-        return ScaleFactors(sf=scale_factors)
-
 
 @dataclass
 class AreaScaling:
-    """Map end uses to adoption rates of each technology"""
+    """Map end uses to adoption rates of each technology
+
+    :param dict info: a mapping from end use (*str*) to scale factors (*dict*)
+    :raises ValueError: if info is not a dict, or any keys are not strings
+    """
 
     end_uses: Dict[str, ScaleFactors]
 
-    def value(self):
-        return {k: v.value() for k, v in self.end_uses.items()}
-
-    @staticmethod
-    def from_dict(info):
+    def __init__(self, info):
         if not isinstance(info, dict):
             raise ValueError("scale factors must be a dict")
         if not all(isinstance(k, str) for k in info):
             raise ValueError("end use must be str")
-        end_uses = {k: ScaleFactors.from_dict(v) for k, v in info.items()}
-        return AreaScaling(end_uses=end_uses)
+        self.end_uses = {k: ScaleFactors(v) for k, v in info.items()}
+
+    def value(self):
+        return {k: v.value() for k, v in self.end_uses.items()}
 
 
 @dataclass
 class ElectrifiedDemand:
+    """Container object for specifying profiles within a given class of electrification
+
+    :param powersimdata.input.change_table.ChangeTable obj: change table
+    :param dict info: see :func:`add_electrification`
+    """
+
     grid_info: AreaScaling
     zone_info: Dict[str, AreaScaling]
 
-    def value(self):
-        zones = {k: v.value() for k, v in self.zone_info.items()}
-        return {"grid": self.grid_info.value(), "zone": zones}
-
-    @staticmethod
-    def from_dict(obj, info):
+    def __init__(self, obj, info):
         if not isinstance(info, dict):
             raise ValueError("info must be a dict")
         grid = info.get("grid", {})
-        grid_info = AreaScaling.from_dict(grid)
+        grid_info = AreaScaling(grid)
 
         zone = info.get("zone", {})
         if not all(isinstance(k, str) for k in zone):
             raise ValueError("zone name must be str")
         obj._check_zone(list(zone.keys()))
 
-        zone_info = {k: AreaScaling.from_dict(v) for k, v in zone.items()}
-        return ElectrifiedDemand(grid_info=grid_info, zone_info=zone_info)
+        zone_info = {k: AreaScaling(v) for k, v in zone.items()}
+        self.grid_info = grid_info
+        self.zone_info = zone_info
+
+    def value(self):
+        zones = {k: v.value() for k, v in self.zone_info.items()}
+        return {"grid": self.grid_info.value(), "zone": zones}
 
 
 def add_electrification(obj, kind, info):
@@ -84,10 +94,12 @@ def add_electrification(obj, kind, info):
     :param powersimdata.input.change_table.ChangeTable obj: change table
     :param str kind: the kind of demand, e.g. building
     :param dict info: Keys are *'grid'* and *'zone'*, to specify the scale factors in
-        the given area. For grid scaling, the value is a *dict*, which maps a *str* to
-        *float*. This dict is referred to as *scale_factors* here. The values in
-        *scale_factors* must be nonnegative and sum to at most 1. For zone scaling, the
-        value is also a *dict*, mapping zone names (*str*) to *scale_factors*.
+        the given area. For grid scaling, the value is a *dict*, which maps a *str*
+        representing the end use to a *dict*, which maps a *str* to *float*. This dict
+        is referred to as *scale_factors* here. The values in *scale_factors* must be
+        nonnegative and sum to at most 1. For zone scaling, the value is also a *dict*,
+        mapping zone names (*str*) to a *dict* which mirrors the structure used for grid
+        scaling
     """
 
     allowed = ["building", "transportation"]
@@ -99,7 +111,7 @@ def add_electrification(obj, kind, info):
     if not set(info) <= {"zone", "grid"}:
         raise ValueError("unrecognized scaling key")
 
-    result = ElectrifiedDemand.from_dict(obj, info).value()
+    result = ElectrifiedDemand(obj, info).value()
 
     curr = obj.ct.get(kind)
     if curr is None:

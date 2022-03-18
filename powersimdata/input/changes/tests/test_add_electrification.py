@@ -13,22 +13,22 @@ from powersimdata.input.grid import Grid
 def test_scale_factors():
     info = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": -3}
     with pytest.raises(ValueError):
-        ScaleFactors.from_dict(info)
+        ScaleFactors(info)
 
     info["advanced_heat_pump_v2"] = 0.3
-    result = ScaleFactors.from_dict(info)
+    result = ScaleFactors(info)
     assert info == result.value()
 
 
 def test_area_scaling():
     with pytest.raises(ValueError):
-        AreaScaling.from_dict([])
+        AreaScaling([])
     with pytest.raises(ValueError):
-        AreaScaling.from_dict({1: 2})
+        AreaScaling({1: 2})
 
     sf = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": 0.2}
     info = {"res_heating": sf}
-    result = AreaScaling.from_dict(info)
+    result = AreaScaling(info)
     assert info == result.value()
 
 
