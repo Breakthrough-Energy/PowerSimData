@@ -4,18 +4,16 @@ from pandas.testing import assert_series_equal
 from powersimdata.input.export_data import PYPSA_AVAILABLE, export_to_pypsa
 from powersimdata.input.grid import Grid
 
-# @pytest.mark.skipif(not PYPSA_AVAILABLE, reason="Package PyPSA not available.")
-# def test_import_arbitrary_network_from_pypsa():
-#     import pypsa
 
-# TODO: How to deal with immutables and data_loc which is not in
-# powersimdata.grid.Grid.SUPPORTED_MODELS?
+@pytest.mark.skipif(not PYPSA_AVAILABLE, reason="Package PyPSA not available.")
+def test_import_arbitrary_network_from_pypsa():
+    import pypsa
 
-# n = pypsa.examples.ac_dc_meshed()
-# grid = Grid(n)
+    n = pypsa.examples.ac_dc_meshed()
+    grid = Grid(n)
 
-# assert not grid.bus.empty
-# assert len(n.buses) == len(grid.bus)
+    assert not grid.bus.empty
+    assert len(n.buses) == len(grid.bus)
 
 
 @pytest.mark.skipif(not PYPSA_AVAILABLE, reason="Package PyPSA not available.")
