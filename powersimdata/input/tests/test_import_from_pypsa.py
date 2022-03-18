@@ -33,9 +33,6 @@ def test_import_exported_network():
     # TODO: storages are not yet exported to pypsa
     test.storage = ref.storage
 
-    # TODO: TransformerWinding is not translated to pypsa
-    test.branch["branch_device_type"] = ref.branch.branch_device_type
-
     # Due to rounding errors we have to compare some columns in advance
     rtol = 1e-15
     assert_series_equal(ref.branch.x, test.branch.x, rtol=rtol)

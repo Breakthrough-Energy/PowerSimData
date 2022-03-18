@@ -151,12 +151,10 @@ class FromPyPSA(AbstractGrid):
         if len(interconnect) > 1:
             data_loc = interconnect.pop(0)
         else:
-            # TODO: How to deal with immutables and data_loc which is not in
-            # powersimdata.grid.Grid.SUPPORTED_MODELS?
-            data_loc = "usa_tamu"
+            data_loc = "pypsa"
 
         df = n.df("Bus").drop(columns="type")
-        bus = _translate_df(df, "bus")
+        bus = self._translate_df(df, "bus")
         bus["type"] = bus.type.replace(["PQ", "PV", "slack", ""], [1, 2, 3, 4])
         bus.index.name = "bus_id"
 
@@ -165,7 +163,7 @@ class FromPyPSA(AbstractGrid):
             zone2id = (
                 n.buses[uniques].set_index("zone_name").zone_id.astype(int).to_dict()
             )
-            id2zone = _revert_dict(zone2id)
+            id2zone = self._revert_dict(zone2id)
         else:
             zone2id = {}
             id2zone = {}
@@ -186,20 +184,20 @@ class FromPyPSA(AbstractGrid):
             bus2sub = pd.DataFrame()
 
         if not n.shunt_impedances.empty:
-            shunts = _translate_df(n.shunt_impedances, "bus")
+            shunts = self._translate_df(n.shunt_impedances, "bus")
             bus[["Bs", "Gs"]] = shunts[["Bs", "Gs"]]
 
         # PLANT & GENCOST
         drop_cols = pypsa_import_const["generator"]["drop_cols_in_advance"]
         df = n.generators.drop(columns=drop_cols)
-        plant = _translate_df(df, "generator")
+        plant = self._translate_df(df, "generator")
         plant["ramp_30"] = n.generators["ramp_limit_up"].fillna(0)
         plant["Pmin"] *= plant["Pmax"]  # from relative to absolute value
         plant["bus_id"] = pd.to_numeric(plant.bus_id, errors="ignore")
         plant.index.name = "plant_id"
 
         cols = pypsa_import_const["gencost"]["default_select_cols"]
-        gencost = _translate_df(df, "cost")
+        gencost = self._translate_df(df, "cost")
         gencost = gencost.assign(type=2, n=3, c0=0, c2=0)
         gencost = gencost.reindex(columns=cols)
         gencost.index.name = "plant_id"
@@ -207,12 +205,11 @@ class FromPyPSA(AbstractGrid):
         # BRANCHES
         drop_cols = pypsa_import_const["branch"]["drop_cols_in_advance"]
         df = n.lines.drop(columns=drop_cols, errors="ignore")
-        lines = _translate_df(df, "branch")
+        lines = self._translate_df(df, "branch")
         lines["branch_device_type"] = "Line"
 
         df = n.transformers.drop(columns=drop_cols, errors="ignore")
-        transformers = _translate_df(df, "branch")
-        transformers["branch_device_type"] = "Transformer"
+        transformers = self._translate_df(df, "branch")
 
         branch = pd.concat([lines, transformers])
         branch["x"] *= 100
@@ -223,7 +220,7 @@ class FromPyPSA(AbstractGrid):
 
         # DC LINES
         df = n.df("Link")[lambda df: df.index.str[:3] != "sub"]
-        dcline = _translate_df(df, "link")
+        dcline = self._translate_df(df, "link")
         dcline["Pmin"] *= dcline["Pmax"]  # convert relative to absolute
         dcline["from_bus_id"] = pd.to_numeric(dcline.from_bus_id, errors="ignore")
         dcline["to_bus_id"] = pd.to_numeric(dcline.to_bus_id, errors="ignore")
@@ -234,22 +231,25 @@ class FromPyPSA(AbstractGrid):
 
         # Drop columns if wanted
         if drop_cols:
-            _drop_cols(bus, "bus")
-            _drop_cols(plant, "generator")
-            _drop_cols(branch, "branch")
-            _drop_cols(dcline, "link")
+            self._drop_cols(bus, "bus")
+            self._drop_cols(plant, "generator")
+            self._drop_cols(branch, "branch")
+            self._drop_cols(dcline, "link")
 
         # Pull operational properties into grid object
         if len(n.snapshots) == 1:
-            bus = bus.assign(**_translate_pnl(n.pnl("Bus"), "bus"))
+            bus = bus.assign(**self._translate_pnl(n.pnl("Bus"), "bus"))
             bus["Va"] = np.rad2deg(bus["Va"])
-            bus = bus.assign(**_translate_pnl(n.pnl("Load"), "bus"))
-            plant = plant.assign(**_translate_pnl(n.pnl("Generator"), "generator"))
+            bus = bus.assign(**self._translate_pnl(n.pnl("Load"), "bus"))
+            plant = plant.assign(**self._translate_pnl(n.pnl("Generator"), "generator"))
             _ = pd.concat(
-                [_translate_pnl(n.pnl(c), "branch") for c in ["Line", "Transformer"]]
+                [
+                    self._translate_pnl(n.pnl(c), "branch")
+                    for c in ["Line", "Transformer"]
+                ]
             )
             branch = branch.assign(**_)
-            dcline = dcline.assign(**_translate_pnl(n.pnl("Link"), "link"))
+            dcline = dcline.assign(**self._translate_pnl(n.pnl("Link"), "link"))
 
         # Convert to numeric
         for df in (bus, sub, bus2sub, gencost, plant, branch, dcline):
@@ -268,27 +268,23 @@ class FromPyPSA(AbstractGrid):
         self.gencost["before"] = gencost
         self.gencost["after"] = gencost
 
+    def _drop_cols(self, df, key):
+        cols = pypsa_import_const[key]["default_drop_cols"]
+        df.drop(columns=cols, inplace=True, errors="ignore")
 
-def _drop_cols(df, key):
-    cols = pypsa_import_const[key]["default_drop_cols"]
-    df.drop(columns=cols, inplace=True, errors="ignore")
+    def _translate_df(self, df, key):
+        translators = self._revert_dict(pypsa_export_const[key]["rename"])
+        return df.rename(columns=translators)
 
+    def _translate_pnl(self, pnl, key):
+        translators = self._revert_dict(pypsa_export_const[key]["rename_t"])
+        df = pd.concat(
+            {v: pnl[k].iloc[0] for k, v in translators.items() if k in pnl}, axis=1
+        )
+        return df
 
-def _translate_df(df, key):
-    translators = _revert_dict(pypsa_export_const[key]["rename"])
-    return df.rename(columns=translators)
-
-
-def _translate_pnl(pnl, key):
-    translators = _revert_dict(pypsa_export_const[key]["rename_t"])
-    df = pd.concat(
-        {v: pnl[k].iloc[0] for k, v in translators.items() if k in pnl}, axis=1
-    )
-    return df
-
-
-def _revert_dict(d):
-    return {v: k for (k, v) in d.items()}
+    def _revert_dict(self, d):
+        return {v: k for (k, v) in d.items()}
 
 
 def is_pypsa_network(obj):

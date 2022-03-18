@@ -18,6 +18,7 @@ class Grid:
 
     SUPPORTED_MODELS = {"usa_tamu"}
     SUPPORTED_ENGINES = {"REISE", "REISE.jl"}
+    SUPPORTED_IMPORTS = {"pypsa"}
 
     """Grid
 
@@ -82,8 +83,9 @@ class Grid:
         if use_cache:
             _cache.put(key, self)
 
-        self.grid_model = self._get_grid_model()
-        self.model_immutables = ModelImmutables(self.grid_model)
+        if self.data_loc not in self.SUPPORTED_IMPORTS:
+            self.grid_model = self._get_grid_model()
+            self.model_immutables = ModelImmutables(self.grid_model)
 
     def _get_grid_model(self):
         """Get the grid model.

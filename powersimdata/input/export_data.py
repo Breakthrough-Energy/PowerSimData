@@ -450,7 +450,6 @@ def export_to_pypsa(
     transformers = branches.query(
         "branch_device_type in ['TransformerWinding', 'Transformer']"
     )
-    transformers = transformers.drop(columns="branch_device_type")
 
     if scenario:
         lines_t = {}
