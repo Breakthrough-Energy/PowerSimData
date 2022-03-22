@@ -210,6 +210,8 @@ class FromPyPSA(AbstractGrid):
 
         df = n.transformers.drop(columns=drop_cols, errors="ignore")
         transformers = self._translate_df(df, "branch")
+        if "branch_device_type" not in transformers:
+            transformers["branch_device_type"] = "Transfomer"
 
         branch = pd.concat([lines, transformers])
         branch["x"] *= 100
