@@ -1,7 +1,5 @@
 import os
 
-from pandas import DataFrame
-
 from powersimdata.data_access.context import Context
 from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.input.import_data import FromPyPSA, is_pypsa_network
@@ -113,12 +111,16 @@ class Grid:
             :raises AssertionError: if no equality can be confirmed (w/o failure_flag).
             """
             try:
-                if isinstance(ref, DataFrame) and isinstance(test, DataFrame):
+                try:
+                    test_eq = ref == test
+                    if isinstance(test_eq, bool):
+                        assert test_eq
+                    else:
+                        assert test_eq.all().all()
+                except ValueError:
                     assert set(ref.columns) == set(test.columns)
                     for col in ref.columns:
                         assert (ref[col] == test[col]).all()
-                else:
-                    assert ref == test
             except (AssertionError, ValueError):
                 if failure_flag is None:
                     raise
