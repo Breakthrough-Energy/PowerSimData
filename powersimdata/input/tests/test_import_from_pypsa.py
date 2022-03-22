@@ -23,8 +23,14 @@ def test_import_exported_network():
     n = export_to_pypsa(ref, **kwargs)
     test = Grid(n)
 
-    # TODO: Only the linear cost term is exported to pypsa
-    for c in ["c0", "c2"]:
+    # Only a scaled version of linear cost term is exported to pypsa
+    # Test whether the exported marginal cost is in the same order of magnitude
+    ref_total_c1 = ref.gencost["before"]["c1"].sum()
+    test_total_c1 = test.gencost["before"]["c1"].sum()
+    assert ref_total_c1 / test_total_c1 > 0.95 and ref_total_c1 / test_total_c1 < 1.05
+
+    # Now overwrite costs
+    for c in ["c0", "c1", "c2"]:
         test.gencost["before"][c] = ref.gencost["before"][c]
         test.gencost["after"][c] = ref.gencost["after"][c]
 

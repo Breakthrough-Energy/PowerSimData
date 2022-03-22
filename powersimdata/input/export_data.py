@@ -77,6 +77,7 @@ pypsa_const = {
         "rename": {
             "startup": "startup_cost",
             "shutdown": "shutdown_cost",
+            "c1": "marginal_cost",
         }
     },
     "branch": {
@@ -394,14 +395,14 @@ def export_to_pypsa(
     generators["ramp_limit_up"] = generators.ramp_limit.replace(0, np.nan)
     generators.drop(columns=drop_cols + ["ramp_limit"], inplace=True)
 
-    gencost = grid.gencost["before"]
-    gencost = gencost.rename(columns=pypsa_const["cost"]["rename"])
+    gencost = grid.gencost["before"].copy()
     # Linearize quadratic curves as applicable
     fixed = grid.plant["Pmin"] == grid.plant["Pmax"]
     linearized = gencost.loc[~fixed, "c1"] + gencost.loc[~fixed, "c2"] * (
         grid.plant.loc[~fixed, "Pmax"] + grid.plant.loc[~fixed, "Pmin"]
     )
-    gencost["marginal_cost"] = linearized.combine_first(gencost["c1"])
+    gencost["c1"] = linearized.combine_first(gencost["c1"])
+    gencost = gencost.rename(columns=pypsa_const["cost"]["rename"])
     gencost = gencost[pypsa_const["cost"]["rename"].values()]
 
     carriers = pd.DataFrame(index=generators.carrier.unique(), dtype=object)
