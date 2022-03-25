@@ -305,7 +305,7 @@ def is_pypsa_network(obj):
     return isinstance(obj, Network)
 
 
-class _PyPSA_Builder:
+class _PypsaBuilder:
     """PyPSA Scenario Builder.
 
     :param str grid_model: grid model.
@@ -340,18 +340,20 @@ class _PyPSA_Builder:
 
     def __init__(self, grid_model, interconnect, table):
         """Constructor."""
+        # Circumvent cyclic imports
+        from powersimdata.input.change_table import ChangeTable
         from powersimdata.input.grid import Grid
 
         if not is_pypsa_network(grid_model):
             raise TypeError(f"Expected a pypsa.Network, got {type(grid_model)}.")
 
         n = grid_model
-        
+
         self.base_grid = Grid(n, source="pypsa")
         self.name = n.name
-        self.interconnect =  self.base_grid.interconnect
+        self.interconnect = self.base_grid.interconnect
         self.grid_model = self.base_grid.grid_model
-        self.change_table = None
+        self.change_table = ChangeTable(self.base_grid)
         self.existing = pd.Series(dtype=object)
         self.interconnect = self.base_grid.interconnect
 
@@ -359,28 +361,33 @@ class _PyPSA_Builder:
         self.end_date = n.snapshots[-1]
         self.interval = None
 
-        from pypsa.descriptors import get_switchable_as_dense 
-        if not n.loads_t.p.empty:        
+        from pypsa.descriptors import get_switchable_as_dense
+
+        if not n.loads_t.p.empty:
             self._demand = n.loads_t.p.copy()
         else:
             self._demand = n.loads_t.p_set.copy()
         self._demand.columns = pd.to_numeric(self._demand.columns, errors="ignore")
+        self._demand.columns.name = "bus_id"
+        self._demand.index.name = "UTC Time"
 
         p_max_pu = get_switchable_as_dense(n, "Generator", "p_max_pu")
         p_max_pu.columns = pd.to_numeric(p_max_pu.columns, errors="ignore")
-        
+        p_max_pu.columns.name = None
+        p_max_pu.index.name = "UTC"
+
         gens = n.generators.copy()
         gens.index = pd.to_numeric(gens.index, errors="ignore")
-        
+        gens.index.name = None
+
         hydro_gen = gens.query("'hydro' in carrier").index
         self._hydro = p_max_pu[hydro_gen] * gens.p_nom[hydro_gen]
-        
+
         solar_gen = gens.query("'solar' in carrier").index
         self._solar = p_max_pu[solar_gen] * gens.p_nom[solar_gen]
 
         wind_gen = gens.query("'wind' in carrier").index
         self._wind = p_max_pu[wind_gen] * gens.p_nom[wind_gen]
-
 
     def get_ct(self):
         """Returns change table.
@@ -488,7 +495,9 @@ class _PyPSA_Builder:
         return [f"{self.start_date} - {self.end_date} from PyPSA network"]
 
     def set_base_profile(self, kind, version):
-        raise NotImplementedError("set_base_profile not implemented for models imported from PyPSA.")
+        raise NotImplementedError(
+            "set_base_profile not implemented for models imported from PyPSA."
+        )
 
     def set_engine(self, engine):
         """Sets simulation engine to be used for scenario.
