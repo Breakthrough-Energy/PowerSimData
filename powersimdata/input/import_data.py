@@ -1,3 +1,4 @@
+import copy
 import warnings
 
 import numpy as np
@@ -302,3 +303,213 @@ def is_pypsa_network(obj):
     from pypsa import Network
 
     return isinstance(obj, Network)
+
+
+class _PyPSA_Builder:
+    """PyPSA Scenario Builder.
+
+    :param str grid_model: grid model.
+    :param list interconnect: list of interconnect(s) to build.
+    :param pandas.DataFrame table: scenario list table
+    """
+
+    plan_name = ""
+    scenario_name = ""
+    # start_date = "2016-01-01 00:00:00"
+    # end_date = "2016-12-31 23:00:00"
+    # interval = "24H"
+    demand = ""
+    hydro = ""
+    solar = ""
+    wind = ""
+    engine = "pypsa"
+    exported_methods = {
+        "set_base_profile",
+        "set_engine",
+        "set_name",
+        "set_time",
+        "get_ct",
+        "get_grid",
+        "get_base_grid",
+        "get_demand",
+        "get_hydro",
+        "get_solar",
+        "get_wind",
+        "change_table",
+    }
+
+    def __init__(self, grid_model, interconnect, table):
+        """Constructor."""
+        from powersimdata.input.grid import Grid
+
+        if not is_pypsa_network(grid_model):
+            raise TypeError(f"Expected a pypsa.Network, got {type(grid_model)}.")
+
+        n = grid_model
+        
+        self.base_grid = Grid(n, source="pypsa")
+        self.name = n.name
+        self.interconnect =  self.base_grid.interconnect
+        self.grid_model = self.base_grid.grid_model
+        self.change_table = None
+        self.existing = pd.Series(dtype=object)
+        self.interconnect = self.base_grid.interconnect
+
+        self.start_date = n.snapshots[0]
+        self.end_date = n.snapshots[-1]
+        self.interval = None
+
+        from pypsa.descriptors import get_switchable_as_dense 
+        if not n.loads_t.p.empty:        
+            self._demand = n.loads_t.p.copy()
+        else:
+            self._demand = n.loads_t.p_set.copy()
+        self._demand.columns = pd.to_numeric(self._demand.columns, errors="ignore")
+
+        p_max_pu = get_switchable_as_dense(n, "Generator", "p_max_pu")
+        p_max_pu.columns = pd.to_numeric(p_max_pu.columns, errors="ignore")
+        
+        gens = n.generators.copy()
+        gens.index = pd.to_numeric(gens.index, errors="ignore")
+        
+        hydro_gen = gens.query("'hydro' in carrier").index
+        self._hydro = p_max_pu[hydro_gen] * gens.p_nom[hydro_gen]
+        
+        solar_gen = gens.query("'solar' in carrier").index
+        self._solar = p_max_pu[solar_gen] * gens.p_nom[solar_gen]
+
+        wind_gen = gens.query("'wind' in carrier").index
+        self._wind = p_max_pu[wind_gen] * gens.p_nom[wind_gen]
+
+
+    def get_ct(self):
+        """Returns change table.
+
+        :return: (*dict*) -- change table.
+        """
+        return copy.deepcopy(self.change_table.ct)
+
+    def get_profile(self, kind):
+        """Returns demand, hydro, solar or wind  profile.
+
+        :param str kind: either *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :return: (*pandas.DataFrame*) -- profile.
+        """
+        if kind == "demand":
+            return self._demand
+        elif kind == "hydro":
+            return self._hydro
+        elif kind == "solar":
+            return self._solar
+        elif kind == "wind":
+            return self._wind
+        else:
+            raise ValueError(f"Unknown kind {kind}")
+
+    def get_demand(self):
+        """Returns demand profile.
+
+        :return: (*pandas.DataFrame*) -- data frame of demand (hour, zone id).
+        """
+        return self.get_profile("demand")
+
+    def get_hydro(self):
+        """Returns hydro profile.
+
+        :return: (*pandas.DataFrame*) -- data frame of hydro power output (hour, plant).
+        """
+        return self.get_profile("hydro")
+
+    def get_solar(self):
+        """Returns solar profile.
+
+        :return: (*pandas.DataFrame*) -- data frame of solar power output (hour, plant).
+        """
+        return self.get_profile("solar")
+
+    def get_wind(self):
+        """Returns wind profile.
+
+        :return: (*pandas.DataFrame*) -- data frame of wind power output (hour, plant).
+        """
+        return self.get_profile("wind")
+
+    def set_name(self, plan_name, scenario_name):
+        """Sets scenario name.
+
+        :param str plan_name: plan name
+        :param str scenario_name: scenario name.
+        :raises ValueError: if combination plan - scenario already exists
+        """
+
+        if plan_name in self.existing.plan.tolist():
+            scenario = self.existing[self.existing.plan == plan_name]
+            if scenario_name in scenario.name.tolist():
+                raise ValueError(
+                    "Combination %s - %s already exists" % (plan_name, scenario_name)
+                )
+        self.plan_name = plan_name
+        self.scenario_name = scenario_name
+
+    def set_time(self, start_date, end_date, interval):
+        """Sets scenario start and end dates as well as the interval that will
+        be used to split the date range.
+
+        :param str start_date: start date.
+        :param str end_date: start date.
+        :param str interval: interval.
+        :raises ValueError: if start date, end date or interval are invalid.
+        """
+        min_ts = pd.Timestamp("2016-01-01 00:00:00")
+        max_ts = pd.Timestamp("2016-12-31 23:00:00")
+
+        start_ts = pd.Timestamp(start_date)
+        end_ts = pd.Timestamp(end_date)
+        hours = (end_ts - start_ts) / np.timedelta64(1, "h") + 1
+        if start_ts > end_ts:
+            raise ValueError("start_date > end_date")
+        elif start_ts < min_ts or start_ts >= max_ts:
+            raise ValueError("start_date not in [%s,%s[" % (min_ts, max_ts))
+        elif end_ts <= min_ts or end_ts > max_ts:
+            raise ValueError("end_date not in ]%s,%s]" % (min_ts, max_ts))
+        elif hours % int(interval.split("H", 1)[0]) != 0:
+            raise ValueError("Incorrect interval for start and end dates")
+        else:
+            self.start_date = start_date
+            self.end_date = end_date
+            self.interval = interval
+
+    def get_base_profile(self, kind):
+        """Returns available base profiles.
+
+        :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :return: (*list*) -- available version for selected profile kind.
+        """
+        return [f"{self.start_date} - {self.end_date} from PyPSA network"]
+
+    def set_base_profile(self, kind, version):
+        raise NotImplementedError("set_base_profile not implemented for models imported from PyPSA.")
+
+    def set_engine(self, engine):
+        """Sets simulation engine to be used for scenario.
+
+        :param str engine: simulation engine
+        """
+        possible = ["pypsa"]
+        if engine not in possible:
+            print("Available engines: %s" % " | ".join(possible))
+            return
+        else:
+            self.engine = engine
+
+    def get_grid(self):
+        """Returns a transformed grid.
+
+        :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
+        """
+        return self.base_grid
+
+    def __str__(self):
+        return self.name
+
+    get_base_grid = get_grid
