@@ -35,7 +35,10 @@ class Grid:
         """Constructor."""
         if not isinstance(source, str):
             raise TypeError("source must be a str")
-        if source not in self.SUPPORTED_MODELS and not source.endswith(".mat"):
+        if (
+            source not in self.SUPPORTED_MODELS | self.SUPPORTED_IMPORTS
+            and not source.endswith(".mat")
+        ):
             raise ValueError(
                 f"Source must be one of {','.join(self.SUPPORTED_MODELS)} "
                 "or the path to a .mat file that represents a grid "
