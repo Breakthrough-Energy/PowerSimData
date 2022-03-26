@@ -19,29 +19,29 @@ from powersimdata.utility.distance import haversine
 
 
 def merge_keep_index(df1, df2, **kwargs):
-    """Execute a pandas DataFrame merge, preserving the index of the first dataframe.
+    """Merge ``df1`` and ``df2``, preserving the index of the first dataframe.
 
-    :param pandas.DataFrame df1: first data frame, to call pandas merge from.
-    :param pandas.DataFrame df2: second data frame, argument to pandas merge.
-    :param \\*\\*kwargs: arbitrary keyword arguments passed to pandas merge call.
-    :return: (*pandas.DataFrame*) -- df1 merged with df2 with indices preserved.
+    :param pandas.DataFrame df1: first data frame, to call pandas ``merge()`` from.
+    :param pandas.DataFrame df2: second data frame, argument to pandas ``merge()``.
+    :param \\*\\*kwargs: arbitrary keyword arguments passed to pandas ``merge()``.
+    :return: (*pandas.DataFrame*) -- ``df1`` merged with ``df2`` with indices preserved.
     """
     return df1.reset_index().merge(df2, **kwargs).set_index(df1.index.names)
 
 
-def append_keep_index_name(df1, other, *args, **kwargs):
-    """Execute a pandas DataFrame append, preserving the index name of the dataframe.
+def append_keep_index_name(df1, df2, *args, **kwargs):
+    """Append ``df2`` to ``df1``, preserving the index name of the first data frame.
 
-    :param pandas.DataFrame df1: first data frame, to call pandas append from.
-    :param pandas.DataFrame/pandas.Series/list: first argument to pandas append method.
-    :param \\*args: arbitrary positional arguments passed to pandas append call.
-    :param \\*\\*kwargs: arbitrary keyword arguments passed to pandas append call.
-    :return: (*pandas.DataFrame*) -- df1 appended with other with index name preserved.
+    :param pandas.DataFrame df1: first data frame.
+    :param pandas.DataFrame df2: second data frame.
+    :param \\*args: arbitrary positional arguments passed to pandas ``concat()``.
+    :param \\*\\*kwargs: arbitrary keyword arguments passed to pandas ``concat()``.
+    :return: (*pandas.DataFrame*) -- ``df2`` appended to ``df1`` with index name set
+        to name of ``df1`` index.
     """
-    original_index_name = df1.index.name
-    new_df = df1.append(other, *args, **kwargs)
-    new_df.index.name = original_index_name
-    return new_df
+    df = pd.concat([df1, df2], *args, **kwargs)
+    df.index.name = df1.index.name
+    return df
 
 
 def calculate_ac_inv_costs(
@@ -239,17 +239,15 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
 
     # calculate transformer costs
     if len(transformers) > 0:
-        transformers["per_MW_cost"] = transformers.apply(
-            lambda x: xfmr_cost.iloc[
-                xfmr_cost.index.get_loc(
-                    bus.loc[x.from_bus_id, "baseKV"], method="nearest"
-                ),
-                xfmr_cost.columns.get_loc(
-                    bus.loc[x.to_bus_id, "baseKV"], method="nearest"
-                ),
-            ],
-            axis=1,
-        )
+        from_to_kv = [
+            xfmr_cost.index.get_indexer(
+                bus.loc[transformers[e], "baseKV"], method="nearest"
+            )
+            for e in ["from_bus_id", "to_bus_id"]
+        ]
+        transformers["per_MW_cost"] = [
+            xfmr_cost.iloc[f, t] for f, t in zip(from_to_kv[0], from_to_kv[1])
+        ]
         transformers["mult"] = transformers.apply(
             lambda x: get_branch_mult(x, bus_reg, ac_reg_mult), axis=1
         )
@@ -478,7 +476,7 @@ def _calculate_gen_inv_costs(grid_new, year, cost_case, sum_results=True):
                 "Technology == 'Nuclear' and CostCase == 'Moderate'"
             ).copy()
             new_nuclear.CostCase = cost_case
-            cost = cost.append(new_nuclear, ignore_index=True)
+            cost = pd.concat([cost, new_nuclear], ignore_index=True)
         cost = cost[cost["CostCase"] == cost_case]
         cost.drop(["CostCase"], axis=1, inplace=True)
 
