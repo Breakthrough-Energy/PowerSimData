@@ -83,7 +83,9 @@ def temporal_curtailment(
         *[set(base_plant_ids_by_type[g]) for g in valid_profile_types]
     )
     summed_profiles = (
-        all_profiles[plant_ids_for_summed_profiles].groupby(plant["type"], axis=1).sum()
+        all_profiles[list(plant_ids_for_summed_profiles)]
+        .groupby(plant["type"], axis=1)
+        .sum()
     )
 
     # Build up a series of firm generation
@@ -120,7 +122,7 @@ def temporal_curtailment(
             firm_generation += pd.Series(plant_pmin, index=summed_demand.index)
 
     # Finally, compare this summed firm generation against summed curtailable generation
-    total_curtailable = summed_profiles[curtailable].sum(axis=1)
+    total_curtailable = summed_profiles[list(curtailable)].sum(axis=1)
     net_demand = summed_demand - firm_generation
     curtailable_max_gen = pd.concat([net_demand, total_curtailable], axis=1).min(axis=1)
     curtailment_fraction = 1 - curtailable_max_gen.sum() / total_curtailable.sum()

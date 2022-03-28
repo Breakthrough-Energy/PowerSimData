@@ -130,8 +130,8 @@ def _check_plants_are_scaled(ct, base_grid, raw_profile, resource):
 
     unscaled_plant_id = set(plant_id_type) - set(scaled_plant_id)
     if unscaled_plant_id:
-        assert transformed_profile[unscaled_plant_id].equals(
-            base_profile[unscaled_plant_id]
+        assert transformed_profile[list(unscaled_plant_id)].equals(
+            base_profile[list(unscaled_plant_id)]
         )
     return transformed_profile
 
@@ -271,7 +271,9 @@ def test_demand_is_scaled(base_grid, raw_demand):
         base_demand[scaled_zone].multiply(factor, axis=1)
     )
     if unscaled_zone:
-        assert transformed_profile[unscaled_zone].equals(base_demand[unscaled_zone])
+        assert transformed_profile[list(unscaled_zone)].equals(
+            base_demand[list(unscaled_zone)]
+        )
 
 
 def test_solar_is_scaled_by_zone(base_grid, raw_solar):
