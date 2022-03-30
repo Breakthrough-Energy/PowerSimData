@@ -12,8 +12,11 @@ from powersimdata.input.grid import Grid
 
 def test_scale_factors():
     info = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": -3}
-    with pytest.raises(ValueError):
-        ScaleFactors(info)
+
+    invalid = (info, [1, 2, 3], {123: 456}, {"foo": "bar"})
+    for arg in invalid:
+        with pytest.raises(ValueError):
+            ScaleFactors(arg)
 
     info["advanced_heat_pump_v2"] = 0.3
     result = ScaleFactors(info)

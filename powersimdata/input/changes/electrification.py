@@ -8,6 +8,8 @@ def _check_scale_factors(scale_factors):
 
     :param dict scale_factors: see :func:`add_electrification`
     """
+    if not isinstance(scale_factors, dict):
+        raise ValueError("scale factors must be a dict")
     if not all(isinstance(k, str) for k in scale_factors):
         raise ValueError("profile name must be str")
     if not all(isinstance(d, (int, float)) for d in scale_factors.values()):
@@ -21,9 +23,9 @@ def _check_scale_factors(scale_factors):
 
 @dataclass
 class ScaleFactors:
-    """Map profile(s) to adoption rate
+    """Map technology to adoption rate
 
-    :param dict sf: a dictionary mapping profiles names to adoption rate
+    :param dict sf: a dictionary mapping tech to adoption rate
     """
 
     sf: Dict[str, float]
@@ -48,7 +50,7 @@ class AreaScaling:
 
     def __init__(self, info):
         if not isinstance(info, dict):
-            raise ValueError("scale factors must be a dict")
+            raise ValueError("zone/grid scaling must be a dict")
         if not all(isinstance(k, str) for k in info):
             raise ValueError("end use must be str")
         self.end_uses = {k: ScaleFactors(v) for k, v in info.items()}
@@ -59,7 +61,8 @@ class AreaScaling:
 
 @dataclass
 class ElectrifiedDemand:
-    """Container object for specifying profiles within a given class of electrification
+    """Container object for specifying zone or grid level adoption of any technologies
+    for a given class of electrification
 
     :param powersimdata.input.change_table.ChangeTable obj: change table
     :param dict info: see :func:`add_electrification`
@@ -89,7 +92,7 @@ class ElectrifiedDemand:
 
 
 def add_electrification(obj, kind, info):
-    """Add profiles and scaling factors for electrified demand.
+    """Add electrification profiles
 
     :param powersimdata.input.change_table.ChangeTable obj: change table
     :param str kind: the kind of demand, e.g. building
