@@ -304,9 +304,9 @@ class _Builder:
         hours = (end_ts - start_ts) / np.timedelta64(1, "h") + 1
         if start_ts > end_ts:
             raise ValueError("start_date > end_date")
-        elif start_ts < min_ts or start_ts >= max_ts:
+        elif start_ts < min_ts or start_ts > max_ts:
             raise ValueError("start_date not in [%s,%s[" % (min_ts, max_ts))
-        elif end_ts <= min_ts or end_ts > max_ts:
+        elif end_ts < min_ts or end_ts > max_ts:
             raise ValueError("end_date not in ]%s,%s]" % (min_ts, max_ts))
         elif hours % int(interval.split("H", 1)[0]) != 0:
             raise ValueError("Incorrect interval for start and end dates")
