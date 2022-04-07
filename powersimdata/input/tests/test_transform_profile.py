@@ -11,7 +11,7 @@ from powersimdata.input.grid import Grid
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.tests.mock_context import MockContext
-from powersimdata.tests.mock_input_data import MockProfileInput
+from powersimdata.tests.mock_profile_input import MockProfileInput
 
 interconnect = ["Western"]
 param = {

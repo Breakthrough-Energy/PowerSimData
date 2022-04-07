@@ -18,7 +18,7 @@ class MockProfileInput:
     :param str freq: frequency of times in profile.
     :param int random_seed: used to initialize the random generator.
     :raises ValueError: raised if `field_name` specified in `get_data()` is not specified by this mock
-    :return: (*powersimdata.tests.mock_input_data.MockProfileInput*)
+    :return: (*powersimdata.tests.mock_profile_input.MockProfileInput*)
     """
 
     _RESOURCES = {
