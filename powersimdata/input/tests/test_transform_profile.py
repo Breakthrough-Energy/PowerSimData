@@ -99,7 +99,7 @@ def _check_plants_are_scaled(ct, base_grid, raw_profile, resource):
     tg = TransformGrid(base_grid, ct)
     transformed_grid = tg.get_grid()
 
-    empty_scenario_info = {}  # scenario_info not needed since input_data is mocked
+    empty_scenario_info = {}  # scenario_info not needed since profile_input is mocked
     tp = TransformProfile(empty_scenario_info, transformed_grid, ct)
     transformed_profile = tp.get_profile(resource)
 
@@ -148,7 +148,7 @@ def _check_new_plants_are_added(ct, base_grid, raw_profile, resource):
     tg = TransformGrid(base_grid, ct)
     transformed_grid = tg.get_grid()
 
-    empty_scenario_info = {}  # scenario_info not needed since input_data is mocked
+    empty_scenario_info = {}  # scenario_info not needed since profile_input is mocked
     tp = TransformProfile(empty_scenario_info, transformed_grid, ct)
     transformed_profile = tp.get_profile(resource)
 
@@ -195,48 +195,48 @@ def base_grid():
 
 
 @pytest.fixture(scope="module")
-def input_data(base_grid):
-    mock_input_data = MockProfileInput(base_grid)
-    return mock_input_data
+def profile_input(base_grid):
+    mock_profile_input = MockProfileInput(base_grid)
+    return mock_profile_input
 
 
 @pytest.fixture(scope="module", autouse=True)
-def mock_input_data_class(input_data):
+def mock_profile_input_class(profile_input):
     with patch(
         "powersimdata.input.transform_profile.ProfileInput"
-    ) as mock_input_data_class:
-        mock_input_data_class.return_value = input_data
+    ) as mock_profile_input_class:
+        mock_profile_input_class.return_value = profile_input
         yield
 
 
 @pytest.fixture(scope="module")
-def raw_hydro(input_data):
-    return input_data.get_data({}, "hydro")
+def raw_hydro(profile_input):
+    return profile_input.get_data({}, "hydro")
 
 
 @pytest.fixture(scope="module")
-def raw_wind(input_data):
-    return input_data.get_data({}, "wind")
+def raw_wind(profile_input):
+    return profile_input.get_data({}, "wind")
 
 
 @pytest.fixture(scope="module")
-def raw_solar(input_data):
-    return input_data.get_data({}, "solar")
+def raw_solar(profile_input):
+    return profile_input.get_data({}, "solar")
 
 
 @pytest.fixture(scope="module")
-def raw_demand(input_data):
-    return input_data.get_data({}, "demand")
+def raw_demand(profile_input):
+    return profile_input.get_data({}, "demand")
 
 
 @pytest.fixture(scope="module")
-def raw_demand_flexibility_up(input_data):
-    return input_data.get_data({}, "demand_flexibility_up")
+def raw_demand_flexibility_up(profile_input):
+    return profile_input.get_data({}, "demand_flexibility_up")
 
 
 @pytest.fixture(scope="module")
-def raw_demand_flexibility_dn(input_data):
-    return input_data.get_data({}, "demand_flexibility_dn")
+def raw_demand_flexibility_dn(profile_input):
+    return profile_input.get_data({}, "demand_flexibility_dn")
 
 
 def test_demand_is_scaled(base_grid, raw_demand):
@@ -259,7 +259,7 @@ def test_demand_is_scaled(base_grid, raw_demand):
     tg = TransformGrid(base_grid, ct.ct)
     transformed_grid = tg.get_grid()
 
-    empty_scenario_info = {}  # scenario_info not needed since input_data is mocked
+    empty_scenario_info = {}  # scenario_info not needed since profile_input is mocked
     tp = TransformProfile(empty_scenario_info, transformed_grid, ct.ct)
     transformed_profile = tp.get_profile("demand")
     assert not base_demand.equals(transformed_profile)
