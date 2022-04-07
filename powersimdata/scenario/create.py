@@ -10,6 +10,7 @@ from powersimdata.input.input_data import (
     InputData,
     distribute_demand_from_zones_to_buses,
 )
+from powersimdata.input.profile_input import ProfileInput
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.network.model import ModelImmutables
@@ -321,7 +322,7 @@ class _Builder:
         :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         :return: (*list*) -- available version for selected profile kind.
         """
-        return InputData().get_profile_version(self.grid_model, kind)
+        return ProfileInput().get_profile_version(self.grid_model, kind)
 
     def set_base_profile(self, kind, version):
         """Sets demand profile.

@@ -11,7 +11,7 @@ from powersimdata.input.grid import Grid
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.tests.mock_context import MockContext
-from powersimdata.tests.mock_input_data import MockInputData
+from powersimdata.tests.mock_input_data import MockProfileInput
 
 interconnect = ["Western"]
 param = {
@@ -196,14 +196,14 @@ def base_grid():
 
 @pytest.fixture(scope="module")
 def input_data(base_grid):
-    mock_input_data = MockInputData(base_grid)
+    mock_input_data = MockProfileInput(base_grid)
     return mock_input_data
 
 
 @pytest.fixture(scope="module", autouse=True)
 def mock_input_data_class(input_data):
     with patch(
-        "powersimdata.input.transform_profile.InputData"
+        "powersimdata.input.transform_profile.ProfileInput"
     ) as mock_input_data_class:
         mock_input_data_class.return_value = input_data
         yield

@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from powersimdata.tests.mock_grid import MockGrid
-from powersimdata.tests.mock_input_data import MockInputData
+from powersimdata.tests.mock_input_data import MockProfileInput
 from powersimdata.tests.mock_scenario import MockScenario
 from powersimdata.tests.mock_scenario_info import MockScenarioInfo
 
@@ -131,10 +131,10 @@ class TestMockInputData:
         return grid
 
     def test_create_mock_input_data(self, grid):
-        assert MockInputData(grid) is not None
+        assert MockProfileInput(grid) is not None
 
     def test_happy_case(self, grid):
-        mock_input_data = MockInputData(grid, periods=3)
+        mock_input_data = MockProfileInput(grid, periods=3)
 
         demand = mock_input_data.get_data({}, "demand")
         expected_demand_values = np.array(
@@ -181,7 +181,7 @@ class TestMockInputData:
         self._assert_profile(hydro, expected_hydro_values, expected_hydro_plant_ids)
 
     def test_multiple_get_data_calls_returns_same_data(self, grid):
-        mock_input_data = MockInputData(grid)
+        mock_input_data = MockProfileInput(grid)
 
         for type in ("demand", "wind", "solar", "hydro"):
             profile1 = mock_input_data.get_data({}, type)
@@ -189,21 +189,21 @@ class TestMockInputData:
             pd.testing.assert_frame_equal(profile1, profile2)
 
     def test_no_start_time(self, grid):
-        mock_input_data = MockInputData(
+        mock_input_data = MockProfileInput(
             grid, start_time=None, end_time="2016-01-01 02:00", periods=3, freq="H"
         )
         demand = mock_input_data.get_data({}, "demand")
         self._assert_dates(demand.index)
 
     def test_no_end_time(self, grid):
-        mock_input_data = MockInputData(
+        mock_input_data = MockProfileInput(
             grid, start_time="2016-01-01 00:00", end_time=None, periods=3, freq="H"
         )
         demand = mock_input_data.get_data({}, "demand")
         self._assert_dates(demand.index)
 
     def test_no_period(self, grid):
-        mock_input_data = MockInputData(
+        mock_input_data = MockProfileInput(
             grid,
             start_time="2016-01-01 00:00",
             end_time="2016-01-01 02:00",
@@ -214,7 +214,7 @@ class TestMockInputData:
         self._assert_dates(demand.index)
 
     def test_no_freq(self, grid):
-        mock_input_data = MockInputData(
+        mock_input_data = MockProfileInput(
             grid,
             start_time="2016-01-01 00:00",
             end_time="2016-01-01 02:00",
@@ -226,13 +226,13 @@ class TestMockInputData:
 
     def test_raise_if_no_profile_specified(self, grid):
         with pytest.raises(ValueError) as exc:
-            mock_input_data = MockInputData(grid)
+            mock_input_data = MockProfileInput(grid)
             mock_input_data.get_data({}, "fusion")
         assert "No profile specified for fusion!" in str(exc.value)
 
     def test_raise_if_all_date_range_fields_present(self, grid):
         with pytest.raises(ValueError):
-            MockInputData(
+            MockProfileInput(
                 grid,
                 start_time="2016-01-01 00:00",
                 end_time="2016-01-01 02:00",

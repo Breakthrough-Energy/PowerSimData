@@ -1,6 +1,7 @@
 from fs.tempfs import TempFS
 
-from powersimdata.data_access.profile_helper import ProfileHelper, get_profile_version
+from powersimdata.data_access.data_access import get_profile_version
+from powersimdata.input.profile_input import ProfileInput
 
 
 def test_get_profile_version():
@@ -17,8 +18,7 @@ def test_get_profile_version():
         assert [] == v_missing
 
 
-def test_get_file_components():
+def test_get_file_path():
     s_info = {"base_wind": "v8", "grid_model": "europe"}
-    file_name, from_dir = ProfileHelper.get_file_components(s_info, "wind")
-    assert "wind_v8.csv" == file_name
-    assert ("raw", "europe") == from_dir
+    path = ProfileInput()._get_file_path(s_info, "wind")
+    assert "raw/europe/wind_v8.csv" == path
