@@ -12,9 +12,9 @@ def add_demand_flexibility(obj, info):
         keys corresponds to the profile version of the profile in question.
         Required keys: "demand_flexibility_up", "demand_flexibility_dn".
         Optional keys: "demand_flexibility_duration", "demand_flexibility_cost_up",
-            "demand_flexibility_cost_dn".
-    :raises TypeError:
-    :raises ValueError:
+        "demand_flexibility_cost_dn".
+    :raises TypeError: if info is not a dict
+    :raises ValueError: if duration is not a positive int, or if no profile is found
     """
 
     # Check inputs
