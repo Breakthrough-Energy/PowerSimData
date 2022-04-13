@@ -5,12 +5,17 @@ from powersimdata.design.transmission.upgrade import (
     scale_congested_mesh_branches,
     scale_renewable_stubs,
 )
-from powersimdata.input.changes.bus import add_bus, remove_bus
-from powersimdata.input.changes.electrification import add_electrification
-from powersimdata.input.changes.helpers import ordinal
-from powersimdata.input.changes.plant import add_plant, remove_plant, scale_plant_pmin
-from powersimdata.input.changes.storage import add_storage_capacity
-from powersimdata.input.input_data import InputData
+from powersimdata.input.changes import (
+    add_bus,
+    add_demand_flexibility,
+    add_electrification,
+    add_plant,
+    add_storage_capacity,
+    ordinal,
+    remove_bus,
+    remove_plant,
+    scale_plant_pmin,
+)
 from powersimdata.input.transform_grid import TransformGrid
 
 _resources = (
@@ -471,56 +476,9 @@ class ChangeTable:
     def add_demand_flexibility(self, info):
         """Adds demand flexibility to the system.
 
-        :param dict info: Each key refers to a different component required to
-            parameterize the demand flexibility model. Each value associated with the
-            keys corresponds to the profile version of the profile in question.
-            Required keys: "demand_flexibility_up", "demand_flexibility_dn".
-            Optional keys: "demand_flexibility_duration", "demand_flexibility_cost_up",
-                "demand_flexibility_cost_dn".
-        :raises TypeError:
-        :raises ValueError:
+        See :func:`powersimdata.input.changes.demand_flex.add_demand_flexibility`
         """
-
-        # Check inputs
-        if not isinstance(info, dict):
-            raise TypeError(
-                "Argument enclosing new demand flexibility info must be a dictionary."
-            )
-        info = copy.deepcopy(info)
-        required = {"demand_flexibility_up", "demand_flexibility_dn"}
-        optional = {
-            "demand_flexibility_duration",
-            "demand_flexibility_cost_up",
-            "demand_flexibility_cost_dn",
-        }
-        self._check_entry_keys(info, 0, "demand_flexibility", required, None, optional)
-
-        # Add a key for demand flexibility in the change table, if necessary
-        if "demand_flexibility" not in self.ct:
-            self.ct["demand_flexibility"] = {}
-
-        # Access the specified demand flexibility profiles that are required
-        for k in required | (optional & info.keys()):
-            if k == "demand_flexibility_duration":
-                # Check that demand flexibility duration is an integer and positive
-                if not isinstance(info[k], int):
-                    raise ValueError(f"The value of {k} is not integer-valued.")
-                if info[k] <= 0:
-                    raise ValueError(f"The value of {k} is not positive.")
-                self.ct["demand_flexibility"][k] = info[k]
-            else:
-                # Determine the available profile versions
-                possible = InputData().get_profile_version(self.grid.grid_model, k)
-
-                # Add the profile to the change table
-                if len(possible) == 0:
-                    del self.ct["demand_flexibility"]
-                    raise ValueError(f"No {k} profile available.")
-                elif info[k] in possible:
-                    self.ct["demand_flexibility"][k] = info[k]
-                else:
-                    del self.ct["demand_flexibility"]
-                    raise ValueError(f"Available {k} profiles: {', '.join(possible)}")
+        add_demand_flexibility(self, info)
 
     def add_electrification(self, kind, info):
         """Add profiles and scaling factors for electrified demand.

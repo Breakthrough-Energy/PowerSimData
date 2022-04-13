@@ -1,6 +1,6 @@
 import copy
 
-from powersimdata.input.changes.helpers import ordinal
+from powersimdata.input.changes import ordinal
 
 
 def add_storage_capacity(obj, info):
