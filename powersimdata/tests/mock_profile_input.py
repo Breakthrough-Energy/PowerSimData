@@ -4,9 +4,9 @@ import pandas as pd
 from powersimdata.input.grid import Grid
 
 
-class MockInputData:
+class MockProfileInput:
     """
-    MockInputData is a mock of powersimdata.input.input_data.InputData
+    MockInputData is a mock of powersimdata.input.profile_input.ProfileInput
     that generates random profiles.
 
     Exactly 3 of {`start_time`, `end_time`, `periods`, `freq`} must be specified. See <https://pandas.pydata.org/docs/reference/api/pandas.date_range.html>.
@@ -18,7 +18,7 @@ class MockInputData:
     :param str freq: frequency of times in profile.
     :param int random_seed: used to initialize the random generator.
     :raises ValueError: raised if `field_name` specified in `get_data()` is not specified by this mock
-    :return: (*powersimdata.tests.mock_input_data.MockInputData*)
+    :return: (*powersimdata.tests.mock_profile_input.MockProfileInput*)
     """
 
     _RESOURCES = {

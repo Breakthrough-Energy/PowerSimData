@@ -1,6 +1,6 @@
 import copy
 
-from powersimdata.input.input_data import InputData
+from powersimdata.input.profile_input import ProfileInput
 
 
 class TransformProfile:
@@ -18,7 +18,7 @@ class TransformProfile:
         :param bool slice: whether to slice the profiles by the Scenario's time range.
         """
         self.slice = slice
-        self._input_data = InputData()
+        self._profile_input = ProfileInput()
         self.scenario_info = {**self._default_dates, **scenario_info}
 
         self.ct = copy.deepcopy(ct)
@@ -61,7 +61,7 @@ class TransformProfile:
             .index
         )
 
-        profile = self._input_data.get_data(self.scenario_info, resource)[plant_id]
+        profile = self._profile_input.get_data(self.scenario_info, resource)[plant_id]
         scaled_profile = self._scale_plant_profile(profile)
 
         if self.n_new_clean_plant > 0:
@@ -107,7 +107,9 @@ class TransformProfile:
         :return: (*pandas.DataFrame*) -- data frame of demand.
         """
         zone_id = sorted(self.grid.bus.zone_id.unique())
-        demand = self._input_data.get_data(self.scenario_info, "demand").loc[:, zone_id]
+        demand = self._profile_input.get_data(self.scenario_info, "demand").loc[
+            :, zone_id
+        ]
         if bool(self.ct) and "demand" in list(self.ct.keys()):
             for key, value in self.ct["demand"]["zone_id"].items():
                 print(
@@ -129,7 +131,7 @@ class TransformProfile:
         # Access the specified demand flexibility profile
         flex_dem_dict = self.ct["demand_flexibility"]
         flex_dem_dict["grid_model"] = self.scenario_info["grid_model"]
-        df = self._input_data.get_data(flex_dem_dict, name)
+        df = self._profile_input.get_data(flex_dem_dict, name)
 
         # Determine if the demand flexibility profile is indexed by zone, bus, or both
         area_indicator = [1 if "zone." in x else 0 for x in df.columns]

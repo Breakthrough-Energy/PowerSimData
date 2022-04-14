@@ -9,42 +9,12 @@ from fs.multifs import MultiFS
 from fs.path import basename, dirname
 from fs.tempfs import TempFS
 
-from powersimdata.data_access.profile_helper import get_profile_version
-from powersimdata.data_access.ssh_fs import WrapSSHFS
+from powersimdata.data_access.fs_helper import (
+    get_blob_fs,
+    get_multi_fs,
+    get_profile_version,
+)
 from powersimdata.utility import server_setup
-
-
-def get_blob_fs(container):
-    account = "besciences"
-    return fs.open_fs(f"azblob://{account}@{container}")
-
-
-def get_ssh_fs(root=""):
-    host = server_setup.SERVER_ADDRESS
-    port = server_setup.SERVER_SSH_PORT
-    username = server_setup.get_server_user()
-    base_fs = fs.open_fs(f"ssh://{username}@{host}:{port}")
-    return WrapSSHFS(base_fs, root)
-
-
-def get_multi_fs(root):
-    """Create filesystem combining the server (if connected) with profile and scenario
-    containers in blob storage. The priority is in descending order, so the server will
-    be used first if possible
-    """
-    scenario_data = get_blob_fs("scenariodata")
-    profiles = get_blob_fs("profiles")
-    mfs = MultiFS()
-    try:
-        ssh_fs = get_ssh_fs(root)
-        mfs.add_fs("ssh_fs", ssh_fs, write=True, priority=3)
-    except:  # noqa
-        print("Could not connect to ssh server")
-    mfs.add_fs("profile_fs", profiles, priority=2)
-    mfs.add_fs("scenario_fs", scenario_data, priority=1)
-    remotes = ",".join([f[0] for f in mfs.iterate_fs()])
-    print(f"Initialized remote filesystem with {remotes}")
-    return mfs
 
 
 class DataAccess:

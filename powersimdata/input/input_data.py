@@ -3,139 +3,47 @@ import pickle
 
 import pandas as pd
 
-from powersimdata.data_access.context import Context
-from powersimdata.data_access.profile_helper import ProfileHelper
+from powersimdata.input.input_base import InputBase
 from powersimdata.utility import server_setup
-from powersimdata.utility.helpers import MemoryCache, cache_key
-
-_cache = MemoryCache()
-
-profile_kind = {
-    "demand",
-    "hydro",
-    "solar",
-    "wind",
-    "demand_flexibility_up",
-    "demand_flexibility_dn",
-    "demand_flexibility_cost_up",
-    "demand_flexibility_cost_dn",
-}
 
 
-_file_extension = {
-    **{"ct": "pkl", "grid": "mat"},
-    **{k: "csv" for k in profile_kind},
-}
-
-
-class InputHelper:
-    @staticmethod
-    def get_file_components(scenario_info, field_name):
-        """Get the file name and relative path for either ct or grid.
-
-        :param dict scenario_info: metadata for a scenario.
-        :param str field_name: the input file type.
-        :return: (*tuple*) -- file name and list of path components.
-        """
-        ext = _file_extension[field_name]
-        file_name = scenario_info["id"] + "_" + field_name + "." + ext
-        return file_name, server_setup.INPUT_DIR
-
-
-def _check_field(field_name):
-    """Checks field name.
-
-    :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
-        *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
-        *'demand_flexibility_cost_up'*, *'demand_flexibility_cost_dn'*, *'ct'*, or
-        *'grid'*.
-    :raises ValueError: if not *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
-        *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
-        *'demand_flexibility_cost_up'*, *'demand_flexibility_cost_dn'*, *'ct'*, or
-        *'grid'*.
-    """
-    possible = list(_file_extension.keys())
-    if field_name not in possible:
-        raise ValueError("Only %s data can be loaded" % " | ".join(possible))
-
-
-def _read(f, filepath):
-    """Read data from file object
-
-    :param io.IOBase f: a file handle
-    :param str filepath: the filepath corresponding to f
-    :raises ValueError: if extension is unknown.
-    :return: object -- the result
-    """
-    ext = os.path.basename(filepath).split(".")[-1]
-    if ext == "pkl":
-        data = pd.read_pickle(f)
-    elif ext == "csv":
-        data = pd.read_csv(f, index_col=0, parse_dates=True)
-        if "demand_flexibility" in filepath:
-            data.columns = data.columns.astype(str)
-        else:
-            data.columns = data.columns.astype(int)
-    elif ext == "mat":
-        # get fully qualified local path to matfile
-        data = os.path.abspath(filepath)
-    else:
-        raise ValueError("Unknown extension! %s" % ext)
-
-    return data
-
-
-class InputData:
+class InputData(InputBase):
     """Load input data."""
 
     def __init__(self):
-        """Constructor."""
-        self.data_access = Context.get_data_access()
+        super().__init__()
+        self._file_extension = {"ct": "pkl", "grid": "mat"}
 
-    def get_data(self, scenario_info, field_name):
-        """Returns data either from server or local directory.
+    def _get_file_path(self, scenario_info, field_name):
+        """Get the path to either grid or ct for the scenario
 
-        :param dict scenario_info: scenario information.
-        :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
-            *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
-            *'demand_flexibility_cost_up'*, *'demand_flexibility_cost_dn'*, *'ct'*, or
-            *'grid'*.
-        :return: (*pandas.DataFrame*, *dict*, or *str*) -- demand, hydro, solar, wind,
-            demand_flexibility_up, demand_flexibility_dn, demand_flexibility_cost_up,
-            or demand_flexibility_cost_dn as a data frame; change table as a dictionary;
-            or the path to a matfile enclosing the grid data.
-        :raises FileNotFoundError: if file not found on local machine.
+        :param dict scenario_info: metadata for a scenario.
+        :param str field_name: either 'grid' or 'ct'
+        :return: (*str*) -- the pyfilesystem path to the file
         """
-        _check_field(field_name)
-        print("--> Loading %s" % field_name)
+        ext = self._file_extension[field_name]
+        file_name = scenario_info["id"] + "_" + field_name + "." + ext
+        return "/".join([*server_setup.INPUT_DIR, file_name])
 
-        if field_name in profile_kind:
-            helper = ProfileHelper
+    def _read(self, f, path):
+        """Read data from file object
+
+        :param io.IOBase f: an open file object
+        :param str path: the path corresponding to f
+        :raises ValueError: if extension is unknown.
+        :return: (*dict* or *powersimdata.input.grid.Grid*) -- either a change table
+            dict or grid object
+        """
+        ext = os.path.basename(path).split(".")[-1]
+        if ext == "pkl":
+            data = pd.read_pickle(f)
+        elif ext == "mat":
+            # get fully qualified local path to matfile
+            data = os.path.abspath(path)
         else:
-            helper = InputHelper
+            raise ValueError("Unknown extension! %s" % ext)
 
-        file_name, from_dir = helper.get_file_components(scenario_info, field_name)
-
-        filepath = "/".join([*from_dir, file_name])
-        key = cache_key(filepath)
-        cached = _cache.get(key)
-        if cached is not None:
-            return cached
-        with self.data_access.get(filepath) as (f, path):
-            data = _read(f, path)
-        _cache.put(key, data)
         return data
-
-    def get_profile_version(self, grid_model, kind):
-        """Returns available raw profile from blob storage or local disk.
-
-        :param str grid_model: grid model.
-        :param str kind: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
-            *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
-            *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
-        :return: (*list*) -- available profile version.
-        """
-        return self.data_access.get_profile_version(grid_model, kind)
 
     def save_change_table(self, ct, scenario_id):
         """Saves change table to the data store.

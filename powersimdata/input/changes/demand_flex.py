@@ -1,6 +1,6 @@
 import copy
 
-from powersimdata.input.input_data import InputData
+from powersimdata.input.profile_input import ProfileInput
 
 
 def add_demand_flexibility(obj, info):
@@ -46,7 +46,7 @@ def add_demand_flexibility(obj, info):
             obj.ct["demand_flexibility"][k] = info[k]
         else:
             # Determine the available profile versions
-            possible = InputData().get_profile_version(obj.grid.grid_model, k)
+            possible = ProfileInput().get_profile_version(obj.grid.grid_model, k)
 
             # Add the profile to the change table
             if len(possible) == 0:
