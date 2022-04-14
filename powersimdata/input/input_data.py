@@ -11,29 +11,35 @@ class InputData(InputBase):
     """Load input data."""
 
     def __init__(self):
-        """Constructor."""
         super().__init__()
         self._file_extension = {"ct": "pkl", "grid": "mat"}
 
     def _get_file_path(self, scenario_info, field_name):
+        """Get the path to either grid or ct for the scenario
+
+        :param dict scenario_info: metadata for a scenario.
+        :param str field_name: either 'grid' or 'ct'
+        :return: (*str*) -- the pyfilesystem path to the file
+        """
         ext = self._file_extension[field_name]
         file_name = scenario_info["id"] + "_" + field_name + "." + ext
         return "/".join([*server_setup.INPUT_DIR, file_name])
 
-    def _read(self, f, filepath):
+    def _read(self, f, path):
         """Read data from file object
 
-        :param io.IOBase f: a file handle
-        :param str filepath: the filepath corresponding to f
+        :param io.IOBase f: an open file object
+        :param str path: the path corresponding to f
         :raises ValueError: if extension is unknown.
-        :return: object -- the result
+        :return: (*dict* or *powersimdata.input.grid.Grid*) -- either a change table
+            dict or grid object
         """
-        ext = os.path.basename(filepath).split(".")[-1]
+        ext = os.path.basename(path).split(".")[-1]
         if ext == "pkl":
             data = pd.read_pickle(f)
         elif ext == "mat":
             # get fully qualified local path to matfile
-            data = os.path.abspath(filepath)
+            data = os.path.abspath(path)
         else:
             raise ValueError("Unknown extension! %s" % ext)
 

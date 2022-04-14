@@ -5,7 +5,9 @@ _cache = MemoryCache()
 
 
 class InputBase:
-    """Load input data."""
+    """Define abstract methods and common implementation for subclasses that interact
+    with scenario input data.
+    """
 
     def __init__(self):
         """Constructor."""
@@ -23,17 +25,30 @@ class InputBase:
             raise ValueError("Only %s data can be loaded" % " | ".join(possible))
 
     def _get_file_path(self, scenario_info, field_name):
+        """Get the path to a file for the scenario
+
+        :param dict scenario_info: metadata for a scenario.
+        :param str field_name: defined by subclass
+        :return: (*str*) -- the pyfilesystem path to the file
+        """
         raise NotImplementedError
 
     def _read(self, f, path):
+        """Read content from file object into data frame
+
+        :param io.IOBase f: an open file object
+        :param str path: the file path
+        :return: (*object*) -- implementation dependent
+        """
         raise NotImplementedError
 
     def get_data(self, scenario_info, field_name):
-        """Returns data either from server or local directory.
+        """Returns data from (possibly remote) filesystem and cache
+        the result in memory.
 
         :param dict scenario_info: scenario information.
         :param str field_name: defined by subclass
-        :return: (*pandas.DataFrame*, *dict*, or *str*) -- implementation dependent
+        :return: (*object*) -- implementation dependent
         """
         self._check_field(field_name)
         print("--> Loading %s" % field_name)

@@ -15,18 +15,18 @@ profile_kind = {
 
 
 class ProfileInput(InputBase):
+    """Loads profile data"""
+
     def __init__(self):
-        """Constructor."""
         super().__init__()
         self._file_extension = {k: "csv" for k in profile_kind}
 
     def _get_file_path(self, scenario_info, field_name):
-        """Get the file name and relative path for the given profile and
-        scenario.
+        """Get the path to the specified profile
 
         :param dict scenario_info: metadata for a scenario.
         :param str field_name: the kind of profile.
-        :return: (*tuple*) -- file name and list of path components.
+        :return: (*str*) -- the pyfilesystem path to the file
         """
         if "demand_flexibility" in field_name:
             version = scenario_info[field_name]
@@ -37,6 +37,12 @@ class ProfileInput(InputBase):
         return "/".join(["raw", grid_model, file_name])
 
     def _read(self, f, path):
+        """Read content from file object into data frame
+
+        :param io.IOBase f: an open file object
+        :param str path: the file path
+        :return: (*pandas.DataFrame*) -- profile data frame
+        """
         data = pd.read_csv(f, index_col=0, parse_dates=True)
         if "demand_flexibility" in path:
             data.columns = data.columns.astype(str)
