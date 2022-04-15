@@ -1,7 +1,6 @@
 from fs.tempfs import TempFS
 
-from powersimdata.data_access.data_access import get_profile_version
-from powersimdata.input.profile_input import ProfileInput
+from powersimdata.input.profile_input import ProfileInput, get_profile_version
 
 
 def test_get_profile_version():
