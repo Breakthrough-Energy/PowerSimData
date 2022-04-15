@@ -24,7 +24,7 @@ class ElectrifiedDemand(ProfileInput):
         :param str profile: the filename
         :return: (*pandas.DataFrame*) -- profile data frame
         """
-        path = f"raw/{grid_model}/electrification/{kind}/{profile}.csv"
+        path = f"raw/{grid_model}/{kind}/{profile}.csv"
         return self._get_data_internal(path)
 
     def get_profile_version(self, grid_model, kind, end_use, tech):
