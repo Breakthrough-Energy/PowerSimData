@@ -1,45 +1,52 @@
 import pytest
 
-from powersimdata.network.usa_tamu.model import TAMU, check_and_format_interconnect
+from powersimdata.network.helpers import check_and_format_interconnect
+from powersimdata.network.usa_tamu.model import TAMU
 
 
 def _assert_lists_equal(a, b):
     assert sorted(a) == sorted(b)
 
 
-def test_interconnect_type():
-    interconnect = 42
-    with pytest.raises(TypeError):
-        check_and_format_interconnect(interconnect)
+def test_check_and_format_interconnect_argument_type():
+    with pytest.raises(
+        TypeError, match="interconnect must be either str or an iterable of str"
+    ):
+        check_and_format_interconnect(42)
+
+    with pytest.raises(
+        TypeError, match="interconnect must be either str or an iterable of str"
+    ):
+        check_and_format_interconnect([42, "Western"])
+
+    with pytest.raises(TypeError, match="model must be a str"):
+        check_and_format_interconnect("Eastern", model=1)
 
 
-def test_interconnect_value():
-    interconnect = ["Canada"]
+def test_check_and_format_interconnect_argument_value():
+    with pytest.raises(ValueError):
+        check_and_format_interconnect("Eastern", model="tamu")
+
+    interconnect = "Canada"
     with pytest.raises(ValueError):
         check_and_format_interconnect(interconnect)
 
-
-def test_interconnect_duplicate_value():
-    interconnect = ["Western", "Western", "Texas"]
-    result = check_and_format_interconnect(interconnect)
-    _assert_lists_equal(["Western", "Texas"], result)
-
-
-def test_interconnect_usa_is_unique():
     interconnect = ["Western", "USA"]
     with pytest.raises(ValueError, match="USA cannot be paired"):
-        check_and_format_interconnect(interconnect)
+        check_and_format_interconnect(interconnect, model="usa_tamu")
 
 
-def test_interconnect_iterable():
-    result = check_and_format_interconnect({"Texas", "Eastern"})
-    _assert_lists_equal(["Eastern", "Texas"], result)
+def test_check_and_format_interconnect():
+    result = check_and_format_interconnect({"ERCOT", "Eastern"})
+    _assert_lists_equal(["Eastern", "ERCOT"], result)
 
-    result = check_and_format_interconnect(("Texas", "Eastern"))
-    _assert_lists_equal(["Eastern", "Texas"], result)
+    result = check_and_format_interconnect(("ERCOT", "Eastern"))
+    _assert_lists_equal(["Eastern", "ERCOT"], result)
 
+    interconnect = ["Western", "Western", "Texas"]
+    result = check_and_format_interconnect(interconnect, model="usa_tamu")
+    _assert_lists_equal(["Western", "Texas"], result)
 
-def test_interconnect():
     arg = ("Western", ["Eastern", "Western"])
     expected = (["Western"], ["Eastern", "Western"])
     for a, e in zip(arg, expected):
