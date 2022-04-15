@@ -19,12 +19,12 @@ class Grid:
 
     """Grid
 
-    :param str/iterable interconnect: geographical region covered. Either *'USA'*, one of
-        the three interconnections, i.e., *'Eastern'*, *'Western'* or *'Texas'* or a
-        combination of two interconnections.
-    :param str source: model used to build the network. Can be one of the
-        supported models ("usa_tamu"), or a .mat file that represents a
-        grid.
+    :param str/iterable interconnect: geographical region covered. Either the region
+        (e.g. USA), one of the interconnects in the region or a combination of the
+        interconnects in the region. The full list of interconnects of the grid models
+        is defined in :mod:`powersimdata.network.constants.model.model2interconnect`.
+    :param str source: model used to build the network. Can be one of the supported
+        models, or a .mat file that represents a grid.
     :param str engine: engine used to run scenario, if using ScenarioGrid.
     :raises TypeError: if source and engine are not both strings.
     :raises ValueError: if source or engine does not exist.
