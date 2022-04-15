@@ -8,8 +8,9 @@ class TransformDemand:
         self.info = self.ct[kind]
         self._profile_input = ProfileInput()
         self.scenario_info = {"base_demand": "vJan2021", "grid_model": grid.grid_model}
+        self._set_scale_factors()
 
-    def _get_profile(self, profile):
+    def _get_base_profile(self, profile):
         print(f"temporarily ignoring {profile}")
         zone_id = sorted(self.grid.bus.zone_id.unique())
         demand = self._profile_input.get_data(self.scenario_info, "demand").loc[
@@ -43,13 +44,13 @@ class TransformDemand:
                 p2g[profile].append(scale_factor)
         return p2g
 
-    def _get_scale_factors(self):
-        p2z = self._get_profile_to_zone()
-        p2g = self._get_profile_to_grid()
-        return p2z, p2g
+    def _set_scale_factors(self):
+        self.p2z = self._get_profile_to_zone()
+        self.p2g = self._get_profile_to_grid()
 
-    def _scale_profile(self, profile, p2z, p2g):
-        df = self._get_profile(profile)
+    def get_profile(self, profile):
+        p2z, p2g = self.p2z, self.p2g
+        df = self._get_base_profile(profile)
 
         if profile in p2z:
             for zone_id, scale_factor in p2z[profile]:
@@ -65,6 +66,5 @@ class TransformDemand:
         return df
 
     def value(self):
-        p2z, p2g = self._get_scale_factors()
-        profiles = set(p2z.keys()) | set(p2g.keys())
-        return sum(self._scale_profile(p, p2z, p2g) for p in profiles)
+        profiles = set(self.p2z.keys()) | set(self.p2g.keys())
+        return sum(self.get_profile(p) for p in profiles)
