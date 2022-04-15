@@ -8,18 +8,18 @@ from powersimdata.input.helpers import (
     add_zone_to_grid_data_frames,
     csv_to_data_frame,
 )
+from powersimdata.network.constants.model import model2region
 from powersimdata.network.csv_reader import CSVReader
+from powersimdata.network.helpers import check_and_format_interconnect
 
 
 class AbstractGrid:
-    """Grid Builder. Child classes must assign self.top_dirname and
-    self.umbrella_interconnect before self.__init__ is called, or re-define the __init__
-    and/or methods called within the __init__ to avoid an AttributeError.
-    """
+    """Grid Builder."""
 
     def __init__(self):
         """Constructor"""
         self.data_loc = None
+        self.interconnect = None
         self.zone2id = {}
         self.id2zone = {}
         self.sub = pd.DataFrame()
@@ -30,22 +30,25 @@ class AbstractGrid:
         self.bus = pd.DataFrame()
         self.branch = pd.DataFrame()
         self.storage = storage_template()
-        self._set_data_loc()
-        self._build_network()
 
-    def _set_data_loc(self):
+    def _set_data_loc(self, top_dirname):
         """Sets data location.
 
+        :param str top_dirname: name of directory enclosing data.
         :raises IOError: if directory does not exist.
         """
-        data_loc = os.path.join(self.top_dirname, "data")
+        data_loc = os.path.join(top_dirname, "data")
         if os.path.isdir(data_loc) is False:
             raise IOError("%s directory not found" % data_loc)
         else:
             self.data_loc = data_loc
 
-    def _build_network(self):
-        """Build network."""
+    def _build_network(self, interconnect, grid_model):
+        """Build network.
+
+        :param str/iterable interconnect: interconnect name(s).
+        :param str model: the grid model.
+        """
         reader = CSVReader(self.data_loc)
         self.bus = reader.bus
         self.plant = reader.plant
@@ -53,9 +56,10 @@ class AbstractGrid:
         self.dcline = reader.dcline
         self.gencost["after"] = self.gencost["before"] = reader.gencost
 
+        self.interconnect = check_and_format_interconnect(interconnect, grid_model)
         self._add_information_to_model()
 
-        if self.umbrella_interconnect not in self.interconnect:
+        if model2region[grid_model] not in self.interconnect:
             self._drop_interconnect()
 
     def _add_information_to_model(self):
