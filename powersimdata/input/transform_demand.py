@@ -31,12 +31,40 @@ class TransformDemand:
                     p2z[profile].append((zone_id, scale_factor))
         return p2z
 
-    def _scale_profile(self, profile, p2z):
+    def _get_profile_to_grid(self):
+        info = self.info
+        p2g = {}
+        for end_use in info["grid"].keys():
+            for tech in info["grid"][end_use].keys():
+                profile = f"{end_use}_{tech}.csv"
+                if profile not in p2g:
+                    p2g[profile] = []
+                scale_factor = info["grid"][end_use][tech]
+                p2g[profile].append(scale_factor)
+        return p2g
+
+    def _get_scale_factors(self):
+        p2z = self._get_profile_to_zone()
+        p2g = self._get_profile_to_grid()
+        return p2z, p2g
+
+    def _scale_profile(self, profile, p2z, p2g):
         df = self._get_profile(profile)
-        for zone_id, scale_factor in p2z[profile]:
-            df.loc[:, zone_id] *= scale_factor
+
+        if profile in p2z:
+            for zone_id, scale_factor in p2z[profile]:
+                df.loc[:, zone_id] *= scale_factor
+            exclude_zones = [_[0] for _ in p2z[profile]]
+        else:
+            exclude_zones = []
+
+        if profile in p2g:
+            scale_factor = p2g[profile]
+            df.loc[:, ~df.columns.isin(exclude_zones)] *= scale_factor
+
         return df
 
     def value(self):
-        p2z = self._get_profile_to_zone()
-        return sum(self._scale_profile(profile, p2z) for profile in p2z)
+        p2z, p2g = self._get_scale_factors()
+        profiles = set(p2z.keys()) | set(p2g.keys())
+        return sum(self._scale_profile(p, p2z, p2g) for p in profiles)
