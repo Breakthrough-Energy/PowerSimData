@@ -19,12 +19,18 @@ class ModelImmutables:
         check_model(model)
         self.model = model
 
-        self.plants = self._import_constants("plants")
+        self.plants = self._import_generator_related_constants()
         self.storage = storage[model]
         self.zones = self._import_constants("zones")
 
         self.check_and_format_interconnect = check_and_format_interconnect
         self.interconnect_to_name = interconnect_to_name
+
+    @staticmethod
+    def _import_generator_related_constants():
+        """Import generator related constants."""
+        mod = import_module("powersimdata.network.constants.plants")
+        return {a: getattr(mod, a) for a in dir(mod)}
 
     def _import_constants(self, kind):
         """Import constants related to the grid model.
