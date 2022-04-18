@@ -1,7 +1,7 @@
 import os
 
 from powersimdata.input.abstract_grid import AbstractGrid
-from powersimdata.network.usa_tamu.constants.storage import defaults
+from powersimdata.network.constants.storage import storage
 
 
 class TAMU(AbstractGrid):
@@ -12,8 +12,9 @@ class TAMU(AbstractGrid):
 
     def __init__(self, interconnect):
         """Constructor."""
+        model = "usa_tamu"
         super().__init__()
 
         self._set_data_loc(os.path.dirname(__file__))
-        self._build_network(interconnect, "usa_tamu")
-        self.storage.update(defaults)
+        self._build_network(interconnect, model)
+        self.storage.update(storage[model])

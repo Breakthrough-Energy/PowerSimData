@@ -1,6 +1,7 @@
 from importlib import import_module
 
 from powersimdata.network.constants.model import model2region
+from powersimdata.network.constants.storage import storage
 from powersimdata.network.helpers import (
     check_and_format_interconnect,
     interconnect_to_name,
@@ -19,7 +20,7 @@ class ModelImmutables:
         self.model = model
 
         self.plants = self._import_constants("plants")
-        self.storage = self._import_constants("storage")
+        self.storage = storage[model]
         self.zones = self._import_constants("zones")
 
         self.check_and_format_interconnect = check_and_format_interconnect
