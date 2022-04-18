@@ -1,11 +1,21 @@
 import pytest
 
-from powersimdata.network.helpers import check_and_format_interconnect
+from powersimdata.network.helpers import check_and_format_interconnect, check_model
 from powersimdata.network.usa_tamu.model import TAMU
 
 
 def _assert_lists_equal(a, b):
     assert sorted(a) == sorted(b)
+
+
+def test_check_model_argument_type():
+    with pytest.raises(TypeError, match="model must be a str"):
+        check_model(1)
+
+
+def test_check_model_argument_value():
+    with pytest.raises(ValueError):
+        check_model("tamu")
 
 
 def test_check_and_format_interconnect_argument_type():
@@ -19,14 +29,8 @@ def test_check_and_format_interconnect_argument_type():
     ):
         check_and_format_interconnect([42, "Western"])
 
-    with pytest.raises(TypeError, match="model must be a str"):
-        check_and_format_interconnect("Eastern", model=1)
-
 
 def test_check_and_format_interconnect_argument_value():
-    with pytest.raises(ValueError):
-        check_and_format_interconnect("Eastern", model="tamu")
-
     interconnect = "Canada"
     with pytest.raises(ValueError):
         check_and_format_interconnect(interconnect)
