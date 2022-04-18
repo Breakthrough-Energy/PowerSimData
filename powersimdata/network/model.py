@@ -1,9 +1,9 @@
 from importlib import import_module
 
-from powersimdata.network.constants.model import model2region
 from powersimdata.network.constants.storage import storage
 from powersimdata.network.helpers import (
     check_and_format_interconnect,
+    check_model,
     interconnect_to_name,
 )
 
@@ -16,7 +16,7 @@ class ModelImmutables:
 
     def __init__(self, model):
         """Constructor."""
-        self._check_model(model)
+        check_model(model)
         self.model = model
 
         self.plants = self._import_constants("plants")
@@ -25,16 +25,6 @@ class ModelImmutables:
 
         self.check_and_format_interconnect = check_and_format_interconnect
         self.interconnect_to_name = interconnect_to_name
-
-    @staticmethod
-    def _check_model(model):
-        """Check that a grid model exists.
-
-        :param str model: grid model name
-        :raises ValueError: if grid model does not exist.
-        """
-        if model not in model2region:
-            raise ValueError(f"Invalid model. Choose among {' | '.join(model2region)}")
 
     def _import_constants(self, kind):
         """Import constants related to the grid model.
