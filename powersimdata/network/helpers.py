@@ -1,23 +1,30 @@
 from powersimdata.network.constants.model import model2interconnect, model2region
 
 
-def check_and_format_interconnect(interconnect, model="hifld"):
-    """Checks interconnect in a grid model.
+def check_model(model):
+    """Check that a grid model exists.
 
-    :param str/iterable interconnect: interconnect name(s).
-    :param str model: the grid model.
-    :return: (*set*) -- interconnect(s)
-    :raises TypeError: if ``interconnect`` and ``model`` are not str.
-    :raises ValueError:
-        if ``model`` does not exist.
-        if ``interconnect`` is not in the model.
-        if combination of interconnect is incorrect.
+    :param str model: grid model name
+    :raises TypeError: if ``model`` is not a str.
+    :raises ValueError: if grid model does not exist.
     """
     if not isinstance(model, str):
         raise TypeError("model must be a str")
     if model not in model2region:
         raise ValueError(f"Invalid model. Choose among {' | '.join(model2region)}")
 
+
+def check_and_format_interconnect(interconnect, model="hifld"):
+    """Checks interconnect in a grid model.
+
+    :param str/iterable interconnect: interconnect name(s).
+    :param str model: the grid model.
+    :return: (*set*) -- interconnect(s)
+    :raises TypeError: if ``interconnect`` is not a str.
+    :raises ValueError:
+        if ``interconnect`` is not in the model.
+        if combination of interconnect is incorrect.
+    """
     if isinstance(interconnect, str):
         interconnect = [interconnect]
     try:
