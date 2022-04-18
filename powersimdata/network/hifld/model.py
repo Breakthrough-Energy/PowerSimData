@@ -1,7 +1,7 @@
 import os
 
 from powersimdata.input.abstract_grid import AbstractGrid
-from powersimdata.network.hifld.constants.storage import defaults
+from powersimdata.network.constants.storage import storage
 
 
 class HIFLD(AbstractGrid):
@@ -12,8 +12,9 @@ class HIFLD(AbstractGrid):
 
     def __init__(self, interconnect):
         """Constructor."""
+        model = "hifld"
         super().__init__()
 
         self._set_data_loc(os.path.dirname(__file__))
-        self._build_network(interconnect, "hifld")
-        self.storage.update(defaults)
+        self._build_network(interconnect, model)
+        self.storage.update(storage[model])
