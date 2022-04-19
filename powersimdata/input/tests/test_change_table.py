@@ -1,7 +1,10 @@
+import pandas as pd
 import pytest
 
+from powersimdata.data_access.context import Context
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.grid import Grid
+from powersimdata.tests.mock_context import MockContext
 
 grid = Grid(["USA"])
 
@@ -438,13 +441,26 @@ def test_add_new_elements_at_new_buses(ct):
 
 def test_change_table_clear_success(ct):
     fake_scaling = {"demand", "branch", "solar", "ng_cost", "coal_pmin", "dcline"}
-    fake_additions = {"storage", "new_dcline", "new_branch", "new_plant"}
+    fake_additions = {
+        "storage",
+        "new_dcline",
+        "new_branch",
+        "new_plant",
+        "demand_flexibility",
+    }
     all_fakes = fake_scaling | fake_additions
     original_dict_object = ct.ct
     for fake in all_fakes:
         ct.ct[fake] = {}
     # Test that each individual clear makes a change, and the ct ends up empty
-    clear_keys = {"branch", "dcline", "demand", "plant", "storage"}
+    clear_keys = {
+        "branch",
+        "dcline",
+        "demand",
+        "plant",
+        "storage",
+        "demand_flexibility",
+    }
     for key in clear_keys:
         old_keys = set(ct.ct.keys())
         ct.clear(key)
@@ -492,3 +508,62 @@ def test_remove_bus(ct):
         ct.remove_bus({845})
     ct.scale_plant_capacity(resource="ng", plant_id={0: 0})
     ct.remove_bus({845})
+
+
+def test_add_demand_flexibility(ct, monkeypatch):
+    with pytest.raises(ValueError):
+        # Fails because "demand_flexibility_dn", a required key, is not included
+        ct.add_demand_flexibility(
+            {"demand_flexibility_up": "Test", "demand_flexibility_duration": 6}
+        )
+
+    with pytest.raises(ValueError):
+        # Fails because there is a key that should not be there
+        ct.add_demand_flexibility(
+            {
+                "demand_flexibility_up": "Test",
+                "demand_flexibility_dn": "Test",
+                "demand_flexibility_duration": 6,
+                "demand_flexibility_wrong_key": "Test",
+            }
+        )
+
+    with pytest.raises(ValueError):
+        # Fails because there are no profiles available that match the specified version
+        ct.add_demand_flexibility(
+            {
+                "demand_flexibility_up": "Test",
+                "demand_flexibility_dn": "Test",
+                "demand_flexibility_duration": 6,
+            }
+        )
+
+    monkeypatch.setattr(Context, "get_data_access", MockContext().get_data_access)
+    data_access = Context.get_data_access()
+
+    # Create fake files in the expected directory path
+    exp_path = f"raw/{grid.grid_model}"
+
+    for csv_file in (
+        "demand_flexibility_up_Test.csv",
+        "demand_flexibility_dn_Test.csv",
+    ):
+        with data_access.write(exp_path + "/" + csv_file) as f:
+            pd.DataFrame().to_csv(f)
+
+    # Add a test instance of demand flexibility to the change table
+    ct.add_demand_flexibility(
+        {
+            "demand_flexibility_up": "Test",
+            "demand_flexibility_dn": "Test",
+            "demand_flexibility_duration": 6,
+        }
+    )
+    exp_dict = {
+        "demand_flexibility": {
+            "demand_flexibility_up": "Test",
+            "demand_flexibility_dn": "Test",
+            "demand_flexibility_duration": 6,
+        },
+    }
+    assert ct.ct == exp_dict

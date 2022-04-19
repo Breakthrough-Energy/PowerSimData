@@ -264,8 +264,8 @@ class TransformGrid:
             new_branch["to_lat"] = to_lat
             new_branch["x"] = x
             new_index = [self.grid.branch.index[-1] + 1]
-            self.grid.branch = self.grid.branch.append(
-                pd.DataFrame(new_branch, index=new_index), sort=False
+            self.grid.branch = pd.concat(
+                [self.grid.branch, pd.DataFrame(new_branch, index=new_index)]
             )
 
     def _add_bus(self):
@@ -291,8 +291,8 @@ class TransformGrid:
             new_bus["lat"] = lat
             new_bus["lon"] = lon
             new_bus_index = [self.grid.bus.index.max() + 1]
-            self.grid.bus = self.grid.bus.append(
-                pd.DataFrame(new_bus, index=new_bus_index), sort=False
+            self.grid.bus = pd.concat(
+                [self.grid.bus, pd.DataFrame(new_bus, index=new_bus_index)]
             )
             # Add to substation & bus2sub mapping dataframes
             if (lat, lon) in latlon2sub:
@@ -302,7 +302,7 @@ class TransformGrid:
                     {"sub_id": sub_id, "interconnect": interconnect},
                     index=new_bus_index,
                 )
-                self.grid.bus2sub = self.grid.bus2sub.append(new_row, sort=False)
+                self.grid.bus2sub = pd.concat([self.grid.bus2sub, new_row])
             else:
                 # Create a new substation
                 sub = self.grid.sub
@@ -313,7 +313,7 @@ class TransformGrid:
                     {"sub_id": new_sub_id, "interconnect": interconnect},
                     index=new_bus_index,
                 )
-                self.grid.bus2sub = self.grid.bus2sub.append(new_row, sort=False)
+                self.grid.bus2sub = pd.concat([self.grid.bus2sub, new_row])
                 new_row = pd.DataFrame(
                     {
                         "name": f"NEW {new_sub_id}",
@@ -324,7 +324,7 @@ class TransformGrid:
                     },
                     index=[new_sub_id],
                 )
-                self.grid.sub = sub.append(new_row, sort=False)
+                self.grid.sub = pd.concat([sub, new_row])
                 latlon2sub[(lat, lon)] = [new_sub_id]
 
     def _add_dcline(self):
@@ -345,8 +345,8 @@ class TransformGrid:
             new_dcline["from_interconnect"] = from_interconnect
             new_dcline["to_interconnect"] = to_interconnect
             new_index = [self.grid.dcline.index[-1] + 1]
-            self.grid.dcline = self.grid.dcline.append(
-                pd.DataFrame(new_dcline, index=new_index), sort=False
+            self.grid.dcline = pd.concat(
+                [self.grid.dcline, pd.DataFrame(new_dcline, index=new_index)]
             )
 
     def _add_gen(self):
@@ -376,14 +376,15 @@ class TransformGrid:
             new_plant["lon"] = lon
             new_plant["lat"] = lat
             new_index = [self.grid.plant.index[-1] + 1]
-            self.grid.plant = self.grid.plant.append(
-                pd.DataFrame(new_plant, index=new_index), sort=False
+            self.grid.plant = pd.concat(
+                [self.grid.plant, pd.DataFrame(new_plant, index=new_index)]
             )
 
     def _add_gencost(self):
         """Adds generation cost curves."""
         for entry in self.ct["new_plant"]:
-            new_gencost = {c: 0 for c in self.grid.gencost["before"].columns}
+            gencost = self.grid.gencost
+            new_gencost = {c: 0 for c in gencost["before"].columns}
             bus_id = entry["bus_id"]
             new_gencost["type"] = 2
             new_gencost["n"] = 3
@@ -392,11 +393,11 @@ class TransformGrid:
                 new_gencost["c0"] = entry["c0"]
                 new_gencost["c1"] = entry["c1"]
                 new_gencost["c2"] = entry["c2"]
-            new_index = [self.grid.gencost["before"].index[-1] + 1]
-            self.grid.gencost["before"] = self.grid.gencost["before"].append(
-                pd.DataFrame(new_gencost, index=new_index), sort=False
+            new_index = [gencost["before"].index[-1] + 1]
+            gencost["before"] = pd.concat(
+                [gencost["before"], pd.DataFrame(new_gencost, index=new_index)]
             )
-            self.grid.gencost["after"] = self.grid.gencost["before"]
+            self.grid.gencost["after"] = gencost["before"]
 
     def _add_storage(self):
         """Adds storage to the grid."""
@@ -424,18 +425,19 @@ class TransformGrid:
         gen["Pmin"] = -1 * entry["capacity"]
         gen["ramp_10"] = entry["capacity"]
         gen["ramp_30"] = entry["capacity"]
-        storage["gen"] = storage["gen"].append(gen, ignore_index=True, sort=False)
+        gen = pd.DataFrame({k: [v] for k, v in gen.items()})
+        storage["gen"] = pd.concat([storage["gen"], gen], ignore_index=True)
         # Maintain int columns after the append converts them to float
         storage["gen"] = storage["gen"].astype({"bus_id": "int", "status": "int"})
 
     def _add_storage_gencost(self):
         """Sets generation cost of storage unit."""
-        gencost = {g: 0 for g in self.grid.storage["gencost"].columns}
+        storage = self.grid.storage
+        gencost = {g: 0 for g in storage["gencost"].columns}
         gencost["type"] = 2
         gencost["n"] = 3
-        self.grid.storage["gencost"] = self.grid.storage["gencost"].append(
-            gencost, ignore_index=True, sort=False
-        )
+        gencost = pd.DataFrame({k: [v] for k, v in gencost.items()})
+        storage["gencost"] = pd.concat([storage["gencost"], gencost], ignore_index=True)
 
     def _add_storage_genfuel(self):
         """Sets fuel type of storage unit."""
@@ -473,8 +475,9 @@ class TransformGrid:
         data["InEff"] = entry["InEff"]
         data["LossFactor"] = entry["LossFactor"]
         data["rho"] = 1
-        storage["StorageData"] = storage["StorageData"].append(
-            data, ignore_index=True, sort=False
+        data = pd.DataFrame({k: [v] for k, v in data.items()})
+        storage["StorageData"] = pd.concat(
+            [storage["StorageData"], data], ignore_index=True
         )
         # Maintain int columns after the append converts them to float
         storage["StorageData"] = storage["StorageData"].astype({"UnitIdx": "int"})

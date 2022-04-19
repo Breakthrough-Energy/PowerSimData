@@ -153,8 +153,8 @@ def test_scale_gencost_one_plant(ct):
     assert new_gencost.loc[plant_id, modified_columns].equals(
         old_gencost.loc[plant_id, modified_columns] * factor
     )
-    assert new_gencost.loc[plant_id, non_modified_columns].equals(
-        old_gencost.loc[plant_id, non_modified_columns]
+    assert new_gencost.loc[plant_id, list(non_modified_columns)].equals(
+        old_gencost.loc[plant_id, list(non_modified_columns)]
     )
 
 
@@ -180,22 +180,24 @@ def test_scale_gencost_two_types_two_zones(ct):
     # Make sure we didn't mess with any other plants
     changed_plants = set().union(*plant_id)
     unchanged_plants = set(grid.plant.index.tolist()) - changed_plants
-    assert old_gencost.loc[unchanged_plants].equals(new_gencost.loc[unchanged_plants])
+    assert old_gencost.loc[list(unchanged_plants)].equals(
+        new_gencost.loc[list(unchanged_plants)]
+    )
     for f, i in zip(factor, plant_id):
         # Make sure we modify cost coefficient columns and only those columns
         assert new_gencost.loc[i, modified_columns].equals(
             old_gencost.loc[i, modified_columns] * f
         )
-        assert new_gencost.loc[i, non_modified_columns].equals(
-            old_gencost.loc[i, non_modified_columns]
+        assert new_gencost.loc[i, list(non_modified_columns)].equals(
+            old_gencost.loc[i, list(non_modified_columns)]
         )
         for f, i in zip(factor, plant_id):
             # Make sure we modify cost coefficient columns and only those columns
             assert new_gencost.loc[i, modified_columns].equals(
                 old_gencost.loc[i, modified_columns] * f
             )
-            assert new_gencost.loc[i, non_modified_columns].equals(
-                old_gencost.loc[i, non_modified_columns]
+            assert new_gencost.loc[i, list(non_modified_columns)].equals(
+                old_gencost.loc[i, list(non_modified_columns)]
             )
 
 
@@ -219,8 +221,8 @@ def test_scale_gen_pmin_one_plant(ct):
     assert new_plant.loc[plant_id, modified_columns].equals(
         old_plant.loc[plant_id, modified_columns] * factor
     )
-    assert new_plant.loc[plant_id, non_modified_columns].equals(
-        old_plant.loc[plant_id, non_modified_columns]
+    assert new_plant.loc[plant_id, list(non_modified_columns)].equals(
+        old_plant.loc[plant_id, list(non_modified_columns)]
     )
 
 
@@ -246,14 +248,16 @@ def test_scale_gen_pmin_two_types_two_zones(ct):
     # Make sure we modify Pmin and only Pmin
     changed_plants = set().union(*plant_id)
     unchanged_plants = set(grid.plant.index.tolist()) - changed_plants
-    assert old_plant.loc[unchanged_plants].equals(new_plant.loc[unchanged_plants])
+    assert old_plant.loc[list(unchanged_plants)].equals(
+        new_plant.loc[list(unchanged_plants)]
+    )
     for f, i in zip(factor, plant_id):
         # Make sure we modify cost coefficient columns and only those columns
         assert new_plant.loc[i, modified_columns].equals(
             old_plant.loc[i, modified_columns] * f
         )
-        assert new_plant.loc[i, non_modified_columns].equals(
-            old_plant.loc[i, non_modified_columns]
+        assert new_plant.loc[i, list(non_modified_columns)].equals(
+            old_plant.loc[i, list(non_modified_columns)]
         )
 
 

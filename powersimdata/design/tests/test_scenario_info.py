@@ -1,6 +1,7 @@
 import unittest
 
 import pandas as pd
+import pytest
 
 from powersimdata.design.scenario_info import ScenarioInfo
 from powersimdata.tests.mock_scenario import MockScenario
@@ -137,7 +138,7 @@ class TestScenarioInfo(unittest.TestCase):
         )
 
     def test_get_capacity(self):
-        with self.assertWarns(UserWarning):
+        with pytest.warns(UserWarning):
             self.scenario_info.get_capacity("solar", "Arizona")
         assert self.scenario_info.get_capacity("solar", "Oregon") == 50
         assert self.scenario_info.get_capacity("wind", "Arizona") == 200

@@ -1,15 +1,22 @@
 import copy
-import os
-import pickle
 from itertools import chain
 
 from powersimdata.design.transmission.upgrade import (
     scale_congested_mesh_branches,
     scale_renewable_stubs,
 )
+from powersimdata.input.changes import (
+    add_bus,
+    add_demand_flexibility,
+    add_electrification,
+    add_plant,
+    add_storage_capacity,
+    ordinal,
+    remove_bus,
+    remove_plant,
+    scale_plant_pmin,
+)
 from powersimdata.input.transform_grid import TransformGrid
-from powersimdata.utility import server_setup
-from powersimdata.utility.distance import find_closest_neighbor
 
 _resources = (
     "coal",
@@ -24,18 +31,6 @@ _resources = (
     "biomass",
     "other",
 )
-
-_renewable_resource = {"hydro", "solar", "wind", "wind_offshore"}
-
-
-def ordinal(n):
-    """Translate a 0-based index into a 1-based ordinal, e.g. 0 -> 1st, 1 -> 2nd, etc.
-
-    :param int n: the index to be translated.
-    :return: (*str*) -- Ordinal.
-    """
-    ord_dict = {1: "st", 2: "nd", 3: "rd"}
-    return str(n + 1) + ord_dict.get((n + 1) if (n + 1) < 20 else (n + 1) % 10, "th")
 
 
 class ChangeTable:
@@ -143,7 +138,15 @@ class ChangeTable:
         self.grid = grid
         self.ct = {}
         self._new_element_caches = {
-            k: {} for k in {"branch", "bus", "dcline", "plant", "storage_gen"}
+            k: {}
+            for k in {
+                "branch",
+                "bus",
+                "dcline",
+                "plant",
+                "storage_gen",
+                "demand_flexibility",
+            }
         }
 
     @staticmethod
@@ -210,7 +213,15 @@ class ChangeTable:
             self.ct.clear()
             return
         # Input validation
-        allowed = {"branch", "bus", "dcline", "demand", "plant", "storage"}
+        allowed = {
+            "branch",
+            "bus",
+            "dcline",
+            "demand",
+            "plant",
+            "storage",
+            "demand_flexibility",
+        }
         if isinstance(which, str):
             which = {which}
         if not isinstance(which, set):
@@ -218,7 +229,7 @@ class ChangeTable:
         if not which <= allowed:
             raise ValueError("which must contain only: " + " | ".join(allowed))
         # Clear only top-level keys specified in which
-        for key in {"demand", "storage"}:
+        for key in {"demand", "storage", "demand_flexibility"}:
             if key in which:
                 del self.ct[key]
         # Clear multiple keys for each entry in which
@@ -328,35 +339,9 @@ class ChangeTable:
     def scale_plant_pmin(self, resource, zone_name=None, plant_id=None):
         """Sets plant cost scaling factor in change table.
 
-        :param str resource: type of generator to consider.
-        :param dict zone_name: load zones. The key(s) is (are) the name of the
-            load zone(s) and the associated value is the scaling factor for the
-            minimum generation for all generators fueled by
-            specified resource in the load zone.
-        :param dict plant_id: identification numbers of plants. The key(s) is
-            (are) the id of the plant(s) and the associated value is the
-            scaling factor for the minimum generation of the generator.
+        See :func:`powersimdata.input.changes.plant.scale_plant_pmin`
         """
-        self._add_plant_entries(resource, f"{resource}_pmin", zone_name, plant_id)
-        # Check for situations where Pmin would be scaled above Pmax
-        candidate_grid = TransformGrid(self.grid, self.ct).get_grid()
-        pmax_pmin_ratio = candidate_grid.plant.Pmax / candidate_grid.plant.Pmin
-        to_be_clipped = pmax_pmin_ratio < 1
-        num_clipped = to_be_clipped.sum()
-        if num_clipped > 0:
-            err_msg = (
-                f"{num_clipped} plants would have Pmin > Pmax; "
-                "these plants will have Pmin scaling clipped so that Pmin = Pmax"
-            )
-            print(err_msg)
-            # Add by-plant correction factors as necessary
-            for plant_id, correction in pmax_pmin_ratio[to_be_clipped].items():
-                if "plant_id" not in self.ct[f"{resource}_pmin"]:
-                    self.ct[f"{resource}_pmin"]["plant_id"] = {}
-                if plant_id in self.ct[f"{resource}_pmin"]["plant_id"]:
-                    self.ct[f"{resource}_pmin"]["plant_id"][plant_id] *= correction
-                else:
-                    self.ct[f"{resource}_pmin"]["plant_id"][plant_id] = correction
+        scale_plant_pmin(self, resource, zone_name, plant_id)
 
     def scale_branch_capacity(self, zone_name=None, branch_id=None):
         """Sets branch capacity scaling factor in change table.
@@ -484,71 +469,23 @@ class ChangeTable:
     def add_storage_capacity(self, info):
         """Sets storage parameters in change table.
 
-        :param list info: each entry is a dictionary. The dictionary gathers
-            the information needed to create a new storage device.
-            Required keys: "bus_id", "capacity".
-            "capacity" denotes the symmetric input and output power limits (MW).
-            Optional keys: "duration", "min_stor", "max_stor", "energy_value", "InEff",
-                "OutEff", "LossFactor", "terminal_min", "terminal_max".
-            "duration" denotes the energy to power ratio (hours).
-            "min_stor" denotes the minimum energy limit (unitless), e.g. 0.05 = 5%.
-            "max_stor" denotes the maximum energy limit (unitless), e.g. 0.95 = 95%.
-            "energy_value" denotes the value of stored energy at interval end ($/MWh).
-            "InEff" denotes the input efficiency (unitless), e.g. 0.95 = 95%.
-            "OutEff" denotes the output efficiency (unitless), e.g. 0.95 = 95%.
-            "LossFactor" denotes the per-hour relative losses,
-            e.g. 0.01 means that 1% of the current state of charge is lost per hour).
-            "terminal_min" denotes the minimum state of charge at interval end,
-            e.g. 0.5 means that the storage must end the interval with at least 50%.
-            "terminal_max" denotes the maximum state of charge at interval end,
-            e.g. 0.9 means that the storage must end the interval with no more than 90%.
-        :raises TypeError: if ``info`` is not a list.
-        :raises ValueError: if any of the new storages to be added have bad values.
+        See :func:`powersimdata.input.changes.storage.add_storage_capacity`
         """
-        if not isinstance(info, list):
-            raise TypeError("Argument enclosing new storage(s) must be a list")
+        add_storage_capacity(self, info)
 
-        info = copy.deepcopy(info)
-        new_storages = []
-        required = {"bus_id", "capacity"}
-        optional = {
-            "duration",
-            "min_stor",
-            "max_stor",
-            "energy_value",
-            "InEff",
-            "OutEff",
-            "LossFactor",
-            "terminal_min",
-            "terminal_max",
-        }
-        anticipated_bus = self._get_transformed_df("bus")
-        for i, storage in enumerate(info):
-            self._check_entry_keys(storage, i, "storage", required, None, optional)
-            if storage["bus_id"] not in anticipated_bus.index:
-                raise ValueError(
-                    f"No bus id {storage['bus_id']} available for {ordinal(i)} storage"
-                )
-            for o in optional:
-                if o not in storage:
-                    storage[o] = self.grid.storage[o]
-            for k, v in storage.items():
-                if not isinstance(v, (int, float)):
-                    err_msg = f"values must be numeric, bad type for {ordinal(i)} {k}"
-                    raise ValueError(err_msg)
-                if v < 0:
-                    raise ValueError(
-                        f"values must be non-negative, bad value for {ordinal(i)} {k}"
-                    )
-            for k in {"min_stor", "max_stor", "InEff", "OutEff", "LossFactor"}:
-                if storage[k] > 1:
-                    raise ValueError(
-                        f"value for {k} must be <=1, bad value for {ordinal(i)} storage"
-                    )
-            new_storages.append(storage)
-        if "storage" not in self.ct:
-            self.ct["storage"] = []
-        self.ct["storage"] += new_storages
+    def add_demand_flexibility(self, info):
+        """Adds demand flexibility to the system.
+
+        See :func:`powersimdata.input.changes.demand_flex.add_demand_flexibility`
+        """
+        add_demand_flexibility(self, info)
+
+    def add_electrification(self, kind, info):
+        """Add profiles and scaling factors for electrified demand.
+
+        See :func:`powersimdata.input.changes.electrification.add_electrification`
+        """
+        add_electrification(self, kind, info)
 
     def add_dcline(self, info):
         """Adds HVDC line(s).
@@ -687,116 +624,16 @@ class ChangeTable:
     def add_plant(self, info):
         """Sets parameters of new generator(s) in change table.
 
-        :param list info: each entry is a dictionary. The dictionary gathers
-            the information needed to create a new generator.
-            Required keys: "bus_id", "Pmax", "type".
-            Optional keys: "c0", "c1", "c2", "Pmin".
-            "c0", "c1", and "c2" are the coefficients for the cost curve, representing
-            the fixed cost ($/hour), linear cost ($/MWh), and quadratic cost ($/MW^2·h).
-            These are optional for hydro, solar, and wind, and required for other types.
-        :raises TypeError: if ``info`` is not a list.
-        :raises ValueError: if any of the new plants to be added have bad values.
+        See :func:`powersimdata.input.changes.plant.add_plant`
         """
-        if not isinstance(info, list):
-            raise TypeError("Argument enclosing new plant(s) must be a list")
-
-        info = copy.deepcopy(info)
-        anticipated_bus = self._get_transformed_df("bus")
-        new_plants = []
-        required = {"bus_id", "Pmax", "type"}
-        optional = {"c0", "c1", "c2", "Pmin"}
-        for i, plant in enumerate(info):
-            self._check_entry_keys(plant, i, "plant", required, None, optional)
-            self._check_resource(plant["type"])
-            if plant["bus_id"] not in anticipated_bus.index:
-                raise ValueError(
-                    f"No bus id {plant['bus_id']} available for plant #{i + 1}"
-                )
-            if plant["Pmax"] < 0:
-                raise ValueError(f"Pmax >= 0 must be satisfied for plant #{i + 1}")
-            if "Pmin" not in plant.keys():
-                plant["Pmin"] = 0
-            if plant["Pmin"] < 0 or plant["Pmin"] > plant["Pmax"]:
-                err_msg = f"0 <= Pmin <= Pmax must be satisfied for plant #{i + 1}"
-                raise ValueError(err_msg)
-            if plant["type"] in _renewable_resource:
-                lon = anticipated_bus.loc[plant["bus_id"]].lon
-                lat = anticipated_bus.loc[plant["bus_id"]].lat
-                plant_same_type = self.grid.plant.groupby("type").get_group(
-                    plant["type"]
-                )
-                neighbor_id = find_closest_neighbor(
-                    (lon, lat), plant_same_type[["lon", "lat"]].values
-                )
-                plant["plant_id_neighbor"] = plant_same_type.iloc[neighbor_id].name
-            else:
-                for c in ["0", "1", "2"]:
-                    if "c" + c not in plant.keys():
-                        raise ValueError(f"Missing key c{c} for plant #{i + 1}")
-                    elif plant["c" + c] < 0:
-                        err_msg = f"c{c} >= 0 must be satisfied for plant #{i + 1}"
-                        raise ValueError(err_msg)
-            new_plants.append(plant)
-
-        if "new_plant" not in self.ct:
-            self.ct["new_plant"] = []
-        self.ct["new_plant"] += new_plants
+        add_plant(self, info)
 
     def add_bus(self, info):
         """Sets parameters of new bus(es) in change table.
 
-        :param list info: each entry is a dictionary. The dictionary gathers
-            the information needed to create a new bus.
-            Required keys: "lat", "lon", ["zone_id" XOR "zone_name"].
-            Optional key: "Pd", "baseKV".
-        :raises TypeError: if ``info`` is not a list.
-        :raises ValueError: if any new bus doesn't have appropriate keys/values.
+        See :func:`powersimdata.input.changes.bus.add_bus`
         """
-        if not isinstance(info, list):
-            raise TypeError("Argument enclosing new bus(es) must be a list")
-
-        info = copy.deepcopy(info)
-        new_buses = []
-        required = {"lat", "lon"}
-        xor_sets = {("zone_id", "zone_name")}
-        defaults = {"Pd": 0, "baseKV": 230}
-        for i, new_bus in enumerate(info):
-            self._check_entry_keys(
-                new_bus, i, "new_bus", required, xor_sets, defaults.keys()
-            )
-            for l in {"lat", "lon"}:
-                if not isinstance(new_bus[l], (int, float)):
-                    raise ValueError(f"{l} must be numeric (int/float)")
-            if abs(new_bus["lat"]) > 90:
-                raise ValueError("'lat' must be between -90 and +90")
-            if abs(new_bus["lon"]) > 180:
-                raise ValueError("'lon' must be between -180 and +180")
-            if "zone_id" in new_bus and new_bus["zone_id"] not in self.grid.id2zone:
-                zone_id = new_bus["zone_id"]
-                raise ValueError(f"zone_id {zone_id} not present in Grid")
-            if "zone_name" in new_bus:
-                try:
-                    new_bus["zone_id"] = self.grid.zone2id[new_bus["zone_name"]]
-                except KeyError:
-                    zone_name = new_bus["zone_name"]
-                    raise ValueError(f"zone_name {zone_name} not present in Grid")
-                del new_bus["zone_name"]
-            if "Pd" in new_bus:
-                if not isinstance(new_bus["Pd"], (int, float)):
-                    raise ValueError("Pd must be numeric (int/float)")
-            else:
-                new_bus["Pd"] = defaults["Pd"]
-            if "baseKV" in new_bus:
-                if not isinstance(new_bus["baseKV"], (int, float)):
-                    raise ValueError("baseKV must be numeric (int/float)")
-                if new_bus["baseKV"] <= 0:
-                    raise ValueError("baseKV must be positive")
-            else:
-                new_bus["baseKV"] = defaults["baseKV"]
-            new_buses.append(new_bus)
-        if "new_bus" not in self.ct:
-            self.ct["new_bus"] = []
-        self.ct["new_bus"] += new_buses
+        add_bus(self, info)
 
     def _get_transformed_df(self, table):
         """Get a post-transformation data table, for use with adding elements at new
@@ -872,42 +709,9 @@ class ChangeTable:
     def remove_bus(self, info):
         """Remove one or more buses.
 
-        :param int/iterable info: iterable of bus indices, or a single bus index.
-        :raises ValueError: if ``info`` contains one or more entries not present in the
-            bus table index.
+        See :func:`powersimdata.input.changes.bus.remove_bus`
         """
-        if isinstance(info, int):
-            info = {info}
-        # Check whether all buses to be removed are present in the grid
-        diff = set(info) - set(self._get_transformed_df("bus").index)
-        if len(diff) != 0:
-            raise ValueError(f"No bus with the following id(s): {sorted(diff)}")
-        # Check whether there exist any plants with non-zero capacity at these buses
-        anticipated_plant = self._get_transformed_df("plant").query("Pmax > 0")
-        plants_at_removal_buses = set(info) & set(anticipated_plant.bus_id)
-        if len(plants_at_removal_buses) > 0:
-            raise ValueError(
-                f"Generators exist at bus id(s): {sorted(plants_at_removal_buses)}"
-            )
-        # Check whether storage exists at these buses
-        anticipated_storage = self._get_transformed_df("storage_gen")
-        storage_at_removal_buses = set(info) & set(anticipated_storage.bus_id)
-        if len(storage_at_removal_buses) > 0:
-            raise ValueError(
-                f"Storage units exist at bus id(s): {sorted(storage_at_removal_buses)}"
-            )
-        # Check whether there exist branches or DC lines at these buses
-        for table in ("branch", "dcline"):
-            anticipated = self._get_transformed_df(table)
-            overlap = anticipated.query("from_bus_id in @info or to_bus_id in @info")
-            if len(overlap) > 0:
-                raise ValueError(
-                    f"These {table} IDs connect to a bus to be removed: {overlap.index}"
-                )
-        # All checks have passed, and we can add this to the change table
-        if "remove_bus" not in self.ct:
-            self.ct["remove_bus"] = set()
-        self.ct["remove_bus"] |= set(info)
+        remove_bus(self, info)
 
     def remove_dcline(self, info):
         """Remove one or more DC lines.
@@ -928,18 +732,9 @@ class ChangeTable:
     def remove_plant(self, info):
         """Remove one or more plants.
 
-        :param int/iterable info: iterable of plant indices, or a single plant index.
-        :raises ValueError: if ``info`` contains one or more entries not present in the
-            plant table index.
+        See :func:`powersimdata.input.changes.plant.remove_plant`
         """
-        if isinstance(info, int):
-            info = {info}
-        diff = set(info) - set(self._get_transformed_df("plant").index)
-        if len(diff) != 0:
-            raise ValueError(f"No plant with the following id(s): {sorted(diff)}")
-        if "remove_plant" not in self.ct:
-            self.ct["remove_plant"] = set()
-        self.ct["remove_plant"] |= set(info)
+        remove_plant(self, info)
 
     def _check_for_islanded_load_buses(self):
         """Identifies buses with non-zero demand, with no connected lines, and warns."""
@@ -956,16 +751,3 @@ class ChangeTable:
         diff = load_buses - connected_buses
         if len(diff) > 0:
             print(f"Warning: load buses connected to no lines exist: {sorted(diff)}")
-
-    def write(self, scenario_id):
-        """Saves change table to disk.
-
-        :param str scenario_id: scenario index.
-        :raises IOError: if file already exists on local machine.
-        """
-        file_name = os.path.join(server_setup.LOCAL_DIR, scenario_id + "_ct.pkl")
-        if os.path.isfile(file_name) is False:
-            print("Writing %s" % file_name)
-            pickle.dump(self.ct, open(file_name, "wb"))
-        else:
-            raise IOError("%s already exists" % file_name)

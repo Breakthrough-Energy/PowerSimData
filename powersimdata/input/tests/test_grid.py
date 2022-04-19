@@ -405,10 +405,8 @@ def test_grid_eq_failure_storage(base_texas):
     test_grid = copy.deepcopy(base_texas)
     gencost = {g: 0 for g in test_grid.storage["gencost"].columns}
     gen = {g: 0 for g in test_grid.storage["gen"].columns}
-    test_grid.storage["gencost"] = test_grid.storage["gencost"].append(
-        gencost, ignore_index=True
-    )
-    test_grid.storage["gen"] = test_grid.storage["gen"].append(gen, ignore_index=True)
+    test_grid.storage["gencost"].loc[0, :] = gencost
+    test_grid.storage["gen"].loc[0, :] = gen
     assert base_texas != test_grid
 
 

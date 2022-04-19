@@ -8,19 +8,14 @@ class Context:
     """Factory for data access instances"""
 
     @staticmethod
-    def get_data_access(data_loc=None):
+    def get_data_access():
         """Return a data access instance appropriate for the current
         environment.
 
-        :param str data_loc: pass "disk" if using data from backup disk,
-            otherwise leave the default.
         :return: (:class:`powersimdata.data_access.data_access.DataAccess`) -- a data access
             instance
         """
-        if data_loc == "disk":
-            root = server_setup.BACKUP_DATA_ROOT_DIR
-        else:
-            root = server_setup.DATA_ROOT_DIR
+        root = server_setup.DATA_ROOT_DIR
 
         if server_setup.DEPLOYMENT_MODE == DeploymentMode.Server:
             return SSHDataAccess(root)

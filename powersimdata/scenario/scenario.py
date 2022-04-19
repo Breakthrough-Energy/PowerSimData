@@ -17,6 +17,7 @@ class Scenario:
 
     :param int/str descriptor: scenario name or index. If None, default to a Scenario
         in Create state.
+    :raises TypeError: if descriptor is not int or str
     """
 
     _setattr_allowlist = {

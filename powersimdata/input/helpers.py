@@ -274,7 +274,7 @@ def decompose_plant_data_frame_into_resources(df, resources, grid):
     resources = _check_resources_are_in_grid_and_format(resources, grid)
 
     df_resources = {
-        r: df[get_plant_id_for_resources(r, grid) & plant_id].sort_index(axis=1)
+        r: df[list(get_plant_id_for_resources(r, grid)) & plant_id].sort_index(axis=1)
         for r in resources
     }
     return df_resources

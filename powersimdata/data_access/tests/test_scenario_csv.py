@@ -5,7 +5,6 @@ from collections import OrderedDict
 import pandas as pd
 import pytest
 from numpy.testing import assert_array_equal
-from pandas.testing import assert_frame_equal
 
 from powersimdata.data_access.data_access import LocalDataAccess, SSHDataAccess
 from powersimdata.data_access.scenario_list import ScenarioListManager
@@ -52,14 +51,6 @@ def test_get_scenario_file_from_server_header(data_access, scenario_table):
     ]
     assert_array_equal(scenario_table.columns, header)
     assert "id" == scenario_table.index.name
-
-
-@pytest.mark.integration
-@pytest.mark.ssh
-def test_get_scenario_file_local(scenario_table):
-    scm = ScenarioListManager(None)
-    from_local = scm.get_scenario_table()
-    assert_frame_equal(from_local, scenario_table)
 
 
 def clone_template():

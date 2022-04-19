@@ -1,6 +1,6 @@
 import copy
 
-from powersimdata.input.input_data import InputData
+from powersimdata.input.profile_input import ProfileInput
 
 
 class TransformProfile:
@@ -18,7 +18,7 @@ class TransformProfile:
         :param bool slice: whether to slice the profiles by the Scenario's time range.
         """
         self.slice = slice
-        self._input_data = InputData()
+        self._profile_input = ProfileInput()
         self.scenario_info = {**self._default_dates, **scenario_info}
 
         self.ct = copy.deepcopy(ct)
@@ -61,7 +61,7 @@ class TransformProfile:
             .index
         )
 
-        profile = self._input_data.get_data(self.scenario_info, resource)[plant_id]
+        profile = self._profile_input.get_data(self.scenario_info, resource)[plant_id]
         scaled_profile = self._scale_plant_profile(profile)
 
         if self.n_new_clean_plant > 0:
@@ -107,7 +107,9 @@ class TransformProfile:
         :return: (*pandas.DataFrame*) -- data frame of demand.
         """
         zone_id = sorted(self.grid.bus.zone_id.unique())
-        demand = self._input_data.get_data(self.scenario_info, "demand").loc[:, zone_id]
+        demand = self._profile_input.get_data(self.scenario_info, "demand").loc[
+            :, zone_id
+        ]
         if bool(self.ct) and "demand" in list(self.ct.keys()):
             for key, value in self.ct["demand"]["zone_id"].items():
                 print(
@@ -116,6 +118,48 @@ class TransformProfile:
                 )
                 demand.loc[:, key] *= value
         return demand
+
+    def _get_demand_flexibility_profile(self, name):
+        """Return the appropriately pruned demand flexibility profiles. Provides support
+        for profiles that might have a mixed input of zones and buses.
+
+        :param string name: The type of demand flexibility profile being specified. Can
+            be one of: *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
+            *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
+        :return: (*pandas.DataFrame*) -- data frame of a demand flexibility profile.
+        """
+        # Access the specified demand flexibility profile
+        flex_dem_dict = self.ct["demand_flexibility"]
+        flex_dem_dict["grid_model"] = self.scenario_info["grid_model"]
+        df = self._profile_input.get_data(flex_dem_dict, name)
+
+        # Determine if the demand flexibility profile is indexed by zone, bus, or both
+        area_indicator = [1 if "zone." in x else 0 for x in df.columns]
+        area_ids = []
+        if sum(area_indicator) > 0:
+            # Demand flexibility profile contains zone IDs
+            zone_id = sorted(self.grid.bus.zone_id.unique())
+            zone_id = [f"zone.{x}" for x in zone_id]
+            area_ids += zone_id
+        if sum(area_indicator) < len(area_indicator):
+            # Demand flexibility profile contains bus IDs
+            bus_id = sorted(self.grid.bus.index.unique().values)
+            bus_id = [str(x) for x in bus_id]
+            area_ids += bus_id
+
+        # Prune the data frame according to the mix of zone IDs and bus IDs
+        df = df.loc[:, df.columns.isin(area_ids)]
+
+        # Warn if data frame is now empty (i.e., no relevant zones/buses were provided)
+        if len(df.columns) == 0:
+            raise ValueError(
+                f"The {name} profile does not contain zone or buse IDs located in the "
+                + f"{self.scenario_info['interconnect']} interconnect of the "
+                + f"{self.scenario_info['grid_model']} grid model."
+            )
+
+        # Return the pruned data frame
+        return df
 
     def _slice_df(self, df):
         """Return dataframe, sliced by the times specified in scenario_info if and only
@@ -131,15 +175,29 @@ class TransformProfile:
     def get_profile(self, name):
         """Return profile.
 
-        :param str name: either *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :param str name: either *demand*, *'hydro'*, *'solar'*, *'wind'*,
+            *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
+            *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
         :return: (*pandas.DataFrame*) -- profile.
-        :raises ValueError: if argument not one of *'demand'*, *'hydro'*, *'solar'* or
-            *'wind'*.
+        :raises ValueError: if argument not one of *'demand'*, *'hydro'*, *'solar'*,
+            *'wind'*, *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
+            *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
         """
-        possible = ["demand", "hydro", "solar", "wind"]
+        possible = [
+            "demand",
+            "hydro",
+            "solar",
+            "wind",
+            "demand_flexibility_up",
+            "demand_flexibility_dn",
+            "demand_flexibility_cost_up",
+            "demand_flexibility_cost_dn",
+        ]
         if name not in possible:
             raise ValueError("Choose from %s" % " | ".join(possible))
         elif name == "demand":
             return self._slice_df(self._get_demand_profile())
+        elif "demand_flexibility" in name:
+            return self._slice_df(self._get_demand_flexibility_profile(name))
         else:
             return self._slice_df(self._get_renewable_profile(name))

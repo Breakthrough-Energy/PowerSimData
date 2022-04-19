@@ -1,6 +1,3 @@
-import os
-import pickle
-
 import numpy as np
 import pandas as pd
 from scipy.sparse import coo_matrix
@@ -12,21 +9,19 @@ from powersimdata.utility import server_setup
 
 
 class OutputData:
-    """Load output data.
+    """Load output data."""
 
-    :param str data_loc: data location.
-    """
-
-    def __init__(self, data_loc=None):
+    def __init__(self):
         """Constructor"""
-        self._data_access = Context.get_data_access(data_loc)
+        self._data_access = Context.get_data_access()
 
     def get_data(self, scenario_id, field_name):
         """Returns data either from server or from local directory.
 
         :param str scenario_id: scenario id.
         :param str field_name: *'PG'*, *'PF'*, *'LMP'*, *'CONGU'*, *'CONGL'*,
-            *'AVERAGED_CONG'*, *'STORAGE_PG'* or *'STORAGE_E'*.
+            *'AVERAGED_CONG'*, *'STORAGE_PG'*, *'STORAGE_E'*, *'LOAD_SHIFT_UP'*,
+            or *'LOAD_SHIFT_DN'*.
         :return: (*pandas.DataFrame*) -- specified field as a data frame.
         :raises FileNotFoundError: if file not found on local machine.
         :raises ValueError: if second argument is not an allowable field.
@@ -35,31 +30,20 @@ class OutputData:
 
         print("--> Loading %s" % field_name)
         file_name = scenario_id + "_" + field_name + ".pkl"
-        from_dir = server_setup.OUTPUT_DIR
-        filepath = os.path.join(server_setup.LOCAL_DIR, *from_dir, file_name)
-
-        try:
-            return pd.read_pickle(filepath)
-        except pickle.UnpicklingError:
-            err_msg = f"Unable to unpickle {file_name}, possibly corrupted in download."
-            raise ValueError(err_msg)
-        except FileNotFoundError:
-            print(f"{filepath} not found on local machine")
-
-        remote_dir = self._data_access.join(*from_dir)
-        self._data_access.copy_from(file_name, remote_dir)
-        return pd.read_pickle(filepath)
+        filepath = "/".join([*server_setup.OUTPUT_DIR, file_name])
+        with self._data_access.get(filepath) as (f, _):
+            return pd.read_pickle(f)
 
 
 def _check_field(field_name):
     """Checks field name.
 
     :param str field_name: *'PG'*, *'PF'*, *'PF_DCLINE'*, *'LMP'*, *'CONGU'*,
-        *'CONGL'*, *'AVERAGED_CONG'*, *'STORAGE_PG'*, *'STORAGE_E'*,
-        or *'LOAD_SHED'*
+        *'CONGL'*, *'AVERAGED_CONG'*, *'STORAGE_PG'*, *'STORAGE_E'*, *'LOAD_SHED'*,
+        *'LOAD_SHIFT_UP'*, or *'LOAD_SHIFT_DN'*.
     :raises ValueError: if not *'PG'*, *'PF'*, *'PF_DCLINE'*, *'LMP'*,
         *'CONGU'*, or *'CONGL'*, *'AVERAGED_CONG'*, *'STORAGE_PG'*,
-        *'STORAGE_E'*, or *'LOAD_SHED'*.
+        *'STORAGE_E'*, *'LOAD_SHED'*, *'LOAD_SHIFT_UP'*, or *'LOAD_SHIFT_DN'*.
     """
     possible = [
         "PG",
@@ -72,6 +56,8 @@ def _check_field(field_name):
         "STORAGE_PG",
         "STORAGE_E",
         "LOAD_SHED",
+        "LOAD_SHIFT_UP",
+        "LOAD_SHIFT_DN",
     ]
     if field_name not in possible:
         raise ValueError("Only %s data can be loaded" % " | ".join(possible))

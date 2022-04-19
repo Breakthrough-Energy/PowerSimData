@@ -1,19 +1,20 @@
+from unittest.mock import patch
+
 import numpy as np
+import pandas as pd
 import pytest
 from numpy.testing import assert_almost_equal
 
+from powersimdata.data_access.context import Context
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.grid import Grid
-from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
+from powersimdata.tests.mock_context import MockContext
+from powersimdata.tests.mock_profile_input import MockProfileInput
 
 interconnect = ["Western"]
 param = {
-    "demand": "vJan2021",
-    "hydro": "vJan2021",
-    "solar": "vJan2021",
-    "wind": "vJan2021",
     "n_zone_to_scale": 6,
     "n_plant_to_scale": 50,
     "n_plant_to_add": 100,
@@ -88,7 +89,7 @@ def get_change_table_for_new_plant_addition(base_grid, resource):
     return ct.ct
 
 
-def _check_plants_are_scaled(ct, base_grid, profile_info, raw_profile, resource):
+def _check_plants_are_scaled(ct, base_grid, raw_profile, resource):
     plant_id_type = get_plant_with_resource(base_grid, resource)
 
     base_profile = (
@@ -98,7 +99,8 @@ def _check_plants_are_scaled(ct, base_grid, profile_info, raw_profile, resource)
     tg = TransformGrid(base_grid, ct)
     transformed_grid = tg.get_grid()
 
-    tp = TransformProfile(profile_info, transformed_grid, ct)
+    empty_scenario_info = {}  # scenario_info not needed since profile_input is mocked
+    tp = TransformProfile(empty_scenario_info, transformed_grid, ct)
     transformed_profile = tp.get_profile(resource)
 
     scaled_plant_id = []
@@ -128,13 +130,13 @@ def _check_plants_are_scaled(ct, base_grid, profile_info, raw_profile, resource)
 
     unscaled_plant_id = set(plant_id_type) - set(scaled_plant_id)
     if unscaled_plant_id:
-        assert transformed_profile[unscaled_plant_id].equals(
-            base_profile[unscaled_plant_id]
+        assert transformed_profile[list(unscaled_plant_id)].equals(
+            base_profile[list(unscaled_plant_id)]
         )
     return transformed_profile
 
 
-def _check_new_plants_are_added(ct, base_grid, profile_info, raw_profile, resource):
+def _check_new_plants_are_added(ct, base_grid, raw_profile, resource):
     n_plant = param["n_plant_to_add"]
     plant_id_type = (
         base_grid.plant.isin(profile_type[resource]).query("type == True").index
@@ -146,7 +148,8 @@ def _check_new_plants_are_added(ct, base_grid, profile_info, raw_profile, resour
     tg = TransformGrid(base_grid, ct)
     transformed_grid = tg.get_grid()
 
-    tp = TransformProfile(profile_info, transformed_grid, ct)
+    empty_scenario_info = {}  # scenario_info not needed since profile_input is mocked
+    tp = TransformProfile(empty_scenario_info, transformed_grid, ct)
     transformed_profile = tp.get_profile(resource)
 
     assert not transformed_profile.equals(base_profile)
@@ -159,30 +162,24 @@ def _check_new_plants_are_added(ct, base_grid, profile_info, raw_profile, resour
     return transformed_profile.drop(base_profile.columns, axis=1)
 
 
-def _check_new_plants_are_not_scaled(base_grid, profile_info, raw_profile, resource):
+def _check_new_plants_are_not_scaled(base_grid, raw_profile, resource):
     ct_zone = get_change_table_for_zone_scaling(base_grid, resource)
     ct_id = get_change_table_for_id_scaling(base_grid, resource)
     ct_new = get_change_table_for_new_plant_addition(base_grid, resource)
     ct = {**ct_zone, **ct_id[resource], **ct_new}
     # profile of new plants
-    new_profile = _check_new_plants_are_added(
-        ct_new, base_grid, profile_info, raw_profile, resource
-    )
+    new_profile = _check_new_plants_are_added(ct_new, base_grid, raw_profile, resource)
     # transformed profile
-    scaled_profile = _check_plants_are_scaled(
-        ct, base_grid, profile_info, raw_profile, resource
-    )
+    scaled_profile = _check_plants_are_scaled(ct, base_grid, raw_profile, resource)
     # check that the profiles of new plants in the scaled profile are not scaled
     assert new_profile.equals(scaled_profile[new_profile.columns])
 
 
 def _check_profile_of_new_plants_are_produced_correctly(
-    base_grid, profile_info, raw_profile, resource
+    base_grid, raw_profile, resource
 ):
     ct_new = get_change_table_for_new_plant_addition(base_grid, resource)
-    new_profile = _check_new_plants_are_added(
-        ct_new, base_grid, profile_info, raw_profile, resource
-    )
+    new_profile = _check_new_plants_are_added(ct_new, base_grid, raw_profile, resource)
     neighbor_id = [d["plant_id_neighbor"] for d in ct_new["new_plant"]]
     new_plant_pmax = [d["Pmax"] for d in ct_new["new_plant"]]
 
@@ -197,39 +194,52 @@ def base_grid():
     return grid
 
 
-def raw_profile(kind):
-    input_data = InputData()
-    grid_model = "test_usa_tamu"
-    profile_info = {
-        "grid_model": grid_model,
-        f"base_{kind}": param[kind],
-    }
-    profile = input_data.get_data(profile_info, kind)
-    return profile_info, profile
+@pytest.fixture(scope="module")
+def profile_input(base_grid):
+    mock_profile_input = MockProfileInput(base_grid)
+    return mock_profile_input
+
+
+@pytest.fixture(scope="module", autouse=True)
+def mock_profile_input_class(profile_input):
+    with patch(
+        "powersimdata.input.transform_profile.ProfileInput"
+    ) as mock_profile_input_class:
+        mock_profile_input_class.return_value = profile_input
+        yield
 
 
 @pytest.fixture(scope="module")
-def raw_hydro():
-    return raw_profile("hydro")
+def raw_hydro(profile_input):
+    return profile_input.get_data({}, "hydro")
 
 
 @pytest.fixture(scope="module")
-def raw_wind():
-    return raw_profile("wind")
+def raw_wind(profile_input):
+    return profile_input.get_data({}, "wind")
 
 
 @pytest.fixture(scope="module")
-def raw_solar():
-    return raw_profile("solar")
+def raw_solar(profile_input):
+    return profile_input.get_data({}, "solar")
 
 
 @pytest.fixture(scope="module")
-def raw_demand():
-    return raw_profile("demand")
+def raw_demand(profile_input):
+    return profile_input.get_data({}, "demand")
+
+
+@pytest.fixture(scope="module")
+def raw_demand_flexibility_up(profile_input):
+    return profile_input.get_data({}, "demand_flexibility_up")
+
+
+@pytest.fixture(scope="module")
+def raw_demand_flexibility_dn(profile_input):
+    return profile_input.get_data({}, "demand_flexibility_dn")
 
 
 def test_demand_is_scaled(base_grid, raw_demand):
-    demand_info, raw_demand = raw_demand
     base_demand = raw_demand[base_grid.id2zone.keys()]
 
     n_zone = param["n_zone_to_scale"]
@@ -249,7 +259,8 @@ def test_demand_is_scaled(base_grid, raw_demand):
     tg = TransformGrid(base_grid, ct.ct)
     transformed_grid = tg.get_grid()
 
-    tp = TransformProfile(demand_info, transformed_grid, ct.ct)
+    empty_scenario_info = {}  # scenario_info not needed since profile_input is mocked
+    tp = TransformProfile(empty_scenario_info, transformed_grid, ct.ct)
     transformed_profile = tp.get_profile("demand")
     assert not base_demand.equals(transformed_profile)
 
@@ -260,94 +271,140 @@ def test_demand_is_scaled(base_grid, raw_demand):
         base_demand[scaled_zone].multiply(factor, axis=1)
     )
     if unscaled_zone:
-        assert transformed_profile[unscaled_zone].equals(base_demand[unscaled_zone])
+        assert transformed_profile[list(unscaled_zone)].equals(
+            base_demand[list(unscaled_zone)]
+        )
 
 
 def test_solar_is_scaled_by_zone(base_grid, raw_solar):
     ct = get_change_table_for_zone_scaling(base_grid, "solar")
-    _check_plants_are_scaled(ct, base_grid, *raw_solar, "solar")
+    _check_plants_are_scaled(ct, base_grid, raw_solar, "solar")
 
 
 def test_solar_is_scaled_by_id(base_grid, raw_solar):
     ct = get_change_table_for_id_scaling(base_grid, "solar")
-    _check_plants_are_scaled(ct, base_grid, *raw_solar, "solar")
+    _check_plants_are_scaled(ct, base_grid, raw_solar, "solar")
 
 
 def test_solar_is_scaled_by_zone_and_id(base_grid, raw_solar):
     ct_zone = get_change_table_for_zone_scaling(base_grid, "solar")
     ct_id = get_change_table_for_id_scaling(base_grid, "solar")
     ct = {**ct_zone, **ct_id["solar"]}
-    _check_plants_are_scaled(ct, base_grid, *raw_solar, "solar")
+    _check_plants_are_scaled(ct, base_grid, raw_solar, "solar")
 
 
 def test_wind_is_scaled_by_zone(base_grid, raw_wind):
     ct = get_change_table_for_zone_scaling(base_grid, "wind")
-    _check_plants_are_scaled(ct, base_grid, *raw_wind, "wind")
+    _check_plants_are_scaled(ct, base_grid, raw_wind, "wind")
 
 
 def test_wind_is_scaled_by_id(base_grid, raw_wind):
     ct = get_change_table_for_id_scaling(base_grid, "wind")
-    _check_plants_are_scaled(ct, base_grid, *raw_wind, "wind")
+    _check_plants_are_scaled(ct, base_grid, raw_wind, "wind")
 
 
 def test_wind_is_scaled_by_zone_and_id(base_grid, raw_wind):
     ct_zone = get_change_table_for_zone_scaling(base_grid, "wind")
     ct_id = get_change_table_for_id_scaling(base_grid, "wind")
     ct = {**ct_zone, **ct_id["wind"]}
-    _check_plants_are_scaled(ct, base_grid, *raw_wind, "wind")
+    _check_plants_are_scaled(ct, base_grid, raw_wind, "wind")
 
 
 def test_hydro_is_scaled_by_zone(base_grid, raw_hydro):
     ct = get_change_table_for_zone_scaling(base_grid, "hydro")
-    _check_plants_are_scaled(ct, base_grid, *raw_hydro, "hydro")
+    _check_plants_are_scaled(ct, base_grid, raw_hydro, "hydro")
 
 
 def test_hydro_is_scaled_by_id(base_grid, raw_hydro):
     ct = get_change_table_for_id_scaling(base_grid, "hydro")
-    _check_plants_are_scaled(ct, base_grid, *raw_hydro, "hydro")
+    _check_plants_are_scaled(ct, base_grid, raw_hydro, "hydro")
 
 
 def test_hydro_is_scaled_by_zone_and_id(base_grid, raw_hydro):
     ct_zone = get_change_table_for_zone_scaling(base_grid, "hydro")
     ct_id = get_change_table_for_id_scaling(base_grid, "hydro")
     ct = {**ct_zone, **ct_id["hydro"]}
-    _check_plants_are_scaled(ct, base_grid, *raw_hydro, "hydro")
+    _check_plants_are_scaled(ct, base_grid, raw_hydro, "hydro")
 
 
 def test_new_solar_are_added(base_grid, raw_solar):
     ct = get_change_table_for_new_plant_addition(base_grid, "solar")
-    _ = _check_new_plants_are_added(ct, base_grid, *raw_solar, "solar")
+    _ = _check_new_plants_are_added(ct, base_grid, raw_solar, "solar")
 
 
 def test_new_wind_are_added(base_grid, raw_wind):
     ct = get_change_table_for_new_plant_addition(base_grid, "wind")
-    _ = _check_new_plants_are_added(ct, base_grid, *raw_wind, "wind")
+    _ = _check_new_plants_are_added(ct, base_grid, raw_wind, "wind")
 
 
 def test_new_hydro_added(base_grid, raw_hydro):
     ct = get_change_table_for_new_plant_addition(base_grid, "hydro")
-    _ = _check_new_plants_are_added(ct, base_grid, *raw_hydro, "hydro")
+    _ = _check_new_plants_are_added(ct, base_grid, raw_hydro, "hydro")
 
 
 def test_new_solar_are_not_scaled(base_grid, raw_solar):
-    _check_new_plants_are_not_scaled(base_grid, *raw_solar, "solar")
+    _check_new_plants_are_not_scaled(base_grid, raw_solar, "solar")
 
 
 def test_new_wind_are_not_scaled(base_grid, raw_wind):
-    _check_new_plants_are_not_scaled(base_grid, *raw_wind, "wind")
+    _check_new_plants_are_not_scaled(base_grid, raw_wind, "wind")
 
 
 def test_new_hydro_are_not_scaled(base_grid, raw_hydro):
-    _check_new_plants_are_not_scaled(base_grid, *raw_hydro, "hydro")
+    _check_new_plants_are_not_scaled(base_grid, raw_hydro, "hydro")
 
 
 def test_new_solar_profile(base_grid, raw_solar):
-    _check_profile_of_new_plants_are_produced_correctly(base_grid, *raw_solar, "solar")
+    _check_profile_of_new_plants_are_produced_correctly(base_grid, raw_solar, "solar")
 
 
 def test_new_wind_profile(base_grid, raw_wind):
-    _check_profile_of_new_plants_are_produced_correctly(base_grid, *raw_wind, "wind")
+    _check_profile_of_new_plants_are_produced_correctly(base_grid, raw_wind, "wind")
 
 
 def test_new_hydro_profile(base_grid, raw_hydro):
-    _check_profile_of_new_plants_are_produced_correctly(base_grid, *raw_hydro, "hydro")
+    _check_profile_of_new_plants_are_produced_correctly(base_grid, raw_hydro, "hydro")
+
+
+def test_flexible_demand_profiles_are_trimmed(
+    base_grid, raw_demand_flexibility_up, raw_demand_flexibility_dn, monkeypatch
+):
+    monkeypatch.setattr(Context, "get_data_access", MockContext().get_data_access)
+    data_access = Context.get_data_access()
+
+    # Specify the fake demand flexibility profiles from MockInputData
+    zone_keys = [f"zone.{z}" for z in base_grid.id2zone.keys()]
+    base_demand_flexibility_up = raw_demand_flexibility_up[zone_keys]
+    base_demand_flexibility_dn = raw_demand_flexibility_dn[zone_keys]
+
+    # Create fake files in the expected directory path
+    exp_path = f"raw/{base_grid.grid_model}"
+
+    for csv_file in (
+        "demand_flexibility_up_Test.csv",
+        "demand_flexibility_dn_Test.csv",
+    ):
+        with data_access.write(exp_path + "/" + csv_file) as f:
+            pd.DataFrame().to_csv(f)
+
+    # Specify the change table
+    ct = ChangeTable(base_grid)
+    ct.add_demand_flexibility(
+        {
+            "demand_flexibility_up": "Test",
+            "demand_flexibility_dn": "Test",
+            "demand_flexibility_duration": 6,
+        }
+    )
+
+    # Transform the grid object accordingly
+    tg = TransformGrid(base_grid, ct.ct)
+    transformed_grid = tg.get_grid()
+
+    # Test that the demand flexibility profiles are pruned
+    empty_scenario_info = {"grid_model": base_grid.grid_model}
+    tp = TransformProfile(empty_scenario_info, transformed_grid, ct.ct)
+    transformed_demand_flexibility_up = tp.get_profile("demand_flexibility_up")
+    transformed_demand_flexibility_dn = tp.get_profile("demand_flexibility_dn")
+    assert base_demand_flexibility_up.equals(transformed_demand_flexibility_up)
+    assert base_demand_flexibility_dn.equals(transformed_demand_flexibility_dn)

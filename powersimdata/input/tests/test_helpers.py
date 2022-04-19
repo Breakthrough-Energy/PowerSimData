@@ -177,7 +177,7 @@ def test_get_plant_id_for_resources(grid):
     expected = (["nuclear"], ["solar", "ng"])
     for a, e in zip(arg, expected):
         plant_id = get_plant_id_for_resources(a[0], a[1])
-        assert set(grid.plant.loc[plant_id].type) == set(e)
+        assert set(grid.plant.loc[list(plant_id)].type) == set(e)
 
 
 def test_get_plant_id_in_loadzones_argument_type(grid):
@@ -199,7 +199,7 @@ def test_get_plant_id_in_loadzones(grid):
     expected = (["Oregon"], ["Kentucky", "Montana Western", "El Paso"])
     for a, e in zip(arg, expected):
         plant_id = get_plant_id_in_loadzones(a[0], a[1])
-        assert set(grid.plant.loc[plant_id].zone_name) == set(e)
+        assert set(grid.plant.loc[list(plant_id)].zone_name) == set(e)
 
 
 def test_get_plant_id_in_interconnects_argument_type(grid):
@@ -221,7 +221,7 @@ def test_get_plant_id_in_interconnects(grid):
     expected = (["Western"], ["Texas", "Western", "Eastern"])
     for a, e in zip(arg, expected):
         plant_id = get_plant_id_in_interconnects(a[0], a[1])
-        assert set(grid.plant.loc[plant_id].interconnect) == set(e)
+        assert set(grid.plant.loc[list(plant_id)].interconnect) == set(e)
 
 
 def test_get_plant_id_in_states_argument_type(grid):
@@ -243,7 +243,7 @@ def test_get_plant_id_in_states(grid):
     expected = (({44, 45, 216} | set(range(301, 309))), {201, 202, 214})
     for a, e in zip(arg, expected):
         plant_id = get_plant_id_in_states(a[0], a[1])
-        assert set(grid.plant.loc[plant_id].zone_id) == e
+        assert set(grid.plant.loc[list(plant_id)].zone_id) == e
 
 
 def test_get_plant_id_for_resources_in_loadzones_argument_type(grid):
@@ -278,8 +278,8 @@ def test_get_plant_id_for_resources_in_loadzones(grid):
     )
     for a, e in zip(arg, expected):
         plant_id = get_plant_id_for_resources_in_loadzones(a[0], a[1], a[2])
-        assert set(grid.plant.loc[plant_id].type) == set(e[0])
-        assert set(grid.plant.loc[plant_id].zone_name) == set(e[1])
+        assert set(grid.plant.loc[list(plant_id)].type) == set(e[0])
+        assert set(grid.plant.loc[list(plant_id)].zone_name) == set(e[1])
 
 
 def test_get_plant_id_for_resources_in_interconnects_argument_type(grid):
@@ -316,8 +316,8 @@ def test_get_plant_id_for_resources_in_interconnects(grid):
     )
     for a, e in zip(arg, expected):
         plant_id = get_plant_id_for_resources_in_interconnects(a[0], a[1], a[2])
-        assert set(grid.plant.loc[plant_id].type) == set(e[0])
-        assert set(grid.plant.loc[plant_id].interconnect) == set(e[1])
+        assert set(grid.plant.loc[list(plant_id)].type) == set(e[0])
+        assert set(grid.plant.loc[list(plant_id)].interconnect) == set(e[1])
 
 
 def test_get_plant_id_for_resources_in_states_argument_type(grid):
@@ -357,8 +357,8 @@ def test_get_plant_id_for_resources_in_states(grid):
     )
     for a, e in zip(arg, expected):
         plant_id = get_plant_id_for_resources_in_states(a[0], a[1], a[2])
-        assert set(grid.plant.loc[plant_id].type) == set(e[0])
-        assert set(grid.plant.loc[plant_id].zone_id) == set(e[1])
+        assert set(grid.plant.loc[list(plant_id)].type) == set(e[0])
+        assert set(grid.plant.loc[list(plant_id)].zone_id) == set(e[1])
 
 
 def test_get_plant_id_for_resources_in_area():

@@ -1,5 +1,4 @@
 import copy
-import pickle
 import warnings
 
 import numpy as np
@@ -11,12 +10,12 @@ from powersimdata.input.input_data import (
     InputData,
     distribute_demand_from_zones_to_buses,
 )
+from powersimdata.input.profile_input import ProfileInput
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.execute import Execute
 from powersimdata.scenario.state import State
-from powersimdata.utility import server_setup
 
 
 class Create(State):
@@ -77,11 +76,9 @@ class Create(State):
 
     def _upload_change_table(self):
         """Uploads change table to server."""
-        print("--> Writing change table on local machine")
-        self.builder.change_table.write(self._scenario_info["id"])
-        file_name = self._scenario_info["id"] + "_ct.pkl"
-        input_dir = self._data_access.join(*server_setup.INPUT_DIR)
-        self._data_access.move_to(file_name, input_dir)
+        InputData().save_change_table(
+            self.builder.change_table.ct, self._scenario_info["id"]
+        )
 
     def get_bus_demand(self):
         """Returns demand profiles, by bus.
@@ -236,6 +233,8 @@ class _Builder:
                 {
                     "grid_model": self.grid_model,
                     "base_%s" % kind: getattr(self, kind),
+                    "start_date": self.start_date,
+                    "end_date": self.end_date,
                 },
                 self.get_grid(),
                 self.get_ct(),
@@ -306,9 +305,9 @@ class _Builder:
         hours = (end_ts - start_ts) / np.timedelta64(1, "h") + 1
         if start_ts > end_ts:
             raise ValueError("start_date > end_date")
-        elif start_ts < min_ts or start_ts >= max_ts:
+        elif start_ts < min_ts or start_ts > max_ts:
             raise ValueError("start_date not in [%s,%s[" % (min_ts, max_ts))
-        elif end_ts <= min_ts or end_ts > max_ts:
+        elif end_ts < min_ts or end_ts > max_ts:
             raise ValueError("end_date not in ]%s,%s]" % (min_ts, max_ts))
         elif hours % int(interval.split("H", 1)[0]) != 0:
             raise ValueError("Incorrect interval for start and end dates")
@@ -323,7 +322,7 @@ class _Builder:
         :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         :return: (*list*) -- available version for selected profile kind.
         """
-        return InputData().get_profile_version(self.grid_model, kind)
+        return ProfileInput().get_profile_version(self.grid_model, kind)
 
     def set_base_profile(self, kind, version):
         """Sets demand profile.
@@ -358,18 +357,6 @@ class _Builder:
             return
         else:
             self.engine = engine
-
-    def load_change_table(self, filename):
-        """Uploads change table.
-
-        :param str filename: full path to change table pickle file.
-        :raises FileNotFoundError: if file not found.
-        """
-        try:
-            ct = pickle.load(open(filename, "rb"))
-            self.change_table.ct = ct
-        except FileNotFoundError:
-            raise ("%s not found. " % filename)
 
     def get_grid(self):
         """Returns a transformed grid.
