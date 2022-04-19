@@ -1,6 +1,7 @@
 from importlib import import_module
 
-from powersimdata.network.constants.storage import storage
+from powersimdata.network.constants.plants import get_plants
+from powersimdata.network.constants.storage import get_storage
 from powersimdata.network.helpers import (
     check_and_format_interconnect,
     check_model,
@@ -19,18 +20,12 @@ class ModelImmutables:
         check_model(model)
         self.model = model
 
-        self.plants = self._import_generator_related_constants()
-        self.storage = storage[model]
+        self.plants = get_plants(model)
+        self.storage = get_storage(model)
         self.zones = self._import_constants("zones")
 
         self.check_and_format_interconnect = check_and_format_interconnect
         self.interconnect_to_name = interconnect_to_name
-
-    @staticmethod
-    def _import_generator_related_constants():
-        """Import generator related constants."""
-        mod = import_module("powersimdata.network.constants.plants")
-        return {a: getattr(mod, a) for a in dir(mod)}
 
     def _import_constants(self, kind):
         """Import constants related to the grid model.
