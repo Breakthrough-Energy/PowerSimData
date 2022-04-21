@@ -9,11 +9,7 @@ from fs.multifs import MultiFS
 from fs.path import basename, dirname
 from fs.tempfs import TempFS
 
-from powersimdata.data_access.fs_helper import (
-    get_blob_fs,
-    get_multi_fs,
-    get_profile_version,
-)
+from powersimdata.data_access.fs_helper import get_blob_fs, get_multi_fs
 from powersimdata.utility import server_setup
 
 
@@ -146,16 +142,16 @@ class DataAccess:
         if not should_exist and exists:
             raise OSError(f"{path} already exists on {location}")
 
-    def get_profile_version(self, grid_model, kind):
-        """Returns available raw profile from blob storage
+    def get_profile_version(self, callback):
+        """Returns available raw profile from blob storage or local disk
 
-        :param str grid_model: grid model.
-        :param str kind: *'demand'*, *'hydro'*, *'solar'* or *'wind'*.
+        :param callable callback: a function taking a fs instance that returns the
+            available profiles on that fs
         :return: (*list*) -- available profile version.
         """
-        bfs = fs.open_fs("azblob://besciences@profiles")
-        blob_version = get_profile_version(bfs, grid_model, kind)
-        local_version = get_profile_version(self.local_fs, grid_model, kind)
+        bfs = get_blob_fs("profiles")
+        blob_version = callback(bfs)
+        local_version = callback(self.local_fs)
         return list(set(blob_version + local_version))
 
     def checksum(self, relative_path):

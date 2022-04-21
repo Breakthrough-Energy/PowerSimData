@@ -49,22 +49,3 @@ def get_multi_fs(root):
     remotes = ",".join([f[0] for f in mfs.iterate_fs()])
     print(f"Initialized remote filesystem with {remotes}")
     return mfs
-
-
-def get_profile_version(_fs, grid_model, kind):
-    """Returns available raw profile from the given filesystem
-
-    :param fs.base.FS _fs: filesystem instance
-    :param str grid_model: grid model.
-    :param str kind: *'demand'*, *'hydro'*, *'solar'*, *'wind'*,
-        *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
-        *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
-    :return: (*list*) -- available profile version.
-    """
-    _fs = _fs.makedirs(f"raw/{grid_model}", recreate=True)
-    matching = [f for f in _fs.listdir(".") if kind in f]
-
-    # Don't include demand flexibility profiles as possible demand profiles
-    if kind == "demand":
-        matching = [p for p in matching if "demand_flexibility" not in p]
-    return [f.lstrip(f"{kind}_").rstrip(".csv") for f in matching]
