@@ -6,10 +6,11 @@ from powersimdata.input.transform_demand import TransformDemand
 from powersimdata.tests.mock_profile_input import MockProfileInput
 
 
-def test_profile_to_zone():
+def test_profile_mappings():
     grid = Grid("Texas")
     ct = ChangeTable(grid)
-    info = {
+    grid_info = {"res_heating": {"standard_heat_pump_v2": 0.3}}
+    zone_info = {
         "East": {"res_cooking": {"advanced_heat_pump_v2": 0.7}},
         "Coast": {
             "com_hot_water": {
@@ -23,10 +24,14 @@ def test_profile_to_zone():
     }
 
     kind = "building"
-    ct.add_electrification(kind, {"zone": info})
+    ct.add_electrification(kind, {"zone": zone_info, "grid": grid_info})
     td = TransformDemand(grid, ct, kind)
-    actual = td._get_profile_to_zone()
 
+    actual = td.p2g
+    expected = {"res_heating_standard_heat_pump_v2.csv": 0.3}
+    assert expected == actual
+
+    actual = td.p2z
     expected = {
         "res_cooking_advanced_heat_pump_v2.csv": [(308, 0.7), (301, 0.3)],
         "com_hot_water_standard_heat_pump_v1.csv": [(307, 0.6)],
@@ -41,8 +46,9 @@ def test_aggregate_demand():
     grid = Grid("Texas")
     ct = ChangeTable(grid)
     kind = "building"
-    info = {"East": {"res_cooking": {"advanced_heat_pump_v2": 0.7}}}
-    ct.add_electrification(kind, {"zone": info})
+    zone_info = {"East": {"res_cooking": {"advanced_heat_pump_v2": 0.7}}}
+    grid_info = {"res_cooking": {"advanced_heat_pump_v2": 0.3}}
+    ct.add_electrification(kind, {"zone": zone_info, "grid": grid_info})
 
     mock_input = MockProfileInput(grid)
     demand = mock_input.get_data(None, "demand")
@@ -53,4 +59,4 @@ def test_aggregate_demand():
     result = td.value()
 
     pd.testing.assert_series_equal(0.7 * demand.loc[:, 308], result.loc[:, 308])
-    pd.testing.assert_frame_equal(demand.loc[:, :307], result.loc[:, :307])
+    pd.testing.assert_frame_equal(0.3 * demand.loc[:, :307], result.loc[:, :307])

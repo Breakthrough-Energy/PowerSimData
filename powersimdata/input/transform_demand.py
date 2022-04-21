@@ -38,10 +38,8 @@ class TransformDemand:
         for end_use in info["grid"].keys():
             for tech in info["grid"][end_use].keys():
                 profile = f"{end_use}_{tech}.csv"
-                if profile not in p2g:
-                    p2g[profile] = []
                 scale_factor = info["grid"][end_use][tech]
-                p2g[profile].append(scale_factor)
+                p2g[profile] = scale_factor
         return p2g
 
     def _set_scale_factors(self):
