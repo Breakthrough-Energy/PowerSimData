@@ -1,4 +1,4 @@
-from powersimdata.input.profile_input import ProfileInput
+from powersimdata.input.electrified_demand_input import ElectrifiedDemand
 
 
 class TransformDemand:
@@ -6,14 +6,14 @@ class TransformDemand:
         self.grid = grid
         self.ct = ct.ct
         self.info = self.ct[kind]
-        self._profile_input = ProfileInput()
-        self.scenario_info = {"base_demand": "vJan2021", "grid_model": grid.grid_model}
+        self.kind = kind
+        self._profile_data = ElectrifiedDemand()
         self._set_scale_factors()
 
     def _get_base_profile(self, profile):
-        print(f"temporarily ignoring {profile}")
         zone_id = sorted(self.grid.bus.zone_id.unique())
-        demand = self._profile_input.get_data(self.scenario_info, "demand").loc[
+        model = self.grid.grid_model
+        demand = self._profile_data.get_profile(model, self.kind, profile).loc[
             :, zone_id
         ]
         return demand

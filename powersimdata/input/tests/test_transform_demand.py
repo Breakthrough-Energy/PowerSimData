@@ -46,9 +46,10 @@ def test_aggregate_demand():
 
     mock_input = MockProfileInput(grid)
     demand = mock_input.get_data(None, "demand")
+    mock_input.get_profile = lambda *args: demand
 
     td = TransformDemand(grid, ct, kind)
-    td._profile_input = mock_input
+    td._profile_data = mock_input
     result = td.value()
 
     pd.testing.assert_series_equal(0.7 * demand.loc[:, 308], result.loc[:, 308])
