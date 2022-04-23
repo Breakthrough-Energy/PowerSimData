@@ -1,7 +1,6 @@
-from importlib import import_module
-
 from powersimdata.network.constants.plants import get_plants
 from powersimdata.network.constants.storage import get_storage
+from powersimdata.network.constants.zones import get_zones
 from powersimdata.network.helpers import (
     check_and_format_interconnect,
     check_model,
@@ -13,28 +12,25 @@ class ModelImmutables:
     """Immutables for a grid model.
 
     :param str model: grid model name.
+    :param str interconnect: interconnect of grid model.
     """
 
-    def __init__(self, model):
+    def __init__(self, model, interconnect=None):
         """Constructor."""
         check_model(model)
         self.model = model
+        interconnect = (
+            ["USA"]
+            if interconnect is None
+            else check_and_format_interconnect(interconnect, model=model)
+        )
 
         self.plants = get_plants(model)
         self.storage = get_storage(model)
-        self.zones = self._import_constants("zones")
+        self.zones = get_zones(interconnect, model)
 
         self.check_and_format_interconnect = check_and_format_interconnect
         self.interconnect_to_name = interconnect_to_name
-
-    def _import_constants(self, kind):
-        """Import constants related to the grid model.
-
-        :param str kind: either *'plants'*, *'storage'* or *'zones'*.
-        :return: (*dict*) -- constants of the grid model
-        """
-        mod = import_module(f"powersimdata.network.{self.model}.constants.{kind}")
-        return {a: getattr(mod, a) for a in dir(mod)}
 
     def area_to_loadzone(self, *args, **kwargs):
         """Map the query area to a list of loadzones, using the known grid model."""

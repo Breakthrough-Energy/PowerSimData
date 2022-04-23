@@ -211,7 +211,7 @@ def _check_connected_components(grid, error_messages):
     num_connected_components = len([c for c in nx.connected_components(g)])
     if len(grid.interconnect) == 1:
         # Check for e.g. ['USA'] interconnect, which is really three interconnects
-        interconnect_aliases = grid.model_immutables.zones["interconnect_combinations"]
+        interconnect_aliases = grid.model_immutables.zones["name2interconnect"]
         if grid.interconnect[0] in interconnect_aliases:
             num_interconnects = len(interconnect_aliases[grid.interconnect[0]])
         else:
