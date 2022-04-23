@@ -1,3 +1,7 @@
+import os
+
+import pandas as pd
+
 from powersimdata.network.constants.model import model2interconnect, model2region
 
 
@@ -19,11 +23,11 @@ def check_and_format_interconnect(interconnect, model="hifld"):
 
     :param str/iterable interconnect: interconnect name(s).
     :param str model: the grid model.
-    :return: (*set*) -- interconnect(s)
+    :return: (*list*) -- interconnect(s)
     :raises TypeError: if ``interconnect`` is not a str.
     :raises ValueError:
         if ``interconnect`` is not in the model.
-        if combination of interconnect is incorrect.
+        if combination of interconnects is incorrect.
     """
     if isinstance(interconnect, str):
         interconnect = [interconnect]
@@ -41,7 +45,7 @@ def check_and_format_interconnect(interconnect, model="hifld"):
     if region in interconnect and len(interconnect) > 1:
         raise ValueError(f"{region} cannot be paired")
     if len(set(possible) - set(interconnect)) == 0:
-        raise ValueError(f"Use {region} instead")
+        interconnect = [region]
 
     return interconnect
 
@@ -49,7 +53,25 @@ def check_and_format_interconnect(interconnect, model="hifld"):
 def interconnect_to_name(interconnect, model="hifld"):
     """Return name of interconnect or collection of interconnects for a grid model.
 
-    :param list interconnect: interconnect name(s).
+    :param str/iterable interconnect: interconnect name(s).
     :param str model: the grid model.
+    :return: (*str*): name of grid model.
     """
-    return "_".join(sorted(check_and_format_interconnect(interconnect, model)))
+    return "_".join(sorted(check_and_format_interconnect(interconnect, model=model)))
+
+
+def get_zone_info(model="hifld"):
+    """Return information loacated in the zone CSV file of the model.
+
+    :param str model: the grid model.
+    :return: (*pandas.DataFrame*) -- information on the zones of the model.
+    :raises FileNotFoundError: if file enclosing the geographical information of the
+        grid model can't be found.
+    """
+    check_model(model)
+
+    path = os.path.join(os.path.dirname(__file__), model, "data", "zone.csv")
+    if os.path.exists(path):
+        return pd.read_csv(path, index_col=0)
+    else:
+        raise FileNotFoundError(f"File {path} cannot be found")
