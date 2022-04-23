@@ -217,7 +217,7 @@ def test_get_plant_id_in_interconnects_argument_value(grid):
 
 
 def test_get_plant_id_in_interconnects(grid):
-    arg = (("Western", grid), (["Texas_Western", "Eastern"], grid))
+    arg = (("Western", grid), (["Texas", "Western", "Eastern"], grid))
     expected = (["Western"], ["Texas", "Western", "Eastern"])
     for a, e in zip(arg, expected):
         plant_id = get_plant_id_in_interconnects(a[0], a[1])
@@ -286,7 +286,7 @@ def test_get_plant_id_for_resources_in_interconnects_argument_type(grid):
     arg = (
         (1, 1, grid),
         ([1, 2, 3], {4, 5, 5}, grid),
-        (["solar", "ng", "gothermal"], "Texas_Western", 1),
+        (["solar", "ng", "gothermal"], "Texas", 1),
     )
     for a in arg:
         with pytest.raises(TypeError):
@@ -306,7 +306,7 @@ def test_get_plant_id_for_resources_in_interconnects_argument_value(grid):
 def test_get_plant_id_for_resources_in_interconnects(grid):
     arg = (
         ("solar", ["Western"], grid),
-        (["nuclear", "wind"], ["Texas_Western"], grid),
+        (["nuclear", "wind"], ["Texas", "Western"], grid),
         (["geothermal"], ["Western", "Eastern"], grid),
     )
     expected = (
