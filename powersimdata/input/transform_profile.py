@@ -1,6 +1,7 @@
 import copy
 
 from powersimdata.input.profile_input import ProfileInput
+from powersimdata.input.transform_demand import TransformDemand
 
 
 class TransformProfile:
@@ -161,6 +162,13 @@ class TransformProfile:
         # Return the pruned data frame
         return df
 
+    def _get_electrified_demand(self):
+        result = self._get_demand_profile()
+        for kind in ("building", "transportation"):
+            if kind in self.ct:
+                result += TransformDemand(self.grid, self.ct, kind).value()
+        return result
+
     def _slice_df(self, df):
         """Return dataframe, sliced by the times specified in scenario_info if and only
         if ``self.slice`` = True.
@@ -196,7 +204,7 @@ class TransformProfile:
         if name not in possible:
             raise ValueError("Choose from %s" % " | ".join(possible))
         elif name == "demand":
-            return self._slice_df(self._get_demand_profile())
+            return self._slice_df(self._get_electrified_demand())
         elif "demand_flexibility" in name:
             return self._slice_df(self._get_demand_flexibility_profile(name))
         else:
