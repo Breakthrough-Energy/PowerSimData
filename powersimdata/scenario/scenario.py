@@ -5,6 +5,11 @@ import pandas as pd
 from powersimdata.data_access.context import Context
 from powersimdata.data_access.execute_list import ExecuteListManager
 from powersimdata.data_access.scenario_list import ScenarioListManager
+from powersimdata.input.import_data import (
+    analyze_importable,
+    get_info_from_importable,
+    is_importable,
+)
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create, _Builder
 from powersimdata.scenario.execute import Execute
@@ -45,12 +50,20 @@ class Scenario:
         ("engine", ""),
     ]
 
+    SUPPORTED_IMPORTS = {"pypsa"}
+
     def __init__(self, descriptor=None):
         """Constructor."""
         if isinstance(descriptor, int):
             descriptor = str(descriptor)
-        if descriptor is not None and not isinstance(descriptor, str):
-            raise TypeError("Descriptor must be a string or int (for a Scenario ID)")
+        if (
+            descriptor is not None
+            and not isinstance(descriptor, str)
+            and not is_importable(descriptor)
+        ):
+            raise TypeError(
+                f"Descriptor must be a string or int (for a Scenario ID) or in the list of supported imports {self.SUPPORTED_IMPORTS}"
+            )
 
         self.data_access = Context.get_data_access()
         self._scenario_list_manager = ScenarioListManager(self.data_access)
@@ -64,11 +77,16 @@ class Scenario:
             self._set_info(descriptor)
             try:
                 state = self.info["state"]
-                self._set_status()
                 if state == "execute":
+                    self._set_status()
                     self.state = Execute(self)
+                elif is_importable(descriptor):
+                    self.status = None
+                    self.state = analyze_importable(descriptor)
                 elif state == "analyze":
+                    self._set_status()
                     self.state = Analyze(self)
+
             except AttributeError:
                 pass
 
@@ -105,6 +123,9 @@ class Scenario:
 
         :param str descriptor: scenario descriptor.
         """
+        if is_importable(descriptor):
+            self.info = get_info_from_importable(descriptor)
+            return
         info = self._scenario_list_manager.get_scenario(descriptor)
         if info is None:
             raise ValueError(

@@ -6,7 +6,6 @@ import pandas as pd
 
 from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.grid import Grid
-from powersimdata.input.import_data import _PypsaBuilder, is_pypsa_network
 from powersimdata.input.input_data import (
     InputData,
     distribute_demand_from_zones_to_buses,
@@ -144,17 +143,10 @@ class Create(State):
         :param str grid_model: name of grid model. Default is *'usa_tamu'*.
         :param str/list interconnect: name of interconnect(s). Default is *'USA'*.
         """
-        if is_pypsa_network(grid_model):
-            self.builder = _PypsaBuilder(grid_model, interconnect, None)
-            self.exported_methods |= _PypsaBuilder.exported_methods
-
-        else:
-            self.builder = _Builder(
-                grid_model,
-                interconnect,
-                self._scenario_list_manager.get_scenario_table(),
-            )
-            self.exported_methods |= _Builder.exported_methods
+        self.builder = _Builder(
+            grid_model, interconnect, self._scenario_list_manager.get_scenario_table()
+        )
+        self.exported_methods |= _Builder.exported_methods
 
         print("--> Summary")
         print("# Existing study")

@@ -1,11 +1,12 @@
-import copy
 import warnings
+from typing import OrderedDict
 
 import numpy as np
 import pandas as pd
 
 from powersimdata.input.abstract_grid import AbstractGrid
 from powersimdata.input.export_data import pypsa_const as pypsa_export_const
+from powersimdata.scenario.analyze import Analyze
 
 pypsa_import_const = {
     "bus": {
@@ -290,86 +291,45 @@ class FromPyPSA(AbstractGrid):
         return {v: k for (k, v) in d.items()}
 
 
-def is_pypsa_network(obj):
-    """
-    Check whether object is a pypsa.Network or not.
+class AnalyzePypsa(Analyze):
+    """PyPSA Scenario Analyze State."""
 
-    If pypsa is not installed the function returns False.
-    """
-    from powersimdata.input.export_data import PYPSA_AVAILABLE
-
-    if not PYPSA_AVAILABLE:
-        return False
-    from pypsa import Network
-
-    return isinstance(obj, Network)
-
-
-class _PypsaBuilder:
-    """PyPSA Scenario Builder.
-
-    :param str grid_model: grid model.
-    :param list interconnect: list of interconnect(s) to build.
-    :param pandas.DataFrame table: scenario list table
-    """
-
-    plan_name = ""
-    scenario_name = ""
-    # start_date = "2016-01-01 00:00:00"
-    # end_date = "2016-12-31 23:00:00"
-    # interval = "24H"
-    demand = ""
-    hydro = ""
-    solar = ""
-    wind = ""
-    engine = "pypsa"
-    exported_methods = {
-        "set_base_profile",
-        "set_engine",
-        "set_name",
-        "set_time",
-        "get_ct",
-        "get_grid",
-        "get_base_grid",
-        "get_demand",
-        "get_hydro",
-        "get_solar",
-        "get_wind",
-        "change_table",
-    }
-
-    def __init__(self, grid_model, interconnect, table):
+    def __init__(self, n):
         """Constructor."""
         # Circumvent cyclic imports
+        from pypsa.descriptors import get_switchable_as_dense
+
         from powersimdata.input.change_table import ChangeTable
         from powersimdata.input.grid import Grid
+        from powersimdata.input.import_data import is_pypsa_network
 
-        if not is_pypsa_network(grid_model):
-            raise TypeError(f"Expected a pypsa.Network, got {type(grid_model)}.")
-
-        n = grid_model
+        if not is_pypsa_network(n):
+            raise TypeError(f"Expected a pypsa.Network, got {type(n)}.")
 
         self.base_grid = Grid(n, source="pypsa")
         self.name = n.name
         self.interconnect = self.base_grid.interconnect
         self.grid_model = self.base_grid.grid_model
-        self.change_table = ChangeTable(self.base_grid)
+        self.ct = ChangeTable(self.base_grid)
         self.existing = pd.Series(dtype=object)
         self.interconnect = self.base_grid.interconnect
+        self._scenario_info = None
 
         self.start_date = n.snapshots[0]
         self.end_date = n.snapshots[-1]
         self.interval = None
 
-        from pypsa.descriptors import get_switchable_as_dense
-
         if not n.loads_t.p.empty:
-            self._demand = n.loads_t.p.copy()
+            demand = n.loads_t.p.copy()
         else:
-            self._demand = n.loads_t.p_set.copy()
-        self._demand.columns = pd.to_numeric(self._demand.columns, errors="ignore")
-        self._demand.columns.name = "bus_id"
-        self._demand.index.name = "UTC Time"
+            demand = n.loads_t.p_set.copy()
+        if "zone_id" in n.buses:
+            # Assume this is a PyPSA network originally created from powersimdata
+            demand = demand.groupby(n.buses.zone_id.dropna().astype(int), axis=1).sum()
+        demand.columns = pd.to_numeric(demand.columns, errors="ignore")
+        demand.columns.name = None
+        demand.index.name = "UTC Time"
+        self._demand = demand
 
         p_max_pu = get_switchable_as_dense(n, "Generator", "p_max_pu")
         p_max_pu.columns = pd.to_numeric(p_max_pu.columns, errors="ignore")
@@ -389,12 +349,62 @@ class _PypsaBuilder:
         wind_gen = gens.query("'wind' in carrier").index
         self._wind = p_max_pu[wind_gen] * gens.p_nom[wind_gen]
 
-    def get_ct(self):
-        """Returns change table.
+        pattern = " load shedding"
+        mask = n.generators.index.str.endswith(pattern)
+        loadshed_gen = n.generators[mask].index
+        loadshed = n.generators_t.p[loadshed_gen] * n.generators.sign[loadshed_gen]
+        loadshed_buses = loadshed.columns.str[: -len(pattern)]
+        loadshed.columns = pd.to_numeric(loadshed_buses, errors="ignore")
 
-        :return: (*dict*) -- change table.
+        pg = n.generators_t.p.drop(columns=loadshed_gen)
+        pg.columns = pd.to_numeric(pg.columns, errors="ignore")
+
+        pf = pd.concat([n.lines_t.p0, n.transformers_t.p0], axis=1)
+        pf.columns = pd.to_numeric(pf.columns, errors="ignore")
+
+        pf_dcline = n.links_t.p0[n.links.query("carrier == 'dc'").index]
+        pf_dcline.columns = pd.to_numeric(pf_dcline.columns, errors="ignore")
+
+        lmp = n.buses_t.marginal_price.copy()
+
+        congu = pd.concat([n.lines_t.mu_upper, n.transformers_t.mu_upper], axis=1)
+        congu.columns = pd.to_numeric(congu.columns, errors="ignore")
+
+        congl = pd.concat([n.lines_t.mu_lower, n.transformers_t.mu_lower], axis=1)
+        congl.columns = pd.to_numeric(congl.columns, errors="ignore")
+
+        possible = [
+            "PG",
+            "PF",
+            "PF_DCLINE",
+            "LMP",
+            "CONGU",
+            "CONGL",
+            "AVERAGED_CONG",
+            "STORAGE_PG",
+            "STORAGE_E",
+            "LOAD_SHED",
+            "LOAD_SHIFT_UP",
+            "LOAD_SHIFT_DN",
+        ]
+        self._data = {key: pd.DataFrame(dtype=object) for key in possible}
+        self._data["PG"] = pg
+        self._data["PF"] = pf
+        self._data["PF_DCLINE"] = pf_dcline
+        self._data["LMP"] = lmp
+        self._data["CONGL"] = congl
+        self._data["CONGU"] = congu
+        self._data["LOAD_SHED"] = loadshed
+
+    def _get_data(self, key):
+        return self._data[key]
+
+    def get_grid(self):
+        """Returns a transformed grid.
+
+        :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
         """
-        return copy.deepcopy(self.change_table.ct)
+        return self.base_grid
 
     def get_profile(self, kind):
         """Returns demand, hydro, solar or wind  profile.
@@ -416,109 +426,67 @@ class _PypsaBuilder:
     def get_demand(self):
         """Returns demand profile.
 
-        :return: (*pandas.DataFrame*) -- data frame of demand (hour, zone id).
+        :return: (*pandas.DataFrame*) -- demand profile.
         """
-        return self.get_profile("demand")
-
-    def get_hydro(self):
-        """Returns hydro profile.
-
-        :return: (*pandas.DataFrame*) -- data frame of hydro power output (hour, plant).
-        """
-        return self.get_profile("hydro")
-
-    def get_solar(self):
-        """Returns solar profile.
-
-        :return: (*pandas.DataFrame*) -- data frame of solar power output (hour, plant).
-        """
-        return self.get_profile("solar")
-
-    def get_wind(self):
-        """Returns wind profile.
-
-        :return: (*pandas.DataFrame*) -- data frame of wind power output (hour, plant).
-        """
-        return self.get_profile("wind")
-
-    def set_name(self, plan_name, scenario_name):
-        """Sets scenario name.
-
-        :param str plan_name: plan name
-        :param str scenario_name: scenario name.
-        :raises ValueError: if combination plan - scenario already exists
-        """
-
-        if plan_name in self.existing.plan.tolist():
-            scenario = self.existing[self.existing.plan == plan_name]
-            if scenario_name in scenario.name.tolist():
-                raise ValueError(
-                    "Combination %s - %s already exists" % (plan_name, scenario_name)
-                )
-        self.plan_name = plan_name
-        self.scenario_name = scenario_name
-
-    def set_time(self, start_date, end_date, interval):
-        """Sets scenario start and end dates as well as the interval that will
-        be used to split the date range.
-
-        :param str start_date: start date.
-        :param str end_date: start date.
-        :param str interval: interval.
-        :raises ValueError: if start date, end date or interval are invalid.
-        """
-        min_ts = pd.Timestamp("2016-01-01 00:00:00")
-        max_ts = pd.Timestamp("2016-12-31 23:00:00")
-
-        start_ts = pd.Timestamp(start_date)
-        end_ts = pd.Timestamp(end_date)
-        hours = (end_ts - start_ts) / np.timedelta64(1, "h") + 1
-        if start_ts > end_ts:
-            raise ValueError("start_date > end_date")
-        elif start_ts < min_ts or start_ts >= max_ts:
-            raise ValueError("start_date not in [%s,%s[" % (min_ts, max_ts))
-        elif end_ts <= min_ts or end_ts > max_ts:
-            raise ValueError("end_date not in ]%s,%s]" % (min_ts, max_ts))
-        elif hours % int(interval.split("H", 1)[0]) != 0:
-            raise ValueError("Incorrect interval for start and end dates")
-        else:
-            self.start_date = start_date
-            self.end_date = end_date
-            self.interval = interval
-
-    def get_base_profile(self, kind):
-        """Returns available base profiles.
-
-        :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
-        :return: (*list*) -- available version for selected profile kind.
-        """
-        return [f"{self.start_date} - {self.end_date} from PyPSA network"]
-
-    def set_base_profile(self, kind, version):
-        raise NotImplementedError(
-            "set_base_profile not implemented for models imported from PyPSA."
-        )
-
-    def set_engine(self, engine):
-        """Sets simulation engine to be used for scenario.
-
-        :param str engine: simulation engine
-        """
-        possible = ["pypsa"]
-        if engine not in possible:
-            print("Available engines: %s" % " | ".join(possible))
-            return
-        else:
-            self.engine = engine
-
-    def get_grid(self):
-        """Returns a transformed grid.
-
-        :return: (*powersimdata.input.grid.Grid*) -- a Grid object.
-        """
-        return self.base_grid
-
-    def __str__(self):
-        return self.name
+        return self._demand
 
     get_base_grid = get_grid
+
+
+def is_pypsa_network(obj):
+    """
+    Check whether object is a pypsa.Network or not.
+
+    If pypsa is not installed the function returns False.
+    """
+    from powersimdata.input.export_data import PYPSA_AVAILABLE
+
+    if not PYPSA_AVAILABLE:
+        return False
+    from pypsa import Network
+
+    return isinstance(obj, Network)
+
+
+def get_info_from_importable(obj):
+    if is_pypsa_network(obj):
+        return OrderedDict(
+            [
+                ("plan", ""),
+                ("name", obj.name),
+                ("id", -1),
+                ("state", "analyze"),
+                ("grid_model", ""),
+                ("interconnect", ""),
+                ("base_demand", ""),
+                ("base_hydro", ""),
+                ("base_solar", ""),
+                ("base_wind", ""),
+                ("change_table", ""),
+                ("start_date", obj.snapshots[0]),
+                ("end_date", obj.snapshots[-1]),
+                ("interval", ""),
+                ("engine", ""),
+            ]
+        )
+    else:
+        return OrderedDict()
+
+
+def is_importable(obj):
+    """
+    Check whether powersimdata supports importing an object.
+    """
+    return is_pypsa_network(obj)  # and possibly others
+
+
+def analyze_importable(obj):
+    """
+    Analyze an importable object.
+    """
+    assert is_importable(obj)
+
+    if is_pypsa_network(obj):
+        return AnalyzePypsa(obj)
+    else:
+        raise NotImplementedError(f"Analyze not implemented for this type {type(obj)}.")

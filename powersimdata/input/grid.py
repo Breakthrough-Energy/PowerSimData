@@ -2,7 +2,6 @@ import os
 
 from powersimdata.data_access.context import Context
 from powersimdata.data_access.scenario_list import ScenarioListManager
-from powersimdata.input.import_data import FromPyPSA, is_pypsa_network
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
 from powersimdata.network.model import ModelImmutables
 from powersimdata.network.usa_tamu.constants import storage as tamu_storage
@@ -33,6 +32,9 @@ class Grid:
 
     def __init__(self, interconnect, source="usa_tamu", engine="REISE"):
         """Constructor."""
+        # avoid circular imports
+        from powersimdata.input.import_data import FromPyPSA, is_pypsa_network
+
         if not isinstance(source, str):
             raise TypeError("source must be a str")
         if (
