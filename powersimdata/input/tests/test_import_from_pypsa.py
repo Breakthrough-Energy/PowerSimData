@@ -3,10 +3,11 @@ from pandas.testing import assert_series_equal
 
 from powersimdata.input.export_data import PYPSA_AVAILABLE, export_to_pypsa
 from powersimdata.input.grid import Grid
+from powersimdata.scenario.scenario import Scenario
 
 
 @pytest.mark.skipif(not PYPSA_AVAILABLE, reason="Package PyPSA not available.")
-def test_import_arbitrary_network_from_pypsa():
+def test_import_arbitrary_network_from_pypsa_to_grid():
     import pypsa
 
     n = pypsa.examples.ac_dc_meshed()
@@ -14,6 +15,16 @@ def test_import_arbitrary_network_from_pypsa():
 
     assert not grid.bus.empty
     assert len(n.buses) == len(grid.bus)
+
+
+@pytest.mark.skipif(not PYPSA_AVAILABLE, reason="Package PyPSA not available.")
+def test_import_arbitrary_network_from_pypsa_to_scenario():
+    import pypsa
+
+    n = pypsa.examples.ac_dc_meshed()
+    s = Scenario(n)
+
+    assert not s.get_demand().empty
 
 
 @pytest.mark.skipif(not PYPSA_AVAILABLE, reason="Package PyPSA not available.")
