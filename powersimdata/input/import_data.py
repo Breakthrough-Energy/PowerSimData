@@ -254,6 +254,8 @@ class FromPyPSA(AbstractGrid):
             )
             branch = branch.assign(**_)
             dcline = dcline.assign(**self._translate_pnl(n.pnl("Link"), "link"))
+        else: 
+            plant['status'] = n.generators_t.status.any().astype(int)
 
         # Convert to numeric
         for df in (bus, sub, bus2sub, gencost, plant, branch, dcline):
@@ -373,6 +375,8 @@ class AnalyzePypsa(Analyze):
         congl = pd.concat([n.lines_t.mu_lower, n.transformers_t.mu_lower], axis=1)
         congl.columns = pd.to_numeric(congl.columns, errors="ignore")
 
+        average_cong = pd.concat({"CONGL": congl.mean(), "CONGU": congu.mean()}, axis=1)
+
         possible = [
             "PG",
             "PF",
@@ -394,6 +398,7 @@ class AnalyzePypsa(Analyze):
         self._data["LMP"] = lmp
         self._data["CONGL"] = congl
         self._data["CONGU"] = congu
+        self._data["AVERAGED_CONG"] = average_cong
         self._data["LOAD_SHED"] = loadshed
 
     def _get_data(self, key):
