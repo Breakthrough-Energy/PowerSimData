@@ -254,8 +254,8 @@ class FromPyPSA(AbstractGrid):
             )
             branch = branch.assign(**_)
             dcline = dcline.assign(**self._translate_pnl(n.pnl("Link"), "link"))
-        else: 
-            plant['status'] = n.generators_t.status.any().astype(int)
+        else:
+            plant["status"] = n.generators_t.status.any().astype(int)
 
         # Convert to numeric
         for df in (bus, sub, bus2sub, gencost, plant, branch, dcline):
@@ -311,7 +311,7 @@ class AnalyzePypsa(Analyze):
         self.base_grid = Grid(n, source="pypsa")
         self.name = n.name
         self.interconnect = self.base_grid.interconnect
-        self.grid_model = self.base_grid.grid_model
+        self.grid_model = getattr(self.base_grid, "grid_model", None)
         self.ct = ChangeTable(self.base_grid)
         self.existing = pd.Series(dtype=object)
         self.interconnect = self.base_grid.interconnect
