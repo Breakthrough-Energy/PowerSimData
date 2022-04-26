@@ -36,6 +36,8 @@ def check_and_format_interconnect(interconnect, model="hifld"):
     except TypeError:
         raise TypeError("interconnect must be either str or an iterable of str")
 
+    interconnect = [i.replace(" ", "") for i in interconnect]
+
     region = model2region[model]
     possible = model2interconnect[model]
     if len(set(interconnect) - ({region} | set(possible))) != 0:

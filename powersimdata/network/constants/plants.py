@@ -1,3 +1,5 @@
+from powersimdata.network.helpers import check_model
+
 type2color = {
     "wind": "xkcd:green",
     "solar": "xkcd:amber",
@@ -92,6 +94,8 @@ def get_plants(model):
     :param str model: grid model
     :return: (*dict*) -- plants information.
     """
+    check_model(model)
+
     exports = [
         "all_resources",
         "carbon_resources",
@@ -106,5 +110,4 @@ def get_plants(model):
         "type2hatchcolor",
         "type2label",
     ]
-    if model in ["usa_tamu", "hifld"]:
-        return {a: eval(a) for a in exports}
+    return {a: eval(a) for a in exports}
