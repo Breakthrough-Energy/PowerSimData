@@ -10,7 +10,6 @@ from powersimdata.input.check import (
     _check_plants_are_in_grid,
     _check_resources_are_in_grid_and_format,
 )
-from powersimdata.network.model import area_to_loadzone
 
 
 def csv_to_data_frame(data_loc, filename):
@@ -416,9 +415,7 @@ def get_plant_id_for_resources_in_area(scenario, area, resources, area_type=None
     """
     resource_set = set([resources]) if isinstance(resources, str) else set(resources)
     grid = scenario.state.get_grid()
-    loadzone_set = area_to_loadzone(
-        scenario.info["grid_model"], area, area_type=area_type
-    )
+    loadzone_set = grid.model_immutables.area_to_loadzone(area, area_type=area_type)
     plant_id = grid.plant[
         (grid.plant["zone_name"].isin(loadzone_set))
         & (grid.plant["type"].isin(resource_set))
@@ -438,9 +435,7 @@ def get_storage_id_in_area(scenario, area, area_type=None):
     :return: (*list*) -- list of storage id
     """
     grid = scenario.state.get_grid()
-    loadzone_set = area_to_loadzone(
-        scenario.info["grid_model"], area, area_type=area_type
-    )
+    loadzone_set = grid.model_immutables.area_to_loadzone(area, area_type=area_type)
     loadzone_id_set = {grid.zone2id[lz] for lz in loadzone_set if lz in grid.zone2id}
 
     gen = grid.storage["gen"]

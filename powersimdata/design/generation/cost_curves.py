@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 
 from powersimdata.input.grid import Grid
-from powersimdata.network.model import area_to_loadzone
 from powersimdata.utility.helpers import _check_import
 
 
@@ -195,9 +194,8 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
     :param str area: Either the load zone, state name, state abbreviation, or
         interconnect.
     :param str/iterable gen_type: Generation type(s).
-    :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*,
-        *'interconnect'*. Defaults to None, which allows
-        :func:`powersimdata.network.model.area_to_loadzone` to infer the type.
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*. If set to None, type will be inferred.
     :param bool plot: If True, the supply curve plot is shown. If False, the plot is
         not shown.
     :return: (*tuple*) -- First element is a list of capacity (MW) amounts needed
@@ -232,7 +230,7 @@ def build_supply_curve(grid, num_segments, area, gen_type, area_type=None, plot=
         raise ValueError(f"{gen_type} contains invalid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
-    returned_zones = area_to_loadzone(grid.grid_model, area, area_type)
+    returned_zones = grid.model_immutables.area_to_loadzone(area, area_type=area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     supply_data = supply_data.loc[supply_data.zone_name.isin(returned_zones)]
@@ -427,8 +425,7 @@ def plot_linear_vs_quadratic_terms(
         interconnect.
     :param str gen_type: Generation type.
     :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*,
-        *'interconnect'*. Defaults to None, which allows
-        :func:`powersimdata.network.model.area_to_loadzone` to infer the type.
+        *'interconnect'*. if set to None, the type will be inferred.
     :param bool plot: If True, the linear term vs. quadratic term plot is shown. If
         False, the plot is not shown.
     :param bool zoom: If True, filters out quadratic term outliers to enable better
@@ -474,7 +471,7 @@ def plot_linear_vs_quadratic_terms(
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
-    returned_zones = area_to_loadzone(grid.grid_model, area, area_type)
+    returned_zones = grid.model_immutables.area_to_loadzone(area, area_type=area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     supply_data = supply_data.loc[supply_data.zone_name.isin(returned_zones)]
@@ -549,8 +546,7 @@ def plot_capacity_vs_price(
         interconnect.
     :param str gen_type: Generation type.
     :param str area_type: one of: *'loadzone'*, *'state'*, *'state_abbr'*,
-        *'interconnect'*. Defaults to None, which allows
-        :func:`powersimdata.network.model.area_to_loadzone` to infer the type.
+        *'interconnect'*. If set to None, the type will be inferred.
     :param bool plot: If True, the supply curve plot is shown. If False, the plot is
         not shown.
     :return: (*None*) -- The capacity vs. price plot is displayed according to the user.
@@ -581,7 +577,7 @@ def plot_capacity_vs_price(
         raise ValueError(f"{gen_type} is not a valid generation type.")
 
     # Identify the load zones that correspond to the specified area and area_type
-    returned_zones = area_to_loadzone(grid.grid_model, area, area_type)
+    returned_zones = grid.model_immutables.area_to_loadzone(area, area_type=area_type)
 
     # Trim the DataFrame to only be of the desired area and generation type
     supply_data = supply_data.loc[supply_data.zone_name.isin(returned_zones)]
