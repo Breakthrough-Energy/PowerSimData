@@ -163,6 +163,11 @@ class TransformProfile:
         return df
 
     def _get_electrified_demand(self):
+        """Return the aggregate demand profile, including base demand and electrified
+        demand.
+
+        :return: (*pandas.DataFrame*) -- the full demand profile
+        """
         result = self._get_demand_profile()
         for kind in ("building", "transportation"):
             if kind in self.ct:
