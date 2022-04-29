@@ -1,46 +1,36 @@
-from importlib import import_module
+from powersimdata.network.constants.plants import get_plants
+from powersimdata.network.constants.storage import get_storage
+from powersimdata.network.constants.zones import get_zones
+from powersimdata.network.helpers import (
+    check_and_format_interconnect,
+    check_model,
+    interconnect_to_name,
+)
 
 
 class ModelImmutables:
     """Immutables for a grid model.
 
     :param str model: grid model name.
+    :param str interconnect: interconnect of grid model.
     """
 
-    def __init__(self, model):
+    def __init__(self, model, interconnect=None):
         """Constructor."""
-        self._check_model(model)
+        check_model(model)
         self.model = model
-
-        self.plants = self._import_constants("plants")
-        self.storage = self._import_constants("storage")
-        self.zones = self._import_constants("zones")
-
-        mod = import_module(f"powersimdata.network.{self.model}.model")
-        self.check_and_format_interconnect = getattr(
-            mod, "check_and_format_interconnect"
+        interconnect = (
+            ["USA"]
+            if interconnect is None
+            else check_and_format_interconnect(interconnect, model=model)
         )
-        self.interconnect_to_name = getattr(mod, "interconnect_to_name")
 
-    @staticmethod
-    def _check_model(model):
-        """Check that a grid model exists.
+        self.plants = get_plants(model)
+        self.storage = get_storage(model)
+        self.zones = get_zones(interconnect, model)
 
-        :param str model: grid model name
-        :raises ValueError: if grid model does not exist.
-        """
-        possible = {"usa_tamu", "hifld"}
-        if model not in possible:
-            raise ValueError("model must be one of %s" % " | ".join(possible))
-
-    def _import_constants(self, kind):
-        """Import constants related to the grid model.
-
-        :param str kind: either *'plants'*, *'storage'* or *'zones'*.
-        :return: (*dict*) -- constants of the grid model
-        """
-        mod = import_module(f"powersimdata.network.{self.model}.constants.{kind}")
-        return {a: getattr(mod, a) for a in dir(mod)}
+        self.check_and_format_interconnect = check_and_format_interconnect
+        self.interconnect_to_name = interconnect_to_name
 
     def area_to_loadzone(self, *args, **kwargs):
         """Map the query area to a list of loadzones, using the known grid model."""
