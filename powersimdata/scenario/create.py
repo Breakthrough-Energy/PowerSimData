@@ -208,7 +208,7 @@ class _Builder:
         mi = ModelImmutables(grid_model)
 
         self.grid_model = mi.model
-        self.interconnect = mi.interconnect_to_name(interconnect)
+        self.interconnect = mi.interconnect_to_name(interconnect, self.grid_model)
 
         self.base_grid = Grid(interconnect, source=grid_model)
         self.change_table = ChangeTable(self.base_grid)

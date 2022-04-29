@@ -1,18 +1,3 @@
-_exports = [
-    "all_resources",
-    "carbon_per_mmbtu",
-    "carbon_per_mwh",
-    "carbon_resources",
-    "clean_resources",
-    "label2type",
-    "nox_per_mwh",
-    "renewable_resources",
-    "so2_per_mwh",
-    "type2color",
-    "type2hatchcolor",
-    "type2label",
-]
-
 type2color = {
     "wind": "xkcd:green",
     "solar": "xkcd:amber",
@@ -101,5 +86,25 @@ so2_per_mwh = {
 }
 
 
-def __dir__():
-    return sorted(_exports)
+def get_plants(model):
+    """Return plant constants.
+
+    :param str model: grid model
+    :return: (*dict*) -- plants information.
+    """
+    exports = [
+        "all_resources",
+        "carbon_resources",
+        "renewable_resources",
+        "clean_resources",
+        "carbon_per_mwh",
+        "carbon_per_mmbtu",
+        "nox_per_mwh",
+        "so2_per_mwh",
+        "label2type",
+        "type2color",
+        "type2hatchcolor",
+        "type2label",
+    ]
+    if model in ["usa_tamu", "hifld"]:
+        return {a: eval(a) for a in exports}

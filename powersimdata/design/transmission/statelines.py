@@ -1,6 +1,3 @@
-from powersimdata.network.usa_tamu.constants.zones import id2abv
-
-
 def classify_interstate_intrastate(scenario):
     """Classifies branches in a change_table as interstate or intrastate.
 
@@ -27,6 +24,7 @@ def _classify_interstate_intrastate(ct, grid):
     """
 
     branch = grid.branch
+    id2abv = grid.model_immutables.zones["id2abv"]
     upgraded_branches = {"interstate": [], "intrastate": []}
 
     if "branch" not in ct or "branch_id" not in ct["branch"]:
