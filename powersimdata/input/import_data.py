@@ -283,6 +283,12 @@ class FromPyPSA(AbstractGrid):
         return df.rename(columns=translators)
 
     def _translate_pnl(self, pnl, key):
+        """
+        Translate time-dependent dataframes with one time step from pypsa to static dataframes.
+
+        :param str pnl: Name of the time-dependent dataframe.
+        :param str key: Correspoding key in the pypsa conversion dictionary `pypsa_export_const`.
+        """
         translators = self._revert_dict(pypsa_export_const[key]["rename_t"])
         df = pd.concat(
             {v: pnl[k].iloc[0] for k, v in translators.items() if k in pnl}, axis=1
@@ -377,29 +383,16 @@ class AnalyzePypsa(Analyze):
 
         average_cong = pd.concat({"CONGL": congl.mean(), "CONGU": congu.mean()}, axis=1)
 
-        possible = [
-            "PG",
-            "PF",
-            "PF_DCLINE",
-            "LMP",
-            "CONGU",
-            "CONGL",
-            "AVERAGED_CONG",
-            "STORAGE_PG",
-            "STORAGE_E",
-            "LOAD_SHED",
-            "LOAD_SHIFT_UP",
-            "LOAD_SHIFT_DN",
-        ]
-        self._data = {key: pd.DataFrame(dtype=object) for key in possible}
-        self._data["PG"] = pg
-        self._data["PF"] = pf
-        self._data["PF_DCLINE"] = pf_dcline
-        self._data["LMP"] = lmp
-        self._data["CONGL"] = congl
-        self._data["CONGU"] = congu
-        self._data["AVERAGED_CONG"] = average_cong
-        self._data["LOAD_SHED"] = loadshed
+        data = {}
+        data["PG"] = pg
+        data["PF"] = pf
+        data["PF_DCLINE"] = pf_dcline
+        data["LMP"] = lmp
+        data["CONGL"] = congl
+        data["CONGU"] = congu
+        data["AVERAGED_CONG"] = average_cong
+        data["LOAD_SHED"] = loadshed
+        self._data = data
 
     def _get_data(self, key):
         return self._data[key]
@@ -418,13 +411,13 @@ class AnalyzePypsa(Analyze):
         :return: (*pandas.DataFrame*) -- profile.
         """
         if kind == "demand":
-            return self._demand
+            return self._demand.copy()
         elif kind == "hydro":
-            return self._hydro
+            return self._hydro.copy()
         elif kind == "solar":
-            return self._solar
+            return self._solar.copy()
         elif kind == "wind":
-            return self._wind
+            return self._wind.copy()
         else:
             raise ValueError(f"Unknown kind {kind}")
 
