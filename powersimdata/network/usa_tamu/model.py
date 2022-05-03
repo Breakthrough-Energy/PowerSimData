@@ -1,10 +1,10 @@
 import os
 
-from powersimdata.input.abstract_grid import AbstractGrid
+from powersimdata.input.abstract_grid import AbstractGridCSV
 from powersimdata.network.constants.storage import get_storage
 
 
-class TAMU(AbstractGrid):
+class TAMU(AbstractGridCSV):
     """TAMU network.
 
     :param str/iterable interconnect: interconnect name(s).
