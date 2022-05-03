@@ -31,6 +31,10 @@ class AbstractGrid:
         self.branch = pd.DataFrame()
         self.storage = storage_template()
 
+
+class AbstractGridCSV(AbstractGrid):
+    """Grid Builder."""
+
     def _set_data_loc(self, top_dirname):
         """Sets data location.
 
