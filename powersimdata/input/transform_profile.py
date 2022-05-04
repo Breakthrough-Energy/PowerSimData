@@ -107,7 +107,7 @@ class TransformProfile:
 
         :return: (*pandas.DataFrame*) -- data frame of demand.
         """
-        zone_id = sorted(self.grid.bus.zone_id.unique())
+        zone_id = sorted(self.grid.id2zone)
         demand = self._profile_input.get_data(self.scenario_info, "demand").loc[
             :, zone_id
         ]
@@ -139,7 +139,7 @@ class TransformProfile:
         area_ids = []
         if sum(area_indicator) > 0:
             # Demand flexibility profile contains zone IDs
-            zone_id = sorted(self.grid.bus.zone_id.unique())
+            zone_id = sorted(self.grid.id2zone)
             zone_id = [f"zone.{x}" for x in zone_id]
             area_ids += zone_id
         if sum(area_indicator) < len(area_indicator):

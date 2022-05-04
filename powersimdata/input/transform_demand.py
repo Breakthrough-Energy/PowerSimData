@@ -23,7 +23,7 @@ class TransformDemand:
         :return: (*pandas.DataFrame*) -- profile data frame, filtered to zones within
             the current grid
         """
-        zone_id = sorted(self.grid.bus.zone_id.unique())
+        zone_id = sorted(self.grid.id2zone)
         model = self.grid.grid_model
         demand = self._profile_data.get_profile(model, self.kind, profile).loc[
             :, zone_id
@@ -34,7 +34,7 @@ class TransformDemand:
         """Maps profile name to scale factors for each zone
 
         :return: (*dict*) -- a dictionary mapping str to list of tuples of (zone_id,
-                scale_factor)
+            scale_factor)
         """
         info = self.info
         p2z = {}
