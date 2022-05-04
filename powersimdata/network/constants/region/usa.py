@@ -144,12 +144,10 @@ def get_interconnect_mapping(zone, model):
     mapping = dict()
     sub = "Texas" if model == "usa_tamu" else "ERCOT"
 
-    name = interconnect_to_name(zone["interconnect"].replace(sub, "ERCOT").unique())
-
+    name = interconnect_to_name(zone["interconnect"].unique(), model=model)
     mapping["interconnect"] = ast.literal_eval(
-        repr(name2component[name]).replace("ERCOT", sub)
-    ) | {name}
-
+        repr(name2component).replace("ERCOT", sub)
+    )[name] | {name}
     mapping["name2interconnect"] = _substitute(name2interconnect)
     mapping["name2component"] = _substitute(name2component)
     mapping["interconnect2timezone"] = _substitute(interconnect2timezone)
