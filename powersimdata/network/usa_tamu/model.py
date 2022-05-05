@@ -2,6 +2,8 @@ import os
 
 from powersimdata.input.abstract_grid import AbstractGridCSV
 from powersimdata.network.constants.storage import get_storage
+from powersimdata.network.helpers import check_and_format_interconnect
+from powersimdata.network.model import ModelImmutables
 
 
 class TAMU(AbstractGridCSV):
@@ -12,9 +14,18 @@ class TAMU(AbstractGridCSV):
 
     def __init__(self, interconnect):
         """Constructor."""
-        model = "usa_tamu"
         super().__init__()
 
+        self.grid_model = "usa_tamu"
+        self.interconnect = check_and_format_interconnect(
+            interconnect, model=self.grid_model
+        )
+        self.model_immutables = ModelImmutables(
+            self.grid_model, interconnect=interconnect
+        )
         self._set_data_loc(os.path.dirname(__file__))
-        self._build_network(interconnect, model)
-        self.storage.update(get_storage(model))
+
+    def build(self):
+        """Build network"""
+        self._build(self.interconnect, self.grid_model)
+        self.storage.update(get_storage(self.grid_model))
