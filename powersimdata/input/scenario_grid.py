@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 from scipy.io import loadmat
 
+from powersimdata.data_access.context import Context
+from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.input import const
 from powersimdata.input.abstract_grid import AbstractGrid
 from powersimdata.input.helpers import (
@@ -11,6 +13,7 @@ from powersimdata.input.helpers import (
     add_interconnect_to_grid_data_frames,
     add_zone_to_grid_data_frames,
 )
+from powersimdata.network.model import ModelImmutables
 
 
 class ScenarioGrid(AbstractGrid):
@@ -21,21 +24,22 @@ class ScenarioGrid(AbstractGrid):
 
         :param str filename: path to file.
         """
-        self.filename = filename
         super().__init__()
+        self._set_data_loc(filename)
+        self.grid_model = _get_grid_model_from_scenario_list(filename)
 
-    def _set_data_loc(self):
+    def _set_data_loc(self, filename):
         """Sets data location.
 
         :param str filename: path to file
         :raises FileNotFoundError: if file does not exist.
         """
-        if os.path.isfile(self.filename) is False:
-            raise FileNotFoundError("%s file not found" % self.filename)
+        if os.path.isfile(filename) is False:
+            raise FileNotFoundError("%s file not found" % filename)
         else:
-            self.data_loc = self.filename
+            self.data_loc = filename
 
-    def _read_network(self):
+    def _read(self):
         data = loadmat(self.data_loc, squeeze_me=True, struct_as_record=False)
         mpc = data["mdi"].mpc
         try:
@@ -118,18 +122,29 @@ class ScenarioGrid(AbstractGrid):
         # interconnect
         self.interconnect = self.sub.interconnect.unique().tolist()
 
-    def _build_network(self):
-        """Defines how to interpret the MAT file data to build a network.
-        Not implemented for ScenarioGrid, but must be defined for subclasses.
-        """
-        pass
+        # model immutables
+        if self.grid_model in ["usa_tamu", "hifld"]:
+            self.model_immutables = ModelImmutables(
+                self.grid_model, interconnect=self.interconnect
+            )
+
+
+def _get_grid_model_from_scenario_list(source):
+    """Get grid model for a scenario listed in the scenario list.
+
+    :param str source: path to MAT-file enclosing the grid data.
+    :return: (*str*) -- the grid model.
+    """
+    scenario_number = int(os.path.basename(source).split("_")[0])
+    slm = ScenarioListManager(Context.get_data_access())
+    return slm.get_scenario(scenario_number)["grid_model"]
 
 
 class FromREISE(ScenarioGrid):
     """MATLAB file reader, for MAT files created by REISE/MATPOWER"""
 
-    def _build_network(self):
-        self._read_network()
+    def build(self):
+        self._read()
         reindex_model(self)
         add_information_to_model(self)
 
@@ -137,8 +152,8 @@ class FromREISE(ScenarioGrid):
 class FromREISEjl(ScenarioGrid):
     """MATLAB file reader, for MAT files created (& converted) by REISE.jl"""
 
-    def _build_network(self):
-        self._read_network()
+    def build(self):
+        self._read()
         add_information_to_model(self)
 
 
