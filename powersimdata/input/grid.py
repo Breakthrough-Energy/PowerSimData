@@ -1,11 +1,8 @@
 import os
 
-from powersimdata.data_access.context import Context
-from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.input.scenario_grid import FromREISE, FromREISEjl
 from powersimdata.network.constants.storage import storage
 from powersimdata.network.hifld.model import HIFLD
-from powersimdata.network.model import ModelImmutables
 from powersimdata.network.usa_tamu.model import TAMU
 from powersimdata.utility.helpers import MemoryCache, cache_key
 
@@ -47,46 +44,37 @@ class Grid:
         key = cache_key(interconnect, source)
         cached = _cache.get(key)
         if cached is not None:
-            data = cached
+            network = cached
         elif source == "usa_tamu":
-            data = TAMU(interconnect)
+            network = TAMU(interconnect)
         elif source == "hifld":
-            data = HIFLD(interconnect)
+            network = HIFLD(interconnect)
         elif os.path.splitext(source)[1] == ".mat":
             if engine == "REISE":
-                data = FromREISE(source)
+                network = FromREISE(source)
             elif engine == "REISE.jl":
-                data = FromREISEjl(source)
+                network = FromREISEjl(source)
         else:
             raise ValueError(f"Unknown source: {source}")
 
-        self.data_loc = data.data_loc
-        self.interconnect = data.interconnect
-        self.zone2id = data.zone2id
-        self.id2zone = data.id2zone
-        self.sub = data.sub
-        self.plant = data.plant
-        self.gencost = data.gencost
-        self.dcline = data.dcline
-        self.bus2sub = data.bus2sub
-        self.bus = data.bus
-        self.branch = data.branch
-        self.storage = data.storage
+        network.build()
 
-        _cache.put(key, self)
+        self.data_loc = network.data_loc
+        self.interconnect = network.interconnect
+        self.zone2id = network.zone2id
+        self.id2zone = network.id2zone
+        self.sub = network.sub
+        self.plant = network.plant
+        self.gencost = network.gencost
+        self.dcline = network.dcline
+        self.bus2sub = network.bus2sub
+        self.bus = network.bus
+        self.branch = network.branch
+        self.storage = network.storage
+        self.grid_model = network.grid_model
+        self.model_immutables = network.model_immutables
 
-        self.grid_model = self._get_grid_model()
-        self.model_immutables = ModelImmutables(self.grid_model)
-
-    def _get_grid_model(self):
-        """Get the grid model.
-
-        :return: (*str*).
-        """
-        if os.path.isfile(self.data_loc):
-            return _get_grid_model_from_scenario_list(self.data_loc)
-        elif os.path.isdir(self.data_loc):
-            return self.data_loc.split(os.sep)[-2]
+        _cache.put(key, network)
 
     def __eq__(self, other):
         """Used when 'self == other' is evaluated.
@@ -167,14 +155,3 @@ class Grid:
             print(f"non-matching entries: {', '.join(sorted(nonmatching_entries))}")
             return False
         return True
-
-
-def _get_grid_model_from_scenario_list(source):
-    """Get grid model for a scenario listed in the scenario list.
-
-    :param str source: path to MAT-file enclosing the grid data.
-    :return: (*str*) -- the grid model.
-    """
-    scenario_number = int(os.path.basename(source).split("_")[0])
-    slm = ScenarioListManager(Context.get_data_access())
-    return slm.get_scenario(scenario_number)["grid_model"]
