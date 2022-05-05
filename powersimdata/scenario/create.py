@@ -13,7 +13,7 @@ from powersimdata.input.input_data import (
 from powersimdata.input.profile_input import ProfileInput
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
-from powersimdata.network.model import ModelImmutables
+from powersimdata.network.helpers import check_model, interconnect_to_name
 from powersimdata.scenario.execute import Execute
 from powersimdata.scenario.state import State
 
@@ -205,14 +205,12 @@ class _Builder:
 
     def __init__(self, grid_model, interconnect, table):
         """Constructor."""
-        mi = ModelImmutables(grid_model)
+        check_model(grid_model)
 
-        self.grid_model = mi.model
-        self.interconnect = mi.interconnect_to_name(interconnect, self.grid_model)
-
+        self.grid_model = grid_model
         self.base_grid = Grid(interconnect, source=grid_model)
         self.change_table = ChangeTable(self.base_grid)
-
+        self.interconnect = interconnect_to_name(interconnect, grid_model)
         self.existing = table[table.interconnect == self.interconnect]
 
     def get_ct(self):
