@@ -30,6 +30,8 @@ class AbstractGrid:
         self.bus = pd.DataFrame()
         self.branch = pd.DataFrame()
         self.storage = storage_template()
+        self.grid_model = ""
+        self.model_immutables = None
 
 
 class AbstractGridCSV(AbstractGrid):
