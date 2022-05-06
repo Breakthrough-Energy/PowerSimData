@@ -204,7 +204,9 @@ def get_loadzone_mapping(zone):
     mapping["timezone2id"] = {
         t: set(i) for t, i in zone.groupby("time_zone").groups.items()
     }
-    mapping["loadzone2id"] = {l: i for l, i in zone.groupby("zone_name").groups.items()}
+    mapping["loadzone2id"] = {
+        l: i[0] for l, i in zone.groupby("zone_name").groups.items()
+    }
     mapping["loadzone2state"] = dict(zip(zone["zone_name"], zone["state"]))
     mapping["loadzone2abv"] = dict(zip(zone["zone_name"], zone["abv"]))
     mapping["loadzone2interconnect"] = dict(
