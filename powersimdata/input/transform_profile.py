@@ -1,6 +1,7 @@
 import copy
 
 from powersimdata.input.profile_input import ProfileInput
+from powersimdata.input.transform_demand import TransformDemand
 
 
 class TransformProfile:
@@ -106,7 +107,7 @@ class TransformProfile:
 
         :return: (*pandas.DataFrame*) -- data frame of demand.
         """
-        zone_id = sorted(self.grid.bus.zone_id.unique())
+        zone_id = sorted(self.grid.id2zone)
         demand = self._profile_input.get_data(self.scenario_info, "demand").loc[
             :, zone_id
         ]
@@ -138,7 +139,7 @@ class TransformProfile:
         area_ids = []
         if sum(area_indicator) > 0:
             # Demand flexibility profile contains zone IDs
-            zone_id = sorted(self.grid.bus.zone_id.unique())
+            zone_id = sorted(self.grid.id2zone)
             zone_id = [f"zone.{x}" for x in zone_id]
             area_ids += zone_id
         if sum(area_indicator) < len(area_indicator):
@@ -160,6 +161,18 @@ class TransformProfile:
 
         # Return the pruned data frame
         return df
+
+    def _get_electrified_demand(self):
+        """Return the aggregate demand profile, including base demand and electrified
+        demand.
+
+        :return: (*pandas.DataFrame*) -- the full demand profile
+        """
+        result = self._get_demand_profile()
+        for kind in ("building", "transportation"):
+            if kind in self.ct:
+                result += TransformDemand(self.grid, self.ct, kind).value()
+        return result
 
     def _slice_df(self, df):
         """Return dataframe, sliced by the times specified in scenario_info if and only
@@ -196,7 +209,7 @@ class TransformProfile:
         if name not in possible:
             raise ValueError("Choose from %s" % " | ".join(possible))
         elif name == "demand":
-            return self._slice_df(self._get_demand_profile())
+            return self._slice_df(self._get_electrified_demand())
         elif "demand_flexibility" in name:
             return self._slice_df(self._get_demand_flexibility_profile(name))
         else:
