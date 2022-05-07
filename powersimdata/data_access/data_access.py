@@ -93,17 +93,6 @@ class DataAccess:
         """
         return self.join(server_setup.EXECUTE_DIR, f"scenario_{scenario_id}")
 
-    def copy(self, src, dest):
-        """Copy file to new location
-
-        :param str src: path to file
-        :param str dest: destination folder
-        """
-        if self.fs.isdir(dest):
-            dest = self.join(dest, fs.path.basename(src))
-
-        self.fs.copy(src, dest)
-
     def remove(self, base_dir, pattern, confirm=True):
         """Delete files in current environment
 

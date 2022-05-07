@@ -229,18 +229,17 @@ class SimulationInput:
         :param bool slice: whether to slice the profiles by the Scenario's time range.
         """
         file_name = f"{kind}.csv"
+        dest_path = "/".join([self.REL_TMP_DIR, file_name])
         if profile_as is None:
-            filepath = "/".join([self.REL_TMP_DIR, file_name])
-
             tp = TransformProfile(self._scenario_info, self.grid, self.ct, slice)
             profile = tp.get_profile(kind)
-            print(f"Writing scaled {kind} profile to {filepath}")
-            with self._data_access.write(filepath, save_local=False) as f:
+            print(f"Writing scaled {kind} profile to {dest_path}")
+            with self._data_access.write(dest_path, save_local=False) as f:
                 profile.to_csv(f)
         else:
             from_dir = self._data_access.tmp_folder(profile_as)
             src = "/".join([from_dir, file_name])
-            self._data_access.copy(src, self.REL_TMP_DIR)
+            self._data_access.fs.copy(src, dest_path)
 
     def prepare_demand_flexibility_parameters_file(self):
         """Creates the demand_flexibility_parameters file."""
