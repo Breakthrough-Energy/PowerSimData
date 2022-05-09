@@ -173,6 +173,7 @@ def get_state_mapping(zone):
 
     mapping["state"] = set(zone["state"])
     mapping["abv"] = set(zone["abv"])
+    mapping["state_abbr"] = set(zone["abv"])
     mapping["state2loadzone"] = {
         k: set(v)
         for k, v in zone.groupby("state")["zone_name"].unique().to_dict().items()
