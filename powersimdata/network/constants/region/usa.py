@@ -153,13 +153,13 @@ def get_interconnect_mapping(zone, model):
     mapping["interconnect2timezone"] = _substitute(interconnect2timezone)
     mapping["interconnect2abv"] = _substitute(interconnect2abv)
     mapping["interconnect2loadzone"] = {
-        i: set(zone.set_index("abv")["zone_name"].loc[list(a)])
-        for i, a in mapping["interconnect2abv"].items()
+        i: set(l)
+        for i, l in zone.set_index("zone_name").groupby("interconnect").groups.items()
     }
     mapping["interconnect2id"] = {
-        i: set(zone.reset_index().set_index("abv")["zone_id"].loc[list(a)])
-        for i, a in mapping["interconnect2abv"].items()
+        i: set(id) for i, id in zone.groupby("interconnect").groups.items()
     }
+
     return mapping
 
 
