@@ -10,7 +10,6 @@ from powersimdata.input.helpers import (
 )
 from powersimdata.network.constants.model import model2region
 from powersimdata.network.csv_reader import CSVReader
-from powersimdata.network.helpers import check_and_format_interconnect
 
 
 class AbstractGrid:
@@ -30,6 +29,8 @@ class AbstractGrid:
         self.bus = pd.DataFrame()
         self.branch = pd.DataFrame()
         self.storage = storage_template()
+        self.grid_model = ""
+        self.model_immutables = None
 
 
 class AbstractGridCSV(AbstractGrid):
@@ -47,10 +48,10 @@ class AbstractGridCSV(AbstractGrid):
         else:
             self.data_loc = data_loc
 
-    def _build_network(self, interconnect, grid_model):
+    def _build(self, interconnect, grid_model):
         """Build network.
 
-        :param str/iterable interconnect: interconnect name(s).
+        :param list interconnect: interconnect name(s).
         :param str model: the grid model.
         """
         reader = CSVReader(self.data_loc)
@@ -60,11 +61,10 @@ class AbstractGridCSV(AbstractGrid):
         self.dcline = reader.dcline
         self.gencost["after"] = self.gencost["before"] = reader.gencost
 
-        self.interconnect = check_and_format_interconnect(interconnect, grid_model)
         self._add_information_to_model()
 
-        if model2region[grid_model] not in self.interconnect:
-            self._drop_interconnect()
+        if model2region[grid_model] not in interconnect:
+            self._drop_interconnect(interconnect)
 
     def _add_information_to_model(self):
         self.sub = csv_to_data_frame(self.data_loc, "sub.csv")
@@ -75,22 +75,21 @@ class AbstractGridCSV(AbstractGrid):
         add_zone_to_grid_data_frames(self)
         add_coord_to_grid_data_frames(self)
 
-    def _drop_interconnect(self):
+    def _drop_interconnect(self, interconnect):
         """Trim data frames to only keep information pertaining to the user
         defined interconnect(s).
 
+        :param list interconnect: interconnect name(s).
         """
         for key, value in self.__dict__.items():
             if key in ["sub", "bus2sub", "bus", "plant", "branch"]:
-                value.query("interconnect == @self.interconnect", inplace=True)
+                value.query("interconnect == @interconnect", inplace=True)
             elif key == "gencost":
-                value["before"].query(
-                    "interconnect == @self.interconnect", inplace=True
-                )
+                value["before"].query("interconnect == @interconnect", inplace=True)
             elif key == "dcline":
                 value.query(
-                    "from_interconnect == @self.interconnect &"
-                    "to_interconnect == @self.interconnect",
+                    "from_interconnect == @interconnect &"
+                    "to_interconnect == @interconnect",
                     inplace=True,
                 )
         self.id2zone = {k: self.id2zone[k] for k in self.bus.zone_id.unique()}

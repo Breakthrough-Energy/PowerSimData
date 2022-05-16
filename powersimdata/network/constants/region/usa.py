@@ -144,24 +144,22 @@ def get_interconnect_mapping(zone, model):
     mapping = dict()
     sub = "Texas" if model == "usa_tamu" else "ERCOT"
 
-    name = interconnect_to_name(zone["interconnect"].replace(sub, "ERCOT").unique())
-
+    name = interconnect_to_name(zone["interconnect"].unique(), model=model)
     mapping["interconnect"] = ast.literal_eval(
-        repr(name2component[name]).replace("ERCOT", sub)
-    ) | {name}
-
+        repr(name2component).replace("ERCOT", sub)
+    )[name] | {name}
     mapping["name2interconnect"] = _substitute(name2interconnect)
     mapping["name2component"] = _substitute(name2component)
     mapping["interconnect2timezone"] = _substitute(interconnect2timezone)
     mapping["interconnect2abv"] = _substitute(interconnect2abv)
     mapping["interconnect2loadzone"] = {
-        i: set(zone.set_index("abv")["zone_name"].loc[list(a)])
-        for i, a in mapping["interconnect2abv"].items()
+        i: set(l)
+        for i, l in zone.set_index("zone_name").groupby("interconnect").groups.items()
     }
     mapping["interconnect2id"] = {
-        i: set(zone.reset_index().set_index("abv")["zone_id"].loc[list(a)])
-        for i, a in mapping["interconnect2abv"].items()
+        i: set(id) for i, id in zone.groupby("interconnect").groups.items()
     }
+
     return mapping
 
 
@@ -175,6 +173,7 @@ def get_state_mapping(zone):
 
     mapping["state"] = set(zone["state"])
     mapping["abv"] = set(zone["abv"])
+    mapping["state_abbr"] = set(zone["abv"])
     mapping["state2loadzone"] = {
         k: set(v)
         for k, v in zone.groupby("state")["zone_name"].unique().to_dict().items()
@@ -206,7 +205,9 @@ def get_loadzone_mapping(zone):
     mapping["timezone2id"] = {
         t: set(i) for t, i in zone.groupby("time_zone").groups.items()
     }
-    mapping["loadzone2id"] = {l: i for l, i in zone.groupby("zone_name").groups.items()}
+    mapping["loadzone2id"] = {
+        l: i[0] for l, i in zone.groupby("zone_name").groups.items()
+    }
     mapping["loadzone2state"] = dict(zip(zone["zone_name"], zone["state"]))
     mapping["loadzone2abv"] = dict(zip(zone["zone_name"], zone["abv"]))
     mapping["loadzone2interconnect"] = dict(
