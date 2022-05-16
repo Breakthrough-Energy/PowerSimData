@@ -71,12 +71,14 @@ def _assert_interconnect_missing(interconnect, model):
 
 def test_drop_one_interconnect():
     model = TAMU(["Western", "Texas"])
+    model.build()
     _assert_lists_equal(["Western", "Texas"], model.interconnect)
     _assert_interconnect_missing("Eastern", model)
 
 
 def test_drop_two_interconnect():
     model = TAMU(["Western"])
+    model.build()
     _assert_lists_equal(["Western"], model.interconnect)
     for interconnect in ["Eastern", "Texas"]:
         _assert_interconnect_missing(interconnect, model)
