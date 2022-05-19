@@ -15,6 +15,7 @@ class Grid:
 
     SUPPORTED_MODELS = {"usa_tamu"}
     SUPPORTED_ENGINES = {"REISE", "REISE.jl"}
+    SUPPORTED_IMPORTS = {"pypsa"}
 
     """Grid
 
@@ -31,9 +32,15 @@ class Grid:
 
     def __init__(self, interconnect, source="usa_tamu", engine="REISE"):
         """Constructor."""
+        # avoid circular imports
+        from powersimdata.input.import_data import FromPyPSA, is_pypsa_network
+
         if not isinstance(source, str):
             raise TypeError("source must be a str")
-        if source not in self.SUPPORTED_MODELS and not source.endswith(".mat"):
+        if (
+            source not in self.SUPPORTED_MODELS | self.SUPPORTED_IMPORTS
+            and not source.endswith(".mat")
+        ):
             raise ValueError(
                 f"Source must be one of {','.join(self.SUPPORTED_MODELS)} "
                 "or the path to a .mat file that represents a grid "
@@ -43,10 +50,18 @@ class Grid:
                 f"Engine must be one of {','.join(self.SUPPORTED_ENGINES)}"
             )
 
-        key = cache_key(interconnect, source)
-        cached = _cache.get(key)
+        use_cache = not is_pypsa_network(interconnect)
+
+        if use_cache:
+            key = cache_key(interconnect, source)
+            cached = _cache.get(key)
+        else:
+            cached = None
+
         if cached is not None:
             data = cached
+        elif is_pypsa_network(interconnect):
+            data = FromPyPSA(interconnect)
         elif source == "usa_tamu":
             data = TAMU(interconnect)
         elif os.path.splitext(source)[1] == ".mat":
@@ -68,10 +83,12 @@ class Grid:
         self.branch = data.branch
         self.storage = data.storage
 
-        _cache.put(key, self)
+        if use_cache:
+            _cache.put(key, self)
 
-        self.grid_model = self._get_grid_model()
-        self.model_immutables = ModelImmutables(self.grid_model)
+        if self.data_loc not in self.SUPPORTED_IMPORTS:
+            self.grid_model = self._get_grid_model()
+            self.model_immutables = ModelImmutables(self.grid_model)
 
     def _get_grid_model(self):
         """Get the grid model.
@@ -91,7 +108,7 @@ class Grid:
         """
 
         def _univ_eq(ref, test, failure_flag=None):
-            """Check for {boolean, dataframe, or column data} equality.
+            """Check for {boolean or column data} equality.
 
             :param object ref: one object to be tested (order does not matter).
             :param object test: another object to be tested.

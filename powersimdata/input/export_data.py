@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from scipy.io import savemat
 
-from powersimdata import Grid
 from powersimdata.input.transform_profile import TransformProfile
 
 PYPSA_AVAILABLE = True
@@ -78,6 +77,7 @@ pypsa_const = {
         "rename": {
             "startup": "startup_cost",
             "shutdown": "shutdown_cost",
+            "c1": "marginal_cost",
         }
     },
     "branch": {
@@ -317,6 +317,7 @@ def export_to_pypsa(
         generators to the exported pypsa network. This ensures feasibility when
         optimizing the exported pypsa network as is. The default is True.
     """
+    from powersimdata.input.grid import Grid  # avoid circular import
     from powersimdata.scenario.scenario import Scenario  # avoid circular import
 
     if not PYPSA_AVAILABLE:
@@ -394,14 +395,14 @@ def export_to_pypsa(
     generators["ramp_limit_up"] = generators.ramp_limit.replace(0, np.nan)
     generators.drop(columns=drop_cols + ["ramp_limit"], inplace=True)
 
-    gencost = grid.gencost["before"]
-    gencost = gencost.rename(columns=pypsa_const["cost"]["rename"])
+    gencost = grid.gencost["before"].copy()
     # Linearize quadratic curves as applicable
     fixed = grid.plant["Pmin"] == grid.plant["Pmax"]
     linearized = gencost.loc[~fixed, "c1"] + gencost.loc[~fixed, "c2"] * (
         grid.plant.loc[~fixed, "Pmax"] + grid.plant.loc[~fixed, "Pmin"]
     )
-    gencost["marginal_cost"] = linearized.combine_first(gencost["c1"])
+    gencost["c1"] = linearized.combine_first(gencost["c1"])
+    gencost = gencost.rename(columns=pypsa_const["cost"]["rename"])
     gencost = gencost[pypsa_const["cost"]["rename"].values()]
 
     carriers = pd.DataFrame(index=generators.carrier.unique(), dtype=object)
@@ -450,7 +451,6 @@ def export_to_pypsa(
     transformers = branches.query(
         "branch_device_type in ['TransformerWinding', 'Transformer']"
     )
-    transformers = transformers.drop(columns="branch_device_type")
 
     if scenario:
         lines_t = {}
@@ -524,4 +524,5 @@ def export_to_pypsa(
         )
         n.add("Carrier", "load", nice_name="Load Shedding", color="red")
 
+    n.name = ", ".join([grid.data_loc] + grid.interconnect)
     return n
