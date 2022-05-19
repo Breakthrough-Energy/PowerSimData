@@ -10,6 +10,7 @@ from powersimdata.input.check import (
     _check_plants_are_in_grid,
     _check_resources_are_in_grid_and_format,
 )
+from powersimdata.input.const import scenario_types
 
 
 def csv_to_data_frame(data_loc, filename):
@@ -444,3 +445,14 @@ def get_storage_id_in_area(scenario, area, area_type=None):
     ].index.tolist()
 
     return storage_id
+
+def check_scenario_type(t):
+    """Check that a scenario type exists.
+    :param str t: scenario type name
+    :raises TypeError: if ``t`` is not a str.
+    :raises ValueError: if scenario type does not exist.
+    """
+    if not isinstance(t, str):
+        raise TypeError("scenario type must be a str")
+    if t not in scenario_types:
+        raise ValueError(f"Invalid scenario type. Choose among {scenario_types}")

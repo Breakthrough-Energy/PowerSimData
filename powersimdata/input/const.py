@@ -235,3 +235,5 @@ col_type_storage_storagedata = [
 
 col_name_sub = ["name", "interconnect_sub_id", "lat", "lon", "interconnect"]
 col_type_sub = ["str", "int", "float", "float", "str"]
+
+scenario_types = ['PCM', 'CEM']

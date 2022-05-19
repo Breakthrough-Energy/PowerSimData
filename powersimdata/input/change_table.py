@@ -17,6 +17,7 @@ from powersimdata.input.changes import (
     scale_plant_pmin,
 )
 from powersimdata.input.transform_grid import TransformGrid
+from powersimdata.input.helpers import check_scenario_type
 
 _resources = (
     "coal",
@@ -751,3 +752,31 @@ class ChangeTable:
         diff = load_buses - connected_buses
         if len(diff) > 0:
             print(f"Warning: load buses connected to no lines exist: {sorted(diff)}")
+
+
+class PCMChangeTable:
+    """TODO"""
+
+
+class CEMChangeTable:
+    """TODO"""
+
+
+class ChangeTableFactory:
+    """Map a grid model and scenario type to a change table"""
+    # grid.source = usa_tamu
+    # grid.engine = REISE
+    # scenario.type = PCM, CEM
+    # TODO: QUESTION: Will grid type and engine affect change table operations, or only scenario type?
+
+    MAP = {"PCM": PCMChangeTable, "CEM": CEMChangeTable}
+
+def get_change_table(scenario_type, grid):
+    """Returns a ChangeTable instance
+
+    :param str scenario_type: the type of scenario (i.e. PCM, CEM)
+    :param grid: powersimdata.input.grid.Grid grid: a Grid object
+    :return: (*object*) -- change table instance associated with the scenario type
+    """
+    check_scenario_type(scenario_type)
+    return ChangeTableFactory.MAP[scenario_type](grid)
