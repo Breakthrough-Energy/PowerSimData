@@ -217,7 +217,7 @@ class SimulationInput:
 
         if mpc_storage is not None:
             with self._data_access.write(storage_file_path, save_local=False) as f:
-                savemat(f, mpc, appendmat=False)
+                savemat(f, mpc_storage, appendmat=False)
 
     def prepare_profile(self, kind, profile_as=None, slice=False):
         """Prepares profile for simulation.
