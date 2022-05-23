@@ -308,11 +308,9 @@ def _check_areas_and_format(areas, mi=ModelImmutables("usa_tamu")):
     :param powersimdata.network.model.ModelImmutables mi: immutables of a grid model.
     :raises TypeError: if ``areas`` is not a list/tuple/set of str.
     :raises ValueError: if ``areas`` is empty or not valid.
-    :return: (*set*) -- areas as a set. State abbreviations are converted to state
-        names.
+    :return: (*set*) -- areas as a set. State/Country abbreviations are converted to
+        state/country names.
     """
-    division = [a for a in mi.zones["mappings"] if "abbr" in a][0].split("_")[0]
-
     if isinstance(areas, str):
         areas = {areas}
     elif isinstance(areas, (list, set, tuple)):
@@ -331,7 +329,7 @@ def _check_areas_and_format(areas, mi=ModelImmutables("usa_tamu")):
     abv_in_areas = [z for z in areas if z in mi.zones["abv"]]
     for a in abv_in_areas:
         areas.remove(a)
-        areas.add(mi.zones[f"abv2{division}"][a])
+        areas.add(mi.zones[f"abv2{mi.zones['division']}"][a])
 
     return areas
 

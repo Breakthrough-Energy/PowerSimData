@@ -231,6 +231,7 @@ def get_zones(interconnect, model):
     """
     zones = dict()
     zones["mappings"] = {"loadzone", "country", "country_abbr", "interconnect"}
+    zones["division"] = "country"
 
     interconnect = (
         model2interconnect[model] if "Europe" in interconnect else interconnect

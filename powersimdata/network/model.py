@@ -58,6 +58,7 @@ def area_to_loadzone(model, area, area_type=None):
     """
     zones = ModelImmutables(model).zones
     mappings = zones["mappings"]
+    division = zones["division"]
 
     if not isinstance(area, str):
         raise TypeError("area must be a str")
@@ -65,7 +66,6 @@ def area_to_loadzone(model, area, area_type=None):
     if area_type is not None and not isinstance(area_type, str):
         raise TypeError("area_type must be either None or str")
 
-    division = [a for a in mappings if "abbr" in a][0].split("_")[0]
     area2loadzone = {
         f"{division}": lambda x: zones[f"{division}2loadzone"][x],
         "loadzone": lambda x: zones["loadzone"].intersection({x}),

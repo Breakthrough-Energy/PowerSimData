@@ -224,12 +224,15 @@ def get_zones(interconnect, model):
     :param str model: the grid model.
     :return: (*dict*) -- zones information.
     """
-    query = model2interconnect[model] if "USA" in interconnect else interconnect  # noqa
-    zone_info = get_zone_info(model=model).query("interconnect == @query")
+    interconnect = (  # noqa
+        model2interconnect[model] if "USA" in interconnect else interconnect
+    )
+    zone_info = get_zone_info(model=model).query("interconnect == @interconnect")
     zone_info["abv"] = zone_info["state"].map({s: a for a, s in abv2state.items()})
 
     zones = dict()
     zones["mappings"] = {"loadzone", "state", "state_abbr", "interconnect"}
+    zones["division"] = "state"
 
     zones.update(get_loadzone_mapping(zone_info))
     zones.update(get_state_mapping(zone_info))
