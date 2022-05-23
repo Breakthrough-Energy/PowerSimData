@@ -65,7 +65,7 @@ def mimic_generation_capacity(base_grid, ref_grid):
     :param powersimdata.input.grid.Grid base_grid: the base grid (unscaled).
     :param powersimdata.input.grid.Grid ref_grid: the base grid (unscaled).
     :return: (*dict*) -- dictionary of plant/zone scaling factors in a format
-        matching ct in powersimdata.input.change_table.ChangeTable.
+        matching ct in powersimdata.input.change_table._ChangeTable.
     """
     base_plant = base_grid.plant
     ref_plant = ref_grid.plant

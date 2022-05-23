@@ -84,7 +84,7 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=False):
     """Identify renewable gens behind 'stub' branches, scale up branch capacity
         (via change_table entries) to match generator capacity.
 
-    :param powersimdata.input.change_table.ChangeTable change_table:
+    :param powersimdata.input.change_table._ChangeTable change_table:
         change table instance.
     :param float/int fuzz: adds just a little extra capacity to avoid binding.
     :param bool inplace: if True, modify ct inplace and return None. If False,
@@ -206,7 +206,7 @@ def scale_congested_mesh_branches(
     branches are selected for upgrading, where N is specified by ``upgraade_n``, with
     each upgraded by their base capacity multiplied by ``increment``.
 
-    :param powersimdata.input.change_table.ChangeTable change_table: the
+    :param powersimdata.input.change_table._ChangeTable change_table: the
         change table instance we are operating on.
     :param powersimdata.scenario.scenario.Scenario ref_scenario: the reference
         scenario to be used in bootstrapping the branch scaling factors.
@@ -414,10 +414,10 @@ def _construct_composite_allow_list(valid_branches, allow_list, deny_list):
 
 
 def _increment_branch_scaling(change_table, branch_ids, ref_scenario, value=1):
-    """Modify the ct dict of a ChangeTable object based on branch scaling from
+    """Modify the ct dict of a _ChangeTable object based on branch scaling from
     both a reference scenario and a set of branches to increment by a value.
 
-    :param powersimdata.input.change_table.ChangeTable change_table: the
+    :param powersimdata.input.change_table._ChangeTable change_table: the
         change table instance we are operating on.
     :param [list/set/tuple] branch_ids: an iterable of branch indices.
     :param powersimdata.scenario.scenario.Scenario ref_scenario: the reference

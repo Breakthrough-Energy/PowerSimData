@@ -34,7 +34,7 @@ _resources = (
 )
 
 
-class ChangeTable:
+class _ChangeTable:
     """Create change table for changes that need to be applied to the original
     grid as well as to the original demand, hydro, solar and wind profiles.
     A pickle file enclosing the change table in form of a dictionary can be
@@ -754,24 +754,72 @@ class ChangeTable:
             print(f"Warning: load buses connected to no lines exist: {sorted(diff)}")
 
 
-class PCMChangeTable:
-    """TODO"""
+class PCMChangeTable(_ChangeTable):
+    """Create change table for changes that need to be applied to the original
+    grid as well as to the original demand, hydro, solar and wind profiles.
+    For use with PCM scenarios.
+
+    This class is currently an empty wrapper on _ChangeTable. Methods unique to
+    PCM scenarios may be added in the future.
+
+    :param powersimdata.input.grid.Grid grid: a Grid object
+    """
+
+    def __init__(self, grid):
+        super().__init__(grid)
 
 
-class CEMChangeTable:
-    """TODO"""
+class CEMChangeTable(_ChangeTable):
+    """Create change table for changes that need to be applied to the original
+    grid as well as to the original demand, hydro, solar and wind profiles.
+    For use with CEM scenarios.
+
+    This class adds functionality for TODO
+
+    :param powersimdata.input.grid.Grid grid: a Grid object
+    """
+
+    def __init__(self, grid):
+        super().__init__(grid)
+
+    def set_investment_profile(self):
+        raise NotImplementedError()
+
+    def set_expansion_and_retirement_profile(self):
+        raise NotImplementedError()
+
+    def add_expansion_and_retirement_candidates(self):
+        # include costs and constraints for each year
+        raise NotImplementedError()
+
+    def set_temporal_reduction(self):
+        # include costs and constraints for each year
+        raise NotImplementedError()
+
+    def set_spatial_reduction(self):
+        raise NotImplementedError()
+
+    def add_hydrogen(self):
+        # To be implemented post MVP
+        raise NotImplementedError()
+
+    def add_CCUS(self):
+        # To be implemented post MVP
+        raise NotImplementedError()
+
+    def add_operational_details(self):
+        # include reserves, unit commitment, etc
+        # To be implemented post MVP
+        raise NotImplementedError()
 
 
 class ChangeTableFactory:
     """Map a grid model and scenario type to a change table"""
-    # grid.source = usa_tamu
-    # grid.engine = REISE
-    # scenario.type = PCM, CEM
-    # TODO: QUESTION: Will grid type and engine affect change table operations, or only scenario type?
 
     MAP = {"PCM": PCMChangeTable, "CEM": CEMChangeTable}
 
-def get_change_table(scenario_type, grid):
+
+def get_change_table(grid, scenario_type="PCM"):
     """Returns a ChangeTable instance
 
     :param str scenario_type: the type of scenario (i.e. PCM, CEM)

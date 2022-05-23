@@ -1,6 +1,6 @@
 import pytest
 
-from powersimdata.input.change_table import ChangeTable
+from powersimdata.input.change_table import get_change_table
 from powersimdata.input.changes.electrification import (
     AreaScaling,
     ScaleFactors,
@@ -50,7 +50,7 @@ def test_check_scale_factors():
 
 
 def test_add_electrification():
-    obj = ChangeTable(Grid("Texas"))
+    obj = get_change_table(Grid("Texas"))
     kind = "building"
 
     sf = {"standard_heat_pump_v1": 0.7, "advanced_heat_pump_v2": 0.3}
@@ -62,7 +62,7 @@ def test_add_electrification():
 
 
 def test_add_electrification_by_zone():
-    obj = ChangeTable(Grid("Eastern"))
+    obj = get_change_table(Grid("Eastern"))
     kind = "building"
 
     info = {
@@ -86,7 +86,7 @@ def test_add_electrification_by_zone():
 
 
 def test_add_electrification_combined():
-    obj = ChangeTable(Grid("Eastern"))
+    obj = get_change_table(Grid("Eastern"))
     kind = "building"
     sf = {"standard_heat_pump_v1": 0.2, "advanced_heat_pump_v2": 0.8}
     zone = {"Maine": {"res_cooking": sf}}

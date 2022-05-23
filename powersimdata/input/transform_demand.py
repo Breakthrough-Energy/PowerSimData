@@ -5,7 +5,7 @@ class TransformDemand:
     """Aggregate demand from electrified sources.
 
     :param powersimdata.input.grid.Grid grid: a grid object
-    :param powersimdata.input.change_table.ChangeTable: a change table object
+    :param powersimdata.input.change_table._ChangeTable: a change table object
     :param str kind: the class of electrification, e.g. building, transportation
     """
 

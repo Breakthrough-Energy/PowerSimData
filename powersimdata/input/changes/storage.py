@@ -6,7 +6,7 @@ from powersimdata.input.changes import ordinal
 def add_storage_capacity(obj, info):
     """Sets storage parameters in change table.
 
-    :param powersimdata.input.change_table.ChangeTable obj: change table
+    :param powersimdata.input.change_table._ChangeTable obj: change table
     :param list info: each entry is a dictionary. The dictionary gathers
         the information needed to create a new storage device.
         Required keys: "bus_id", "capacity".

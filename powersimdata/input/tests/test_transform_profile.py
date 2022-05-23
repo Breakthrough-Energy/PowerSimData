@@ -6,7 +6,7 @@ import pytest
 from numpy.testing import assert_almost_equal
 
 from powersimdata.data_access.context import Context
-from powersimdata.input.change_table import ChangeTable
+from powersimdata.input.change_table import get_change_table
 from powersimdata.input.grid import Grid
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
@@ -41,7 +41,7 @@ def get_change_table_for_zone_scaling(base_grid, resource):
     n_zone = param["n_zone_to_scale"]
     zones = get_zone_with_resource(base_grid, resource)
 
-    ct = ChangeTable(base_grid)
+    ct = get_change_table(base_grid)
     ct.scale_plant_capacity(
         resource,
         zone_name={
@@ -59,7 +59,7 @@ def get_change_table_for_id_scaling(base_grid, resource):
     n_plant = param["n_plant_to_scale"]
     plants = get_plant_with_resource(base_grid, resource)
 
-    ct = ChangeTable(base_grid)
+    ct = get_change_table(base_grid)
     ct.scale_plant_capacity(
         resource,
         plant_id={
@@ -83,7 +83,7 @@ def get_change_table_for_new_plant_addition(base_grid, resource):
     for b, p in zip(new_plant_bus_id, new_plant_pmax):
         new_plant.append({"type": resource, "bus_id": b, "Pmax": p})
 
-    ct = ChangeTable(base_grid)
+    ct = get_change_table(base_grid)
     ct.add_plant(new_plant)
 
     return ct.ct
@@ -243,7 +243,7 @@ def test_demand_is_scaled(base_grid, raw_demand):
     base_demand = raw_demand[base_grid.id2zone.keys()]
 
     n_zone = param["n_zone_to_scale"]
-    ct = ChangeTable(base_grid)
+    ct = get_change_table(base_grid)
     ct.scale_demand(
         zone_id={
             z: f
@@ -388,7 +388,7 @@ def test_flexible_demand_profiles_are_trimmed(
             pd.DataFrame().to_csv(f)
 
     # Specify the change table
-    ct = ChangeTable(base_grid)
+    ct = get_change_table(base_grid)
     ct.add_demand_flexibility(
         {
             "demand_flexibility_up": "Test",

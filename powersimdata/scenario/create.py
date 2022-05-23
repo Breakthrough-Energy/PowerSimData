@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from powersimdata.input.change_table import ChangeTable
+from powersimdata.input.change_table import get_change_table
 from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import (
     InputData,
@@ -203,7 +203,7 @@ class _Builder:
         "change_table",
     }
 
-    def __init__(self, grid_model, interconnect, table):
+    def __init__(self, grid_model, interconnect, table, scenario_type="PCM"):
         """Constructor."""
         mi = ModelImmutables(grid_model)
 
@@ -211,7 +211,7 @@ class _Builder:
         self.interconnect = mi.interconnect_to_name(interconnect)
 
         self.base_grid = Grid(interconnect, source=grid_model)
-        self.change_table = ChangeTable(self.base_grid)
+        self.change_table = get_change_table(self.base_grid, scenario_type)
 
         self.existing = table[table.interconnect == self.interconnect]
 

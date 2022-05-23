@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 from powersimdata.data_access.context import Context
-from powersimdata.input.change_table import ChangeTable
+from powersimdata.input.change_table import get_change_table
 from powersimdata.input.grid import Grid
 from powersimdata.tests.mock_context import MockContext
 
@@ -11,7 +11,7 @@ grid = Grid(["USA"])
 
 @pytest.fixture
 def ct():
-    return ChangeTable(grid)
+    return get_change_table(grid)
 
 
 def test_resource_exist(ct):

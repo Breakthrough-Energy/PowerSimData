@@ -27,7 +27,7 @@ def _apply_zone_scale_factor_to_ct(ct, fuel, zone_id, scale_factor):
     multiplied.
 
     :param dict ct: a dictionary of scale factors, with structure matching
-        ct from powersimdata.input.change_table.ChangeTable.
+        ct from powersimdata.input.change_table._ChangeTable.
     :param str fuel: the fuel to be scaled.
     :param int zone_id: the zone_id to be scaled.
     :param int/float scale_factor: how much the zone should be scaled up by.

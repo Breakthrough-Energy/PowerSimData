@@ -1,4 +1,4 @@
-from powersimdata.input.change_table import ChangeTable
+from powersimdata.input.change_table import PCMChangeTable
 
 
 class MockChangeTable:
@@ -15,5 +15,5 @@ class MockChangeTable:
 
     @property
     def __class__(self):
-        """If anyone asks, I'm a ChangeTable object!"""
-        return ChangeTable
+        """If anyone asks, I'm a PCMChangeTable object!"""
+        return PCMChangeTable

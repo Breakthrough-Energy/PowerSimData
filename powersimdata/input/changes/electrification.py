@@ -64,7 +64,7 @@ class ElectrifiedDemand:
     """Container object for specifying zone or grid level adoption of any technologies
     for a given class of electrification
 
-    :param powersimdata.input.change_table.ChangeTable obj: change table
+    :param powersimdata.input.change_table._ChangeTable obj: change table
     :param dict info: see :func:`add_electrification`
     """
 
@@ -94,7 +94,7 @@ class ElectrifiedDemand:
 def add_electrification(obj, kind, info):
     """Add electrification profiles
 
-    :param powersimdata.input.change_table.ChangeTable obj: change table
+    :param powersimdata.input.change_table._ChangeTable obj: change table
     :param str kind: the kind of demand, e.g. building
     :param dict info: Keys are *'grid'* and *'zone'*, to specify the scale factors in
         the given area. For grid scaling, the value is a *dict*, which maps a *str*

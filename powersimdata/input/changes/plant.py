@@ -9,7 +9,7 @@ _profile_resource = {"hydro", "solar", "wind", "wind_offshore"}
 def add_plant(obj, info):
     """Sets parameters of new generator(s) in change table.
 
-    :param powersimdata.input.change_table.ChangeTable obj: change table
+    :param powersimdata.input.change_table._ChangeTable obj: change table
     :param list info: each entry is a dictionary. The dictionary gathers
         the information needed to create a new generator.
         Required keys: "bus_id", "Pmax", "type".
@@ -67,7 +67,7 @@ def add_plant(obj, info):
 def scale_plant_pmin(obj, resource, zone_name=None, plant_id=None):
     """Sets plant cost scaling factor in change table.
 
-    :param powersimdata.input.change_table.ChangeTable obj: change table
+    :param powersimdata.input.change_table._ChangeTable obj: change table
     :param str resource: type of generator to consider.
     :param dict zone_name: load zones. The key(s) is (are) the name of the
         load zone(s) and the associated value is the scaling factor for the
@@ -102,7 +102,7 @@ def scale_plant_pmin(obj, resource, zone_name=None, plant_id=None):
 def remove_plant(obj, info):
     """Remove one or more plants.
 
-    :param powersimdata.input.change_table.ChangeTable obj: change table
+    :param powersimdata.input.change_table._ChangeTable obj: change table
     :param int/iterable info: iterable of plant indices, or a single plant index.
     :raises ValueError: if ``info`` contains one or more entries not present in the
         plant table index.

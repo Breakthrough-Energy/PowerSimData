@@ -1,6 +1,6 @@
 import pandas as pd
 
-from powersimdata.input.change_table import ChangeTable
+from powersimdata.input.change_table import get_change_table
 from powersimdata.input.grid import Grid
 from powersimdata.input.transform_demand import TransformDemand
 from powersimdata.tests.mock_profile_input import MockProfileInput
@@ -8,7 +8,7 @@ from powersimdata.tests.mock_profile_input import MockProfileInput
 
 def test_profile_mappings():
     grid = Grid("Texas")
-    ct = ChangeTable(grid)
+    ct = get_change_table(grid)
     grid_info = {"res_heating": {"standard_heat_pump_v2": 0.3}}
     zone_info = {
         "East": {"res_cooking": {"advanced_heat_pump_v2": 0.7}},
@@ -44,7 +44,7 @@ def test_profile_mappings():
 
 def test_aggregate_demand():
     grid = Grid("Texas")
-    ct = ChangeTable(grid)
+    ct = get_change_table(grid)
     kind = "building"
     zone_info = {"East": {"res_cooking": {"advanced_heat_pump_v2": 0.7}}}
     grid_info = {"res_cooking": {"advanced_heat_pump_v2": 0.3}}

@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import pytest
 
-from powersimdata.input.change_table import ChangeTable
+from powersimdata.input.change_table import get_change_table
 from powersimdata.input.grid import Grid
 from powersimdata.input.transform_grid import TransformGrid
 
@@ -12,7 +12,7 @@ grid = Grid(["USA"])
 
 @pytest.fixture
 def ct():
-    return ChangeTable(grid)
+    return get_change_table(grid)
 
 
 def get_plant_id(zone_id, gen_type):

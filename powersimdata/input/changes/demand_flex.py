@@ -6,7 +6,7 @@ from powersimdata.input.profile_input import ProfileInput
 def add_demand_flexibility(obj, info):
     """Adds demand flexibility to the system.
 
-    :param powersimdata.input.change_table.ChangeTable obj: change table
+    :param powersimdata.input.change_table._ChangeTable obj: change table
     :param dict info: Each key refers to a different component required to
         parameterize the demand flexibility model. Each value associated with the
         keys corresponds to the profile version of the profile in question.

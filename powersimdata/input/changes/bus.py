@@ -4,7 +4,7 @@ import copy
 def add_bus(obj, info):
     """Sets parameters of new bus(es) in change table.
 
-    :param powersimdata.input.change_table.ChangeTable obj: change table
+    :param powersimdata.input.change_table._ChangeTable obj: change table
     :param list info: each entry is a dictionary. The dictionary gathers
         the information needed to create a new bus.
         Required keys: "lat", "lon", ["zone_id" XOR "zone_name"].
@@ -62,7 +62,7 @@ def add_bus(obj, info):
 def remove_bus(obj, info):
     """Remove one or more buses.
 
-    :param powersimdata.input.change_table.ChangeTable obj: change table
+    :param powersimdata.input.change_table._ChangeTable obj: change table
     :param int/iterable info: iterable of bus indices, or a single bus index.
     :raises ValueError: if ``info`` contains one or more entries not present in the
         bus table index.

@@ -446,6 +446,7 @@ def get_storage_id_in_area(scenario, area, area_type=None):
 
     return storage_id
 
+
 def check_scenario_type(t):
     """Check that a scenario type exists.
     :param str t: scenario type name

@@ -68,7 +68,7 @@ def construct_load_shed(scenario_info, grid, ct, infeasibilities=None):
 
     :param dict scenario_info: info attribute of Scenario object.
     :param powersimdata.input.grid.Grid grid: grid to construct load_shed for.
-    :param dict ct: ChangeTable dictionary.
+    :param dict ct: _ChangeTable dictionary.
     :param dict/None infeasibilities: dictionary of
         {interval (int): load shed percentage (int)}, or None.
     :return: (*pandas.DataFrame*) -- data frame of load_shed.

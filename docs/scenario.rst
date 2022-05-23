@@ -121,7 +121,7 @@ A scenario can be created using few lines of code. This is illustrated below:
 
 It can be convenient to clear the change table when creating a scenario. Let's say for
 instance that a wrong scaling factor has been applied or a generator has been attached
-to the wrong bus. To do so, the ``clear`` method of the ``ChangeTable`` class can be
+to the wrong bus. To do so, the ``clear`` method of the ``_ChangeTable`` class can be
 used.
 
 There are also a couple of more advanced methods which can selectively scale branches
