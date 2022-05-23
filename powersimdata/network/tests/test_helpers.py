@@ -1,6 +1,10 @@
 import pytest
 
-from powersimdata.network.helpers import check_and_format_interconnect, check_model
+from powersimdata.network.helpers import (
+    check_and_format_interconnect,
+    check_model,
+    interconnect_to_name,
+)
 from powersimdata.network.usa_tamu.model import TAMU
 
 
@@ -16,6 +20,18 @@ def test_check_model_argument_type():
 def test_check_model_argument_value():
     with pytest.raises(ValueError):
         check_model("tamu")
+
+
+def test_interconnect_to_name():
+    assert (
+        interconnect_to_name("ContinentalEurope", model="europe_tub")
+        == interconnect_to_name("Continental Europe", model="europe_tub")
+        == "ContinentalEurope"
+    )
+    assert (
+        interconnect_to_name(["Nordic", "ContinentalEurope"], model="europe_tub")
+        == "ContinentalEurope_Nordic"
+    )
 
 
 def test_check_and_format_interconnect_argument_type():
