@@ -2,7 +2,7 @@ import pandas as pd
 from scipy.io import savemat
 
 from powersimdata.data_access.context import Context
-from powersimdata.input.export_data import export_case_mat
+from powersimdata.export.export_scenario_inputs import export_case_mat
 from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
