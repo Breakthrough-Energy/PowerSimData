@@ -16,8 +16,8 @@ from powersimdata.input.changes import (
     remove_plant,
     scale_plant_pmin,
 )
-from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.helpers import check_scenario_type
+from powersimdata.input.transform_grid import TransformGrid
 
 _resources = (
     "coal",

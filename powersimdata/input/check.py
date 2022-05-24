@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 # Importing the module, not anything in it, to avid a circular import
-import powersimdata.input.grid as _grid
+from powersimdata.input import grid as _grid
 from powersimdata.network.model import ModelImmutables
 
 
