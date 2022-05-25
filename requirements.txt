@@ -9,6 +9,6 @@ black
 pytest
 coverage
 pytest-cov
-fs
+fs==2.4.14
 fs.sshfs
 fs-azureblob
