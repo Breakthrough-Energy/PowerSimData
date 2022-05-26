@@ -1,9 +1,9 @@
-from itertools import combinations
+from itertools import chain
 
 import pandas as pd
 
 from powersimdata.network.constants.model import model2interconnect
-from powersimdata.network.helpers import interconnect_to_name
+from powersimdata.network.helpers import interconnect_to_name, powerset
 
 abv2country = {
     "AL": "Albania",
@@ -77,7 +77,6 @@ abv2timezone = {
     "SK": "ETC/GMT-1",
 }
 
-
 interconnect2abv = {
     "ContinentalEurope": {
         "AL",
@@ -111,27 +110,22 @@ interconnect2abv = {
     "Ireland": {"IE"},
     "Baltic": {"EE", "LT", "LV"},
 }
-
-cb = [i for j in range(2, 6) for i in combinations(model2interconnect["europe_tub"], j)]
-for c in cb:
-    interconnect2abv[interconnect_to_name(c, model="europe_tub")] = {
-        a for i in c for a in interconnect2abv[i]
-    }
+for c in powerset(model2interconnect["europe_tub"], 2):
+    interconnect2abv[interconnect_to_name(c, model="europe_tub")] = set(
+        chain(*[interconnect2abv[i] for i in c])
+    )
 
 name2interconnect = {
-    interconnect_to_name(i, model="europe_tub"): set(i)
-    for c in range(1, 6)
-    for i in combinations(model2interconnect["europe_tub"], c)
+    interconnect_to_name(c, model="europe_tub"): set(c)
+    for c in powerset(model2interconnect["europe_tub"], 1)
 }
 
 name2component = name2interconnect.copy()
 name2component.update({"Europe": set(name2interconnect) - {"Europe"}})
 
-
 interconnect2timezone = {
-    interconnect_to_name(i, model="europe_tub"): "ETC/GMT-1"
-    for c in range(1, 6)
-    for i in combinations(model2interconnect["europe_tub"], c)
+    interconnect_to_name(c, model="europe_tub"): "ETC/GMT-1"
+    for c in powerset(model2interconnect["europe_tub"], 1)
 }
 interconnect2timezone.update(
     {

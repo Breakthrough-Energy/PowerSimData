@@ -1,4 +1,5 @@
 import os
+from itertools import chain, combinations
 
 import pandas as pd
 
@@ -77,3 +78,7 @@ def get_zone_info(model="hifld"):
         return pd.read_csv(path, index_col=0)
     else:
         raise FileNotFoundError(f"File {path} cannot be found")
+
+
+def powerset(l, r):
+    return list(chain.from_iterable(combinations(l, i) for i in range(r, len(l) + 1)))
