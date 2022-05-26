@@ -67,10 +67,10 @@ def area_to_loadzone(model, area, area_type=None):
         raise TypeError("area_type must be either None or str")
 
     area2loadzone = {
-        f"{division}": lambda x: zones[f"{division}2loadzone"][x],
+        f"{division}": zones[f"{division}2loadzone"].get,
         "loadzone": lambda x: zones["loadzone"].intersection({x}),
-        f"{division}_abbr": lambda x: zones["abv2loadzone"][x],
-        "interconnect": lambda x: zones["interconnect2loadzone"][x],
+        f"{division}_abbr": zones["abv2loadzone"].get,
+        "interconnect": zones["interconnect2loadzone"].get,
         "all": lambda _: zones["loadzone"],
     }
 
