@@ -54,7 +54,9 @@ class InputBase:
         print("--> Loading %s" % field_name)
 
         filepath = self._get_file_path(scenario_info, field_name)
+        return self._get_data_internal(filepath)
 
+    def _get_data_internal(self, filepath):
         key = cache_key(filepath)
         cached = _cache.get(key)
         if cached is not None:

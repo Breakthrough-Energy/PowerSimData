@@ -44,21 +44,27 @@ class CsvStore:
         self.data_access = data_access
 
     def get_table(self):
-        """Read the given file from the server, falling back to local copy if
-        unable to connect.
+        """Attempt to download the file from server and blob storage, falling back to
+        local copy if one exists, and return the combined result.
 
         :return: (*pandas.DataFrame*) -- the specified table as a data frame.
         """
         filename = self._FILE_NAME
-        try:
-            return self._get_table(filename)
-        except:  # noqa
-            return self._get_table(filename + ".2")
+        orig = self._get_table(filename)
+        blob = self._get_table(filename + ".2")
+        df = pd.concat([orig, blob])
+        return df[~df.index.duplicated()]
 
     def _get_table(self, filename):
-        self.data_access.copy_from(filename)
-        with self.data_access.get(filename) as (f, _):
-            return _parse_csv(f)
+        try:
+            self.data_access.copy_from(filename)
+        except:  # noqa
+            pass
+        try:
+            with self.data_access.get(filename) as (f, _):
+                return _parse_csv(f)
+        except:  # noqa
+            return pd.DataFrame()
 
     def commit(self, table, checksum):
         """Save to local directory and upload if needed

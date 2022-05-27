@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 
 from powersimdata.design.mimic_grid import mimic_generation_capacity
-from powersimdata.network.model import area_to_loadzone
 from powersimdata.scenario.scenario import Scenario
 
 
@@ -44,8 +43,8 @@ def _apply_zone_scale_factor_to_ct(ct, fuel, zone_id, scale_factor):
 
 
 def load_targets_from_csv(filename, drop_ignored=True):
-    """Interprets a CSV file as a set of targets, ensuring that required columns are present,
-    and filling in default values for optional columns.
+    """Interprets a CSV file as a set of targets, ensuring that required columns are
+    present, and filling in default values for optional columns.
 
     :param str filename: filepath to targets csv.
     :param bool drop_ignored: if True, drop all ignored columns from output.
@@ -100,12 +99,11 @@ def _make_zonename2target(grid, targets):
     :raises ValueError: if a zone is not present in any target areas, or
         if a zone is present in more than one target area.
     """
-    grid_model = grid.grid_model
     target_zones = {
-        target_name: area_to_loadzone(grid_model, target_name)
+        target_name: grid.model_immutables.area_to_loadzone(target_name)
         if pd.isnull(targets.loc[target_name, "area_type"])
-        else area_to_loadzone(
-            grid_model, target_name, targets.loc[target_name, "area_type"]
+        else grid.model_immutables.area_to_loadzone(
+            target_name, area_type=targets.loc[target_name, "area_type"]
         )
         for target_name in targets.index.tolist()
     }
@@ -379,8 +377,8 @@ def add_new_capacities_collaborative(
     :param int scenario_length: number of hours in new scenario.
     :param float/None solar_fraction: how much new capacity should be solar.
         If given None, maintain previous ratio.
-    :param dict/None addl_curtailment: how much new curtailment is expected, by resource.
-        If given None, assume zero.
+    :param dict/None addl_curtailment: how much new curtailment is expected, by
+        resource. If given None, assume zero.
     :return: (*pandas.DataFrame*) -- targets dataframe with next capacities added.
     """
     targets = input_targets.copy()
@@ -463,7 +461,7 @@ def create_change_table(input_targets, ref_scenario):
         prev_wind = input_targets.loc[region, "wind.prev_capacity"]
         next_solar = input_targets.loc[region, "solar.next_capacity"]
         next_wind = input_targets.loc[region, "wind.next_capacity"]
-        zone_names = area_to_loadzone(ref_scenario.info["grid_model"], region)
+        zone_names = base_grid.model_immutables.area_to_loadzone(region)
         zone_ids = [base_grid.zone2id[n] for n in zone_names if n in grid_zones]
         if prev_solar > 0:
             scale = next_solar / prev_solar
