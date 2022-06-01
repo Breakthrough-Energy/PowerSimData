@@ -1,8 +1,8 @@
 import ast
-from itertools import combinations
+from itertools import chain
 
 from powersimdata.network.constants.model import model2interconnect
-from powersimdata.network.helpers import get_zone_info, interconnect_to_name
+from powersimdata.network.helpers import get_zone_info, interconnect_to_name, powerset
 
 abv2state = {
     "AK": "Alaska",
@@ -57,26 +57,6 @@ abv2state = {
     "WY": "Wyoming",
 }
 
-
-name2interconnect = {
-    interconnect_to_name(i): set(i)
-    for c in range(1, 4)
-    for i in combinations(["ERCOT", "Eastern", "Western"], c)
-}
-
-name2component = name2interconnect.copy()
-name2component.update({"USA": set(name2interconnect) - {"USA"}})
-
-interconnect2timezone = {
-    interconnect_to_name("USA"): "ETC/GMT+6",
-    interconnect_to_name("Eastern"): "ETC/GMT+5",
-    interconnect_to_name("ERCOT"): "ETC/GMT+6",
-    interconnect_to_name("Western"): "ETC/GMT+8",
-    interconnect_to_name(["ERCOT", "Western"]): "ETC/GMT+7",
-    interconnect_to_name(["ERCOT", "Eastern"]): "ETC/GMT+5",
-    interconnect_to_name(["Eastern", "Western"]): "ETC/GMT+6",
-}
-
 interconnect2abv = {
     "Eastern": {
         "ME",
@@ -119,12 +99,28 @@ interconnect2abv = {
     "ERCOT": {"TX"},
     "Western": {"WA", "OR", "CA", "NV", "AZ", "UT", "NM", "CO", "WY", "ID", "MT"},
 }
+for c in powerset(model2interconnect["hifld"], 2):
+    interconnect2abv[interconnect_to_name(c, model="hifld")] = set(
+        chain(*[interconnect2abv[i] for i in c])
+    )
 
-cb = [i for j in range(2, 4) for i in combinations(["ERCOT", "Eastern", "Western"], j)]
-for c in cb:
-    interconnect2abv[interconnect_to_name(c)] = {
-        a for i in c for a in interconnect2abv[i]
-    }
+name2interconnect = {
+    interconnect_to_name(c, model="hifld"): set(c)
+    for c in powerset(model2interconnect["hifld"], 1)
+}
+
+name2component = name2interconnect.copy()
+name2component.update({"USA": set(name2interconnect) - {"USA"}})
+
+interconnect2timezone = {
+    interconnect_to_name("USA"): "ETC/GMT+6",
+    interconnect_to_name("Eastern"): "ETC/GMT+5",
+    interconnect_to_name("ERCOT"): "ETC/GMT+6",
+    interconnect_to_name("Western"): "ETC/GMT+8",
+    interconnect_to_name(["ERCOT", "Western"]): "ETC/GMT+7",
+    interconnect_to_name(["ERCOT", "Eastern"]): "ETC/GMT+5",
+    interconnect_to_name(["Eastern", "Western"]): "ETC/GMT+6",
+}
 
 
 def get_interconnect_mapping(zone, model):
@@ -224,12 +220,15 @@ def get_zones(interconnect, model):
     :param str model: the grid model.
     :return: (*dict*) -- zones information.
     """
-    query = model2interconnect[model] if "USA" in interconnect else interconnect  # noqa
-    zone_info = get_zone_info(model=model).query("interconnect == @query")
+    interconnect = (  # noqa
+        model2interconnect[model] if "USA" in interconnect else interconnect
+    )
+    zone_info = get_zone_info(model=model).query("interconnect == @interconnect")
     zone_info["abv"] = zone_info["state"].map({s: a for a, s in abv2state.items()})
 
     zones = dict()
     zones["mappings"] = {"loadzone", "state", "state_abbr", "interconnect"}
+    zones["division"] = "state"
 
     zones.update(get_loadzone_mapping(zone_info))
     zones.update(get_state_mapping(zone_info))

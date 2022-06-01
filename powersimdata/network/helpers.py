@@ -1,4 +1,5 @@
 import os
+from itertools import chain, combinations
 
 import pandas as pd
 
@@ -35,6 +36,8 @@ def check_and_format_interconnect(interconnect, model="hifld"):
         interconnect = sorted(set(interconnect))
     except TypeError:
         raise TypeError("interconnect must be either str or an iterable of str")
+
+    interconnect = [i.replace(" ", "") for i in interconnect]
 
     region = model2region[model]
     possible = model2interconnect[model]
@@ -75,3 +78,7 @@ def get_zone_info(model="hifld"):
         return pd.read_csv(path, index_col=0)
     else:
         raise FileNotFoundError(f"File {path} cannot be found")
+
+
+def powerset(l, r):
+    return list(chain.from_iterable(combinations(l, i) for i in range(r, len(l) + 1)))
