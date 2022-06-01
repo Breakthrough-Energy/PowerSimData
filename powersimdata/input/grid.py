@@ -11,7 +11,7 @@ _cache = MemoryCache()
 
 class Grid:
 
-    SUPPORTED_MODELS = {"hifld", "usa_tamu"}
+    SUPPORTED_MODELS = {"usa_tamu"}
     SUPPORTED_ENGINES = {"REISE", "REISE.jl"}
 
     """Grid
