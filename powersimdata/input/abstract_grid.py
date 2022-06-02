@@ -6,7 +6,6 @@ from powersimdata.input import const
 from powersimdata.input.helpers import (
     add_coord_to_grid_data_frames,
     add_zone_to_grid_data_frames,
-    csv_to_data_frame,
 )
 from powersimdata.network.constants.model import model2region
 from powersimdata.network.csv_reader import CSVReader
@@ -60,18 +59,17 @@ class AbstractGridCSV(AbstractGrid):
         self.branch = reader.branch
         self.dcline = reader.dcline
         self.gencost["after"] = self.gencost["before"] = reader.gencost
+        self.sub = reader.sub
+        self.bus2sub = reader.bus2sub
+        self.id2zone = reader.zone["zone_name"].to_dict()
+        self.zone2id = {v: k for k, v in self.id2zone.items()}
 
-        self._add_information_to_model()
+        self._add_information()
 
         if model2region[grid_model] not in interconnect:
             self._drop_interconnect(interconnect)
 
-    def _add_information_to_model(self):
-        self.sub = csv_to_data_frame(self.data_loc, "sub.csv")
-        self.bus2sub = csv_to_data_frame(self.data_loc, "bus2sub.csv")
-        self.id2zone = csv_to_data_frame(self.data_loc, "zone.csv").zone_name.to_dict()
-        self.zone2id = {v: k for k, v in self.id2zone.items()}
-
+    def _add_information(self):
         add_zone_to_grid_data_frames(self)
         add_coord_to_grid_data_frames(self)
 
