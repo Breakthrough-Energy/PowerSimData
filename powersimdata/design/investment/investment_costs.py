@@ -291,9 +291,7 @@ def calculate_dc_inv_costs(scenario, sum_results=True, base_grid=None):
         _check_grid_models_match(base_grid, grid_differences)
 
     # find upgraded DC lines
-    capacity_difference = calculate_dcline_difference(
-        base_grid.dcline, grid_differences.dcline
-    )
+    capacity_difference = calculate_dcline_difference(base_grid, grid_differences)
     grid_differences.dcline = grid_differences.dcline.assign(
         Pmax=capacity_difference["diff"].to_numpy()
     )
