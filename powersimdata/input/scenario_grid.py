@@ -164,7 +164,7 @@ def frame(name, table, index, n_storage=0):
     :param numpy.array table: table to be used to build data frame.
     :param numpy.array index: array to be used as data frame indices.
     :param int n_storage: number of storage devices.
-    :return: (tuple) -- first element is a data frame. Second element is None
+    :return: (*tuple*) -- first element is a data frame. Second element is None
         or a data frame when energy storage system are included.
     """
     storage = None
@@ -265,7 +265,7 @@ def format_gencost(data):
     """Modify generation cost data frame.
 
     :param pandas.DataFrame data: generation cost data frame.
-    :return: (pandas.DataFrame) -- formatted gencost data frame.
+    :return: (*pandas.DataFrame*) -- formatted gencost data frame.
     """
 
     def parse_gencost_row(row):
@@ -318,6 +318,11 @@ def add_information_to_model(grid):
 
 
 def reindex_model(grid):
+    """Reindex bus id columns.
+
+    :param powersimdata.input.scenario_grid.ScenarioGrid grid: grid
+    """
+
     def reset_id():
         return lambda x: grid.bus.index[x - 1]
 
