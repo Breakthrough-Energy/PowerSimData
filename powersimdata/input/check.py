@@ -211,7 +211,7 @@ def _check_connected_components(grid, error_messages):
     num_connected_components = len([c for c in nx.connected_components(g)])
     if len(grid.interconnect) == 1:
         # Check for e.g. ['USA'] interconnect, which is really three interconnects
-        interconnect_aliases = grid.model_immutables.zones["interconnect_combinations"]
+        interconnect_aliases = grid.model_immutables.zones["name2interconnect"]
         if grid.interconnect[0] in interconnect_aliases:
             num_interconnects = len(interconnect_aliases[grid.interconnect[0]])
         else:
@@ -299,19 +299,18 @@ def _check_grid_type(grid):
         raise TypeError(f"grid must be a {_grid.Grid} object")
 
 
-def _check_areas_and_format(areas, grid_model="usa_tamu"):
+def _check_areas_and_format(areas, mi=ModelImmutables("usa_tamu")):
     """Ensure that areas are valid. Duplicates are removed and state abbreviations are
     converted to their actual name.
 
     :param str/list/tuple/set areas: areas(s) to check. Could be load zone name(s),
         state name(s)/abbreviation(s) or interconnect(s).
-    :param str grid_model: grid model.
-    :raises TypeError: if areas is not a list/tuple/set of str.
-    :raises ValueError: if areas is empty or not valid.
-    :return: (*set*) -- areas as a set. State abbreviations are converted to state
-        names.
+    :param powersimdata.network.model.ModelImmutables mi: immutables of a grid model.
+    :raises TypeError: if ``areas`` is not a list/tuple/set of str.
+    :raises ValueError: if ``areas`` is empty or not valid.
+    :return: (*set*) -- areas as a set. State/Country abbreviations are converted to
+        state/country names.
     """
-    mi = ModelImmutables(grid_model)
     if isinstance(areas, str):
         areas = {areas}
     elif isinstance(areas, (list, set, tuple)):
@@ -322,12 +321,7 @@ def _check_areas_and_format(areas, grid_model="usa_tamu"):
         raise TypeError("areas must be a str or a list/tuple/set of str")
     if len(areas) == 0:
         raise ValueError("areas must be non-empty")
-    all_areas = (
-        mi.zones["loadzone"]
-        | mi.zones["abv"]
-        | mi.zones["state"]
-        | mi.zones["interconnect"]
-    )
+    all_areas = set().union(*(mi.zones[z] for z in mi.zones["mappings"]))
     if not areas <= all_areas:
         diff = areas - all_areas
         raise ValueError("invalid area(s): %s" % " | ".join(diff))
@@ -335,21 +329,20 @@ def _check_areas_and_format(areas, grid_model="usa_tamu"):
     abv_in_areas = [z for z in areas if z in mi.zones["abv"]]
     for a in abv_in_areas:
         areas.remove(a)
-        areas.add(mi.zones["abv2state"][a])
+        areas.add(mi.zones[f"abv2{mi.zones['division']}"][a])
 
     return areas
 
 
-def _check_resources_and_format(resources, grid_model="usa_tamu"):
+def _check_resources_and_format(resources, mi=ModelImmutables("usa_tamu")):
     """Ensure that resources are valid and convert variable to a set.
 
     :param str/list/tuple/set resources: resource(s) to check.
-    :param str grid_model: grid model.
+    :param powersimdata.network.model.ModelImmutables mi: immutables of a grid model.
     :raises TypeError: if resources is not a list/tuple/set of str.
     :raises ValueError: if resources is empty or not valid.
     :return: (*set*) -- resources as a set.
     """
-    mi = ModelImmutables(grid_model)
     if isinstance(resources, str):
         resources = {resources}
     elif isinstance(resources, (list, set, tuple)):
@@ -366,17 +359,17 @@ def _check_resources_and_format(resources, grid_model="usa_tamu"):
     return resources
 
 
-def _check_resources_are_renewable_and_format(resources, grid_model="usa_tamu"):
+def _check_resources_are_renewable_and_format(
+    resources, mi=ModelImmutables("usa_tamu")
+):
     """Ensure that resources are valid renewable resources and convert variable to
     a set.
-
+    :param powersimdata.network.model.ModelImmutables mi: immutables of a grid model.
     :param str/list/tuple/set resources: resource(s) to analyze.
-    :param str grid_model: grid model.
     :raises ValueError: if resources are not renewables.
     return: (*set*) -- resources as a set
     """
-    mi = ModelImmutables(grid_model)
-    resources = _check_resources_and_format(resources, grid_model=grid_model)
+    resources = _check_resources_and_format(resources, mi=mi)
     if not resources <= mi.plants["renewable_resources"]:
         diff = resources - mi.plants["all_resources"]
         raise ValueError("invalid renewable resource(s): %s" % " | ".join(diff))

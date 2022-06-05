@@ -187,16 +187,12 @@ def get_plant_id_in_interconnects(interconnects, grid):
     :return: (*set*) -- list of plant id
     """
     areas = _check_areas_are_in_grid_and_format({"interconnect": interconnects}, grid)
-    loadzones = set.union(
+    return set.union(
         *(
-            grid.model_immutables.zones["interconnect2loadzone"][i]
+            set(grid.plant.groupby("interconnect").groups[i])
             for i in areas["interconnect"]
         )
     )
-
-    plant = grid.plant
-    plant_id = plant[(plant.zone_name.isin(loadzones))].index
-    return set(plant_id)
 
 
 def get_plant_id_in_states(states, grid):
