@@ -1,4 +1,3 @@
-import os
 from collections import defaultdict
 
 import pandas as pd
@@ -10,18 +9,6 @@ from powersimdata.input.check import (
     _check_plants_are_in_grid,
     _check_resources_are_in_grid_and_format,
 )
-
-
-def csv_to_data_frame(data_loc, filename):
-    """Reads CSV.
-
-    :return: (*pandas.DataFrame*) -- created data frame.
-    """
-    print("Reading %s" % filename)
-    data_frame = pd.read_csv(
-        os.path.join(data_loc, filename), index_col=0, float_precision="high"
-    )
-    return data_frame
 
 
 def add_column_to_data_frame(data_frame, column_dict):
@@ -37,7 +24,7 @@ def add_column_to_data_frame(data_frame, column_dict):
 
 def add_coord_to_grid_data_frames(grid):
     """Adds longitude and latitude information to bus, plant and branch data
-        frames of grid instance.
+    frames of grid instance.
 
     :param powersimdata.input.grid.Grid grid: grid instance.
     """
@@ -102,7 +89,7 @@ def add_zone_to_grid_data_frames(grid):
 
 def add_interconnect_to_grid_data_frames(grid):
     """Adds interconnect name to bus, branch, plant and dcline data frames of
-        grid instance.
+    grid instance.
 
     :param powersimdata.input.grid.Grid grid: grid instance.
     """
