@@ -70,6 +70,7 @@ pypsa_const = {
         "rename": {
             "startup": "startup_cost",
             "shutdown": "shutdown_cost",
+            "c1": "marginal_cost",
         }
     },
     "branch": {
