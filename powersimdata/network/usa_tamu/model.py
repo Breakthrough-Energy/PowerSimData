@@ -1,12 +1,12 @@
 import os
 
-from powersimdata.input.abstract_grid import AbstractGridCSV
+from powersimdata.input.converter.csv_to_grid import FromCSV
 from powersimdata.network.constants.storage import get_storage
 from powersimdata.network.helpers import check_and_format_interconnect
 from powersimdata.network.model import ModelImmutables
 
 
-class TAMU(AbstractGridCSV):
+class TAMU(FromCSV):
     """TAMU network.
 
     :param str/iterable interconnect: interconnect name(s).

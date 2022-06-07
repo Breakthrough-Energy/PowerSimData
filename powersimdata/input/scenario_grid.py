@@ -8,7 +8,7 @@ from powersimdata.data_access.context import Context
 from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.input import const
 from powersimdata.input.abstract_grid import AbstractGrid
-from powersimdata.input.helpers import (
+from powersimdata.input.converter.helpers import (
     add_coord_to_grid_data_frames,
     add_interconnect_to_grid_data_frames,
     add_zone_to_grid_data_frames,
