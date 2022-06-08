@@ -5,8 +5,8 @@ import pandas as pd
 import pytest
 
 from powersimdata.input.converter.helpers import add_column_to_data_frame
+from powersimdata.input.converter.reise_to_grid import format_gencost, link
 from powersimdata.input.grid import Grid
-from powersimdata.input.scenario_grid import format_gencost, link
 
 INCORRECT_SOURCE = "invalid_source"
 INCORRECT_ENGINE = "invalid_engine"
