@@ -2,7 +2,7 @@ from importlib.util import find_spec
 
 import pytest
 
-from powersimdata.export.export_to_pypsa import export_to_pypsa
+from powersimdata.input.exporter.export_to_pypsa import export_to_pypsa
 from powersimdata.input.grid import Grid
 
 
