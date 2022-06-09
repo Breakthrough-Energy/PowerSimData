@@ -1,16 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from powersimdata.input.converter.helpers import add_column_to_data_frame
 from powersimdata.input.converter.reise_to_grid import format_gencost, link
-
-
-def test_add_column_to_data_frame():
-    df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
-    column_to_add = {"c": [True, True, False], "d": ["one", 2, "three"]}
-    add_column_to_data_frame(df, column_to_add)
-    assert len(df.columns) == 4
-    assert np.array_equal(df.c.values, [True, True, False])
 
 
 def test_format_gencost_polynomial_only_same_n():
