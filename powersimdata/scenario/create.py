@@ -199,7 +199,7 @@ class _Builder:
         if self.existing.empty:
             print("Nothing yet")
         else:
-            print(" | ".join(self.existing.plant.unique()))
+            print(" | ".join(self.existing.plan.unique()))
         print("<-- End: Existing Study")
 
     def set_base_grid(self):
