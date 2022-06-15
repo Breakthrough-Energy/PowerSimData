@@ -60,6 +60,16 @@ carbon_per_mwh = {
     "ng": 469,
 }
 
+# MWh_electric to MWh_thermal
+# Source: Danish Energy Agency, "Technology Data - Generation of Energy and District Heating",
+# https://ens.dk/sites/ens.dk/files/Analyser/technology_data_catalogue_for_el_and_dh.pdf
+efficiency = {
+    "coal": 0.33,
+    "dfo": 0.35,
+    "ng": 0.41,  # referring to OCGT values from DEA
+}
+
+
 # MMBTu of fuel per hour to kilograms of CO2 per hour
 # Source: https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references
 # = (Heat rate MMBTu/h) * (kg C/mmbtu) * (mass ratio CO2/C)
@@ -101,6 +111,7 @@ def get_plants(model):
         "carbon_resources",
         "renewable_resources",
         "clean_resources",
+        "efficiency",
         "carbon_per_mwh",
         "carbon_per_mmbtu",
         "nox_per_mwh",
