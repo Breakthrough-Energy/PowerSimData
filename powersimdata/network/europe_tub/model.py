@@ -56,11 +56,11 @@ class TUB:
 
     def build(self):
         """Build network"""
-        path = os.path.join(self.data_loc, "networks")
+        path = os.path.join(self.data_loc, "networks", "elec_s")
         if self.reduction is None:
-            network = pypsa.Network(os.path.join(path, "elec_s.nc"))
-        elif os.path.exists(os.path.join(path, f"elec_s_{self.reduction}.nc")):
-            network = pypsa.Network(os.path.join(path, f"elec_s_{self.reduction}.nc"))
+            network = pypsa.Network(path + ".nc")
+        elif os.path.exists(path + f"_{self.reduction}_ec.nc"):
+            network = pypsa.Network(path + f"_{self.reduction}_ec.nc")
         else:
             raise ValueError(
                 "Invalid Resolution. Choose among: None | 1024 | 512 | 256 | 128 | 37"
