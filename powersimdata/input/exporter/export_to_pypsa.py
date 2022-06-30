@@ -38,9 +38,9 @@ pypsa_const = {
             "bus_id": "bus",
             "Pmax": "p_nom",
             "Pmin": "p_min_pu",
-            "startup_cost": "start_up_cost",
-            "shutdown_cost": "shut_down_cost",
-            "ramp_30": "ramp_limit",
+            "startup_cost": "start_up_cost",  # not used here nor in pypsa_to_grid;
+            "shutdown_cost": "shut_down_cost",  # not used here nor in pypsa_to_grid
+            "ramp_30": "ramp_limit",  # in pypsa_to_grid: ramp_limit_up
             "type": "carrier",
         },
         "rename_t": {
@@ -66,10 +66,10 @@ pypsa_const = {
             "GenIOD",
         ],
     },
-    "cost": {
+    "gencost": {
         "rename": {
-            "startup": "startup_cost",
-            "shutdown": "shutdown_cost",
+            "startup": "start_up_cost",
+            "shutdown": "shut_down_cost",
             "c1": "marginal_cost",
         }
     },
@@ -81,7 +81,7 @@ pypsa_const = {
             "ratio": "tap_ratio",
             "x": "x_pu",
             "r": "r_pu",
-            "g": "g_pu",
+            "g": "g_pu",  # not used in pypsa_to_grid
             "b": "b_pu",
         },
         "rename_t": {
@@ -129,6 +129,23 @@ pypsa_const = {
             "muQminT",
             "muQmaxT",
         ],
+    },
+    "storage_gen": {
+        "rename": {
+            "bus_id": "bus",
+            "Pg": "p",
+            "Qg": "q",
+        },
+    },
+    "storage_gencost": {
+        "rename": {"c1": "marginal_cost"},
+    },
+    "storage_storagedata": {
+        "rename": {
+            "OutEff": "efficiency_dispatch",
+            "InEff": "efficiency_store",
+            "LossFactor": "standing_loss",
+        },
     },
 }
 
@@ -245,8 +262,8 @@ def export_to_pypsa(
         grid.plant.loc[~fixed, "Pmax"] + grid.plant.loc[~fixed, "Pmin"]
     )
     gencost["c1"] = linearized.combine_first(gencost["c1"])
-    gencost = gencost.rename(columns=pypsa_const["cost"]["rename"])
-    gencost = gencost[pypsa_const["cost"]["rename"].values()]
+    gencost = gencost.rename(columns=pypsa_const["gencost"]["rename"])
+    gencost = gencost[pypsa_const["gencost"]["rename"].values()]
 
     carriers = pd.DataFrame(index=generators.carrier.unique(), dtype=object)
 
