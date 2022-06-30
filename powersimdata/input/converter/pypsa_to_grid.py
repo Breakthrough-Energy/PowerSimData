@@ -3,10 +3,11 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from powersimdata.input.abstract_grid import AbstractGrid
+from powersimdata.input.abstract_grid import AbstractGrid, storage_template
 from powersimdata.input.exporter.export_to_pypsa import (
     pypsa_const as pypsa_export_const,
 )
+from powersimdata.network.constants.storage import storage as storage_const
 
 pypsa_import_const = {
     "bus": {
@@ -34,7 +35,9 @@ pypsa_import_const = {
         ]
     },
     "generator": {
-        "drop_cols_in_advance": ["type"],
+        "drop_cols_in_advance": [
+            "type"
+        ],
         "default_drop_cols": [
             "build_year",
             "capital_cost",
@@ -65,6 +68,7 @@ pypsa_import_const = {
     },
     "gencost": {
         "default_select_cols": [
+# Type should probably be transformed similar to bus in read_network (see below)
             "type",
             "startup",
             "shutdown",
@@ -72,6 +76,7 @@ pypsa_import_const = {
             "c2",
             "c1",
             "c0",
+# How do we handle 'interconnect' in PyPSA? Is there an equivalent in PyPSA-Eur-Sec, and how would we account for it in a US model?
             "interconnect",
         ]
     },
@@ -130,6 +135,42 @@ pypsa_import_const = {
             "ramp_limit_up",
             "terrain_factor",
             "type",
+        ]
+    },
+    "storage_gen": {
+        "default_drop_cols": [
+            "Qmax",
+            "Qmin",
+            "Pc1",
+            "Pc2",
+            "Qc1min",
+            "Qc1max",
+            "Qc2min",
+            "Qc2max",
+            "ramp_agc",
+            "ramp_10",
+            "ramp_q",
+            "apf",
+            "mu_Pmax",
+            "mu_Pmin",
+            "mu_Qmax",
+            "mu_Qmin",
+        ]
+    },
+    "storage_gencost": {
+        "drop_cols_in_advance": [
+            "type"
+        ],
+        "default_drop_cols": [
+            "startup",
+            "shutdown",
+            "c2",
+            "c0",
+        ]
+    },
+    "storage_StorageData": {
+        "default_select_cols": [
+            "UnitIdx",
         ]
     },
 }
@@ -244,7 +285,64 @@ class FromPyPSA(AbstractGrid):
 
         # storages
         if not n.storage_units.empty or not n.stores.empty:
-            warnings.warn("The export of storages are not implemented yet.")
+#            warnings.warn("The export of storages are not implemented yet.") 
+
+#1 drop cols in advance, define df's
+            # these need to be dropped as they appear in both pypsa and powersimdata
+            # but need to be translated at the same time
+            drop_cols_gencost = pypsa_import_const["storage_gencost"]["drop_cols_in_advance"]
+            df_gen = n.storage_units
+            df_gencost = n.storage_units.drop(columns=drop_cols_gencost)
+            df_StorageData = n.storage_units
+
+#2 rename columns that already match 1:1
+    # e.g. for gen: "bus":"bus_id", "p":"Pg", "q":"Qg"
+            # rename columns that can be directly imported from pypsa to grid, based on dict from powersimdata/input/exporter/export_to_pypsa.py
+            storage_gen = self._translate_df(df_gen, "storage_gen")
+            storage_gencost = self._translate_df(df_gencost, "storage_gencost")
+            storage_StorageData = self._translate_df(df_StorageData, "storage_StorageData")
+
+#3 make individual adjustments for remaining columns
+            # Powersimdata's default relationships between variables taken from function "_add_storage_data" in transform_grid.py
+
+            # Frequently used PyPSA variables
+            p_nom = n.storage_units['p_nom']
+            max_hours = n.storage_units['max_hours']
+            cyclic_state_of_charge = n.storage_units['cyclic_state_of_charge']
+            state_of_charge_initial = n.storage_units['state_of_charge_initial']
+
+            # Individual column adjustments for storage_gen
+            storage_gen['Pmax'] = + p_nom
+            storage_gen['Pmin'] = - p_nom
+            storage_gen['ramp_30'] = p_nom
+            storage_gen['Vg'] = 1
+            storage_gen['mBase'] = 100
+            storage_gen['status'] = 1
+
+            # Individual column adjustments for storage_gencost            
+            storage_gencost['type'] = 2
+            storage_gencost['n'] = 3
+
+            # Individual column adjustments for storage_StorageData
+            # Initial storage: If cyclic, then fill half (powersimdata's default assumption). If not cyclic, then apply PyPSA's state_of_charge_initial.
+            storage_StorageData['InitialStorage'] = state_of_charge_initial.where(~cyclic_state_of_charge,max_hours * p_nom / 2)
+            # Initial storage bounds: Powersimdata's default is same as initial storage
+            storage_StorageData['InitialStorageLowerBound'] = storage_StorageData['InitialStorage']
+            storage_StorageData['InitialStorageUpperBound'] = storage_StorageData['InitialStorage']
+            # Terminal storage bounds: If cyclic, then both same as initial storage (powersimdata's default assumption). If not cyclic, then full capacity and zero.
+            storage_StorageData['ExpectedTerminalStorageMax'] = storage_StorageData['InitialStorage'].where(cyclic_state_of_charge, max_hours * p_nom * 1)
+            storage_StorageData['ExpectedTerminalStorageMin'] = storage_StorageData['InitialStorage'].where(cyclic_state_of_charge, max_hours * p_nom * 0)
+            # Apply powersimdata's default relationships/assumptions for remaining columns
+            storage_StorageData['InitialStorageCost'] = storage_const['energy_value']
+            storage_StorageData['TerminalStoragePrice'] = storage_const['energy_value']
+            storage_StorageData['MinStorageLevel'] = p_nom * max_hours * storage_const['min_stor']
+            storage_StorageData['MaxStorageLevel'] = p_nom * max_hours * storage_const['max_stor']
+            storage_StorageData['rho'] = 1
+
+#4 update indices               
+            storage_gen.index.name = "storage_id"
+            storage_gencost.index.name = "storage_id"
+            storage_StorageData.index.name = "storage_id"
 
         # Drop columns if wanted
         if drop_cols:
@@ -252,7 +350,11 @@ class FromPyPSA(AbstractGrid):
             self._drop_cols(plant, "generator")
             self._drop_cols(branch, "branch")
             self._drop_cols(dcline, "link")
+            self._drop_cols(storage_gen, "storage_gen")
+            self._drop_cols(storage_gencost, "storage_gencost")
+            self._drop_cols(storage_StorageData, "storage_StorageData")
 
+# Do we need any adjustments for storage here?
         # Pull operational properties into grid object
         if len(n.snapshots) == 1:
             bus = bus.assign(**self._translate_pnl(n.pnl("Bus"), "bus"))
@@ -271,8 +373,14 @@ class FromPyPSA(AbstractGrid):
             plant["status"] = n.generators_t.status.any().astype(int)
 
         # Convert to numeric
-        for df in (bus, sub, bus2sub, gencost, plant, branch, dcline):
+        for df in (bus, sub, bus2sub, gencost, plant, branch, dcline, storage):
             df.index = pd.to_numeric(df.index, errors="ignore")
+
+        # Pull together storage dictionary
+        storage = storage_template()
+        storage["gen"] = storage_gen
+        storage["gencost"] = storage_gencost
+        storage["StorageData"] = storage_StorageData            
 
         self.data_loc = data_loc
         self.interconnect = interconnect
@@ -286,6 +394,7 @@ class FromPyPSA(AbstractGrid):
         self.plant = plant
         self.gencost["before"] = gencost
         self.gencost["after"] = gencost
+        self.storage = storage
 
     def _drop_cols(self, df, key):
         """Drop columns in data frame. Done inplace.

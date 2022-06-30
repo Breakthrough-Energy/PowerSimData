@@ -130,6 +130,58 @@ pypsa_const = {
             "muQmaxT",
         ],
     },
+    "storage_gen": {
+        "rename": {
+            "bus_id":"bus",
+            "Pg":"p",
+            "Qg":"q",
+        },
+# What goes here?
+        "rename_t": {
+        },
+        "default_drop_cols": [
+            "Qmax",
+            "Qmin",
+            "Pc1",
+            "Pc2",
+            "Qc1min",
+            "Qc1max",
+            "Qc2min",
+            "Qc2max",
+            "ramp_agc",
+            "ramp_10",
+            "ramp_q",
+            "apf",
+            "mu_Pmax",
+            "mu_Pmin",
+            "mu_Qmax",
+            "mu_Qmin",
+        ],
+    },
+    "storage_gencost": {
+        "rename": {
+            "c1":"marginal_cost"
+        },
+# What goes here?
+        "rename_t": {
+        },
+        "default_drop_cols": [
+            "startup",
+            "shutdown",
+            "c2",
+            "c0",
+        ],
+    },
+    "storage_StorageData": {
+        "rename": {
+            "OutEff":"efficiency_dispatch",
+            "InEff":"efficiency_store",
+            "LossFactor":"standing_loss",
+        },
+# What goes here?
+        "rename_t": {
+        },
+    },
 }
 
 
