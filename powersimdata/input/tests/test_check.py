@@ -266,7 +266,7 @@ def test_check_resources_and_format_argument_value():
 
 def test_check_resources_and_format():
     _check_resources_and_format(["dfo", "wind", "solar", "ng"])
-    _check_resources_and_format("wind_offshore", mi=ModelImmutables("europe_tub"))
+    _check_resources_and_format("offwind-ac", mi=ModelImmutables("europe_tub"))
     _check_resources_and_format({"nuclear"})
     _check_resources_and_format("geothermal", mi=ModelImmutables("europe_tub"))
 
