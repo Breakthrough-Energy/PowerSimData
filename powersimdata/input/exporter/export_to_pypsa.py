@@ -136,9 +136,6 @@ pypsa_const = {
             "Pg":"p",
             "Qg":"q",
         },
-# What goes here?
-        "rename_t": {
-        },
         "default_drop_cols": [
             "Qmax",
             "Qmin",
@@ -162,9 +159,6 @@ pypsa_const = {
         "rename": {
             "c1":"marginal_cost"
         },
-# What goes here?
-        "rename_t": {
-        },
         "default_drop_cols": [
             "startup",
             "shutdown",
@@ -177,9 +171,6 @@ pypsa_const = {
             "OutEff":"efficiency_dispatch",
             "InEff":"efficiency_store",
             "LossFactor":"standing_loss",
-        },
-# What goes here?
-        "rename_t": {
         },
     },
 }
