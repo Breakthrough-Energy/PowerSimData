@@ -132,9 +132,9 @@ pypsa_const = {
     },
     "storage_gen": {
         "rename": {
-            "bus_id":"bus",
-            "Pg":"p",
-            "Qg":"q",
+            "bus_id": "bus",
+            "Pg": "p",
+            "Qg": "q",
         },
         "default_drop_cols": [
             "Qmax",
@@ -156,9 +156,7 @@ pypsa_const = {
         ],
     },
     "storage_gencost": {
-        "rename": {
-            "c1":"marginal_cost"
-        },
+        "rename": {"c1": "marginal_cost"},
         "default_drop_cols": [
             "startup",
             "shutdown",
@@ -168,9 +166,9 @@ pypsa_const = {
     },
     "storage_StorageData": {
         "rename": {
-            "OutEff":"efficiency_dispatch",
-            "InEff":"efficiency_store",
-            "LossFactor":"standing_loss",
+            "OutEff": "efficiency_dispatch",
+            "InEff": "efficiency_store",
+            "LossFactor": "standing_loss",
         },
     },
 }

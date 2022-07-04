@@ -18,6 +18,7 @@ def test_import_arbitrary_network_from_pypsa_to_grid():
     assert not grid.bus.empty
     assert len(n.buses) == len(grid.bus)
 
+
 @pytest.mark.skipif(find_spec("pypsa") is None, reason="Package PyPSA not available.")
 def test_import_network_including_storages_from_pypsa_to_grid():
     import pypsa
@@ -30,6 +31,7 @@ def test_import_network_including_storages_from_pypsa_to_grid():
     assert not grid.storage["gen"].empty
     assert not grid.storage["gencost"].empty
     assert not grid.storage["StorageData"].empty
+
 
 @pytest.mark.skipif(find_spec("pypsa") is None, reason="Package PyPSA not available.")
 def test_import_exported_network():
