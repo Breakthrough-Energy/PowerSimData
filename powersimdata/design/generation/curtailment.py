@@ -2,31 +2,15 @@ import pandas as pd
 
 from powersimdata.scenario.scenario import Scenario
 
-default_pmin_dict = {
-    "coal": None,
-    "dfo": 0,
-    "geothermal": 0.95,
-    "hydro": None,
-    "ng": 0,
-    "nuclear": 0.95,
-    "other": 0,
-    "solar": 0,
-    "wind": 0,
-    "wind_offshore": 0,
-}
-profile_methods = {
-    "hydro": "get_hydro",
-    "solar": "get_solar",
-    "wind": "get_wind",
-    "wind_offshore": "get_wind",
-}
-
 
 def temporal_curtailment(
-    scenario, pmin_by_type=None, pmin_by_id=None, curtailable={"solar", "wind"}
+    scenario,
+    pmin_by_type=None,
+    pmin_by_id=None,
+    curtailable=None,
 ):
     """Calculate the minimum share of potential renewable energy that will be curtailed
-        due to supply/demand mismatch, assuming no storage is present.
+    due to supply/demand mismatch, assuming no storage is present.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param dict/pandas.Series pmin_by_type: Mapping of types to Pmin assumptions. Values
@@ -48,9 +32,12 @@ def temporal_curtailment(
     if not isinstance(scenario, Scenario):
         raise TypeError("scenario must be a Scenario")
     if pmin_by_type is None:
-        pmin_by_type = {}
+        pmin_by_type = {"hydro": None}
     if pmin_by_id is None:
         pmin_by_id = {}
+    if curtailable is None:
+        curtailable = {"solar", "wind"}
+
     check_dicts = {"pmin_by_id": pmin_by_id, "pmin_by_type": pmin_by_type}
     for name, d in check_dicts.items():
         if not isinstance(d, (dict, pd.Series)):
@@ -60,7 +47,8 @@ def temporal_curtailment(
         if not all([v is None or 0 <= v <= 1 for v in values]):
             err_msg = f"all entries in {name} must be None or in the range [0, 1]"
             raise ValueError(err_msg)
-    plant = scenario.state.get_grid().plant
+    grid = scenario.get_grid()
+    plant = grid.plant
     valid_types = plant["type"].unique()
     if not set(pmin_by_type.keys()) <= set(valid_types):
         raise ValueError("Got invalid plant type as a key to pmin_by_type")
@@ -74,11 +62,17 @@ def temporal_curtailment(
 
     # Get profiles, filter out plant-level overrides, then sum
     all_profiles = pd.concat(
-        [getattr(scenario.state, m)() for m in set(profile_methods.values())], axis=1
+        [
+            scenario.get_profile(k)
+            for k in grid.model_immutables.plants["group_profile_resources"]
+        ],
+        axis=1,
     )
     plant_id_mask = ~plant.index.isin(pmin_by_id.keys())
     base_plant_ids_by_type = plant.loc[plant_id_mask].groupby("type").groups
-    valid_profile_types = set(base_plant_ids_by_type) & set(profile_methods)
+    valid_profile_types = (
+        set(base_plant_ids_by_type) & grid.model_immutables.plants["profile_resources"]
+    )
     plant_ids_for_summed_profiles = set().union(
         *[set(base_plant_ids_by_type[g]) for g in valid_profile_types]
     )
@@ -89,17 +83,20 @@ def temporal_curtailment(
     )
 
     # Build up a series of firm generation
-    summed_demand = scenario.state.get_demand().sum(axis=1)
+    summed_demand = scenario.get_demand().sum(axis=1)
     firm_generation = pd.Series(0, index=summed_demand.index)
     # Add plants without plant-level overrides ('base' plants)
-    pmin_dict = {**default_pmin_dict, **pmin_by_type}
+    pmin_dict = {
+        **grid.model_immutables.plants["pmin_as_share_of_pmax"],
+        **pmin_by_type,
+    }
     # Don't iterate over plant types not present in this grid
     pmin_dict = {k: pmin_dict[k] for k in base_plant_ids_by_type}
     for resource, pmin in pmin_dict.items():
         if (resource in curtailable) or (pmin == 0):
             continue
         if pmin is None:
-            if resource in profile_methods:
+            if resource in grid.model_immutables.plants["profile_resources"]:
                 firm_generation += summed_profiles[resource]
             else:
                 summed_pmin = plant.Pmin.loc[base_plant_ids_by_type[resource]].sum()
@@ -112,7 +109,10 @@ def temporal_curtailment(
         if pmin == 0:
             continue
         if pmin is None:
-            if plant.loc[plant_id, "type"] in profile_methods:
+            if (
+                plant.loc[plant_id, "type"]
+                in grid.model_immutables.plants["profile_resources"]
+            ):
                 firm_generation += all_profiles[plant_id]
             else:
                 plant_pmin = plant.loc[plant_id, "Pmin"]

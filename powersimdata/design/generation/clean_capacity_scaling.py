@@ -156,10 +156,10 @@ def add_resource_data_to_targets(input_targets, scenario, calculate_curtailment=
     :param pandas.DataFrame input_targets: table includeing target names, used to
         summarize resource data.
     :param powersimdata.scenario.scenario.Scenario scenario: A Scenario instance.
-    :return: (*pandas.DataFrame*) -- DataFrame of targets including resource data.
+    :return: (*pandas.DataFrame*) -- data frame of targets including resource data.
     """
     targets = input_targets.copy()
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
     plant = grid.plant
     curtailment_types = ["hydro", "solar", "wind"]
     scenario_length = _get_scenario_length(scenario)
@@ -174,24 +174,33 @@ def add_resource_data_to_targets(input_targets, scenario, calculate_curtailment=
     capacity_groupby = plant.Pmax.groupby(groupby_cols)
     capacity_by_target_type = capacity_groupby.sum().unstack(fill_value=0)
     # Generated energy
-    pg_groupby = scenario.state.get_pg().sum().groupby(groupby_cols)
+    pg_groupby = scenario.get_pg().sum().groupby(groupby_cols)
     summed_generation = pg_groupby.sum().unstack(fill_value=0)
     # Calculate capacity factors
     possible_energy = scenario_length * capacity_by_target_type[curtailment_types]
     capacity_factor = summed_generation[curtailment_types] / possible_energy
+
     if calculate_curtailment:
         # Calculate: curtailment, no_curtailment_cap_factor
         # Hydro and solar are straightforward
-        hydro_plant_sum = scenario.state.get_hydro().sum()
-        hydro_plant_targets = plant[plant.type == "hydro"].target_area
+        hydro_plant_sum = scenario.get_profile("hydro").sum()
+        hydro_plant_targets = plant[
+            plant["type"].isin(
+                grid.model_immutables.plants["group_profile_resources"]["hydro"]
+            )
+        ]["target_area"]
         hydro_potential_by_target = hydro_plant_sum.groupby(hydro_plant_targets).sum()
-        solar_plant_sum = scenario.state.get_solar().sum()
-        solar_plant_targets = plant[plant.type == "solar"].target_area
+        solar_plant_sum = scenario.get_profile("solar").sum()
+        solar_plant_targets = plant[
+            plant["type"].isin(
+                grid.model_immutables.plants["group_profile_resources"]["solar"]
+            )
+        ]["target_area"]
         solar_potential_by_target = solar_plant_sum.groupby(solar_plant_targets).sum()
-        # Wind is a little tricker because get_wind() returns 'wind' and 'wind_offshore'
-        onshore_wind_plants = plant[plant.type == "wind"].index
-        onshore_wind_plant_sum = scenario.state.get_wind().sum()[onshore_wind_plants]
-        wind_plant_targets = plant[plant.type == "wind"].target_area
+        onshore_wind_type = grid.model_immutables.plants["label2type"]["Onshore Wind"]
+        onshore_wind_plants = plant[plant["type"] == onshore_wind_type].index
+        onshore_wind_plant_sum = scenario.get_profile("wind").sum()[onshore_wind_plants]
+        wind_plant_targets = plant[plant["type"] == onshore_wind_type].target_area
         wind_potential_by_target = onshore_wind_plant_sum.groupby(
             wind_plant_targets
         ).sum()
@@ -234,7 +243,7 @@ def add_demand_to_targets(input_targets, scenario):
 
     zonename2target = _make_zonename2target(grid, targets)
     zoneid2target = {grid.zone2id[z]: target for z, target in zonename2target.items()}
-    summed_demand = scenario.state.get_demand().sum().to_frame()
+    summed_demand = scenario.get_demand().sum().to_frame()
     summed_demand["target"] = [zoneid2target[id] for id in summed_demand.index]
     targets["demand"] = summed_demand.groupby("target").sum()
     return targets
@@ -507,12 +516,19 @@ def calculate_clean_capacity_scaling(
         For method == 'independent', these values are specified in the targets table.
     :return: (*pandas.DataFrame*) -- dataframe of targets including new capacities,
         plus intermediate values used in calculation.
+    :raises TypeError:
+        if ``ref_scenario`` is not a Scenario object.
+        if both ``targets`` and ``targets_filename`` are None or set.
+        if ``targets`` is not a pandas.DataFrame
+    :raises ValueError:
+        if ``ref_scenario`` is not in the analyze state.
+        if ``method`` is incorrectly set.
     """
     allowed_methods = {"independent", "collaborative"}
     # Input validation
     if not isinstance(ref_scenario, Scenario):
         raise TypeError("ref_scenario must be a Scenario object")
-    if ref_scenario.state.name != "analyze":
+    if ref_scenario.name != "analyze":
         raise ValueError("ref_scenario must be in Analyze state")
     if method not in allowed_methods:
         raise ValueError(f"method must be one of: {allowed_methods}")
@@ -521,7 +537,7 @@ def calculate_clean_capacity_scaling(
     if targets is not None and targets_filename is not None:
         raise TypeError("targets and targets_filename cannot both be given")
     if targets is not None and not isinstance(targets, pd.DataFrame):
-        raise TypeError("targets must be passed as a pandas.DataFrame")
+        raise TypeError("targets must be a pandas.DataFrame")
     if targets_filename is not None:
         targets = load_targets_from_csv(targets_filename)
 

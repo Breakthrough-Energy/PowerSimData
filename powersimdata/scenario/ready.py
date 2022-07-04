@@ -50,6 +50,7 @@ class Ready(State):
             source=self._scenario_info["grid_model"],
         )
 
+    # To be refactored to return profiles for different grid models
     def get_profile(self, kind):
         """Returns demand, hydro, solar or wind  profile.
 
@@ -80,6 +81,7 @@ class Ready(State):
         """
         return self.get_profile("wind")
 
+    # To be removed
     def get_wind_onshore(self):
         """Returns wind onshore profile
 
@@ -91,6 +93,7 @@ class Ready(State):
         onshore_id = grid.plant.groupby(["type"]).get_group("wind").index
         return wind[onshore_id]
 
+    # To be removed
     def get_wind_offshore(self):
         """Returns wind offshore profile
 

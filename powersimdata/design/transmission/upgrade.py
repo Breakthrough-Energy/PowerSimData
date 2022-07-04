@@ -23,7 +23,7 @@ def _find_branches_connected_to_bus(branch, bus_id):
 def _find_first_degree_branches(branch, branch_id):
     """Find all branches connected to a given branch.
 
-    :param pandas.DataFrame branch: branch DataFrame from Grid object.
+    :param pandas.DataFrame branch: branch data frame from Grid object.
     :param int branch_id: index of branches to find neighbors of.
     :return: (*set*) -- set of branch indexes (integers).
     """
@@ -40,7 +40,7 @@ def _find_first_degree_branches(branch, branch_id):
 def _find_stub_degree(branch, bus_id):
     """Find degree of stubbiness, and stub branches.
 
-    :param pandas.DataFrame branch: branch DataFrame from Grid object.
+    :param pandas.DataFrame branch: branch data frame from Grid object.
     :param int bus_id: index of bus to find subbiness of.
     :return: (*tuple*) -- tuple containing:
         stub_degree (*int*) -- How stubby (non-negative integer).
@@ -63,10 +63,9 @@ def _find_stub_degree(branch, bus_id):
 def _find_capacity_at_bus(plant, bus_id, gentypes):
     """Find total capacity of plants with the given type(s) at the given bus.
 
-    :param pandas.DataFrame plant: plant DataFrame from Grid object.
+    :param pandas.DataFrame plant: plant data frame from Grid object.
     :param int bus_id: index of bus to find generators at.
-    :param [list/tuple/set/str] gentypes: list/tuple/set of strs, or one str,
-        containing the type of generators to sum capacity for.
+    :param list/tuple/set/str gentypes: type of generators to sum capacity for.
     :return: (*float*) -- total capacity at bus.
     """
 
@@ -82,15 +81,14 @@ def _find_capacity_at_bus(plant, bus_id, gentypes):
 
 def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=False):
     """Identify renewable gens behind 'stub' branches, scale up branch capacity
-        (via change_table entries) to match generator capacity.
+    (via change_table entries) to match generator capacity.
 
-    :param powersimdata.input.change_table.ChangeTable change_table:
-        change table instance.
+    :param powersimdata.input.change_table.ChangeTable change_table: ChangeTable object.
     :param float/int fuzz: adds just a little extra capacity to avoid binding.
     :param bool inplace: if True, modify ct inplace and return None. If False,
         copy ct and return modified copy.
     :param bool verbose: if True, print info for each unscaled plant.
-    :return: (*None*/*dict*) -- if inplace == True, return modified ct dict.
+    :return: (*None*/*dict*) -- if inplace is True, return modified ct dict.
     """
 
     if inplace:
@@ -106,8 +104,7 @@ def scale_renewable_stubs(change_table, fuzz=1, inplace=True, verbose=False):
         ct["branch"]["branch_id"] = {}
     branch_id_ct = ct["branch"]["branch_id"]
 
-    ren_types = ("hydro", "solar", "wind", "wind_offshore")
-    for r in ren_types:
+    for r in change_table.grid.model_immutables.plants["profile_resources"]:
         ren_plants = ref_plant[ref_plant["type"] == r]
         for p in ren_plants.index:
             bus_id = ref_plant.loc[p, "bus_id"]
@@ -156,10 +153,10 @@ def get_branches_by_area(grid, area_names, method="either"):
         - 'bridging': only select branches which connect area to another.
         - 'either': select branches if either end is in area. Equivalent to
         'internal' + 'bridging'.
+    :return: (*set*) -- a set of branch IDs.
     :raise TypeError: if area_names not a list/set/tuple, or method not a str.
     :raise ValueError: if not all elements of area_names are strings, if method
         is not one of the recognized methods.
-    :return: (*set*) -- a set of branch IDs.
     """
     allowed_methods = {"internal", "bridging", "either"}
     if not isinstance(grid, Grid):
@@ -206,27 +203,25 @@ def scale_congested_mesh_branches(
     branches are selected for upgrading, where N is specified by ``upgraade_n``, with
     each upgraded by their base capacity multiplied by ``increment``.
 
-    :param powersimdata.input.change_table.ChangeTable change_table: the
-        change table instance we are operating on.
+    :param powersimdata.input.change_table.ChangeTable change_table: ChangeTable object.
     :param powersimdata.scenario.scenario.Scenario ref_scenario: the reference
         scenario to be used in bootstrapping the branch scaling factors.
     :param int upgrade_n: the number of branches to upgrade.
     :param list/set/tuple/None allow_list: only select from these branch IDs.
     :param list/set/tuple/None deny_list: never select any of these branch IDs.
     :param str congestion_metric: numerator method: 'quantile' or 'mean'.
-    :param str cost_metric: denominator method: 'branches', 'cost', 'MW', or
-        'MWmiles'.
+    :param str cost_metric: denominator method: 'branches', 'cost', 'MW', or 'MWmiles'.
     :param float quantile: if ``congestion_metric`` == 'quantile', this is the quantile
         to use to judge branch congestion (otherwise it is unused). If None, a default
         value of 0.95 is used, i.e. we evaluate the shadow price for the worst 5% of
         hours.
-    :param float/int increment: branch increment, relative to original
-        capacity.
+    :param float/int increment: branch increment, relative to original capacity.
     :return: (*None*) -- the change_table is modified in-place.
+    :raises ValueError: if ``ref_scenario`` is not in analyze state.
     """
-    # To do: better type checking of inputs.
-    # We need a Scenario object that's in Analyze state to get congu/congl,
-    # but we can't import Scenario to check against, because circular imports.
+    if ref_scenario.state.name != "analyze":
+        raise ValueError("ref_scenario must be in Analyze state")
+
     branches_to_upgrade = _identify_mesh_branch_upgrades(
         ref_scenario,
         upgrade_n=upgrade_n,
@@ -260,8 +255,7 @@ def _identify_mesh_branch_upgrades(
     :param list/set/tuple/None allow_list: only select from these branch IDs.
     :param list/set/tuple/None deny_list: never select any of these branch IDs.
     :param str congestion_metric: numerator method: 'quantile' or 'mean'.
-    :param str cost_metric: denominator method: 'branches', 'cost', 'MW', or
-        'MWmiles'.
+    :param str cost_metric: denominator method: 'branches', 'cost', 'MW', or 'MWmiles'.
     :param float quantile: if ``congestion_metric`` == 'quantile', this is the quantile
         to use to judge branch congestion (otherwise it is unused). If None, a default
         value of 0.95 is used, i.e. we evaluate the shadow price for the worst 5% of
@@ -379,10 +373,10 @@ def _construct_composite_allow_list(valid_branches, allow_list, deny_list):
     :param list/set/tuple valid_branches: List of valid branches to select.
     :param list/set/tuple/None allow_list: only select from these branch IDs.
     :param list/set/tuple/None deny_list: never select any of these branch IDs.
+    :return (*set*) -- set of allowed branch IDs.
     :raises ValueError: if both allow_list and deny_list are specified, or if
         allow_list or deny_list contain IDs not in valid_branches.
     :raises TypeError: if valid_branches, allow_list, or deny_list are bad type.
-    :return (*set*) -- set of allowed branch IDs.
     """
     # Validate valid_branches/allow_list/deny_list Type and combination
     iterable_types = (list, set, tuple)
@@ -419,11 +413,11 @@ def _increment_branch_scaling(change_table, branch_ids, ref_scenario, value=1):
 
     :param powersimdata.input.change_table.ChangeTable change_table: the
         change table instance we are operating on.
-    :param [list/set/tuple] branch_ids: an iterable of branch indices.
+    :param list/set/tuple branch_ids: an iterable of branch indices.
     :param powersimdata.scenario.scenario.Scenario ref_scenario: the reference
         scenario to copy branch scaling from.
-    :param [int/float] value: branch increment, relative to original capacity.
-    :return: (*None*) -- the change_table is modified in-place.
+    :param int/float value: branch increment, relative to original capacity.
+    :return: (*None*) -- the change_table is modified inplace.
     """
     # Ensure that ct has proper keys
     ct = change_table.ct

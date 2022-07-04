@@ -17,20 +17,6 @@ class TransformGrid:
         """
         self.grid = copy.deepcopy(grid)
         self.ct = copy.deepcopy(ct)
-        self.gen_types = [
-            "biomass",
-            "coal",
-            "dfo",
-            "geothermal",
-            "ng",
-            "nuclear",
-            "hydro",
-            "solar",
-            "wind",
-            "wind_offshore",
-            "other",
-        ]
-        self.thermal_gen_types = ["coal", "dfo", "geothermal", "ng", "nuclear"]
 
     def get_grid(self):
         """Returns the transformed grid.
@@ -44,7 +30,7 @@ class TransformGrid:
     def _apply_change_table(self):
         """Apply changes listed in change table to the grid."""
         # First scale by zones, so that zone factors are not applied to additions.
-        for g in self.gen_types:
+        for g in self.grid.model_immutables.plants["all_resources"]:
             if g in self.ct.keys():
                 self._scale_gen_by_zone(g)
             if f"{g}_cost" in self.ct.keys():
@@ -72,7 +58,7 @@ class TransformGrid:
             self._add_storage()
 
         # Scale by IDs, so that additions can be scaled.
-        for g in self.gen_types:
+        for g in self.grid.model_immutables.plants["all_resources"]:
             if g in self.ct.keys():
                 self._scale_gen_by_id(g)
             if f"{g}_cost" in self.ct.keys():
@@ -106,7 +92,7 @@ class TransformGrid:
                     .index.tolist()
                 )
                 self._scale_gen_capacity(plant_id, factor)
-                if gen_type in self.thermal_gen_types:
+                if gen_type in self.grid.model_immutables.plants["thermal_resources"]:
                     self._scale_gencost_by_capacity(plant_id, factor)
 
     def _scale_gen_by_id(self, gen_type):
@@ -118,7 +104,7 @@ class TransformGrid:
         if "plant_id" in self.ct[gen_type].keys():
             for plant_id, factor in self.ct[gen_type]["plant_id"].items():
                 self._scale_gen_capacity(plant_id, factor)
-                if gen_type in self.thermal_gen_types:
+                if gen_type in self.grid.model_immutables.plants["thermal_resources"]:
                     self._scale_gencost_by_capacity(plant_id, factor)
 
     def _scale_gencost_by_zone(self, gen_type):
@@ -389,7 +375,7 @@ class TransformGrid:
             new_gencost["type"] = 2
             new_gencost["n"] = 3
             new_gencost["interconnect"] = self.grid.bus.loc[bus_id].interconnect
-            if entry["type"] in self.thermal_gen_types:
+            if entry["type"] in self.grid.model_immutables.plants["thermal_resources"]:
                 new_gencost["c0"] = entry["c0"]
                 new_gencost["c1"] = entry["c1"]
                 new_gencost["c2"] = entry["c2"]

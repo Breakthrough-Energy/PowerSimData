@@ -52,7 +52,9 @@ def test_temporal_curtailment(mock_scenario):
     assert temporal_curtailment(mock_scenario) == pytest.approx(0.3361702)
 
     # Testing that "None" overrides the default simulation Pmin with the data Pmin
-    curtailment = temporal_curtailment(mock_scenario, pmin_by_type={"ng": None})
+    curtailment = temporal_curtailment(
+        mock_scenario, pmin_by_type={"hydro": None, "ng": None}
+    )
     assert curtailment == pytest.approx(0.4)
     curtailment = temporal_curtailment(mock_scenario, pmin_by_id={10: None})
     assert curtailment == pytest.approx(0.4)
@@ -64,15 +66,19 @@ def test_temporal_curtailment(mock_scenario):
     assert curtailment == pytest.approx(0.37446809)
     curtailment = temporal_curtailment(mock_scenario, pmin_by_id={5: 1, 11: 1})
     assert curtailment == pytest.approx(0.39361702)
-    curtailment = temporal_curtailment(mock_scenario, pmin_by_type={"nuclear": 1})
+    curtailment = temporal_curtailment(
+        mock_scenario, pmin_by_type={"hydro": None, "nuclear": 1}
+    )
     assert curtailment == pytest.approx(0.39361702)
     curtailment = temporal_curtailment(mock_scenario, pmin_by_id={5: 1, 11: 0.99})
     assert curtailment == pytest.approx(0.38595744)
-    curtailment = temporal_curtailment(mock_scenario, pmin_by_type={"nuclear": 0.98})
+    curtailment = temporal_curtailment(
+        mock_scenario, pmin_by_type={"hydro": None, "nuclear": 0.98}
+    )
     assert curtailment == pytest.approx(0.37063830)
     # Testing that we can override by-type with by-id
     curtailment = temporal_curtailment(
-        mock_scenario, pmin_by_type={"nuclear": 1}, pmin_by_id={11: 0.99}
+        mock_scenario, pmin_by_type={"hydro": None, "nuclear": 1}, pmin_by_id={11: 0.99}
     )
     assert curtailment == pytest.approx(0.38595744)
 
