@@ -164,7 +164,7 @@ pypsa_const = {
             "c0",
         ],
     },
-    "storage_StorageData": {
+    "storage_storagedata": {
         "rename": {
             "OutEff": "efficiency_dispatch",
             "InEff": "efficiency_store",

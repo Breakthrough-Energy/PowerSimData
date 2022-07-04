@@ -162,7 +162,7 @@ pypsa_import_const = {
             "c0",
         ],
     },
-    "storage_StorageData": {
+    "storage_storagedata": {
         "default_select_cols": [
             "UnitIdx",
         ]
@@ -283,12 +283,12 @@ class FromPyPSA(AbstractGrid):
         ]
         df_gen = n.storage_units
         df_gencost = n.storage_units.drop(columns=drop_cols_gencost)
-        df_StorageData = n.storage_units
+        df_storagedata = n.storage_units
 
         # rename columns that can be directly imported from pypsa to grid, based on dict from pypsa_export_const
         storage_gen = self._translate_df(df_gen, "storage_gen")
         storage_gencost = self._translate_df(df_gencost, "storage_gencost")
-        storage_StorageData = self._translate_df(df_StorageData, "storage_StorageData")
+        storage_storagedata = self._translate_df(df_storagedata, "storage_storagedata")
 
         # Powersimdata's default relationships between variables taken from function "_add_storage_data" in transform_grid.py
 
@@ -310,35 +310,35 @@ class FromPyPSA(AbstractGrid):
         storage_gencost["type"] = 2
         storage_gencost["n"] = 3
 
-        # Individual column adjustments for storage_StorageData
+        # Individual column adjustments for storage_storagedata
         # Initial storage: If cyclic, then fill half. If not cyclic, then apply PyPSA's state_of_charge_initial.
-        storage_StorageData["InitialStorage"] = state_of_charge_initial.where(
+        storage_storagedata["InitialStorage"] = state_of_charge_initial.where(
             ~cyclic_state_of_charge, max_hours * p_nom / 2
         )
         # Initial storage bounds: Powersimdata's default is same as initial storage
-        storage_StorageData["InitialStorageLowerBound"] = storage_StorageData[
+        storage_storagedata["InitialStorageLowerBound"] = storage_storagedata[
             "InitialStorage"
         ]
-        storage_StorageData["InitialStorageUpperBound"] = storage_StorageData[
+        storage_storagedata["InitialStorageUpperBound"] = storage_storagedata[
             "InitialStorage"
         ]
         # Terminal storage bounds: If cyclic, then both same as initial storage. If not cyclic, then full capacity and zero.
-        storage_StorageData["ExpectedTerminalStorageMax"] = max_hours * p_nom * 1
-        storage_StorageData["ExpectedTerminalStorageMin"] = max_hours * p_nom * 0
+        storage_storagedata["ExpectedTerminalStorageMax"] = max_hours * p_nom * 1
+        storage_storagedata["ExpectedTerminalStorageMin"] = max_hours * p_nom * 0
         # Apply powersimdata's default relationships/assumptions for remaining columns
-        storage_StorageData["InitialStorageCost"] = storage_const["energy_value"]
-        storage_StorageData["TerminalStoragePrice"] = storage_const["energy_value"]
-        storage_StorageData["MinStorageLevel"] = (
+        storage_storagedata["InitialStorageCost"] = storage_const["energy_value"]
+        storage_storagedata["TerminalStoragePrice"] = storage_const["energy_value"]
+        storage_storagedata["MinStorageLevel"] = (
             p_nom * max_hours * storage_const["min_stor"]
         )
-        storage_StorageData["MaxStorageLevel"] = (
+        storage_storagedata["MaxStorageLevel"] = (
             p_nom * max_hours * storage_const["max_stor"]
         )
-        storage_StorageData["rho"] = 1
+        storage_storagedata["rho"] = 1
 
         storage_gen.index.name = "storage_id"
         storage_gencost.index.name = "storage_id"
-        storage_StorageData.index.name = "storage_id"
+        storage_storagedata.index.name = "storage_id"
 
         # Drop columns if wanted
         if drop_cols:
@@ -377,7 +377,7 @@ class FromPyPSA(AbstractGrid):
             dcline,
             storage_gen,
             storage_gencost,
-            storage_StorageData,
+            storage_storagedata,
         ):
             df.index = pd.to_numeric(df.index, errors="ignore")
 
@@ -385,7 +385,7 @@ class FromPyPSA(AbstractGrid):
         storage = storage_template()
         storage["gen"] = storage_gen
         storage["gencost"] = storage_gencost
-        storage["StorageData"] = storage_StorageData
+        storage["StorageData"] = storage_storagedata
 
         self.data_loc = data_loc
         self.interconnect = interconnect
