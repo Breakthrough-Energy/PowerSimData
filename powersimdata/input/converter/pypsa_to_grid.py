@@ -170,6 +170,25 @@ pypsa_import_const = {
 }
 
 
+def _translate_df(df, key):
+    """Rename columns of a data frame.
+
+    :param pandas.DataFrame df: data frame to operate on.
+    :param str key: key in the :data:`pypsa_import_const` dictionary.
+    """
+    translators = _invert_dict(pypsa_export_const[key]["rename"])
+    return df.rename(columns=translators)
+
+
+def _invert_dict(d):
+    """Revert dictionary
+
+    :param dict d: dictionary to revert.
+    :return: (*dict*) -- reverted dictionary.
+    """
+    return {v: k for k, v in d.items()}
+
+
 class FromPyPSA(AbstractGrid):
     """Grid builder for PyPSA network object.
 
@@ -199,7 +218,7 @@ class FromPyPSA(AbstractGrid):
 
         # bus
         df = n.df("Bus").drop(columns="type")
-        bus = self._translate_df(df, "bus")
+        bus = _translate_df(df, "bus")
         bus["type"] = bus.type.replace(["PQ", "PV", "slack", ""], [1, 2, 3, 4])
         bus.index.name = "bus_id"
 
@@ -210,7 +229,7 @@ class FromPyPSA(AbstractGrid):
             zone2id = (
                 n.buses[uniques].set_index("zone_name").zone_id.astype(int).to_dict()
             )
-            id2zone = self._invert_dict(zone2id)
+            id2zone = _invert_dict(zone2id)
         else:
             zone2id = {}
             id2zone = {}
@@ -233,13 +252,13 @@ class FromPyPSA(AbstractGrid):
 
         # shunts
         if not n.shunt_impedances.empty:
-            shunts = self._translate_df(n.shunt_impedances, "bus")
+            shunts = _translate_df(n.shunt_impedances, "bus")
             bus[["Bs", "Gs"]] = shunts[["Bs", "Gs"]]
 
         # plant
         drop_cols = pypsa_import_const["generator"]["drop_cols_in_advance"]
         df = n.generators.drop(columns=drop_cols)
-        plant = self._translate_df(df, "generator")
+        plant = _translate_df(df, "generator")
         plant["ramp_30"] = n.generators["ramp_limit_up"].fillna(0)
         plant["Pmin"] *= plant["Pmax"]  # from relative to absolute value
         plant["bus_id"] = pd.to_numeric(plant.bus_id, errors="ignore")
@@ -247,7 +266,7 @@ class FromPyPSA(AbstractGrid):
 
         # generation costs
         cols = pypsa_import_const["gencost"]["default_select_cols"]
-        gencost = self._translate_df(df, "cost")
+        gencost = _translate_df(df, "cost")
         gencost = gencost.assign(type=2, n=3, c0=0, c2=0)
         gencost = gencost.reindex(columns=cols)
         gencost.index.name = "plant_id"
@@ -255,11 +274,11 @@ class FromPyPSA(AbstractGrid):
         # branch
         drop_cols = pypsa_import_const["branch"]["drop_cols_in_advance"]
         df = n.lines.drop(columns=drop_cols, errors="ignore")
-        lines = self._translate_df(df, "branch")
+        lines = _translate_df(df, "branch")
         lines["branch_device_type"] = "Line"
 
         df = n.transformers.drop(columns=drop_cols, errors="ignore")
-        transformers = self._translate_df(df, "branch")
+        transformers = _translate_df(df, "branch")
         if "branch_device_type" not in transformers:
             transformers["branch_device_type"] = "Transfomer"
 
@@ -272,7 +291,7 @@ class FromPyPSA(AbstractGrid):
 
         # DC lines
         df = n.df("Link")[lambda df: df.index.str[:3] != "sub"]
-        dcline = self._translate_df(df, "link")
+        dcline = _translate_df(df, "link")
         dcline["Pmin"] *= dcline["Pmax"]  # convert relative to absolute
         dcline["from_bus_id"] = pd.to_numeric(dcline.from_bus_id, errors="ignore")
         dcline["to_bus_id"] = pd.to_numeric(dcline.to_bus_id, errors="ignore")
@@ -286,9 +305,9 @@ class FromPyPSA(AbstractGrid):
         df_storagedata = n.storage_units
 
         # rename columns that can be directly imported from pypsa to grid, based on dict from pypsa_export_const
-        storage_gen = self._translate_df(df_gen, "storage_gen")
-        storage_gencost = self._translate_df(df_gencost, "storage_gencost")
-        storage_storagedata = self._translate_df(df_storagedata, "storage_storagedata")
+        storage_gen = _translate_df(df_gen, "storage_gen")
+        storage_gencost = _translate_df(df_gencost, "storage_gencost")
+        storage_storagedata = _translate_df(df_storagedata, "storage_storagedata")
 
         # Powersimdata's default relationships between variables taken from function "_add_storage_data" in transform_grid.py
 
@@ -410,15 +429,6 @@ class FromPyPSA(AbstractGrid):
         cols = pypsa_import_const[key]["default_drop_cols"]
         df.drop(columns=cols, inplace=True, errors="ignore")
 
-    def _translate_df(self, df, key):
-        """Rename columns of a data frame.
-
-        :param pandas.DataFrame df: data frame to operate on.
-        :param str key: key in the :data:`pypsa_import_const` dictionary.
-        """
-        translators = self._invert_dict(pypsa_export_const[key]["rename"])
-        return df.rename(columns=translators)
-
     def _translate_pnl(self, pnl, key):
         """Translate time-dependent data frames with one time step from pypsa to static
         data frames.
@@ -427,16 +437,8 @@ class FromPyPSA(AbstractGrid):
         :param str key: key in the :data:`pypsa_import_const` dictionary.
         :return: (*pandas.DataFrame*) -- the static data frame
         """
-        translators = self._invert_dict(pypsa_export_const[key]["rename_t"])
+        translators = _invert_dict(pypsa_export_const[key]["rename_t"])
         df = pd.concat(
             {v: pnl[k].iloc[0] for k, v in translators.items() if k in pnl}, axis=1
         )
         return df
-
-    def _invert_dict(self, d):
-        """Revert dictionary
-
-        :param dict d: dictionary to revert.
-        :return: (*dict*) -- reverted dictionary.
-        """
-        return {v: k for k, v in d.items()}
