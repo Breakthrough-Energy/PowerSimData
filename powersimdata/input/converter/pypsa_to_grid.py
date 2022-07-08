@@ -189,6 +189,73 @@ def _invert_dict(d):
     return {v: k for k, v in d.items()}
 
 
+def _get_storage_data(n):
+    df_storagedata = n.storage_units
+
+    storage_storagedata = _translate_df(df_storagedata, "storage_storagedata")
+
+    p_nom = n.storage_units["p_nom"]
+    max_hours = n.storage_units["max_hours"]
+    cyclic_state_of_charge = n.storage_units["cyclic_state_of_charge"]
+    state_of_charge_initial = n.storage_units["state_of_charge_initial"]
+
+    # Initial storage: If cyclic, then fill half. If not cyclic, then apply PyPSA's state_of_charge_initial.
+    storage_storagedata["InitialStorage"] = state_of_charge_initial.where(
+        ~cyclic_state_of_charge, max_hours * p_nom / 2
+    )
+    # Initial storage bounds: Powersimdata's default is same as initial storage
+    storage_storagedata["InitialStorageLowerBound"] = storage_storagedata[
+        "InitialStorage"
+    ]
+    storage_storagedata["InitialStorageUpperBound"] = storage_storagedata[
+        "InitialStorage"
+    ]
+    # Terminal storage bounds: If cyclic, then both same as initial storage. If not cyclic, then full capacity and zero.
+    storage_storagedata["ExpectedTerminalStorageMax"] = max_hours * p_nom * 1
+    storage_storagedata["ExpectedTerminalStorageMin"] = max_hours * p_nom * 0
+    # Apply powersimdata's default relationships/assumptions for remaining columns
+    storage_storagedata["InitialStorageCost"] = storage_const["energy_value"]
+    storage_storagedata["TerminalStoragePrice"] = storage_const["energy_value"]
+    storage_storagedata["MinStorageLevel"] = (
+        p_nom * max_hours * storage_const["min_stor"]
+    )
+    storage_storagedata["MaxStorageLevel"] = (
+        p_nom * max_hours * storage_const["max_stor"]
+    )
+    storage_storagedata["rho"] = 1
+
+    storage_storagedata.index.name = "storage_id"
+    return storage_storagedata
+
+
+def _get_storage_gencost(n):
+    drop_cols_gencost = pypsa_import_const["storage_gencost"]["drop_cols_in_advance"]
+    df_gencost = n.storage_units.drop(columns=drop_cols_gencost)
+
+    storage_gencost = _translate_df(df_gencost, "storage_gencost")
+    storage_gencost["type"] = 2
+    storage_gencost["n"] = 3
+
+    storage_gencost.index.name = "storage_id"
+    return storage_gencost
+
+
+def _get_storage_gen(n):
+    df_gen = n.storage_units
+    p_nom = n.storage_units["p_nom"]
+
+    storage_gen = _translate_df(df_gen, "storage_gen")
+    storage_gen["Pmax"] = +p_nom
+    storage_gen["Pmin"] = -p_nom
+    storage_gen["ramp_30"] = p_nom
+    storage_gen["Vg"] = 1
+    storage_gen["mBase"] = 100
+    storage_gen["status"] = 1
+
+    storage_gen.index.name = "storage_id"
+    return storage_gen
+
+
 class FromPyPSA(AbstractGrid):
     """Grid builder for PyPSA network object.
 
@@ -297,67 +364,9 @@ class FromPyPSA(AbstractGrid):
         dcline["to_bus_id"] = pd.to_numeric(dcline.to_bus_id, errors="ignore")
 
         # storages
-        drop_cols_gencost = pypsa_import_const["storage_gencost"][
-            "drop_cols_in_advance"
-        ]
-        df_gen = n.storage_units
-        df_gencost = n.storage_units.drop(columns=drop_cols_gencost)
-        df_storagedata = n.storage_units
-
-        # rename columns that can be directly imported from pypsa to grid, based on dict from pypsa_export_const
-        storage_gen = _translate_df(df_gen, "storage_gen")
-        storage_gencost = _translate_df(df_gencost, "storage_gencost")
-        storage_storagedata = _translate_df(df_storagedata, "storage_storagedata")
-
-        # Powersimdata's default relationships between variables taken from function "_add_storage_data" in transform_grid.py
-
-        # Frequently used PyPSA variables
-        p_nom = n.storage_units["p_nom"]
-        max_hours = n.storage_units["max_hours"]
-        cyclic_state_of_charge = n.storage_units["cyclic_state_of_charge"]
-        state_of_charge_initial = n.storage_units["state_of_charge_initial"]
-
-        # Individual column adjustments for storage_gen
-        storage_gen["Pmax"] = +p_nom
-        storage_gen["Pmin"] = -p_nom
-        storage_gen["ramp_30"] = p_nom
-        storage_gen["Vg"] = 1
-        storage_gen["mBase"] = 100
-        storage_gen["status"] = 1
-
-        # Individual column adjustments for storage_gencost
-        storage_gencost["type"] = 2
-        storage_gencost["n"] = 3
-
-        # Individual column adjustments for storage_storagedata
-        # Initial storage: If cyclic, then fill half. If not cyclic, then apply PyPSA's state_of_charge_initial.
-        storage_storagedata["InitialStorage"] = state_of_charge_initial.where(
-            ~cyclic_state_of_charge, max_hours * p_nom / 2
-        )
-        # Initial storage bounds: Powersimdata's default is same as initial storage
-        storage_storagedata["InitialStorageLowerBound"] = storage_storagedata[
-            "InitialStorage"
-        ]
-        storage_storagedata["InitialStorageUpperBound"] = storage_storagedata[
-            "InitialStorage"
-        ]
-        # Terminal storage bounds: If cyclic, then both same as initial storage. If not cyclic, then full capacity and zero.
-        storage_storagedata["ExpectedTerminalStorageMax"] = max_hours * p_nom * 1
-        storage_storagedata["ExpectedTerminalStorageMin"] = max_hours * p_nom * 0
-        # Apply powersimdata's default relationships/assumptions for remaining columns
-        storage_storagedata["InitialStorageCost"] = storage_const["energy_value"]
-        storage_storagedata["TerminalStoragePrice"] = storage_const["energy_value"]
-        storage_storagedata["MinStorageLevel"] = (
-            p_nom * max_hours * storage_const["min_stor"]
-        )
-        storage_storagedata["MaxStorageLevel"] = (
-            p_nom * max_hours * storage_const["max_stor"]
-        )
-        storage_storagedata["rho"] = 1
-
-        storage_gen.index.name = "storage_id"
-        storage_gencost.index.name = "storage_id"
-        storage_storagedata.index.name = "storage_id"
+        storage_gen = _get_storage_gen(n)
+        storage_gencost = _get_storage_gencost(n)
+        storage_storagedata = _get_storage_data(n)
 
         # Drop columns if wanted
         if drop_cols:
