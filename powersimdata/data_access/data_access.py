@@ -16,9 +16,8 @@ from powersimdata.utility import server_setup
 class DataAccess:
     """Interface to a local or remote data store."""
 
-    def __init__(self, root):
+    def __init__(self):
         """Constructor"""
-        self.root = root
         self.join = fs.path.join
         self.local_fs = None
 
@@ -163,10 +162,10 @@ class DataAccess:
 class LocalDataAccess(DataAccess):
     """Interface to shared data volume"""
 
-    def __init__(self, root=server_setup.LOCAL_DIR):
-        super().__init__(root)
-        self.local_fs = fs.open_fs(root)
-        self.fs = self._get_fs()
+    def __init__(self, _fs=None):
+        super().__init__()
+        self.local_fs = fs.open_fs(server_setup.LOCAL_DIR)
+        self.fs = _fs if _fs is not None else self._get_fs()
 
     def _get_fs(self):
         mfs = MultiFS()
@@ -193,22 +192,12 @@ class LocalDataAccess(DataAccess):
 class SSHDataAccess(DataAccess):
     """Interface to a remote data store, accessed via SSH."""
 
-    def __init__(self, root=server_setup.DATA_ROOT_DIR):
+    def __init__(self, _fs=None):
         """Constructor"""
-        super().__init__(root)
-        self._fs = None
+        super().__init__()
+        self.root = server_setup.DATA_ROOT_DIR
+        self.fs = _fs if _fs is not None else get_multi_fs(self.root)
         self.local_fs = fs.open_fs(server_setup.LOCAL_DIR)
-
-    @property
-    def fs(self):
-        """Get or create the filesystem object
-
-        :raises IOError: if connection failed or still within retry window
-        :return: (*fs.multifs.MultiFS*) -- filesystem instance
-        """
-        if self._fs is None:
-            self._fs = get_multi_fs(self.root)
-        return self._fs
 
     def exec_command(self, command):
         ssh_fs = self.fs.get_fs("ssh_fs")
@@ -285,7 +274,7 @@ class _DataAccessTemplate(SSHDataAccess):
 
     def __init__(self, fs_url):
         self.local_fs = fs.open_fs(fs_url)
-        self._fs = self._get_fs(fs_url)
+        self.fs = self._get_fs(fs_url)
         self.root = "foo"
         self.join = fs.path.join
 
