@@ -196,8 +196,14 @@ class SSHDataAccess(DataAccess):
         """Constructor"""
         super().__init__()
         self.root = server_setup.DATA_ROOT_DIR
-        self.fs = _fs if _fs is not None else get_multi_fs(self.root)
+        self._fs = _fs
         self.local_fs = fs.open_fs(server_setup.LOCAL_DIR)
+
+    @property
+    def fs(self):
+        if self._fs is None:
+            self._fs = get_multi_fs(self.root)
+        return self._fs
 
     def exec_command(self, command):
         ssh_fs = self.fs.get_fs("ssh_fs")
@@ -274,7 +280,7 @@ class _DataAccessTemplate(SSHDataAccess):
 
     def __init__(self, fs_url):
         self.local_fs = fs.open_fs(fs_url)
-        self.fs = self._get_fs(fs_url)
+        self._fs = self._get_fs(fs_url)
         self.root = "foo"
         self.join = fs.path.join
 
