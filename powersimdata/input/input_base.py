@@ -1,4 +1,3 @@
-from powersimdata.data_access.context import Context
 from powersimdata.utility.helpers import MemoryCache, cache_key
 
 _cache = MemoryCache()
@@ -11,7 +10,7 @@ class InputBase:
 
     def __init__(self):
         """Constructor."""
-        self.data_access = Context.get_data_access()
+        self.data_access = None
         self._file_extension = {}
 
     def _check_field(self, field_name):
