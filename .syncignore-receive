@@ -144,4 +144,6 @@ dmypy.json
 Thumbs.db
 
 # Misc
-environment.yaml
+.git
+.github
+.*
