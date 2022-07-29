@@ -38,9 +38,9 @@ pypsa_const = {
             "bus_id": "bus",
             "Pmax": "p_nom",
             "Pmin": "p_min_pu",
-            "startup_cost": "start_up_cost",
-            "shutdown_cost": "shut_down_cost",
-            "ramp_30": "ramp_limit",
+            "startup_cost": "start_up_cost",  # not used here nor in pypsa_to_grid;
+            "shutdown_cost": "shut_down_cost",  # not used here nor in pypsa_to_grid
+            "ramp_30": "ramp_limit",  # in pypsa_to_grid: ramp_limit_up
             "type": "carrier",
         },
         "rename_t": {
@@ -66,10 +66,10 @@ pypsa_const = {
             "GenIOD",
         ],
     },
-    "cost": {
+    "gencost": {
         "rename": {
-            "startup": "startup_cost",
-            "shutdown": "shutdown_cost",
+            "startup": "start_up_cost",
+            "shutdown": "shut_down_cost",
             "c1": "marginal_cost",
         }
     },
@@ -81,7 +81,7 @@ pypsa_const = {
             "ratio": "tap_ratio",
             "x": "x_pu",
             "r": "r_pu",
-            "g": "g_pu",
+            "g": "g_pu",  # not used in pypsa_to_grid
             "b": "b_pu",
         },
         "rename_t": {
@@ -136,33 +136,9 @@ pypsa_const = {
             "Pg": "p",
             "Qg": "q",
         },
-        "default_drop_cols": [
-            "Qmax",
-            "Qmin",
-            "Pc1",
-            "Pc2",
-            "Qc1min",
-            "Qc1max",
-            "Qc2min",
-            "Qc2max",
-            "ramp_agc",
-            "ramp_10",
-            "ramp_q",
-            "apf",
-            "mu_Pmax",
-            "mu_Pmin",
-            "mu_Qmax",
-            "mu_Qmin",
-        ],
     },
     "storage_gencost": {
         "rename": {"c1": "marginal_cost"},
-        "default_drop_cols": [
-            "startup",
-            "shutdown",
-            "c2",
-            "c0",
-        ],
     },
     "storage_storagedata": {
         "rename": {
@@ -286,8 +262,8 @@ def export_to_pypsa(
         grid.plant.loc[~fixed, "Pmax"] + grid.plant.loc[~fixed, "Pmin"]
     )
     gencost["c1"] = linearized.combine_first(gencost["c1"])
-    gencost = gencost.rename(columns=pypsa_const["cost"]["rename"])
-    gencost = gencost[pypsa_const["cost"]["rename"].values()]
+    gencost = gencost.rename(columns=pypsa_const["gencost"]["rename"])
+    gencost = gencost[pypsa_const["gencost"]["rename"].values()]
 
     carriers = pd.DataFrame(index=generators.carrier.unique(), dtype=object)
 
