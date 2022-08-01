@@ -40,7 +40,7 @@ def storage_template():
         "InEff": None,
         "OutEff": None,
         "LossFactor": None,  # stored energy fraction / hour
-        "energy_price": None,  # $/MWh
+        "energy_value": None,  # $/MWh
         "terminal_min": None,
         "terminal_max": None,
     }
