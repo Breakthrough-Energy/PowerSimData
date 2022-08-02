@@ -128,7 +128,7 @@ class FromPyPSA(AbstractGrid):
     def _read_network(self, n, add_pypsa_cols=True):
         """PyPSA Network reader.
 
-        :param pypsa.Network network: Network to read in.
+        :param pypsa.Network n: PyPSA network to read in.
         :param bool add_pypsa_cols: PyPSA data frames with renamed columns appended to PSD data frames
         """
 
@@ -160,7 +160,7 @@ class FromPyPSA(AbstractGrid):
         # bus
         df = bus_in_pypsa.drop(columns="type")
         bus = _translate_df(df, "bus")
-        bus["type"] = bus.type.replace(["PQ", "PV", "Slack", ""], [1, 2, 3, 4])
+        bus.type.replace(["PQ", "PV", "Slack", ""], [1, 2, 3, 4], inplace=True)
         bus["bus_id"] = bus.index
 
         # zones mapping
@@ -277,126 +277,117 @@ class FromPyPSA(AbstractGrid):
         else:
             plant["status"] = n.generators_t.status.any().astype(int)
 
-        # Reindex data frames to columns from powersimdata.input.const
-        bus = bus.reindex(const.col_name_bus, axis="columns")
-        sub = sub.reindex(const.col_name_sub, axis="columns")
-        bus2sub = bus2sub.reindex(const.col_name_bus2sub, axis="columns")
-        gencost = gencost.reindex(const.col_name_gencost, axis="columns")
-        plant = plant.reindex(const.col_name_plant, axis="columns")
-        branch = branch.reindex(
-            const.col_name_branch.append("branch_device_type"), axis="columns"
-        )
-        dcline = dcline.reindex(const.col_name_dcline, axis="columns")
-        storage_gen_storageunits = storage_gen_storageunits.reindex(
-            const.col_name_plant, axis="columns"
-        )
-        storage_gencost_storageunits = storage_gencost_storageunits.reindex(
-            const.col_name_gencost, axis="columns"
-        )
-        storage_storagedata_storageunits = storage_storagedata_storageunits.reindex(
-            const.col_name_storage_storagedata, axis="columns"
-        )
-        storage_gen_stores = storage_gen_stores.reindex(
-            const.col_name_plant, axis="columns"
-        )
-        storage_gencost_stores = storage_gencost_stores.reindex(
-            const.col_name_gencost, axis="columns"
-        )
-        storage_storagedata_stores = storage_storagedata_stores.reindex(
-            const.col_name_storage_storagedata, axis="columns"
-        )
+        # Reindex data and add PyPSA columns
+        data = dict()
+        keys = [
+            "bus",
+            "sub",
+            "bus2sub",
+            "plant",
+            "gencost",
+            "branch",
+            "dcline",
+            "storage_gen_storageunits",
+            "storage_gencost_storageunits",
+            "storage_storagedata_storageunits",
+            "storage_gen_stores",
+            "storage_gencost_stores",
+            "storage_storagedata_stores",
+        ]
+        values = [
+            (bus, bus_in_pypsa, const.col_name_bus),
+            (sub, sub_in_pypsa, const.col_name_sub),
+            (bus2sub, bus2sub_in_pypsa, const.col_name_bus2sub),
+            (plant, plant_in_pypsa, const.col_name_plant),
+            (gencost, gencost_in_pypsa, const.col_name_gencost),
+            (branch, branch_in_pypsa, const.col_name_branch),
+            (dcline, dcline_in_pypsa, const.col_name_dcline),
+            (storage_gen_storageunits, storageunits_in_pypsa, const.col_name_plant),
+            (
+                storage_gencost_storageunits,
+                storageunits_in_pypsa,
+                const.col_name_gencost,
+            ),
+            (
+                storage_storagedata_storageunits,
+                storageunits_in_pypsa,
+                const.col_name_storage_storagedata,
+            ),
+            (storage_gen_stores, stores_in_pypsa, const.col_name_plant),
+            (storage_gencost_stores, stores_in_pypsa, const.col_name_gencost),
+            (
+                storage_storagedata_stores,
+                stores_in_pypsa,
+                const.col_name_storage_storagedata,
+            ),
+        ]
 
-        # Concat PyPSA columns with prefixes
-        if add_pypsa_cols:
-            bus_in_pypsa = bus_in_pypsa.add_prefix("PyPSA_")
-            sub_in_pypsa = sub_in_pypsa.add_prefix("PyPSA_")
-            bus2sub_in_pypsa = bus2sub_in_pypsa.add_prefix("PyPSA_")
-            plant_in_pypsa = plant_in_pypsa.add_prefix("PyPSA_")
-            gencost_in_pypsa = gencost_in_pypsa.add_prefix("PyPSA_")
-            branch_in_pypsa = branch_in_pypsa.add_prefix("PyPSA_")
-            dcline_in_pypsa = dcline_in_pypsa.add_prefix("PyPSA_")
-            storageunits_in_pypsa = storageunits_in_pypsa.add_prefix("PyPSA_")
-            stores_in_pypsa = stores_in_pypsa.add_prefix("PyPSA_")
+        for k, v in zip(keys, values):
+            df_psd, df_pypsa, const_location = v
 
-            bus = pd.concat([bus, bus_in_pypsa], axis=1)
-            sub = pd.concat([sub, sub_in_pypsa], axis=1)
-            bus2sub = pd.concat([bus2sub, bus2sub_in_pypsa], axis=1)
-            plant = pd.concat([plant, plant_in_pypsa], axis=1)
-            gencost = pd.concat([gencost, gencost_in_pypsa], axis=1)
-            branch = pd.concat([branch, branch_in_pypsa], axis=1)
-            dcline = pd.concat([dcline, dcline_in_pypsa], axis=1)
-            storage_gen_storageunits = pd.concat(
-                [storage_gen_storageunits, storageunits_in_pypsa], axis=1
-            )
-            storage_gencost_storageunits = pd.concat(
-                [storage_gencost_storageunits, storageunits_in_pypsa], axis=1
-            )
-            storage_storagedata_storageunits = pd.concat(
-                [storage_storagedata_storageunits, storageunits_in_pypsa],
-                axis=1,
-            )
-            storage_gen_stores = pd.concat(
-                [storage_gen_stores, stores_in_pypsa], axis=1
-            )
-            storage_gencost_stores = pd.concat(
-                [storage_gencost_stores, stores_in_pypsa], axis=1
-            )
-            storage_storagedata_stores = pd.concat(
-                [storage_storagedata_stores, stores_in_pypsa], axis=1
-            )
+            # Reindex
+            if k == "branch":
+                const_location += ["branch_device_type"]
+
+            df_psd = df_psd.reindex(const_location, axis="columns")
+
+            # Add renamed PyPSA columns
+            if add_pypsa_cols:
+                df_pypsa = df_pypsa.add_prefix("PyPSA_")
+
+                df_psd = pd.concat([df_psd, df_pypsa], axis=1)
+
+            # Convert to numeric
+            df_psd.index = pd.to_numeric(df_psd.index, errors="ignore")
+
+            data[k] = df_psd
 
         # Append individual columns
         if not n.shunt_impedances.empty:
-            bus["includes_pypsa_shunt"] = True
+            data["bus"]["includes_pypsa_shunt"] = True
         else:
-            bus["includes_pypsa_shunt"] = False
+            data["bus"]["includes_pypsa_shunt"] = False
 
         for df in (
-            storage_gen_storageunits,
-            storage_gencost_storageunits,
-            storage_storagedata_storageunits,
+            data["storage_gen_storageunits"],
+            data["storage_gencost_storageunits"],
+            data["storage_storagedata_storageunits"],
         ):
             df["which_storage_in_pypsa"] = "storage_units"
 
         for df in (
-            storage_gen_stores,
-            storage_gencost_stores,
-            storage_storagedata_stores,
+            data["storage_gen_stores"],
+            data["storage_gencost_stores"],
+            data["storage_storagedata_stores"],
         ):
             df["which_storage_in_pypsa"] = "stores"
-
-        # Convert indices to numeric (plant, gencost, dcline, storage as strings)
-        for df in (
-            bus,
-            sub,
-            bus2sub,
-            branch,
-        ):
-            df.index = pd.to_numeric(df.index, errors="ignore")
 
         # Build PSD grid object
         self.data_loc = data_loc
         self.interconnect = interconnect
-        self.bus = bus
-        self.sub = sub
-        self.bus2sub = bus2sub
-        self.branch = branch.sort_index()
-        self.dcline = dcline
+        self.bus = data["bus"]
+        self.sub = data["sub"]
+        self.bus2sub = data["bus2sub"]
+        self.branch = data["branch"].sort_index()
+        self.dcline = data["dcline"]
         self.zone2id = zone2id
         self.id2zone = id2zone
-        self.plant = plant
-        self.gencost["before"] = gencost
-        self.gencost["after"] = gencost
+        self.plant = data["plant"]
+        self.gencost["before"] = data["gencost"]
+        self.gencost["after"] = data["gencost"]
         self.storage["gen"] = pd.concat(
-            [storage_gen_storageunits, storage_gen_stores],
+            [data["storage_gen_storageunits"], data["storage_gen_stores"]],
             join="outer",
         )
         self.storage["gencost"] = pd.concat(
-            [storage_gencost_storageunits, storage_gencost_stores],
+            [data["storage_gencost_storageunits"], data["storage_gencost_stores"]],
             join="outer",
         )
         self.storage["StorageData"] = pd.concat(
-            [storage_storagedata_storageunits, storage_storagedata_stores],
+            [
+                data["storage_storagedata_storageunits"],
+                data["storage_storagedata_stores"],
+            ],
             join="outer",
         )
         self.storage.update(storage_const)
