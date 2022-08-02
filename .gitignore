@@ -145,3 +145,5 @@ Thumbs.db
 
 # Misc
 environment.yaml
+.syncignore-receive*
+.syncignore-send*
