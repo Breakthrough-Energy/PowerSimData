@@ -13,10 +13,12 @@ class Ready(State):
         "get_base_grid",
         "get_bus_demand",
         "get_demand",
+        "get_profile",
         "get_hydro",
         "get_grid",
         "get_solar",
         "get_wind",
+        "get_wind_onshore",
         "get_wind_offshore",
     } | State.exported_methods
 
