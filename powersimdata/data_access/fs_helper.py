@@ -11,8 +11,9 @@ def get_blob_fs(container):
     :param str container: the container name
     :return: (*fs.base.FS*) -- filesystem instance
     """
-    account = "besciences"
-    return fs.open_fs(f"azblob://{account}@{container}")
+    account = "esmi"
+    sas_token = server_setup.BLOB_TOKEN_RO
+    return fs.open_fs(f"azblobv2://{account}:{sas_token}@{container}")
 
 
 def get_ssh_fs(root=""):
