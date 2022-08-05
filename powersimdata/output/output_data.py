@@ -14,7 +14,7 @@ class OutputData:
 
     def __init__(self):
         """Constructor"""
-        self.data_access = Context.get_data_access(get_scenario_fs)
+        self._data_access = Context.get_data_access(get_scenario_fs)
 
     def get_data(self, scenario_id, field_name):
         """Returns data either from server or from local directory.
