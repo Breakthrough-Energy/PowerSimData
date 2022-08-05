@@ -81,27 +81,43 @@ class TestMockGrid:
 class TestMockScenario:
     def test_mock_pg_stored_properly(self, mock_pg):
         scenario = MockScenario(grid_attrs={"plant": mock_plant}, pg=mock_pg)
-        pg = scenario.state.get_pg()
+        pg = scenario.get_pg()
         err_msg = "pg should have dimension (periodNum * len(plant))"
         assert pg.shape == mock_pg.shape, err_msg
 
     def test_mock_solar_stored_properly(self, mock_solar):
         scenario = MockScenario(grid_attrs={"plant": mock_plant}, solar=mock_solar)
-        solar = scenario.state.get_solar()
+        solar = scenario.get_solar()
         err_msg = "solar should have dimension (periodNum * len(solar_plant))"
         assert solar.shape == mock_solar.shape, err_msg
 
     def test_mock_wind_stored_properly(self, mock_wind):
         scenario = MockScenario(grid_attrs={"plant": mock_plant}, wind=mock_wind)
-        wind = scenario.state.get_wind()
+        wind = scenario.get_wind()
         err_msg = "wind should have dimension (periodNum * len(wind_plant))"
         assert wind.shape == mock_wind.shape, err_msg
 
     def test_mock_hydro_stored_properly(self, mock_hydro):
         scenario = MockScenario(grid_attrs={"plant": mock_plant}, hydro=mock_hydro)
-        hydro = scenario.state.get_hydro()
+        hydro = scenario.get_hydro()
         err_msg = "hydro should have dimension (periodNum * len(hydro_plant))"
         assert hydro.shape == mock_hydro.shape, err_msg
+
+    def test_mock_profile(self, mock_hydro, mock_solar, mock_wind):
+        scenario = MockScenario(
+            grid_attrs={"plant": mock_plant},
+            hydro=mock_hydro,
+            solar=mock_solar,
+            wind=mock_wind,
+        )
+        pd.testing.assert_frame_equal(scenario.get_profile("hydro"), mock_hydro)
+        pd.testing.assert_frame_equal(scenario.get_profile("solar"), mock_solar)
+        pd.testing.assert_frame_equal(scenario.get_profile("wind"), mock_wind)
+
+    def test_mock_profile_value(self):
+        scenario = MockScenario(grid_attrs={"plant": mock_plant})
+        with pytest.raises(ValueError):
+            scenario.get_profile("coal")
 
 
 class TestMockScenarioInfo:
@@ -121,7 +137,7 @@ class TestMockScenarioInfo:
     def test_grid_set_correctly(self):
         mock_scenario = MockScenario()
         mock_s_info = MockScenarioInfo(mock_scenario)
-        assert mock_scenario.state.get_grid() == mock_s_info.grid
+        assert mock_scenario.get_grid() == mock_s_info.grid
 
 
 class TestMockInputData:
