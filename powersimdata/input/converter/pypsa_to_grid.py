@@ -14,6 +14,7 @@ def _translate_df(df, key):
 
     :param pandas.DataFrame df: data frame to operate on.
     :param str key: key in the :data:`pypsa_const` dictionary.
+    :return: pandas.DataFrame df: data frame with translated columns.    
     """
     translators = _invert_dict(pypsa_const[key]["rename"])
     return df.rename(columns=translators)
@@ -29,7 +30,13 @@ def _invert_dict(d):
 
 
 def _get_storage_storagedata(n, storage_type):
+    """Get storage data from PyPSA for data frame "StorageData" in PSD's
+    storage dict.
 
+    :param pypsa.Network n: PyPSA network to read in.
+    :param str storage_type: key for PyPSA storage type.
+    :return: pandas.DataFrame storage_storagedata: data frame with storage data.    
+    """
     if storage_type == "storage_units":
         storage_storagedata = _translate_df(n.storage_units, "storage_storagedata")
 
@@ -77,6 +84,13 @@ def _get_storage_storagedata(n, storage_type):
 
 
 def _get_storage_gencost(n, storage_type):
+    """Get storage data from PyPSA for data frame "gencost" in PSD's storage
+    dict.
+
+    :param pypsa.Network n: PyPSA network to read in.
+    :param str storage_type: key for PyPSA storage type.
+    :return: pandas.DataFrame storage_gencost: data frame with storage data.    
+    """
     if storage_type == "storage_units":
         df_gencost = n.storage_units
     elif storage_type == "stores":
@@ -93,6 +107,12 @@ def _get_storage_gencost(n, storage_type):
 
 
 def _get_storage_gen(n, storage_type):
+    """Get storage data from PyPSA for data frame "gen" in PSD's storage dict.
+
+    :param pypsa.Network n: PyPSA network to read in.
+    :param str storage_type: key for PyPSA storage type.
+    :return: pandas.DataFrame storage_gen: data frame with storage data.    
+    """
     if storage_type == "storage_units":
         df_gen = n.storage_units
         p_nom = n.storage_units["p_nom"]
@@ -406,7 +426,7 @@ class FromPyPSA(AbstractGrid):
         self.storage["StorageData"].index.name = "storage_id"
 
     def _translate_pnl(self, pnl, key):
-        """Translate time-dependent data frames with one time step from pypsa to static
+        """Translate time-dependent data frames with one time step from PyPSA to static
         data frames.
 
         :param str pnl: name of the time-dependent dataframe.
