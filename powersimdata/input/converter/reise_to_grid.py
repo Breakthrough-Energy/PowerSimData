@@ -6,8 +6,8 @@ from scipy.io import loadmat
 
 from powersimdata.data_access.context import Context
 from powersimdata.data_access.scenario_list import ScenarioListManager
-from powersimdata.input import const
 from powersimdata.input.abstract_grid import AbstractGrid
+from powersimdata.input.const import casemat_const
 from powersimdata.input.converter.helpers import (
     add_coord_to_grid_data_frames,
     add_interconnect_to_grid_data_frames,
@@ -233,13 +233,13 @@ def column_name_provider():
     :return: (*dict*) -- dictionary of data frame columns name.
     """
     col_name = {
-        "sub": const.col_name_sub,
-        "bus": const.col_name_bus,
-        "bus2sub": const.col_name_bus2sub,
-        "branch": const.col_name_branch,
-        "dcline": const.col_name_dcline,
-        "plant": const.col_name_plant,
-        "heat_rate_curve": const.col_name_heat_rate_curve,
+        "sub": casemat_const.col_name_sub,
+        "bus": casemat_const.col_name_bus,
+        "bus2sub": casemat_const.col_name_bus2sub,
+        "branch": casemat_const.col_name_branch,
+        "dcline": casemat_const.col_name_dcline,
+        "plant": casemat_const.col_name_plant,
+        "heat_rate_curve": casemat_const.col_name_heat_rate_curve,
     }
     return col_name
 
@@ -250,13 +250,13 @@ def column_type_provider():
     :return: (*dict*) -- dictionary of data frame columns type.
     """
     col_type = {
-        "sub": const.col_type_sub,
-        "bus": const.col_type_bus,
-        "bus2sub": const.col_type_bus2sub,
-        "branch": const.col_type_branch,
-        "dcline": const.col_type_dcline,
-        "plant": const.col_type_plant,
-        "heat_rate_curve": const.col_type_heat_rate_curve,
+        "sub": casemat_const.col_type_sub,
+        "bus": casemat_const.col_type_bus,
+        "bus2sub": casemat_const.col_type_bus2sub,
+        "branch": casemat_const.col_type_branch,
+        "dcline": casemat_const.col_type_dcline,
+        "plant": casemat_const.col_type_plant,
+        "heat_rate_curve": casemat_const.col_type_heat_rate_curve,
     }
     return col_type
 
