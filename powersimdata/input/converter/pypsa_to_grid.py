@@ -3,9 +3,9 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from powersimdata.input import const
 from powersimdata.input.abstract_grid import AbstractGrid
-from powersimdata.input.exporter.export_to_pypsa import pypsa_const
+from powersimdata.input.const import grid_const
+from powersimdata.input.const.pypsa_const import pypsa_const
 from powersimdata.network.constants.storage import storage as storage_const
 
 
@@ -13,7 +13,8 @@ def _translate_df(df, key):
     """Rename columns of a data frame.
 
     :param pandas.DataFrame df: data frame to operate on.
-    :param str key: key in the :data:`pypsa_const` dictionary.
+    :param str key: key in :data:`powersimdata.input.const.pypsa_const.pypsa_const`
+        dictionary.
     :return: (*pandas.DataFrame*) -- data frame with translated columns.
     """
     translators = _invert_dict(pypsa_const[key]["rename"])
@@ -317,30 +318,34 @@ class FromPyPSA(AbstractGrid):
             "storage_storagedata_stores",
         ]
         values = [
-            (bus, bus_in_pypsa, const.col_name_bus),
-            (sub, sub_in_pypsa, const.col_name_sub),
-            (bus2sub, bus2sub_in_pypsa, const.col_name_bus2sub),
-            (plant, plant_in_pypsa, const.col_name_plant),
-            (gencost, gencost_in_pypsa, const.col_name_gencost),
-            (branch, branch_in_pypsa, const.col_name_branch),
-            (dcline, dcline_in_pypsa, const.col_name_dcline),
-            (storage_gen_storageunits, storageunits_in_pypsa, const.col_name_plant),
+            (bus, bus_in_pypsa, grid_const.col_name_bus),
+            (sub, sub_in_pypsa, grid_const.col_name_sub),
+            (bus2sub, bus2sub_in_pypsa, grid_const.col_name_bus2sub),
+            (plant, plant_in_pypsa, grid_const.col_name_plant),
+            (gencost, gencost_in_pypsa, grid_const.col_name_gencost),
+            (branch, branch_in_pypsa, grid_const.col_name_branch),
+            (dcline, dcline_in_pypsa, grid_const.col_name_dcline),
+            (
+                storage_gen_storageunits,
+                storageunits_in_pypsa,
+                grid_const.col_name_plant,
+            ),
             (
                 storage_gencost_storageunits,
                 storageunits_in_pypsa,
-                const.col_name_gencost,
+                grid_const.col_name_gencost,
             ),
             (
                 storage_storagedata_storageunits,
                 storageunits_in_pypsa,
-                const.col_name_storage_storagedata,
+                grid_const.col_name_storage_storagedata,
             ),
-            (storage_gen_stores, stores_in_pypsa, const.col_name_plant),
-            (storage_gencost_stores, stores_in_pypsa, const.col_name_gencost),
+            (storage_gen_stores, stores_in_pypsa, grid_const.col_name_plant),
+            (storage_gencost_stores, stores_in_pypsa, grid_const.col_name_gencost),
             (
                 storage_storagedata_stores,
                 stores_in_pypsa,
-                const.col_name_storage_storagedata,
+                grid_const.col_name_storage_storagedata,
             ),
         ]
 
@@ -432,7 +437,8 @@ class FromPyPSA(AbstractGrid):
         data frames.
 
         :param str pnl: name of the time-dependent dataframe.
-        :param str key: key in the :data:`pypsa_const` dictionary.
+        :param str key: key in :data:`powersimdata.input.const.pypsa_const.pypsa_const`
+            dictionary.
         :return: (*pandas.DataFrame*) -- the static data frame.
         """
         translators = _invert_dict(pypsa_const[key]["rename_t"])
