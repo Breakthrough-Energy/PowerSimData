@@ -36,7 +36,10 @@ def add_plant(obj, info):
         if plant["Pmax"] < 0:
             raise ValueError(f"Pmax >= 0 must be satisfied for plant #{i + 1}")
         if "Pmin" not in plant.keys():
-            plant["Pmin"] = 0
+            share = obj.grid.model_immutables.plants["pmin_as_share_of_pmax"][
+                plant["type"]
+            ]
+            plant["Pmin"] = share * plant["Pmax"] if share is not None else 0
         if plant["Pmin"] < 0 or plant["Pmin"] > plant["Pmax"]:
             err_msg = f"0 <= Pmin <= Pmax must be satisfied for plant #{i + 1}"
             raise ValueError(err_msg)
