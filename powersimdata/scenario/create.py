@@ -1,5 +1,4 @@
 import copy
-import warnings
 
 import numpy as np
 import pandas as pd
@@ -13,7 +12,7 @@ from powersimdata.input.input_data import (
 from powersimdata.input.profile_input import ProfileInput
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.input.transform_profile import TransformProfile
-from powersimdata.network.model import ModelImmutables
+from powersimdata.network.helpers import check_model, interconnect_to_name
 from powersimdata.scenario.execute import Execute
 from powersimdata.scenario.state import State
 
@@ -29,7 +28,6 @@ class Create(State):
     default_exported_methods = {
         "create_scenario",
         "get_bus_demand",
-        "set_builder",
         "set_grid",
     } | State.exported_methods
 
@@ -130,37 +128,23 @@ class Create(State):
             )
             self.switch(Execute)
 
-    def set_builder(self, *args, **kwargs):
-        """Alias to :func:`~powersimdata.scenario.create.Create.set_grid`"""
-        warnings.warn(
-            "set_builder is deprecated, use set_grid instead", DeprecationWarning
-        )
-        self.set_grid(*args, **kwargs)
-
-    def set_grid(self, grid_model="usa_tamu", interconnect="USA"):
+    def set_grid(self, grid_model="usa_tamu", interconnect="USA", **kwargs):
         """Sets grid builder.
 
         :param str grid_model: name of grid model. Default is *'usa_tamu'*.
         :param str/list interconnect: name of interconnect(s). Default is *'USA'*.
+        :param \\*\\*kwargs: optional parameters used to instantiate a Grid object.
         """
-        self.builder = _Builder(
-            grid_model, interconnect, self._scenario_list_manager.get_scenario_table()
+        scenario_table = self._scenario_list_manager.get_scenario_table()
+
+        self.builder = get_builder(
+            grid_model,
+            interconnect,
+            scenario_table,
+            **kwargs,
         )
-        self.exported_methods |= _Builder.exported_methods
 
-        print("--> Summary")
-        print("# Existing study")
-        if self.builder.existing.empty:
-            print("Nothing yet")
-        else:
-            plan = [p for p in self.builder.existing.plan.unique()]
-            print("%s" % " | ".join(plan))
-
-        print("# Available profiles")
-        for p in ["demand", "hydro", "solar", "wind"]:
-            possible = self.builder.get_base_profile(p)
-            if len(possible) != 0:
-                print("%s: %s" % (p, " | ".join(possible)))
+        self.exported_methods |= self.builder.exported_methods
 
         self._scenario_info["grid_model"] = self.builder.grid_model
         self._scenario_info["interconnect"] = self.builder.interconnect
@@ -189,7 +173,6 @@ class _Builder:
     wind = ""
     engine = "REISE.jl"
     exported_methods = {
-        "set_base_profile",
         "set_engine",
         "set_name",
         "set_time",
@@ -205,15 +188,33 @@ class _Builder:
 
     def __init__(self, grid_model, interconnect, table):
         """Constructor."""
-        mi = ModelImmutables(grid_model)
-
-        self.grid_model = mi.model
-        self.interconnect = mi.interconnect_to_name(interconnect)
-
-        self.base_grid = Grid(interconnect, source=grid_model)
-        self.change_table = ChangeTable(self.base_grid)
-
+        self.grid_model = grid_model
+        self.interconnect = interconnect_to_name(interconnect, grid_model)
         self.existing = table[table.interconnect == self.interconnect]
+
+    def print_existing_study(self):
+        """Print existing study"""
+
+        print("--> Begin: Existing Study")
+        if self.existing.empty:
+            print("Nothing yet")
+        else:
+            print(" | ".join(self.existing.plan.unique()))
+        print("<-- End: Existing Study")
+
+    def set_base_grid(self):
+        """Set base grid
+
+        :raises NotImplementedError: always - implemented in child classes.
+        """
+        raise NotImplementedError("Implemented in the child classes")
+
+    def set_change_table(self):
+        """Set change table
+
+        :raises NotImplementedError: always - implemented in child classes.
+        """
+        raise NotImplementedError("Implemented in the child classes")
 
     def get_ct(self):
         """Returns change table.
@@ -316,36 +317,6 @@ class _Builder:
             self.end_date = end_date
             self.interval = interval
 
-    def get_base_profile(self, kind):
-        """Returns available base profiles.
-
-        :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
-        :return: (*list*) -- available version for selected profile kind.
-        """
-        return ProfileInput().get_profile_version(self.grid_model, kind)
-
-    def set_base_profile(self, kind, version):
-        """Sets demand profile.
-
-        :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
-        :param str version: demand profile version.
-        :raises ValueError: if no profiles are available or version is not available.
-        """
-        possible = self.get_base_profile(kind)
-        if len(possible) == 0:
-            raise ValueError("No %s profile available" % kind)
-        elif version in possible:
-            if kind == "demand":
-                self.demand = version
-            if kind == "hydro":
-                self.hydro = version
-            if kind == "solar":
-                self.solar = version
-            if kind == "wind":
-                self.wind = version
-        else:
-            raise ValueError("Available %s profiles: %s" % (kind, " | ".join(possible)))
-
     def set_engine(self, engine):
         """Sets simulation engine to be used for scenarion.
 
@@ -374,3 +345,117 @@ class _Builder:
 
     def __str__(self):
         return self.name
+
+
+class FromCSV(_Builder):
+    """Build scenario using grid model and associated profiles enclosed in CSV files
+
+    :param str grid model: the grid model
+    :param list interconnect: list of interconnect(s) to build.
+    :param pandas.DataFrame table: scenario list table.
+    :param \\*\\*kwargs: optional parameters used to instantiate a Grid object.
+    """
+
+    def __init__(self, grid_model, interconnect, table, **kwargs):
+        super().__init__(grid_model, interconnect, table)
+
+        self.exported_methods |= {"set_base_profile", "get_base_profile"}
+
+        self.print_existing_study()
+        self.print_available_profile()
+
+        self.set_base_grid()
+        self.set_change_table()
+
+    def print_available_profile(self):
+        """Print available profiles for the grid model"""
+        print("--> Begin: Available profiles")
+        for p in ["demand", "hydro", "solar", "wind"]:
+            possible = self.get_base_profile(p)
+            if len(possible) != 0:
+                print("%s: %s" % (p, " | ".join(possible)))
+        print("<-- End: Available profiles")
+
+    def set_base_grid(self):
+        """Set base grid"""
+        self.base_grid = Grid(self.interconnect, source=self.grid_model)
+
+    def set_change_table(self):
+        """Set change table"""
+        self.change_table = ChangeTable(self.base_grid)
+
+    def get_base_profile(self, kind):
+        """Return available base profiles.
+
+        :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :return: (*list*) -- available version for selected profile kind.
+        """
+        return ProfileInput().get_profile_version(self.grid_model, kind)
+
+    def set_base_profile(self, kind, version):
+        """Set base profile.
+
+        :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :param str version: base profile version.
+        :raises ValueError: if no profiles are available or version is not available.
+        """
+        possible = self.get_base_profile(kind)
+        if len(possible) == 0:
+            raise ValueError("No %s profile available" % kind)
+        elif version in possible:
+            if kind == "demand":
+                self.demand = version
+            if kind == "hydro":
+                self.hydro = version
+            if kind == "solar":
+                self.solar = version
+            if kind == "wind":
+                self.wind = version
+        else:
+            raise ValueError("Available %s profiles: %s" % (kind, " | ".join(possible)))
+
+
+class FromPyPSA(_Builder):
+    """Build scenario from a PyPSA Network object
+
+    :param str grid model: the grid model
+    :param list interconnect: list of interconnect(s) to build.
+    :param pandas.DataFrame table: scenario list table.
+    :param \\*\\*kwargs: optional parameters used to instantiate a Grid object:
+        *'reduction'*: number of nodes in the network. If None, the full resolution
+        PyPSA Network object will be used. Available reductions are specified in the
+        :mod:`powersimdata.network.europe_tub.model` module.
+    """
+
+    def __init__(self, grid_model, interconnect, table, **kwargs):
+        super().__init__(grid_model, interconnect, table)
+
+        self.reduction = None if "reduction" not in kwargs else kwargs["reduction"]
+
+        self.print_existing_study()
+
+        self.set_base_grid()
+        self.set_change_table()
+
+    def set_base_grid(self):
+        """Set base grid"""
+        raise NotImplementedError()
+
+    def set_change_table(self):
+        """Set change table"""
+        raise NotImplementedError()
+
+
+def get_builder(grid_model, interconnect, table, **kwargs):
+    """Returns a Builder instance
+
+    :param str grid model: the grid model
+    :param list interconnect: list of interconnect(s) to build.
+    :param pandas.DataFrame table: scenario list table
+    :param \\*\\*kwargs: optional parameters used to instantiate a Grid object.
+    :return: (*object*) -- builder instance associated with the grid model.
+    """
+    check_model(grid_model)
+    model2builder = {"usa_tamu": FromCSV, "hifld": FromCSV, "europe_tub": FromPyPSA}
+
+    return model2builder[grid_model](grid_model, interconnect, table, **kwargs)

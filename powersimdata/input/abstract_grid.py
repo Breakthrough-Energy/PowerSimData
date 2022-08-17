@@ -20,6 +20,8 @@ class AbstractGrid:
         self.bus = pd.DataFrame()
         self.branch = pd.DataFrame()
         self.storage = storage_template()
+        self.grid_model = ""
+        self.model_immutables = None
 
 
 def storage_template():
@@ -38,7 +40,7 @@ def storage_template():
         "InEff": None,
         "OutEff": None,
         "LossFactor": None,  # stored energy fraction / hour
-        "energy_price": None,  # $/MWh
+        "energy_value": None,  # $/MWh
         "terminal_min": None,
         "terminal_max": None,
     }

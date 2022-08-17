@@ -3,6 +3,7 @@ import pandas as pd
 from scipy.sparse import coo_matrix
 
 from powersimdata.data_access.context import Context
+from powersimdata.data_access.fs_helper import get_scenario_fs
 from powersimdata.input.input_data import distribute_demand_from_zones_to_buses
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.utility import server_setup
@@ -13,15 +14,15 @@ class OutputData:
 
     def __init__(self):
         """Constructor"""
-        self._data_access = Context.get_data_access()
+        self._data_access = Context.get_data_access(get_scenario_fs)
 
     def get_data(self, scenario_id, field_name):
         """Returns data either from server or from local directory.
 
         :param str scenario_id: scenario id.
-        :param str field_name: *'PG'*, *'PF'*, *'LMP'*, *'CONGU'*, *'CONGL'*,
-            *'AVERAGED_CONG'*, *'STORAGE_PG'*, *'STORAGE_E'*, *'LOAD_SHIFT_UP'*,
-            or *'LOAD_SHIFT_DN'*.
+        :param str field_name: *'PG'*, *'PF'*, *'PF_DCLINE'*, *'LMP'*, *'CONGU'*,
+            *'CONGL'*, *'AVERAGED_CONG'*, *'STORAGE_PG'*, *'STORAGE_E'*, *'LOAD_SHED'*,
+            *'LOAD_SHIFT_UP'*, or *'LOAD_SHIFT_DN'*.
         :return: (*pandas.DataFrame*) -- specified field as a data frame.
         :raises FileNotFoundError: if file not found on local machine.
         :raises ValueError: if second argument is not an allowable field.

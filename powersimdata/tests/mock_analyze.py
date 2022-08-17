@@ -55,6 +55,7 @@ class MockAnalyze:
         "get_solar",
         "get_wind",
         "get_hydro",
+        "get_profile",
     ]
 
     def __init__(
@@ -182,6 +183,24 @@ class MockAnalyze:
         :return: (pandas.DataFrame) -- dummy hydro
         """
         return self.hydro
+
+    def get_profile(self, kind):
+        """Return profile
+
+        :param str kind: either *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
+        :return: (*pandas.DataFrame*) -- dummy profile.
+        :raises ValueError: if kind is invalid.
+        """
+        if kind == "demand":
+            return self.demand
+        elif kind == "hydro":
+            return self.hydro
+        elif kind == "solar":
+            return self.solar
+        elif kind == "wind":
+            return self.wind
+        else:
+            raise ValueError("kind must be one of demand | hydro | solar | wind")
 
     @property
     def __class__(self):

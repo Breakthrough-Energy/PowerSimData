@@ -24,7 +24,16 @@ from powersimdata.input.check import (
     _check_time_series,
     check_grid,
 )
+from powersimdata.network.europe_tub.model import TUB
+from powersimdata.network.model import ModelImmutables
 from powersimdata.tests.mock_scenario import MockScenario
+
+
+@pytest.fixture
+def europe():
+    tub = TUB("Europe", reduction=128)
+    tub.build()
+    return tub
 
 
 @pytest.fixture
@@ -218,16 +227,25 @@ def test_check_areas_and_format_argument_value():
             _check_areas_and_format(a)
 
 
-def test_check_areas_and_format():
+def test_check_areas_and_format(europe):
     _check_areas_and_format(["Western", "NY", "El Paso", "Arizona"])
-    areas = _check_areas_and_format(["California", "CA", "NY", "TX", "MT", "WA"])
-    assert areas == {"Washington", "Texas", "Montana", "California", "New York"}
+    assert _check_areas_and_format(["California", "CA", "NY", "TX", "MT", "WA"]) == {
+        "Washington",
+        "Texas",
+        "Montana",
+        "California",
+        "New York",
+    }
+    assert _check_areas_and_format(
+        ["FR", "Germany", "Slovakia", "IT", "Italy", "NO", "Norway", "Nordic", "GB5 9"],
+        mi=europe.model_immutables,
+    ) == {"France", "Germany", "Slovakia", "Italy", "Norway", "Nordic", "GB5 9"}
 
 
 def test_check_resources_and_format_argument_type():
     arg = (
         1,
-        {"coal": [1, 2, 3], "htdro": [4, 5, 6]},
+        {"coal": [1, 2, 3], "hydro": [4, 5, 6]},
         [1, 2, 3, 4],
         (1, 2, 3, 4),
         {1, 2, 3, 4},
@@ -247,8 +265,9 @@ def test_check_resources_and_format_argument_value():
 
 def test_check_resources_and_format():
     _check_resources_and_format(["dfo", "wind", "solar", "ng"])
-    _check_resources_and_format("wind_offshore")
+    _check_resources_and_format("wind_offshore", mi=ModelImmutables("europe_tub"))
     _check_resources_and_format({"nuclear"})
+    _check_resources_and_format("geothermal", mi=ModelImmutables("europe_tub"))
 
 
 def test_check_resources_are_renewable_and_format_argument_value():
@@ -260,6 +279,9 @@ def test_check_resources_are_renewable_and_format():
     _check_resources_are_renewable_and_format(["wind_offshore", "wind"])
     _check_resources_are_renewable_and_format("solar")
     _check_resources_are_renewable_and_format({"wind"})
+    _check_resources_are_renewable_and_format(
+        {"solar"}, mi=ModelImmutables("europe_tub")
+    )
 
 
 def test_check_areas_are_in_grid_and_format_argument_type(mock_grid):

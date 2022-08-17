@@ -6,8 +6,8 @@ from powersimdata.network.helpers import check_and_format_interconnect
 from powersimdata.network.model import ModelImmutables
 
 
-class TAMU(FromCSV):
-    """TAMU network.
+class HIFLD(FromCSV):
+    """HIFLD network.
 
     :param str/iterable interconnect: interconnect name(s).
     """
@@ -16,7 +16,7 @@ class TAMU(FromCSV):
         """Constructor."""
         super().__init__()
 
-        self.grid_model = "usa_tamu"
+        self.grid_model = "hifld"
         self.interconnect = check_and_format_interconnect(
             interconnect, model=self.grid_model
         )
