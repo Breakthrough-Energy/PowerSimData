@@ -54,7 +54,7 @@ def get_multi_fs(root):
 
 def get_scenario_fs():
     """Create filesystem combining the server (if connected) with blob storage,
-        prioritizing the server if connected.
+    prioritizing the server if connected.
 
     :return: (*fs.base.FS*) -- filesystem instance
     """

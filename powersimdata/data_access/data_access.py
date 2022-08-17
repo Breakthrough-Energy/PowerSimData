@@ -201,6 +201,11 @@ class SSHDataAccess(DataAccess):
 
     @property
     def fs(self):
+        """Get or create a filesystem object, defaulting to a MultiFS that combines the
+        server and blob containers.
+
+        :return: (*fs.base.FS*) -- filesystem instance
+        """
         if self._fs is None:
             self._fs = get_multi_fs(self.root)
         return self._fs
