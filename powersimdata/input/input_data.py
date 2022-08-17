@@ -3,6 +3,8 @@ import pickle
 
 import pandas as pd
 
+from powersimdata.data_access.context import Context
+from powersimdata.data_access.fs_helper import get_scenario_fs
 from powersimdata.input.input_base import InputBase
 from powersimdata.utility import server_setup
 
@@ -13,6 +15,7 @@ class InputData(InputBase):
     def __init__(self):
         super().__init__()
         self._file_extension = {"ct": "pkl", "grid": "mat"}
+        self.data_access = Context.get_data_access(get_scenario_fs)
 
     def _get_file_path(self, scenario_info, field_name):
         """Get the path to either grid or ct for the scenario

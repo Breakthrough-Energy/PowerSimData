@@ -1,5 +1,7 @@
 import pandas as pd
 
+from powersimdata.data_access.context import Context
+from powersimdata.data_access.fs_helper import get_blob_fs
 from powersimdata.input.input_base import InputBase
 
 profile_kind = {
@@ -39,6 +41,7 @@ class ProfileInput(InputBase):
     def __init__(self):
         super().__init__()
         self._file_extension = {k: "csv" for k in profile_kind}
+        self.data_access = Context.get_data_access(lambda: get_blob_fs("profiles"))
 
     def _get_file_path(self, scenario_info, field_name):
         """Get the path to the specified profile

@@ -11,8 +11,9 @@ def get_blob_fs(container):
     :param str container: the container name
     :return: (*fs.base.FS*) -- filesystem instance
     """
-    account = "besciences"
-    return fs.open_fs(f"azblob://{account}@{container}")
+    account = "esmi"
+    sas_token = server_setup.BLOB_TOKEN_RO
+    return fs.open_fs(f"azblobv2://{account}:{sas_token}@{container}")
 
 
 def get_ssh_fs(root=""):
@@ -45,6 +46,25 @@ def get_multi_fs(root):
     except:  # noqa
         print("Could not connect to ssh server")
     mfs.add_fs("profile_fs", profiles, priority=2)
+    mfs.add_fs("scenario_fs", scenario_data, priority=1)
+    remotes = ",".join([f[0] for f in mfs.iterate_fs()])
+    print(f"Initialized remote filesystem with {remotes}")
+    return mfs
+
+
+def get_scenario_fs():
+    """Create filesystem combining the server (if connected) with blob storage,
+    prioritizing the server if connected.
+
+    :return: (*fs.base.FS*) -- filesystem instance
+    """
+    scenario_data = get_blob_fs("scenariodata")
+    mfs = MultiFS()
+    try:
+        ssh_fs = get_ssh_fs(server_setup.DATA_ROOT_DIR)
+        mfs.add_fs("ssh_fs", ssh_fs, write=True, priority=2)
+    except:  # noqa
+        print("Could not connect to ssh server")
     mfs.add_fs("scenario_fs", scenario_data, priority=1)
     remotes = ",".join([f[0] for f in mfs.iterate_fs()])
     print(f"Initialized remote filesystem with {remotes}")

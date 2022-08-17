@@ -8,18 +8,20 @@ class Context:
     """Factory for data access instances"""
 
     @staticmethod
-    def get_data_access():
+    def get_data_access(make_fs=None):
         """Return a data access instance appropriate for the current
         environment.
 
+        :param callable make_fs: a function that returns a filesystem instance, or
+            None to use a default
         :return: (:class:`powersimdata.data_access.data_access.DataAccess`) -- a data access
             instance
         """
-        root = server_setup.DATA_ROOT_DIR
-
         if server_setup.DEPLOYMENT_MODE == DeploymentMode.Server:
-            return SSHDataAccess(root)
-        return LocalDataAccess(root)
+            if make_fs is None:
+                make_fs = lambda: None  # noqa: E731
+            return SSHDataAccess(make_fs())
+        return LocalDataAccess()
 
     @staticmethod
     def get_launcher(scenario):

@@ -4,6 +4,7 @@ import pandas as pd
 
 from powersimdata.data_access.context import Context
 from powersimdata.data_access.execute_list import ExecuteListManager
+from powersimdata.data_access.fs_helper import get_scenario_fs
 from powersimdata.data_access.scenario_list import ScenarioListManager
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.create import Create, _Builder
@@ -52,7 +53,7 @@ class Scenario:
         if descriptor is not None and not isinstance(descriptor, str):
             raise TypeError("Descriptor must be a string or int (for a Scenario ID)")
 
-        self.data_access = Context.get_data_access()
+        self.data_access = Context.get_data_access(get_scenario_fs)
         self._scenario_list_manager = ScenarioListManager(self.data_access)
         self._execute_list_manager = ExecuteListManager(self.data_access)
 
