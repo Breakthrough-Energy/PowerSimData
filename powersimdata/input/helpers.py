@@ -176,13 +176,15 @@ def decompose_plant_data_frame_into_areas(df, areas, grid):
         if k == "interconnect":
             for i in v:
                 name = "%s interconnect" % " - ".join(i.split("_"))
-                df_areas[name] = df[get_plant_id_in_interconnects(i, grid) & plant_id]
+                df_areas[name] = df[
+                    list(get_plant_id_in_interconnects(i, grid) & plant_id)
+                ]
         elif k == "state":
             for s in v:
-                df_areas[s] = df[get_plant_id_in_states(s, grid) & plant_id]
+                df_areas[s] = df[list(get_plant_id_in_states(s, grid) & plant_id)]
         elif k == "loadzone":
             for l in v:
-                df_areas[l] = df[get_plant_id_in_loadzones(l, grid) & plant_id]
+                df_areas[l] = df[list(get_plant_id_in_loadzones(l, grid) & plant_id)]
 
     return df_areas
 
