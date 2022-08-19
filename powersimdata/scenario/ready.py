@@ -18,8 +18,7 @@ class Ready(State):
         "get_grid",
         "get_solar",
         "get_wind",
-        "get_wind_onshore",
-        "get_wind_offshore",
+        "get_gentype_profile",
     } | State.exported_methods
 
     def __init__(self, scenario):
@@ -50,7 +49,6 @@ class Ready(State):
             source=self._scenario_info["grid_model"],
         )
 
-    # To be refactored to return profiles for different grid models
     def get_profile(self, kind):
         """Returns demand, hydro, solar or wind  profile.
 
@@ -81,33 +79,25 @@ class Ready(State):
         """
         return self.get_profile("wind")
 
-    # To be removed
-    def get_wind_onshore(self):
-        """Returns wind onshore profile
+    def get_gentype_profile(self, gentype):
+        """Returns profile for a generator type.
 
-        :return: (*pandas.DataFrame*) -- data frame of wind energy output for onshore
-            turbines
+        :param str gentype: generator type with profile.
+        :return: (*pandas.DataFrame*) -- profile.
+        :raises ValueError: if ``gentype`` is invalid or not in the grid.
         """
-        wind = self.get_profile("wind")
         grid = self.get_grid()
-        onshore_id = grid.plant.groupby(["type"]).get_group("wind").index
-        return wind[onshore_id]
-
-    # To be removed
-    def get_wind_offshore(self):
-        """Returns wind offshore profile
-
-        :return: (*pandas.DataFrame*) -- data frame of wind energy output for offshore
-            turbines
-        :raises ValueError: if no offshore wind turbines in grid
-        """
-        wind = self.get_profile("wind")
-        grid = self.get_grid()
-        if "wind_offshore" in grid.plant["type"].unique():
-            offshore_id = grid.plant.groupby(["type"]).get_group("wind_offshore").index
-            return wind[offshore_id]
+        profile2gen = grid.model_immutables.plants["group_profile_resources"]
+        gen2profile = {g: p for p, gs in profile2gen.items() for g in gs}
+        if gentype in set(gen2profile):
+            if gentype in grid.plant["type"].unique():
+                profile = self.get_profile(gen2profile[gentype])
+                plant_id = grid.plant.groupby(["type"]).get_group(gentype).index
+                return profile[plant_id]
+            else:
+                raise ValueError(f"No {gentype} in grid")
         else:
-            raise ValueError("No offshore wind turbines in grid")
+            raise ValueError(f"gentype must be one of: {' | '.join(set(gen2profile))}")
 
     def get_demand(self, original=True):
         """Returns demand profiles.
