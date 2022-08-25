@@ -2,6 +2,19 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+
+def check_branch(branch, grid):
+    basekv = grid.bus.loc[:, "baseKV"]
+    v1 = basekv[branch["from_bus"]].reset_index(drop=True)
+    v2 = basekv[branch["to_bus"]].reset_index(drop=True)
+    cmp = v1.compare(v2)
+    if not cmp.empty:
+        mismatch = list(cmp.index)
+        raise ValueError(
+            f"from_bus and to_bus must have the same baseKV. rows={mismatch}"
+        )
+
+
 _columns = {
     "branch": ("from_bus", "to_bus", "inv_cost", "max_capacity"),
     "plant": ("bus_id", "type", "marginal_cost", "inv_cost", "max_capacity"),
