@@ -1,8 +1,8 @@
+import pickle
+
 import pandas as pd
-from scipy.io import savemat
 
 from powersimdata.data_access.context import Context
-from powersimdata.input.exporter.export_to_reise import export_case_mat
 from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
@@ -107,7 +107,7 @@ class Execute(Ready):
             for p in ["demand", "hydro", "solar", "wind"]:
                 si.prepare_profile(p, profiles_as)
 
-            si.prepare_mpc_file()
+            si.prepare_grid()
 
             if "demand_flexibility" in self.ct:
                 # Prepare all specified demand flexibility profiles
@@ -115,8 +115,7 @@ class Execute(Ready):
                     if p != "demand_flexibility_duration":
                         si.prepare_profile(p, profiles_as)
 
-                # Create the demand_flexibility_parameters file
-                si.prepare_demand_flexibility_parameters_file()
+                si.prepare_demand_flexibility_parameters()
 
             prepared = "prepared"
             self._execute_list_manager.set_status(self.scenario_id, prepared)
@@ -204,20 +203,12 @@ class SimulationInput:
 
         self.REL_TMP_DIR = self._data_access.tmp_folder(self.scenario_id)
 
-    def prepare_mpc_file(self):
-        """Creates MATPOWER case file."""
-        file_path = "/".join([self.REL_TMP_DIR, "case.mat"])
-        storage_file_path = "/".join([self.REL_TMP_DIR, "case_storage.mat"])
-
-        print("Building MPC file")
-        mpc, mpc_storage = export_case_mat(self.grid)
-
-        with self._data_access.write(file_path, save_local=False) as f:
-            savemat(f, mpc, appendmat=False)
-
-        if mpc_storage is not None:
-            with self._data_access.write(storage_file_path, save_local=False) as f:
-                savemat(f, mpc_storage, appendmat=False)
+    def prepare_grid(self):
+        """Prepare grid for simulation."""
+        print("--> Preparing grid data")
+        dest_path = "/".join([self.REL_TMP_DIR, "grid.pkl"])
+        with self._data_access.write(dest_path, save_local=False) as f:
+            pickle.dump(self.grid, f)
 
     def prepare_profile(self, kind, profile_as=None, slice=False):
         """Prepares profile for simulation.
@@ -233,7 +224,6 @@ class SimulationInput:
         if profile_as is None:
             tp = TransformProfile(self._scenario_info, self.grid, self.ct, slice)
             profile = tp.get_profile(kind)
-            print(f"Writing scaled {kind} profile to {dest_path}")
             with self._data_access.write(dest_path, save_local=False) as f:
                 profile.to_csv(f)
         else:
@@ -241,10 +231,8 @@ class SimulationInput:
             src = "/".join([from_dir, file_name])
             self._data_access.fs.copy(src, dest_path)
 
-    def prepare_demand_flexibility_parameters_file(self):
-        """Creates the demand_flexibility_parameters file."""
-        # Construct a dictionary of the necessary parameters
-        print("Building demand flexibility parameters file")
+    def prepare_demand_flexibility_parameters(self):
+        """Prepares demand_flexibility parameters file for simulation."""
         params = {}
         params["enabled"] = [True]
         params["interval_balance"] = [True]
@@ -258,11 +246,8 @@ class SimulationInput:
             if "demand_flexibility_duration" in self.ct["demand_flexibility"]
             else 0
         ]
-
-        # Convert the dictionary to a DataFrame to more easily save as a .csv file
         params = pd.DataFrame.from_dict(params)
 
-        # Save the parameters as a .csv file and move the file to the correct location
-        file_path = "/".join([self.REL_TMP_DIR, "demand_flexibility_parameters.csv"])
-        with self._data_access.write(file_path, save_local=False) as f:
+        dest_path = "/".join([self.REL_TMP_DIR, "demand_flexibility_parameters.csv"])
+        with self._data_access.write(dest_path, save_local=False) as f:
             params.to_csv(f)
