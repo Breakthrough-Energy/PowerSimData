@@ -1,4 +1,17 @@
+import pickle
+
 from powersimdata.input.transform_profile import TransformProfile
+
+
+def export_grid(grid, file_path):
+    """Save a grid object locally.
+
+    :param powersimdata.input.grid.Grid grid: a Grid object
+    :param str file_path: path to save the result, including the filename
+    """
+    print(f"Writing grid object to {file_path} on local machine")
+    with open(file_path, "a") as f:
+        pickle.dump(grid, f)
 
 
 def export_transformed_profile(kind, scenario_info, grid, ct, file_path, slice=True):
