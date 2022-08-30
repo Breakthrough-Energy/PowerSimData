@@ -3,7 +3,14 @@ from dataclasses import dataclass
 import pandas as pd
 
 
-def check_branch(branch, grid):
+def check_bus_id(bus_id, grid):
+    valid = bus_id.isin(grid.bus.index)
+    if not valid.all():
+        msg = f"Invalid bus id = {list(bus_id[~valid])}"
+        raise ValueError(msg)
+
+
+def check_branch_voltage(branch, grid):
     basekv = grid.bus.loc[:, "baseKV"]
     v1 = basekv[branch["from_bus"]].reset_index(drop=True)
     v2 = basekv[branch["to_bus"]].reset_index(drop=True)
@@ -13,6 +20,16 @@ def check_branch(branch, grid):
         raise ValueError(
             f"from_bus and to_bus must have the same baseKV. rows={mismatch}"
         )
+
+
+def check_branch(branch, grid):
+    check_branch_voltage(branch, grid)
+    check_bus_id(branch.from_bus, grid)
+    check_bus_id(branch.to_bus, grid)
+
+
+def check_plant(plant, grid):
+    check_bus_id(plant.bus_id, grid)
 
 
 _columns = {
