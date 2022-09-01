@@ -217,7 +217,7 @@ def test_check_areas_and_format_argument_type():
     )
     for a in arg:
         with pytest.raises(TypeError):
-            _check_areas_and_format()
+            _check_areas_and_format(a)
 
 
 def test_check_areas_and_format_argument_value():

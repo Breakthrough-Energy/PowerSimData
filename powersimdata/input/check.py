@@ -299,7 +299,7 @@ def _check_grid_type(grid):
         raise TypeError(f"grid must be a {_grid.Grid} object")
 
 
-def _check_areas_and_format(areas, mi=ModelImmutables("usa_tamu")):
+def _check_areas_and_format(areas, mi=None):
     """Ensure that areas are valid. Duplicates are removed and state abbreviations are
     converted to their actual name.
 
@@ -311,6 +311,8 @@ def _check_areas_and_format(areas, mi=ModelImmutables("usa_tamu")):
     :return: (*set*) -- areas as a set. State/Country abbreviations are converted to
         state/country names.
     """
+    if mi is None:
+        mi = ModelImmutables("usa_tamu")
     if isinstance(areas, str):
         areas = {areas}
     elif isinstance(areas, (list, set, tuple)):
@@ -334,7 +336,7 @@ def _check_areas_and_format(areas, mi=ModelImmutables("usa_tamu")):
     return areas
 
 
-def _check_resources_and_format(resources, mi=ModelImmutables("usa_tamu")):
+def _check_resources_and_format(resources, mi=None):
     """Ensure that resources are valid and convert variable to a set.
 
     :param str/list/tuple/set resources: resource(s) to check.
@@ -343,6 +345,8 @@ def _check_resources_and_format(resources, mi=ModelImmutables("usa_tamu")):
     :raises ValueError: if resources is empty or not valid.
     :return: (*set*) -- resources as a set.
     """
+    if mi is None:
+        mi = ModelImmutables("usa_tamu")
     if isinstance(resources, str):
         resources = {resources}
     elif isinstance(resources, (list, set, tuple)):
@@ -359,9 +363,7 @@ def _check_resources_and_format(resources, mi=ModelImmutables("usa_tamu")):
     return resources
 
 
-def _check_resources_are_renewable_and_format(
-    resources, mi=ModelImmutables("usa_tamu")
-):
+def _check_resources_are_renewable_and_format(resources, mi=None):
     """Ensure that resources are valid renewable resources and convert variable to
     a set.
     :param powersimdata.network.model.ModelImmutables mi: immutables of a grid model.
@@ -369,6 +371,8 @@ def _check_resources_are_renewable_and_format(
     :raises ValueError: if resources are not renewables.
     return: (*set*) -- resources as a set
     """
+    if mi is None:
+        mi = ModelImmutables("usa_tamu")
     resources = _check_resources_and_format(resources, mi=mi)
     if not resources <= mi.plants["renewable_resources"]:
         diff = resources - mi.plants["all_resources"]
