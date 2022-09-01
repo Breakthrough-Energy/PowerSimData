@@ -1,6 +1,7 @@
 import os
 
-from powersimdata.data_access.data_access import TempDataAccess, get_blob_fs
+from powersimdata.data_access.data_access import TempDataAccess
+from powersimdata.data_access.fs_helper import get_blob_fs
 from powersimdata.utility import templates
 
 

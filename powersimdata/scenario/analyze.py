@@ -38,8 +38,8 @@ class Analyze(Ready):
     def __init__(self, scenario):
         """Constructor."""
         super().__init__(scenario)
-
         self.refresh(scenario)
+        self._output_data = OutputData()
 
     def refresh(self, scenario):
         print(
@@ -112,7 +112,7 @@ class Analyze(Ready):
                 )
 
     def _get_data(self, field):
-        return OutputData().get_data(self._scenario_info["id"], field)
+        return self._output_data.get_data(self._scenario_info["id"], field)
 
     def get_pg(self):
         """Returns PG data frame.

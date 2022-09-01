@@ -510,7 +510,11 @@ def test_remove_bus(ct):
     ct.remove_bus({845})
 
 
-def test_add_demand_flexibility(ct, monkeypatch):
+def test_add_demand_flexibility(monkeypatch):
+    monkeypatch.setattr(Context, "get_data_access", MockContext().get_data_access)
+    data_access = Context.get_data_access()
+    ct = ChangeTable(grid)
+
     with pytest.raises(ValueError):
         # Fails because "demand_flexibility_dn", a required key, is not included
         ct.add_demand_flexibility(
@@ -537,9 +541,6 @@ def test_add_demand_flexibility(ct, monkeypatch):
                 "demand_flexibility_duration": 6,
             }
         )
-
-    monkeypatch.setattr(Context, "get_data_access", MockContext().get_data_access)
-    data_access = Context.get_data_access()
 
     # Create fake files in the expected directory path
     exp_path = f"raw/{grid.grid_model}"
