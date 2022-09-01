@@ -513,6 +513,7 @@ def test_remove_bus(ct):
 def test_add_demand_flexibility(monkeypatch):
     monkeypatch.setattr(Context, "get_data_access", MockContext().get_data_access)
     data_access = Context.get_data_access()
+    grid = Grid("Texas")
     ct = ChangeTable(grid)
 
     with pytest.raises(ValueError):
