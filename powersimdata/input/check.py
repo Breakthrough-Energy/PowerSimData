@@ -408,7 +408,7 @@ def _check_areas_are_in_grid_and_format(areas, grid):
         if not isinstance(k, str):
             raise TypeError("area type must be a str")
         elif k == "interconnect":
-            interconnects = _check_areas_and_format(v)
+            interconnects = _check_areas_and_format(v, mi)
             for i in interconnects:
                 try:
                     all_loadzones.update(mi.zones["interconnect2loadzone"][i])
@@ -416,7 +416,7 @@ def _check_areas_are_in_grid_and_format(areas, grid):
                     raise ValueError("invalid interconnect: %s" % i)
             areas_formatted["interconnect"].update(interconnects)
         elif k == "state":
-            states = _check_areas_and_format(v)
+            states = _check_areas_and_format(v, mi)
             for s in states:
                 try:
                     all_loadzones.update(mi.zones["state2loadzone"][s])
@@ -424,7 +424,7 @@ def _check_areas_are_in_grid_and_format(areas, grid):
                     raise ValueError("invalid state: %s" % s)
             areas_formatted["state"].update(states)
         elif k == "loadzone":
-            loadzones = _check_areas_and_format(v)
+            loadzones = _check_areas_and_format(v, mi)
             for l in loadzones:
                 if l not in mi.zones["loadzone"]:
                     raise ValueError("invalid load zone: %s" % l)
@@ -451,7 +451,7 @@ def _check_resources_are_in_grid_and_format(resources, grid):
     :raises ValueError: if resources is not used in scenario.
     """
     _check_grid_type(grid)
-    resources = _check_resources_and_format(resources)
+    resources = _check_resources_and_format(resources, grid.model_immutables)
     valid_resources = set(grid.plant["type"].unique())
     if not resources <= valid_resources:
         diff = resources - valid_resources
