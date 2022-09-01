@@ -6,7 +6,8 @@ from powersimdata.input.grid import Grid
 
 
 def test_column_types():
-    ec = ExpansionCandidates()
+    grid = Grid("Texas")
+    ec = ExpansionCandidates(grid)
     with pytest.raises(TypeError):
         branch = pd.DataFrame()
         ec.set_branch(branch)
