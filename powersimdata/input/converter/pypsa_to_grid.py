@@ -6,6 +6,7 @@ import pandas as pd
 from powersimdata.input.abstract_grid import AbstractGrid
 from powersimdata.input.const import grid_const
 from powersimdata.input.const.pypsa_const import pypsa_const
+from powersimdata.input.grid import Grid
 from powersimdata.network.constants.carrier.storage import storage as storage_const
 
 
@@ -446,3 +447,8 @@ class FromPyPSA(AbstractGrid):
             {v: pnl[k].iloc[0] for k, v in translators.items() if k in pnl}, axis=1
         )
         return df
+
+    @property
+    def __class__(self):
+        """If anyone asks, I'm a Grid object!"""
+        return Grid
