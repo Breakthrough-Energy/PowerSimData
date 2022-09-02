@@ -1,7 +1,7 @@
 from importlib.util import find_spec
 
 import pytest
-from pandas.testing import assert_series_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 from powersimdata.input.converter.pypsa_to_grid import FromPyPSA
 from powersimdata.input.exporter.export_to_pypsa import export_to_pypsa
@@ -37,9 +37,9 @@ def test_import_network_including_storages_from_pypsa_to_grid():
 def test_import_exported_network():
 
     ref = Grid("Western")
-    kwargs = dict(add_substations=True, add_load_shedding=False, add_all_columns=True)
+    kwargs = dict(add_substations=True, add_load_shedding=False, add_all_columns=False)
     n = export_to_pypsa(ref, **kwargs)
-    test = FromPyPSA(n)
+    test = FromPyPSA(n, add_pypsa_cols=False)
 
     # Only a scaled version of linear cost term is exported to pypsa
     # Test whether the exported marginal cost is in the same order of magnitude
@@ -52,3 +52,19 @@ def test_import_exported_network():
     assert_series_equal(ref.branch.x, test.branch.x, rtol=rtol)
     assert_series_equal(ref.branch.r, test.branch.r, rtol=rtol)
     assert_series_equal(ref.bus.Va, test.bus.Va, rtol=rtol)
+
+    test.branch.x = ref.branch.x
+    test.branch.r = ref.branch.r
+    test.bus.Va = ref.bus.Va
+
+    print("Difference in bus columns")
+    print(ref.bus.columns)
+    print(test.bus.columns)
+
+    print("Difference in branch columns")
+    print(ref.branch.columns)
+    print(test.branch.columns)
+
+    assert_frame_equal(ref.bus[ref.bus.columns], test.bus[ref.bus.columns])
+
+    assert ref == test
