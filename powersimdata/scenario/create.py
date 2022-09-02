@@ -361,6 +361,7 @@ class FromCSV(_Builder):
 
         self.exported_methods |= {"set_base_profile", "get_base_profile"}
 
+        self._profile_input = ProfileInput()
         self.print_existing_study()
         self.print_available_profile()
 
@@ -390,7 +391,7 @@ class FromCSV(_Builder):
         :param str kind: one of *'demand'*, *'hydro'*, *'solar'*, *'wind'*.
         :return: (*list*) -- available version for selected profile kind.
         """
-        return ProfileInput().get_profile_version(self.grid_model, kind)
+        return self._profile_input.get_profile_version(self.grid_model, kind)
 
     def set_base_profile(self, kind, version):
         """Set base profile.

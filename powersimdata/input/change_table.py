@@ -16,6 +16,7 @@ from powersimdata.input.changes import (
     remove_plant,
     scale_plant_pmin,
 )
+from powersimdata.input.profile_input import ProfileInput
 from powersimdata.input.transform_grid import TransformGrid
 
 _resources = (
@@ -148,6 +149,7 @@ class ChangeTable:
                 "demand_flexibility",
             }
         }
+        self._profile_input = None
 
     @staticmethod
     def _check_resource(resource):
@@ -478,6 +480,8 @@ class ChangeTable:
 
         See :func:`powersimdata.input.changes.demand_flex.add_demand_flexibility`
         """
+        if self._profile_input is None:
+            self._profile_input = ProfileInput()
         add_demand_flexibility(self, info)
 
     def add_electrification(self, kind, info):
