@@ -207,17 +207,17 @@ class FromPyPSA(AbstractGrid):
 
         # substations
         # only relevant if the PyPSA network was originally created from PSD
+        sub_cols = ["name", "interconnect_sub_id", "lat", "lon", "interconnect"]
+        sub_pypsa_cols = [
+            "name",
+            "interconnect_sub_id",
+            "y",
+            "x",
+            "interconnect",
+        ]
         if "is_substation" in bus:
-            sub_cols = ["name", "interconnect_sub_id", "lat", "lon", "interconnect"]
             sub = bus[bus.is_substation][sub_cols]
             sub.index = sub[sub.index.str.startswith("sub")].index.str[3:]
-            sub_pypsa_cols = [
-                "name",
-                "interconnect_sub_id",
-                "y",
-                "x",
-                "interconnect",
-            ]
             sub_pypsa = bus_pypsa[bus_pypsa.is_substation][sub_pypsa_cols]
             sub_pypsa.index = sub_pypsa[
                 sub_pypsa.index.str.startswith("sub")
@@ -235,9 +235,37 @@ class FromPyPSA(AbstractGrid):
                 bus2sub_pypsa.pop("substation").str[3:], errors="ignore"
             )
         else:
-            warnings.warn("Substations could not be parsed.")
-            sub = pd.DataFrame()
-            bus2sub = pd.DataFrame()
+            # try to parse typical pypsa-eur(-sec) pattern for substations
+            sub_pattern = "[A-Z][A-Z]\d+\s\d+$"
+            interconnect_pattern = "([A-Z][A-Z])"
+
+            sub = bus[bus.index.str.match(sub_pattern)].reindex(columns=sub_cols)
+            sub["interconnect"] = sub.index.str.extract(interconnect_pattern)
+            sub_pypsa = bus_pypsa[
+                bus_pypsa.index.str.match(sub_pattern)
+            ].reindex(columns=sub_pypsa_cols)
+            sub_pypsa["interconnect"] = sub.index.str.extract(interconnect_pattern)
+
+            sub_pattern = "([A-Z][A-Z]\d+\s\d+)$"
+            bus2sub = pd.DataFrame(
+                {
+                    "name": bus.index.str.extract(sub_pattern)[0].values,
+                    "interconnect": bus.index.str.extract(interconnect_pattern)[0].values,
+                },
+                index=bus.index,
+            )
+            bus2sub_pypsa = pd.DataFrame(
+                {
+                    "name": bus_pypsa.index.str.extract(sub_pattern)[0].values,
+                    "interconnect": bus_pypsa.index.str.extract(interconnect_pattern)[0].values,
+                },
+                index=bus_pypsa.index,
+            )
+
+            if sub.empty and bus2sub.empty:
+                warnings.warn("Substations could not be parsed.")
+                sub = pd.DataFrame()
+                bus2sub = pd.DataFrame()
 
         # shunts
         # append PyPSA's shunts information to PSD's buses data frame on columns
