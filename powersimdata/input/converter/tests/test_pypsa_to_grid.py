@@ -39,7 +39,7 @@ def test_import_exported_network():
     ref = Grid("Western")
     kwargs = dict(add_substations=True, add_load_shedding=False, add_all_columns=True)
     n = export_to_pypsa(ref, **kwargs)
-    test = FromPyPSA(n)
+    test = FromPyPSA(n, add_pypsa_cols=False)
 
     # Only a scaled version of linear cost term is exported to pypsa
     # Test whether the exported marginal cost is in the same order of magnitude
@@ -47,8 +47,24 @@ def test_import_exported_network():
     test_total_c1 = test.gencost["before"]["c1"].sum()
     assert ref_total_c1 / test_total_c1 > 0.95 and ref_total_c1 / test_total_c1 < 1.05
 
+    # Now overwrite costs
+    for c in ["c0", "c1", "c2"]:
+        test.gencost["before"][c] = ref.gencost["before"][c]
+        test.gencost["after"][c] = ref.gencost["after"][c]
+
     # Due to rounding errors we have to compare some columns in advance
     rtol = 1e-15
     assert_series_equal(ref.branch.x, test.branch.x, rtol=rtol)
     assert_series_equal(ref.branch.r, test.branch.r, rtol=rtol)
     assert_series_equal(ref.bus.Va, test.bus.Va, rtol=rtol)
+
+    test.branch.x = ref.branch.x
+    test.branch.r = ref.branch.r
+    test.bus.Va = ref.bus.Va
+
+    # storage specification is need in import but has to removed for testing
+    test.storage["gencost"].drop(columns="pypsa_component", inplace=True)
+    test.storage["gen"].drop(columns="pypsa_component", inplace=True)
+    test.storage["StorageData"].drop(columns="pypsa_component", inplace=True)
+
+    assert ref == test
