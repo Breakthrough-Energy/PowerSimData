@@ -2,7 +2,7 @@ from fs.copy import copy_dir
 from fs.errors import FSError
 from fs.walk import Walker
 
-from powersimdata.data_access.data_access import get_ssh_fs
+from powersimdata.data_access.fs_helper import get_ssh_fs
 from powersimdata.scenario.ready import Ready
 from powersimdata.utility import server_setup
 from powersimdata.utility.config import DeploymentMode
