@@ -184,8 +184,8 @@ class FromPyPSA(AbstractGrid):
         # bus
         df = bus_in_pypsa.drop(columns="type")
         bus = _translate_df(df, "bus")
-        bus.type.replace(["PQ", "PV", "Slack", ""], [1, 2, 3, 4], inplace=True)
-        bus["bus_id"] = bus.index
+        bus["type"] = bus.type.replace(["(?i)PQ", "(?i)PV", "(?i)Slack", ""], [1, 2, 3, 4],
+                         regex=True).astype(int)
 
         # zones mapping
         # only relevant if the PyPSA network was originally created from PSD
@@ -249,19 +249,19 @@ class FromPyPSA(AbstractGrid):
         # generation costs
         # for type: type of cost model (1 piecewise linear, 2 polynomial), n: number of parameters for total cost function, c(0) to c(n-1): parameters
         gencost = _translate_df(gencost_in_pypsa, "gencost")
-        gencost = gencost.assign(type=2, n=3, c0=0, c2=0)
+        gencost = gencost.assign(type=2, n=3, c0=0, c2=0, interconnect=plant.interconnect)
 
         # branch
         # lines
         drop_cols = ["x", "r", "b", "g"]
         df = lines_in_pypsa.drop(columns=drop_cols, errors="ignore")
         lines = _translate_df(df, "branch")
-        lines["branch_device_type"] = "Line"
+        lines["branch_device_type"] = lines.get("branch_device_type", "Line")
 
         # transformers
         df = transformers_in_pypsa.drop(columns=drop_cols, errors="ignore")
         transformers = _translate_df(df, "branch")
-        transformers["branch_device_type"] = "Transformer"
+        transformers["branch_device_type"] = transformers.get("branch_device_type", "Transformer")
 
         branch = pd.concat([lines, transformers], join="outer")
         # BE model assumes a 100 MVA base, pypsa "assumes" a 1 MVA base
@@ -353,15 +353,11 @@ class FromPyPSA(AbstractGrid):
         for k, v in zip(keys, values):
             df_psd, df_pypsa, const_location = v
 
-            # Reindex
-            if k == "branch":
-                const_location += ["branch_device_type"]
-
             df_psd = df_psd.reindex(const_location, axis="columns")
 
             # Add renamed PyPSA columns
             if add_pypsa_cols:
-                df_pypsa = df_pypsa.add_prefix("PyPSA_")
+                df_pypsa = df_pypsa.add_prefix("pypsa_")
 
                 df_psd = pd.concat([df_psd, df_pypsa], axis=1)
 
@@ -370,25 +366,19 @@ class FromPyPSA(AbstractGrid):
 
             data[k] = df_psd
 
-        # Append individual columns
-        if not n.shunt_impedances.empty:
-            data["bus"]["includes_pypsa_shunt"] = True
-        else:
-            data["bus"]["includes_pypsa_shunt"] = False
-
         for df in (
             data["storage_gen_storageunits"],
             data["storage_gencost_storageunits"],
             data["storage_storagedata_storageunits"],
         ):
-            df["which_storage_in_pypsa"] = "storage_units"
+            df["pypsa_component"] = "storage_units"
 
         for df in (
             data["storage_gen_stores"],
             data["storage_gencost_stores"],
             data["storage_storagedata_stores"],
         ):
-            df["which_storage_in_pypsa"] = "stores"
+            df["pypsa_component"] = "stores"
 
         # Build PSD grid object
         self.data_loc = data_loc

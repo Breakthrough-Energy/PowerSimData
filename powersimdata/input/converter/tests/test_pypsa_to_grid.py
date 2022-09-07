@@ -37,7 +37,7 @@ def test_import_network_including_storages_from_pypsa_to_grid():
 def test_import_exported_network():
 
     ref = Grid("Western")
-    kwargs = dict(add_substations=True, add_load_shedding=False, add_all_columns=False)
+    kwargs = dict(add_substations=True, add_load_shedding=False, add_all_columns=True)
     n = export_to_pypsa(ref, **kwargs)
     test = FromPyPSA(n, add_pypsa_cols=False)
 
@@ -46,6 +46,12 @@ def test_import_exported_network():
     ref_total_c1 = ref.gencost["before"]["c1"].sum()
     test_total_c1 = test.gencost["before"]["c1"].sum()
     assert ref_total_c1 / test_total_c1 > 0.95 and ref_total_c1 / test_total_c1 < 1.05
+
+    # Now overwrite costs
+    for c in ["c0", "c1", "c2"]:
+        test.gencost["before"][c] = ref.gencost["before"][c]
+        test.gencost["after"][c] = ref.gencost["after"][c]
+
 
     # Due to rounding errors we have to compare some columns in advance
     rtol = 1e-15
@@ -57,14 +63,9 @@ def test_import_exported_network():
     test.branch.r = ref.branch.r
     test.bus.Va = ref.bus.Va
 
-    print("Difference in bus columns")
-    print(ref.bus.columns)
-    print(test.bus.columns)
-
-    print("Difference in branch columns")
-    print(ref.branch.columns)
-    print(test.branch.columns)
-
-    assert_frame_equal(ref.bus[ref.bus.columns], test.bus[ref.bus.columns])
+    # storage specification is need in import but has to removed for testing
+    test.storage['gencost'].drop(columns='pypsa_component', inplace=True)
+    test.storage['gen'].drop(columns='pypsa_component', inplace=True)
+    test.storage['StorageData'].drop(columns='pypsa_component', inplace=True)
 
     assert ref == test

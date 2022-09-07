@@ -46,7 +46,6 @@ col_type_branch = [
 ]
 
 col_name_bus = [
-    "bus_id",
     "type",
     "Pd",
     "Qd",
