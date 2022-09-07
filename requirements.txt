@@ -5,10 +5,12 @@ paramiko==2.7.2
 scipy~=1.5
 tqdm==4.29.1
 requests~=2.25
+fs==2.4.14
+fs.sshfs
+fs-azureblob>=0.2.1
 black
 pytest
 coverage
 pytest-cov
-fs==2.4.14
-fs.sshfs
-fs-azureblob>=0.2.1
+pypsa
+zenodo_get
