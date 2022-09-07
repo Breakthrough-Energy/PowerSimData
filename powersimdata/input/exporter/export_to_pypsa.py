@@ -144,7 +144,7 @@ def export_to_pypsa(
     .. note::
         This function does not export storages yet.
 
-    :param powersimdata.scenario.scenario.Scenario/
+    :param powersimdata.scenario.scenario.Scenario /\
         powersimdata.input.grid.Grid scenario_or_grid: input object. If a Grid instance
         is passed, operational values will be used for the single snapshot "now".
         If a Scenario instance is passed, all available time-series will be
@@ -175,7 +175,7 @@ def export_to_pypsa(
     else:
         raise TypeError(
             "Expected type powersimdata.Grid or powersimdata.Scenario, "
-            f"get {type(scenario)}."
+            f"got {type(scenario_or_grid)}."
         )
 
     drop_cols = []
