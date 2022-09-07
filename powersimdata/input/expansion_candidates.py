@@ -77,7 +77,7 @@ _columns = {
 _required_columns = {
     "branch": ("from_bus", "to_bus"),
     "plant": ("bus_id", "type", "marginal_cost"),
-    "storage": ("bus_id"),
+    "storage": ("bus_id",),
 }
 
 
