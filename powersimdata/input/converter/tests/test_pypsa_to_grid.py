@@ -1,7 +1,7 @@
 from importlib.util import find_spec
 
 import pytest
-from pandas.testing import assert_frame_equal, assert_series_equal
+from pandas.testing import assert_series_equal
 
 from powersimdata.input.converter.pypsa_to_grid import FromPyPSA
 from powersimdata.input.exporter.export_to_pypsa import export_to_pypsa
@@ -52,7 +52,6 @@ def test_import_exported_network():
         test.gencost["before"][c] = ref.gencost["before"][c]
         test.gencost["after"][c] = ref.gencost["after"][c]
 
-
     # Due to rounding errors we have to compare some columns in advance
     rtol = 1e-15
     assert_series_equal(ref.branch.x, test.branch.x, rtol=rtol)
@@ -64,8 +63,8 @@ def test_import_exported_network():
     test.bus.Va = ref.bus.Va
 
     # storage specification is need in import but has to removed for testing
-    test.storage['gencost'].drop(columns='pypsa_component', inplace=True)
-    test.storage['gen'].drop(columns='pypsa_component', inplace=True)
-    test.storage['StorageData'].drop(columns='pypsa_component', inplace=True)
+    test.storage["gencost"].drop(columns="pypsa_component", inplace=True)
+    test.storage["gen"].drop(columns="pypsa_component", inplace=True)
+    test.storage["StorageData"].drop(columns="pypsa_component", inplace=True)
 
     assert ref == test

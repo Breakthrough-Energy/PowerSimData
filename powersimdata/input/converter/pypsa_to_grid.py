@@ -165,27 +165,28 @@ class FromPyPSA(AbstractGrid):
             data_loc = "pypsa"
 
         # Read in data from PyPSA
-        bus_in_pypsa = n.buses
-        sub_in_pypsa = pd.DataFrame()
-        bus2sub_in_pypsa = pd.DataFrame()
+        bus_pypsa = n.buses
+        sub_pypsa = pd.DataFrame()
+        bus2sub_pypsa = pd.DataFrame()
         gencost_cols = ["start_up_cost", "shut_down_cost", "marginal_cost"]
-        gencost_in_pypsa = n.generators[gencost_cols]
-        plant_in_pypsa = n.generators.drop(gencost_cols, axis=1)
-        lines_in_pypsa = n.lines
-        transformers_in_pypsa = n.transformers
-        branch_in_pypsa = pd.concat(
-            [lines_in_pypsa, transformers_in_pypsa],
+        gencost_pypsa = n.generators[gencost_cols]
+        plant_pypsa = n.generators.drop(gencost_cols, axis=1)
+        lines_pypsa = n.lines
+        transformers_pypsa = n.transformers
+        branch_pypsa = pd.concat(
+            [lines_pypsa, transformers_pypsa],
             join="outer",
         )
-        dcline_in_pypsa = n.links[lambda df: df.index.str[:3] != "sub"]
-        storageunits_in_pypsa = n.storage_units
-        stores_in_pypsa = n.stores
+        dcline_pypsa = n.links[lambda df: df.index.str[:3] != "sub"]
+        storageunits_pypsa = n.storage_units
+        stores_pypsa = n.stores
 
         # bus
-        df = bus_in_pypsa.drop(columns="type")
+        df = bus_pypsa.drop(columns="type")
         bus = _translate_df(df, "bus")
-        bus["type"] = bus.type.replace(["(?i)PQ", "(?i)PV", "(?i)Slack", ""], [1, 2, 3, 4],
-                         regex=True).astype(int)
+        bus["type"] = bus.type.replace(
+            ["(?i)PQ", "(?i)PV", "(?i)Slack", ""], [1, 2, 3, 4], regex=True
+        ).astype(int)
 
         # zones mapping
         # only relevant if the PyPSA network was originally created from PSD
@@ -205,28 +206,28 @@ class FromPyPSA(AbstractGrid):
             sub_cols = ["name", "interconnect_sub_id", "lat", "lon", "interconnect"]
             sub = bus[bus.is_substation][sub_cols]
             sub.index = sub[sub.index.str.startswith("sub")].index.str[3:]
-            sub_in_pypsa_cols = [
+            sub_pypsa_cols = [
                 "name",
                 "interconnect_sub_id",
                 "y",
                 "x",
                 "interconnect",
             ]
-            sub_in_pypsa = bus_in_pypsa[bus_in_pypsa.is_substation][sub_in_pypsa_cols]
-            sub_in_pypsa.index = sub_in_pypsa[
-                sub_in_pypsa.index.str.startswith("sub")
+            sub_pypsa = bus_pypsa[bus_pypsa.is_substation][sub_pypsa_cols]
+            sub_pypsa.index = sub_pypsa[
+                sub_pypsa.index.str.startswith("sub")
             ].index.str[3:]
 
             bus = bus[~bus.is_substation]
-            bus_in_pypsa = bus_in_pypsa[~bus_in_pypsa.is_substation]
+            bus_pypsa = bus_pypsa[~bus_pypsa.is_substation]
 
             bus2sub = bus[["substation", "interconnect"]].copy()
             bus2sub["sub_id"] = pd.to_numeric(
                 bus2sub.pop("substation").str[3:], errors="ignore"
             )
-            bus2sub_in_pypsa = bus_in_pypsa[["substation", "interconnect"]].copy()
-            bus2sub_in_pypsa["sub_id"] = pd.to_numeric(
-                bus2sub_in_pypsa.pop("substation").str[3:], errors="ignore"
+            bus2sub_pypsa = bus_pypsa[["substation", "interconnect"]].copy()
+            bus2sub_pypsa["sub_id"] = pd.to_numeric(
+                bus2sub_pypsa.pop("substation").str[3:], errors="ignore"
             )
         else:
             warnings.warn("Substations could not be parsed.")
@@ -240,7 +241,7 @@ class FromPyPSA(AbstractGrid):
             bus[["Bs", "Gs"]] = shunts[["Bs", "Gs"]]
 
         # plant
-        df = plant_in_pypsa.drop(columns="type")
+        df = plant_pypsa.drop(columns="type")
         plant = _translate_df(df, "generator")
         plant["ramp_30"] = n.generators["ramp_limit_up"].fillna(0)
         plant["Pmin"] *= plant["Pmax"]  # from relative to absolute value
@@ -248,20 +249,24 @@ class FromPyPSA(AbstractGrid):
 
         # generation costs
         # for type: type of cost model (1 piecewise linear, 2 polynomial), n: number of parameters for total cost function, c(0) to c(n-1): parameters
-        gencost = _translate_df(gencost_in_pypsa, "gencost")
-        gencost = gencost.assign(type=2, n=3, c0=0, c2=0, interconnect=plant.interconnect)
+        gencost = _translate_df(gencost_pypsa, "gencost")
+        gencost = gencost.assign(
+            type=2, n=3, c0=0, c2=0, interconnect=plant.interconnect
+        )
 
         # branch
         # lines
         drop_cols = ["x", "r", "b", "g"]
-        df = lines_in_pypsa.drop(columns=drop_cols, errors="ignore")
+        df = lines_pypsa.drop(columns=drop_cols, errors="ignore")
         lines = _translate_df(df, "branch")
         lines["branch_device_type"] = lines.get("branch_device_type", "Line")
 
         # transformers
-        df = transformers_in_pypsa.drop(columns=drop_cols, errors="ignore")
+        df = transformers_pypsa.drop(columns=drop_cols, errors="ignore")
         transformers = _translate_df(df, "branch")
-        transformers["branch_device_type"] = transformers.get("branch_device_type", "Transformer")
+        transformers["branch_device_type"] = transformers.get(
+            "branch_device_type", "Transformer"
+        )
 
         branch = pd.concat([lines, transformers], join="outer")
         # BE model assumes a 100 MVA base, pypsa "assumes" a 1 MVA base
@@ -271,7 +276,7 @@ class FromPyPSA(AbstractGrid):
         branch["to_bus_id"] = pd.to_numeric(branch.to_bus_id, errors="ignore")
 
         # DC lines
-        dcline = _translate_df(dcline_in_pypsa, "link")
+        dcline = _translate_df(dcline_pypsa, "link")
         dcline["Pmin"] *= dcline["Pmax"]  # convert relative to absolute
         dcline["from_bus_id"] = pd.to_numeric(dcline.from_bus_id, errors="ignore")
         dcline["to_bus_id"] = pd.to_numeric(dcline.to_bus_id, errors="ignore")
@@ -319,33 +324,33 @@ class FromPyPSA(AbstractGrid):
             "storage_storagedata_stores",
         ]
         values = [
-            (bus, bus_in_pypsa, grid_const.col_name_bus),
-            (sub, sub_in_pypsa, grid_const.col_name_sub),
-            (bus2sub, bus2sub_in_pypsa, grid_const.col_name_bus2sub),
-            (plant, plant_in_pypsa, grid_const.col_name_plant),
-            (gencost, gencost_in_pypsa, grid_const.col_name_gencost),
-            (branch, branch_in_pypsa, grid_const.col_name_branch),
-            (dcline, dcline_in_pypsa, grid_const.col_name_dcline),
+            (bus, bus_pypsa, grid_const.col_name_bus),
+            (sub, sub_pypsa, grid_const.col_name_sub),
+            (bus2sub, bus2sub_pypsa, grid_const.col_name_bus2sub),
+            (plant, plant_pypsa, grid_const.col_name_plant),
+            (gencost, gencost_pypsa, grid_const.col_name_gencost),
+            (branch, branch_pypsa, grid_const.col_name_branch),
+            (dcline, dcline_pypsa, grid_const.col_name_dcline),
             (
                 storage_gen_storageunits,
-                storageunits_in_pypsa,
+                storageunits_pypsa,
                 grid_const.col_name_plant,
             ),
             (
                 storage_gencost_storageunits,
-                storageunits_in_pypsa,
+                storageunits_pypsa,
                 grid_const.col_name_gencost,
             ),
             (
                 storage_storagedata_storageunits,
-                storageunits_in_pypsa,
+                storageunits_pypsa,
                 grid_const.col_name_storage_storagedata,
             ),
-            (storage_gen_stores, stores_in_pypsa, grid_const.col_name_plant),
-            (storage_gencost_stores, stores_in_pypsa, grid_const.col_name_gencost),
+            (storage_gen_stores, stores_pypsa, grid_const.col_name_plant),
+            (storage_gencost_stores, stores_pypsa, grid_const.col_name_gencost),
             (
                 storage_storagedata_stores,
-                stores_in_pypsa,
+                stores_pypsa,
                 grid_const.col_name_storage_storagedata,
             ),
         ]
