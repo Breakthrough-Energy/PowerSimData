@@ -251,7 +251,7 @@ class FromPyPSA(AbstractGrid):
         # for type: type of cost model (1 piecewise linear, 2 polynomial), n: number of parameters for total cost function, c(0) to c(n-1): parameters
         gencost = _translate_df(gencost_pypsa, "gencost")
         gencost = gencost.assign(
-            type=2, n=3, c0=0, c2=0, interconnect=plant.interconnect
+            type=2, n=3, c0=0, c2=0, interconnect=plant.get("interconnect")
         )
 
         # branch
