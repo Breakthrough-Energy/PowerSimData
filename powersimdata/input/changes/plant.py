@@ -3,8 +3,6 @@ import copy
 from powersimdata.input.transform_grid import TransformGrid
 from powersimdata.utility.distance import find_closest_neighbor
 
-_profile_resource = {"hydro", "solar", "wind", "wind_offshore"}
-
 
 def add_plant(obj, info):
     """Sets parameters of new generator(s) in change table.
@@ -38,11 +36,14 @@ def add_plant(obj, info):
         if plant["Pmax"] < 0:
             raise ValueError(f"Pmax >= 0 must be satisfied for plant #{i + 1}")
         if "Pmin" not in plant.keys():
-            plant["Pmin"] = 0
+            share = obj.grid.model_immutables.plants["pmin_as_share_of_pmax"][
+                plant["type"]
+            ]
+            plant["Pmin"] = share * plant["Pmax"] if share is not None else 0
         if plant["Pmin"] < 0 or plant["Pmin"] > plant["Pmax"]:
             err_msg = f"0 <= Pmin <= Pmax must be satisfied for plant #{i + 1}"
             raise ValueError(err_msg)
-        if plant["type"] in _profile_resource:
+        if plant["type"] in obj.grid.model_immutables.plants["profile_resources"]:
             lon = anticipated_bus.loc[plant["bus_id"]].lon
             lat = anticipated_bus.loc[plant["bus_id"]].lat
             plant_same_type = obj.grid.plant.groupby("type").get_group(plant["type"])

@@ -26,19 +26,17 @@ class TransformProfile:
         self.grid = copy.deepcopy(grid)
 
         self.scale_keys = {
-            "wind": {"wind", "wind_offshore"},
-            "solar": {"solar"},
-            "hydro": {"hydro"},
-            "demand": {"demand"},
+            **{"demand": {"demand"}},
+            **self.grid.model_immutables.plants["group_profile_resources"],
         }
+
         self.n_new_plant, self.n_new_clean_plant = self._get_number_of_new_plant()
 
     def _get_number_of_new_plant(self):
         """Return the total number of new plant and new plant with profiles.
 
         :return: (*tuple*) -- first element is the total number of new plant and second
-            element is the total number of new clean plant (*hydro*, *solar*,
-            *onshore wind* and *offshore wind*).
+            element is the total number of new plant with profiles.
         """
         n_plant = [0, 0]
         if "new_plant" in self.ct.keys():
@@ -51,7 +49,7 @@ class TransformProfile:
     def _get_renewable_profile(self, resource):
         """Return the transformed profile.
 
-        :param str resource: *'hydro'*, *'solar'* or *'wind'*.
+        :param str resource: a generator type with profile.
         :return: (*pandas.DataFrame*) -- power output for generators of specified type
             with plant identification number as columns and UTC timestamp as indices.
         """
@@ -188,24 +186,21 @@ class TransformProfile:
     def get_profile(self, name):
         """Return profile.
 
-        :param str name: either *demand*, *'hydro'*, *'solar'*, *'wind'*,
-            *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
-            *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
+        :param str name: either *demand*, *'demand_flexibility_up'*,
+            *'demand_flexibility_dn'*, *'demand_flexibility_cost_up'*,
+            *'demand_flexibility_cost_dn'* or a generator type with profile.
         :return: (*pandas.DataFrame*) -- profile.
-        :raises ValueError: if argument not one of *'demand'*, *'hydro'*, *'solar'*,
-            *'wind'*, *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
-            *'demand_flexibility_cost_up'*, or *'demand_flexibility_cost_dn'*.
+        :raises ValueError: if argument not one of *'demand'*,
+            *'demand_flexibility_up'*, *'demand_flexibility_dn'*,
+            *'demand_flexibility_cost_up'*, *'demand_flexibility_cost_dn'* or a generator type wit profile.
         """
-        possible = [
-            "demand",
-            "hydro",
-            "solar",
-            "wind",
+        possible = {
             "demand_flexibility_up",
             "demand_flexibility_dn",
             "demand_flexibility_cost_up",
             "demand_flexibility_cost_dn",
-        ]
+        }.union(*self.scale_keys.values())
+
         if name not in possible:
             raise ValueError("Choose from %s" % " | ".join(possible))
         elif name == "demand":
