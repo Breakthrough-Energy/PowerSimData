@@ -19,6 +19,11 @@ def test_column_types():
 
 
 def test_check_branch_voltage():
+    # baseKV = 230
+    branch = pd.DataFrame({"from_bus": [3001004], "to_bus": [3008159]})
+    check_branch_voltage(branch, grid)
+
+    # baseKV = 115, 230
     branch = pd.DataFrame({"from_bus": [3001001], "to_bus": [3008156]})
     with pytest.raises(ValueError):
         check_branch_voltage(branch, grid)
@@ -51,5 +56,5 @@ def test_set_candidates():
     plant["marginal_cost"] = 4
     ec.set_plant(plant)
 
-    storage = grid.bus.head().reset_index().loc[:, ["bus_id"]]
+    storage = plant.loc[:, ["bus_id"]].copy()
     ec.set_storage(storage)

@@ -99,6 +99,17 @@ class ExpansionCandidates:
         self.storage = pd.DataFrame(columns=_columns["storage"])
         self.grid = grid
 
+    def __repr__(self):
+        name = self.__class__.__name__
+
+        def _short_description(df, name):
+            return f"{name}: cols={list(df.columns)}, rows={df.shape[0]}"
+
+        branch = _short_description(self.branch, "branch")
+        plant = _short_description(self.plant, "plant")
+        storage = _short_description(self.storage, "storage")
+        return f"{name}({branch}\n{plant}\n{storage})"
+
     def _validate_df(self, name, df):
         assert name in ("branch", "plant", "storage")
         if not isinstance(df, pd.DataFrame):
