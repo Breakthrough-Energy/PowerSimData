@@ -3,9 +3,11 @@ from importlib.util import find_spec
 import pytest
 from pandas.testing import assert_series_equal
 
+from powersimdata.input.change_table import ChangeTable
 from powersimdata.input.converter.pypsa_to_grid import FromPyPSA
 from powersimdata.input.exporter.export_to_pypsa import export_to_pypsa
 from powersimdata.input.grid import Grid
+from powersimdata.input.transform_grid import TransformGrid
 
 
 @pytest.mark.skipif(find_spec("pypsa") is None, reason="Package PyPSA not available.")
@@ -36,7 +38,16 @@ def test_import_network_including_storages_from_pypsa_to_grid():
 @pytest.mark.skipif(find_spec("pypsa") is None, reason="Package PyPSA not available.")
 def test_import_exported_network():
 
-    ref = Grid("Western")
+    grid = Grid("Western")
+    ct = ChangeTable(grid)
+    storage = [
+        {"bus_id": 2021005, "capacity": 116.0},
+        {"bus_id": 2028827, "capacity": 82.5},
+        {"bus_id": 2028060, "capacity": 82.5},
+    ]
+    ct.add_storage_capacity(storage)
+    ref = TransformGrid(grid, ct.ct).get_grid()
+
     kwargs = dict(add_substations=True, add_load_shedding=False, add_all_columns=True)
     n = export_to_pypsa(ref, **kwargs)
     test = FromPyPSA(n, add_pypsa_cols=False)
