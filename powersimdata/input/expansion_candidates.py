@@ -63,6 +63,15 @@ def check_storage(storage, grid):
     check_bus_id(storage.bus_id, grid)
 
 
+def _validate_df(name, df):
+    assert name in ("branch", "plant", "storage")
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError(f"{name} must be a data frame")
+    if not set(_required_columns[name]) <= set(df.columns):
+        raise TypeError(f"{name} must have columns {_required_columns[name]}")
+    return df.reindex(_columns[name], axis=1)
+
+
 _columns = {
     "branch": ("from_bus", "to_bus", "inv_cost", "max_capacity"),
     "plant": ("bus_id", "type", "marginal_cost", "inv_cost", "max_capacity"),
@@ -110,20 +119,12 @@ class ExpansionCandidates:
         storage = _short_description(self.storage, "storage")
         return f"{name}({branch}\n{plant}\n{storage})"
 
-    def _validate_df(self, name, df):
-        assert name in ("branch", "plant", "storage")
-        if not isinstance(df, pd.DataFrame):
-            raise TypeError(f"{name} must be a data frame")
-        if not set(_required_columns[name]) <= set(df.columns):
-            raise TypeError(f"{name} must have columns {_required_columns[name]}")
-        return df.reindex(_columns[name], axis=1)
-
     def set_branch(self, branch):
         """Validate and assign branch candidates
 
         :param pd.DataFrame branch: branch dataframe
         """
-        branch = self._validate_df("branch", branch)
+        branch = _validate_df("branch", branch)
         check_branch(branch, self.grid)
         self.branch = branch
 
@@ -132,7 +133,7 @@ class ExpansionCandidates:
 
         :param pd.DataFrame plant: plant dataframe
         """
-        plant = self._validate_df("plant", plant)
+        plant = _validate_df("plant", plant)
         check_plant(plant, self.grid)
         self.plant = plant
 
@@ -141,6 +142,6 @@ class ExpansionCandidates:
 
         :param pd.DataFrame storage: storage dataframe
         """
-        storage = self._validate_df("storage", storage)
+        storage = _validate_df("storage", storage)
         check_storage(storage, self.grid)
         self.storage = storage
