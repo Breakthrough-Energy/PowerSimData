@@ -14,8 +14,14 @@ grid = Grid("Texas")
 def test_column_types():
     ec = ExpansionCandidates(grid)
     with pytest.raises(TypeError):
-        branch = pd.DataFrame()
+        branch = {"branch_id": [1, 2]}
         ec.set_branch(branch)
+    with pytest.raises(ValueError):
+        plant = pd.DataFrame({"plant_id": [42]})
+        ec.set_plant(plant)
+    with pytest.raises(ValueError):
+        storage = pd.DataFrame({"bus_id": [1, 2], "foo": [3, 4]})
+        ec.set_storage(storage)
 
 
 def test_check_branch_voltage():

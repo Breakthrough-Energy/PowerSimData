@@ -68,7 +68,7 @@ def _validate_df(name, df):
     if not isinstance(df, pd.DataFrame):
         raise TypeError(f"{name} must be a data frame")
     if not set(_required_columns[name]) <= set(df.columns):
-        raise TypeError(f"{name} must have columns {_required_columns[name]}")
+        raise ValueError(f"{name} must have columns {_required_columns[name]}")
     return df.reindex(_columns[name], axis=1)
 
 
