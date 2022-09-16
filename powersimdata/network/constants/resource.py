@@ -67,18 +67,18 @@ class EUResource:
             "offwind-ac",
             "offwind-dc",
             "onwind",
-            "phs",
+            "PHS",
             "ror",
             "solar",
         }
         self.group_profile_resources = {
-            "hydro": {"hydro", "phs", "ror"},
+            "hydro": {"hydro", "PHS", "ror"},
             "solar": {"solar"},
             "wind": {"onwind", "offwind-ac", "offwind-dc"},
         }
         self.curtailable_resources = {
             "hydro",
-            "phs",
+            "PHS",
             "ror",
             "solar",
             "offwind-ac",
@@ -118,7 +118,7 @@ class EUResource:
             "biomass": {"biomass"},
             "coal": {"coal", "lignite"},
             "geothermal": {"geothermal"},
-            "hydro": {"hydro", "phs", "ror"},
+            "hydro": {"hydro", "PHS", "ror"},
             "ng": {"CCGT", "OCGT"},
             "nuclear": {"nuclear"},
             "oil": {"oil"},
@@ -139,7 +139,7 @@ class EUResource:
             "offwind-ac": 0,
             "offwind-dc": 0,
             "onwind": 0,
-            "phs": 0.9,
+            "PHS": 0.9,
             "ror": None,
             "solar": 0,
         }
