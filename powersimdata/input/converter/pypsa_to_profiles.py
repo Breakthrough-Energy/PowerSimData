@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import pypsa
 
@@ -43,18 +42,7 @@ def get_pypsa_gen_profile(network, profile2carrier):
                         if not ts.empty:
                             id_ts = set(ts.columns)
                             idx = list(id_carrier.intersection(id_ts))
-                            norm = (
-                                (
-                                    ts[idx]
-                                    .max()
-                                    .combine(
-                                        carrier_in_component.loc[idx, "p_nom"],
-                                        np.maximum,
-                                    )
-                                )
-                                if t == "inflow"
-                                else 1
-                            )
+                            norm = ts[idx].max() if t == "inflow" else 1
                             profile[p] = pd.concat([profile[p], ts[idx] / norm], axis=1)
                 if len(set(c) - set(carrier_in_component.carrier.unique())):
                     continue
