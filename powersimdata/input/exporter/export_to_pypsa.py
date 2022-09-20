@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import pandas as pd
 
@@ -210,9 +208,26 @@ def export_to_pypsa(
     else:
         links_t = {v: links.pop(k).to_frame("now").T for k, v in link_rename_t.items()}
 
-    # TODO: add storage export
-    if not grid.storage["gen"].empty:
-        warnings.warn("The export of storages are not implemented yet.")
+    # STORAGES
+    # TODO: make distinction to pypsa stores
+    storage_data_keys = ["StorageData", "gen", "gencost"]
+    storage = []
+    defaults = {k: v for k, v in grid.storage.items() if k not in storage_data_keys}
+    for k in storage_data_keys:
+        rename = pypsa_const["storage_" + k.lower()]["rename"]
+        if not add_all_columns:
+            drop_cols = pypsa_const["storage_" + k.lower()]["default_drop_cols"]
+        df = grid.storage[k].rename(columns=rename).drop(columns=drop_cols)
+        storage.append(df)
+        defaults = {rename.get(k, k): v for k, v in defaults.items()}
+
+    storage = pd.concat(storage, axis=1)
+    storage = storage.loc[:, ~storage.columns.duplicated()]
+    for k, v in defaults.items():
+        storage[k] = storage[k].fillna(v) if k in storage else v
+
+    storage["p_nom"] = storage.get("Pmax")
+    storage["state_of_charge_initial"] = storage.pop("InitialStorage")
 
     # Import everything to a new pypsa network
     n = pypsa.Network()
@@ -226,6 +241,7 @@ def export_to_pypsa(
     n.madd("Line", lines.index, **lines, **lines_t)
     n.madd("Transformer", transformers.index, **transformers, **transformers_t)
     n.madd("Link", links.index, **links, **links_t)
+    n.madd("StorageUnit", storage.index, **storage)
 
     if add_substations:
         n.madd("Bus", substations.index, **substations)

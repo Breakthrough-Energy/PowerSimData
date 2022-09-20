@@ -102,8 +102,13 @@ def _get_storage_gencost(n, storage_type):
             "Inapplicable storage_type passed to function _get_storage_gencost."
         )
 
+    # There are "type" columns in gen and gencost with "type" column reserved
+    # for gen dataframe, hence drop it here before renaming
+    df_gencost = df_gencost.drop(columns="type", errors="ignore")
     storage_gencost = _translate_df(df_gencost, "storage_gencost")
     storage_gencost.assign(type=2, n=3, c0=0, c2=0)
+    if "type" in storage_gencost:
+        storage_gencost["type"] = pd.to_numeric(storage_gencost.type, errors="ignore")
 
     return storage_gencost
 
@@ -131,6 +136,8 @@ def _get_storage_gen(n, storage_type):
     storage_gen["Vg"] = 1
     storage_gen["mBase"] = 100
     storage_gen["status"] = 1
+    storage_gen["bus_id"] = pd.to_numeric(storage_gen.bus_id, errors="ignore")
+    storage_gen["type"] = pd.to_numeric(storage_gen.type, errors="ignore")
 
     return storage_gen
 
@@ -288,6 +295,7 @@ class FromPyPSA(AbstractGrid):
         storage_gen_stores = _get_storage_gen(n, "stores")
         storage_gencost_stores = _get_storage_gencost(n, "stores")
         storage_storagedata_stores = _get_storage_storagedata(n, "stores")
+        storage_genfuel = list(n.storage_units.carrier) + list(n.stores.carrier)
 
         # Pull operational properties into grid object
         if len(n.snapshots) == 1:
@@ -413,6 +421,7 @@ class FromPyPSA(AbstractGrid):
             ],
             join="outer",
         )
+        self.storage["genfuel"] = storage_genfuel
         self.storage.update(storage_const)
 
         # Set index names to match PSD
