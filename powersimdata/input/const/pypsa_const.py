@@ -124,6 +124,7 @@ pypsa_const = {
     "storage_gen": {
         "rename": {
             "bus_id": "bus",
+            "Pmax": "p_nom",
         },
         "default_drop_cols": [
             "GenFuelCost",
@@ -133,7 +134,6 @@ pypsa_const = {
             "Pc1",
             "Pc2",
             "Pg",
-            "Pmax",
             "Pmin",
             "Qc1max",
             "Qc1min",
@@ -172,6 +172,7 @@ pypsa_const = {
             "LossFactor": "standing_loss",
             "duration": "max_hours",
             "genfuel": "carrier",
+            "InitialStorage": "state_of_charge_initial",
         },
         "default_drop_cols": [
             "ExpectedTerminalStorageMax",

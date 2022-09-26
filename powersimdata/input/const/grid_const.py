@@ -296,6 +296,7 @@ col_name_storage_storagedata = [
     "rho",
     "ExpectedTerminalStorageMax",
     "ExpectedTerminalStorageMin",
+    "duration",
 ]
 col_type_storage_storagedata = [
     "int",
