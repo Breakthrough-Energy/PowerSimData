@@ -40,17 +40,17 @@ def _get_storage_storagedata(n, storage_type):
     :return: (*pandas.DataFrame*) -- data frame with storage data.
     """
     if storage_type == "storage_units":
+
         storage_storagedata = _translate_df(n.storage_units, "storage_storagedata")
 
-        p_nom = n.storage_units["p_nom"]
-        e_nom = p_nom * n.storage_units["max_hours"]
-        cyclic_state_of_charge = n.storage_units["cyclic_state_of_charge"]
+        e_nom = n.storage_units.eval("p_nom * max_hours")
         state_of_charge_initial = n.storage_units["state_of_charge_initial"]
+
     elif storage_type == "stores":
+
         storage_storagedata = _translate_df(n.stores, "storage_storagedata")
 
         e_nom = n.stores["e_nom"]
-        cyclic_state_of_charge = n.stores["e_cyclic"]
         state_of_charge_initial = n.stores["e_initial"]
 
         # Efficiencies of Store are captured in link/dcline
@@ -61,26 +61,24 @@ def _get_storage_storagedata(n, storage_type):
             "Inapplicable storage_type passed to function _get_storage_storagedata."
         )
 
-    # Initial storage: If cyclic, then fill half. If not cyclic, then apply PyPSA's state_of_charge_initial.
-    storage_storagedata["InitialStorage"] = state_of_charge_initial.where(
-        ~cyclic_state_of_charge, e_nom / 2
-    )
     # Initial storage bounds: PSD's default is same as initial storage
-    storage_storagedata["InitialStorageLowerBound"] = storage_storagedata[
-        "InitialStorage"
-    ]
-    storage_storagedata["InitialStorageUpperBound"] = storage_storagedata[
-        "InitialStorage"
-    ]
-    # Terminal storage bounds: If cyclic, then both same as initial storage. If not cyclic, then full capacity and zero.
-    storage_storagedata["ExpectedTerminalStorageMax"] = e_nom * 1
-    storage_storagedata["ExpectedTerminalStorageMin"] = e_nom * 0
+    storage_storagedata["InitialStorageLowerBound"] = state_of_charge_initial
+    storage_storagedata["InitialStorageUpperBound"] = state_of_charge_initial
     # Apply PSD's default relationships/assumptions for remaining columns
     storage_storagedata["InitialStorageCost"] = storage_const["energy_value"]
     storage_storagedata["TerminalStoragePrice"] = storage_const["energy_value"]
-    storage_storagedata["MinStorageLevel"] = e_nom * storage_const["min_stor"]
-    storage_storagedata["MaxStorageLevel"] = e_nom * storage_const["max_stor"]
     storage_storagedata["rho"] = 1
+
+    # fill with heuristic defaults if non-existent
+    defaults = {
+        "MinStorageLevel": e_nom * storage_const["min_stor"],
+        "MaxStorageLevel": e_nom * storage_const["max_stor"],
+        "ExpectedTerminalStorageMax": 1,
+        "ExpectedTerminalStorageMin": 0,
+    }
+    for k, v in defaults.items():
+        if k not in storage_storagedata:
+            storage_storagedata[k] = v
 
     return storage_storagedata
 
