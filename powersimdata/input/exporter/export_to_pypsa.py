@@ -122,14 +122,16 @@ def export_to_pypsa(
     carriers = pd.DataFrame(index=generators.carrier.unique(), dtype=object)
 
     cars = carriers.index
-    constants = grid.model_immutables.plants
-    carriers["color"] = pd.Series(constants["type2color"]).reindex(cars)
-    carriers["nice_name"] = pd.Series(constants["type2label"]).reindex(cars)
-    carriers["co2_emissions"] = (
-        pd.Series(constants["carbon_per_mwh"]).div(1e3)
-        * pd.Series(constants["efficiency"])
-    ).reindex(cars, fill_value=0)
-    generators["efficiency"] = generators.carrier.map(constants["efficiency"]).fillna(0)
+    if grid.model_immutables is not None:
+        constants = grid.model_immutables.plants
+        carriers["color"] = pd.Series(constants["type2color"]).reindex(cars)
+        carriers["nice_name"] = pd.Series(constants["type2label"]).reindex(cars)
+        carriers["co2_emissions"] = pd.Series(constants["carbon_per_mwh"]).div(
+            1e3
+        ) * pd.Series(constants["efficiency"]).reindex(cars, fill_value=0)
+        generators["efficiency"] = generators.carrier.map(
+            constants["efficiency"]
+        ).fillna(0)
 
     # now time-dependent
     if scenario:
