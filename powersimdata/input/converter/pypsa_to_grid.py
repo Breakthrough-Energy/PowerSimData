@@ -147,6 +147,8 @@ class FromPyPSA(AbstractGrid):
             self.interconnect = self.network.name.split(", ")
 
     def _set_data_loc(self):
+        if self.data_loc is not None:
+            return
         if len(self.interconnect) > 1:
             self.data_loc = self.interconnect[0]
         else:

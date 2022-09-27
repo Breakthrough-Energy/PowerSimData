@@ -36,6 +36,7 @@ def test_get_scenario_file_from_server_header(data_access, scenario_table):
         "name",
         "state",
         "grid_model",
+        "grid_model_version",
         "interconnect",
         "base_demand",
         "base_hydro",
@@ -77,6 +78,7 @@ def mock_row():
             ("name", "dummy"),
             ("state", "create"),
             ("grid_model", ""),
+            ("grid_model_version", ""),
             ("interconnect", "Western"),
             ("base_demand", ""),
             ("base_hydro", ""),
@@ -95,7 +97,7 @@ def test_blank_csv_append(manager):
     entry = mock_row()
     table = manager.add_entry(entry)
     assert entry["id"] == "1"
-    assert table.shape == (1, 16)
+    assert table.shape == (1, 17)
 
 
 def test_get_scenario(manager):
@@ -113,4 +115,4 @@ def test_delete_entry(manager):
     manager.add_entry(mock_row())
     manager.add_entry(mock_row())
     table = manager.delete_entry(2)
-    assert table.shape == (2, 16)
+    assert table.shape == (2, 17)

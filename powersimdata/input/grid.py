@@ -63,6 +63,7 @@ class Grid:
         self.storage = network.storage
         self.grid_model = network.grid_model
         self.model_immutables = network.model_immutables
+        self.version = getattr(network, "version", None)
 
         _cache.put(key, network)
 
@@ -70,6 +71,7 @@ class Grid:
         result = self.__class__.__name__
         result += f"\ninterconnect: {self.interconnect}\n"
         result += f"model: {self.model_immutables.model}\n"
+        result += f"model version: {self.version}\n"
         result += f"data_loc: {self.data_loc}\n"
         df_name = ["sub", "plant", "dcline", "bus2sub", "bus", "branch"]
         for n in df_name:

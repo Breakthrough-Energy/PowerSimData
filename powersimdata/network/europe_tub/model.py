@@ -105,6 +105,7 @@ class TUB(PyPSABase):
 
         z.load_data(os.path.dirname(__file__))
         self.data_loc = os.path.join(z.dir, "networks")
+        self.version = z.version
         return self._get_network(reduction)
 
     def _get_network(self, reduction):
