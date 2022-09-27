@@ -1,5 +1,6 @@
 import pandas as pd
 import pypsa
+from pypsa.descriptors import get_switchable_as_dense
 
 
 def get_pypsa_gen_profile(network, profile2carrier):
@@ -29,25 +30,20 @@ def get_pypsa_gen_profile(network, profile2carrier):
             "keys of profile2carrier must be a subset of ['hydro', 'solar', 'wind']"
         )
 
+    component2timeseries = {
+        "Generator": "p_max_pu",
+        "StorageUnit": "inflow",
+    }
     profile = {}
     for p, c in profile2carrier.items():
         profile[p] = pd.DataFrame()
-        for component in ["generators", "storage_units", "stores"]:
-            if hasattr(network, component):
-                carrier_in_component = getattr(network, component)
-                id_carrier = set(carrier_in_component.query("carrier==list(@c)").index)
-                for t in ["inflow", "p_max_pu"]:
-                    if t in getattr(network, component + "_t"):
-                        ts = getattr(network, component + "_t")[t]
-                        if not ts.empty:
-                            id_ts = set(ts.columns)
-                            idx = list(id_carrier.intersection(id_ts))
-                            norm = ts[idx].max() if t == "inflow" else 1
-                            profile[p] = pd.concat([profile[p], ts[idx] / norm], axis=1)
-                if len(set(c) - set(carrier_in_component.carrier.unique())):
-                    continue
-                else:
-                    break
+        for component, ts in component2timeseries.items():
+            id_carrier = network.df(component).query("carrier==list(@c)").index
+            ts_carrier = get_switchable_as_dense(network, component, ts)[id_carrier]
+            if not ts_carrier.empty:
+                norm = ts_carrier.max().replace(0, 1) if ts == "inflow" else 1
+                profile[p] = pd.concat([profile[p], ts_carrier / norm], axis=1)
+
         profile[p].rename_axis(index="UTC", columns=None, inplace=True)
 
     return profile
