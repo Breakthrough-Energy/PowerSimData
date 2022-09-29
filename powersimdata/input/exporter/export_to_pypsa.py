@@ -7,6 +7,16 @@ from powersimdata.scenario.scenario import Scenario
 from powersimdata.utility.helpers import _check_import
 
 
+def restore_original_columns(df, overwrite=[]):
+    prefix = "pypsa_"
+    for col in df.columns[df.columns.str.startswith(prefix)]:
+        target = col[len(prefix) :]
+        fallback = df.pop(col)
+        if target not in df or target in overwrite:
+            df[target] = fallback
+    return df
+
+
 def export_to_pypsa(
     scenario_or_grid,
     add_all_columns=False,
@@ -61,7 +71,7 @@ def export_to_pypsa(
             drop_cols += list(bus_rename_t)
 
     buses = grid.bus.rename(columns=bus_rename)
-    buses.control.replace([1, 2, 3, 4], ["PQ", "PV", "slack", ""], inplace=True)
+    buses.control.replace([1, 2, 3, 4], ["PQ", "PV", "Slack", ""], inplace=True)
     buses["zone_name"] = buses.zone_id.map({v: k for k, v in grid.zone2id.items()})
     buses["substation"] = "sub" + grid.bus2sub["sub_id"].astype(str)
 
@@ -72,7 +82,8 @@ def export_to_pypsa(
 
     loads = {"proportionality_factor": buses["Pd"]}
 
-    shunts = {k: buses.pop(k) for k in ["b_pu", "g_pu"]}
+    shunts = pd.DataFrame({k: buses.pop(k) for k in ["b_pu", "g_pu"]})
+    shunts = shunts.dropna(how="all")
 
     substations = grid.sub.copy().rename(columns={"lat": "y", "lon": "x"})
     substations.index = "sub" + substations.index.astype(str)
@@ -82,6 +93,7 @@ def export_to_pypsa(
     substations["v_nom"] = v_nom
 
     buses = buses.drop(columns=drop_cols, errors="ignore").sort_index(axis=1)
+    buses = restore_original_columns(buses)
 
     # now time-dependent
     if scenario:
@@ -118,6 +130,9 @@ def export_to_pypsa(
     gencost["c1"] = linearized.combine_first(gencost["c1"])
     gencost = gencost.rename(columns=pypsa_const["gencost"]["rename"])
     gencost = gencost[pypsa_const["gencost"]["rename"].values()]
+
+    generators = generators.assign(**gencost)
+    generators = restore_original_columns(generators)
 
     carriers = pd.DataFrame(index=generators.carrier.unique(), dtype=object)
 
@@ -167,6 +182,7 @@ def export_to_pypsa(
 
     lines = branches.query("branch_device_type == 'Line'")
     lines = lines.drop(columns="branch_device_type")
+    lines = restore_original_columns(lines)
 
     transformers = branches.query(
         "branch_device_type in ['TransformerWinding', 'Transformer']"
@@ -194,6 +210,7 @@ def export_to_pypsa(
 
     links = grid.dcline.rename(columns=link_rename).drop(columns=drop_cols)
     links.p_min_pu /= links.p_nom.where(links.p_nom != 0, 1)
+    links = restore_original_columns(links, overwrite=["p_min_pu", "p_max_pu"])
 
     # SUBSTATION CONNECTORS
     sublinks = dict(
@@ -225,8 +242,7 @@ def export_to_pypsa(
     for k, v in defaults.items():
         storage[k] = storage[k].fillna(v) if k in storage else v
 
-    storage["p_nom"] = storage.get("Pmax")
-    storage["state_of_charge_initial"] = storage.pop("InitialStorage")
+    storage = restore_original_columns(storage)
 
     # Import everything to a new pypsa network
     n = pypsa.Network()
@@ -234,8 +250,8 @@ def export_to_pypsa(
         n.snapshots = loads_t["p_set"].index
     n.madd("Bus", buses.index, **buses, **buses_t)
     n.madd("Load", buses.index, bus=buses.index, **loads, **loads_t)
-    n.madd("ShuntImpedance", buses.index, bus=buses.index, **shunts)
-    n.madd("Generator", generators.index, **generators, **gencost, **generators_t)
+    n.madd("ShuntImpedance", shunts.index, bus=shunts.index, **shunts)
+    n.madd("Generator", generators.index, **generators, **generators_t)
     n.madd("Carrier", carriers.index, **carriers)
     n.madd("Line", lines.index, **lines, **lines_t)
     n.madd("Transformer", transformers.index, **transformers, **transformers_t)
