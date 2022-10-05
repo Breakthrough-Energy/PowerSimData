@@ -1,7 +1,7 @@
+from powersimdata.network.constants.carrier.plants import get_plants
+from powersimdata.network.constants.carrier.storage import get_storage
 from powersimdata.network.constants.model import model2region
-from powersimdata.network.constants.plants import get_plants
-from powersimdata.network.constants.storage import get_storage
-from powersimdata.network.constants.zones import get_zones
+from powersimdata.network.constants.region.zones import get_zones
 from powersimdata.network.helpers import (
     check_and_format_interconnect,
     check_model,

@@ -1,7 +1,7 @@
 import os
 
 from powersimdata.input.converter.reise_to_grid import FromREISE, FromREISEjl
-from powersimdata.network.constants.storage import storage
+from powersimdata.network.constants.carrier.storage import storage
 from powersimdata.network.hifld.model import HIFLD
 from powersimdata.network.usa_tamu.model import TAMU
 from powersimdata.utility.helpers import MemoryCache, cache_key
