@@ -249,7 +249,7 @@ class TransformGrid:
             new_branch["to_lon"] = to_lon
             new_branch["to_lat"] = to_lat
             new_branch["x"] = x
-            new_index = [self.grid.branch.index[-1] + 1]
+            new_index = pd.Index([self.grid.branch.index[-1] + 1], name="branch_id")
             self.grid.branch = pd.concat(
                 [self.grid.branch, pd.DataFrame(new_branch, index=new_index)]
             )
@@ -330,7 +330,7 @@ class TransformGrid:
             new_dcline["Pmax"] = entry["Pmax"]
             new_dcline["from_interconnect"] = from_interconnect
             new_dcline["to_interconnect"] = to_interconnect
-            new_index = [self.grid.dcline.index[-1] + 1]
+            new_index = pd.Index([self.grid.dcline.index[-1] + 1], name="dcline_id")
             self.grid.dcline = pd.concat(
                 [self.grid.dcline, pd.DataFrame(new_dcline, index=new_index)]
             )
@@ -361,7 +361,7 @@ class TransformGrid:
             new_plant["zone_name"] = zone_name
             new_plant["lon"] = lon
             new_plant["lat"] = lat
-            new_index = [self.grid.plant.index[-1] + 1]
+            new_index = pd.Index([self.grid.plant.index[-1] + 1], name="plant_id")
             self.grid.plant = pd.concat(
                 [self.grid.plant, pd.DataFrame(new_plant, index=new_index)]
             )
@@ -379,7 +379,7 @@ class TransformGrid:
                 new_gencost["c0"] = entry["c0"]
                 new_gencost["c1"] = entry["c1"]
                 new_gencost["c2"] = entry["c2"]
-            new_index = [gencost["before"].index[-1] + 1]
+            new_index = pd.Index([gencost["before"].index[-1] + 1], name="plant_id")
             gencost["before"] = pd.concat(
                 [gencost["before"], pd.DataFrame(new_gencost, index=new_index)]
             )
