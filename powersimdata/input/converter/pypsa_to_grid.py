@@ -115,16 +115,18 @@ def _get_storage_gen(df, storage_type):
     :return: (*pandas.DataFrame*) -- data frame with storage data.
     """
     if storage_type == "storage_units":
-        p_nom = df["p_nom"]
+        pmax = df["p_nom"] * df["p_max_pu"]
+        pmin = df["p_nom"] * df["p_min_pu"]
     elif storage_type == "stores":
-        p_nom = np.inf
+        pmax = np.inf
+        pmin = -np.inf
     else:
         warnings.warn("Inapplicable storage_type passed to function _get_storage_gen.")
 
     storage_gen = _translate_df(df, "storage_gen")
-    storage_gen["Pmax"] = +p_nom
-    storage_gen["Pmin"] = -p_nom
-    storage_gen["ramp_30"] = p_nom
+    storage_gen["Pmax"] = pmax
+    storage_gen["Pmin"] = pmin
+    storage_gen["ramp_30"] = pmax
     storage_gen["Vg"] = 1
     storage_gen["mBase"] = 100
     storage_gen["status"] = 1
@@ -290,13 +292,77 @@ class FromPyPSA(AbstractGrid):
         dcline["from_bus_id"] = pd.to_numeric(dcline.from_bus_id, errors="ignore")
         dcline["to_bus_id"] = pd.to_numeric(dcline.to_bus_id, errors="ignore")
 
-        # storage
-        storage_gen_storageunits = _get_storage_gen(n.storage_units, "storage_units")
-        storage_gencost_storageunits = _get_storage_gencost(n.storage_units, "storage_units")
-        storage_storagedata_storageunits = _get_storage_storagedata(n.storage_units, "storage_units")
-        storage_gen_stores = _get_storage_gen(n.stores, "stores")
-        storage_gencost_stores = _get_storage_gencost(n.stores, "stores")
-        storage_storagedata_stores = _get_storage_storagedata(n.stores, "stores")
+        # storage units
+        c = "storage_units"
+        storage_gen_storageunits = _get_storage_gen(n.storage_units, c)
+        storage_gencost_storageunits = _get_storage_gencost(n.storage_units, c)
+        storage_storagedata_storageunits = _get_storage_storagedata(n.storage_units, c)
+
+        inflow = n.get_switchable_as_dense("StorageUnit", "inflow")
+        has_inflow = inflow.any()
+        if has_inflow.any():
+            # add artificial buses
+            suffix = " inflow"
+
+            def add_suffix(s):
+                return str(s) + suffix
+
+            storage_gen_inflow = storage_gen_storageunits[has_inflow]
+            buses_old = storage_gen_inflow.bus_id
+            buses_new = buses_old.astype(str) + suffix
+            bus_inflow = bus.reindex(buses_old).rename(index=add_suffix)
+
+            # add discharging dcline (has same index as inflow storages)
+            dcline_inflow = pd.DataFrame(
+                {
+                    "from_bus_id": buses_new,
+                    "to_bus_id": buses_old,
+                    "Pmax": storage_gen_inflow.Pmax,
+                }
+            )
+            dcline_inflow.index += " discharge"
+
+            # add charging dcline (has same index as inflow storages)
+            dcline_inflow = pd.DataFrame(
+                {
+                    "from_bus_id": buses_old,
+                    "to_bus_id": buses_new,
+                    "Pmax": -storage_gen_inflow.Pmin,
+                }
+            )
+            dcline_inflow.index += " charge"
+
+            # add inflow generator
+            gen_inflow = storage_gen_inflow.rename(index=add_suffix)
+            gen_inflow["Pmax"] = n.storage_units_t.inflow.max().rename(add_suffix)
+            gen_inflow["capital_cost"] = 0
+            gen_inflow["p_nom_extendable"] = False
+            gen_inflow = gen_inflow.reindex(columns=plant.columns)
+            gencost_inflow = storage_gencost_storageunits[has_inflow].rename(
+                index=add_suffix
+            )
+            gencost_inflow = storage_gencost_storageunits[has_inflow].rename(
+                index=add_suffix
+            )
+            gencost_inflow = storage_gencost_storageunits.assign(
+                c0=0, c1=0, c2=0, type=2, startup=0, shutdown=0, n=3
+            )
+
+            # add everything to data
+            storage_gen_storageunits.loc[has_inflow, "bus_id"] = buses_new
+            storage_gen_storageunits.loc[
+                has_inflow, "Pmin"
+            ] = -np.inf  # don't limit charging from inflow
+            bus = pd.concat([bus, bus_inflow])
+            plant = pd.concat([plant, gen_inflow])
+            gencost = pd.concat([gencost, gencost_inflow])
+            dcline = pd.concat([dcline, dcline_inflow])
+
+        # stores
+        c = "stores"
+        storage_gen_stores = _get_storage_gen(n.stores, c)
+        storage_gencost_stores = _get_storage_gencost(n.stores, c)
+        storage_storagedata_stores = _get_storage_storagedata(n.stores, c)
         storage_genfuel = list(n.storage_units.carrier) + list(n.stores.carrier)
 
         # Pull operational properties into grid object
