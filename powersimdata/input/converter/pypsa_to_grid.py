@@ -172,7 +172,6 @@ class FromPyPSA(AbstractGrid):
         # Read in data from PyPSA
         bus_pypsa = n.buses
         sub_pypsa = pd.DataFrame()
-        bus2sub_pypsa = pd.DataFrame()
         gencost_cols = ["start_up_cost", "shut_down_cost", "marginal_cost"]
         gencost_pypsa = n.generators[gencost_cols]
         plant_pypsa = n.generators.drop(gencost_cols, axis=1)
@@ -209,19 +208,14 @@ class FromPyPSA(AbstractGrid):
         # only relevant if the PyPSA network was originally created from PSD
         sub_cols = ["name", "interconnect_sub_id", "lat", "lon", "interconnect"]
         sub_pypsa_cols = [
-            "name",
-            "interconnect_sub_id",
             "y",
             "x",
-            "interconnect",
         ]
         if "is_substation" in bus:
             sub = bus[bus.is_substation][sub_cols]
             sub.index = sub[sub.index.str.startswith("sub")].index.str[3:]
             sub_pypsa = bus_pypsa[bus_pypsa.is_substation][sub_pypsa_cols]
-            sub_pypsa.index = sub_pypsa[
-                sub_pypsa.index.str.startswith("sub")
-            ].index.str[3:]
+            sub_pypsa.index = sub.index
 
             bus = bus[~bus.is_substation]
             bus_pypsa = bus_pypsa[~bus_pypsa.is_substation]
@@ -230,36 +224,27 @@ class FromPyPSA(AbstractGrid):
             bus2sub["sub_id"] = pd.to_numeric(
                 bus2sub.pop("substation").str[3:], errors="ignore"
             )
-            bus2sub_pypsa = bus_pypsa[["substation", "interconnect"]].copy()
-            bus2sub_pypsa["sub_id"] = pd.to_numeric(
-                bus2sub_pypsa.pop("substation").str[3:], errors="ignore"
-            )
         else:
             # try to parse typical pypsa-eur(-sec) pattern for substations
             sub_pattern = "[A-Z][A-Z]\d+\s\d+$"
             interconnect_pattern = "([A-Z][A-Z])"
 
             sub = bus[bus.index.str.match(sub_pattern)].reindex(columns=sub_cols)
-            sub["interconnect"] = sub.index.str.extract(interconnect_pattern)
-            sub_pypsa = bus_pypsa[
-                bus_pypsa.index.str.match(sub_pattern)
-            ].reindex(columns=sub_pypsa_cols)
-            sub_pypsa["interconnect"] = sub.index.str.extract(interconnect_pattern)
+            sub["interconnect"] = sub.index.str.extract(interconnect_pattern).values
+            sub["name"] = sub.index
+            sub_pypsa = bus_pypsa[bus_pypsa.index.str.match(sub_pattern)][
+                sub_pypsa_cols
+            ]
 
             sub_pattern = "([A-Z][A-Z]\d+\s\d+)$"
             bus2sub = pd.DataFrame(
                 {
                     "name": bus.index.str.extract(sub_pattern)[0].values,
-                    "interconnect": bus.index.str.extract(interconnect_pattern)[0].values,
+                    "interconnect": bus.index.str.extract(interconnect_pattern)[
+                        0
+                    ].values,
                 },
                 index=bus.index,
-            )
-            bus2sub_pypsa = pd.DataFrame(
-                {
-                    "name": bus_pypsa.index.str.extract(sub_pattern)[0].values,
-                    "interconnect": bus_pypsa.index.str.extract(interconnect_pattern)[0].values,
-                },
-                index=bus_pypsa.index,
             )
 
             if sub.empty and bus2sub.empty:
@@ -360,7 +345,7 @@ class FromPyPSA(AbstractGrid):
         values = [
             (bus, bus_pypsa, grid_const.col_name_bus),
             (sub, sub_pypsa, grid_const.col_name_sub),
-            (bus2sub, bus2sub_pypsa, grid_const.col_name_bus2sub),
+            (bus2sub, None, grid_const.col_name_bus2sub),
             (plant, plant_pypsa, grid_const.col_name_plant),
             (gencost, gencost_pypsa, grid_const.col_name_gencost),
             (branch, branch_pypsa, grid_const.col_name_branch),
@@ -395,7 +380,7 @@ class FromPyPSA(AbstractGrid):
             df_psd = df_psd.reindex(const_location, axis="columns")
 
             # Add renamed PyPSA columns
-            if add_pypsa_cols:
+            if add_pypsa_cols and df_pypsa is not None:
                 df_pypsa = df_pypsa.add_prefix("pypsa_")
 
                 df_psd = pd.concat([df_psd, df_pypsa], axis=1)
