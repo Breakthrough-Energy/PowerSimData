@@ -31,27 +31,27 @@ def _invert_dict(d):
     return {v: k for k, v in d.items()}
 
 
-def _get_storage_storagedata(n, storage_type):
+def _get_storage_storagedata(df, storage_type):
     """Get storage data from PyPSA for data frame "StorageData" in PSD's
     storage dict.
 
-    :param pypsa.Network n: PyPSA network to read in.
+    :param pandas.DataFrame df: PyPSA component dataframe.
     :param str storage_type: key for PyPSA storage type.
     :return: (*pandas.DataFrame*) -- data frame with storage data.
     """
     if storage_type == "storage_units":
 
-        storage_storagedata = _translate_df(n.storage_units, "storage_storagedata")
+        storage_storagedata = _translate_df(df, "storage_storagedata")
 
-        e_nom = n.storage_units.eval("p_nom * max_hours")
-        state_of_charge_initial = n.storage_units["state_of_charge_initial"]
+        e_nom = df.eval("p_nom * max_hours")
+        state_of_charge_initial = df["state_of_charge_initial"]
 
     elif storage_type == "stores":
 
-        storage_storagedata = _translate_df(n.stores, "storage_storagedata")
+        storage_storagedata = _translate_df(df, "storage_storagedata")
 
-        e_nom = n.stores["e_nom"]
-        state_of_charge_initial = n.stores["e_initial"]
+        e_nom = df["e_nom"]
+        state_of_charge_initial = df["e_initial"]
 
         # Efficiencies of Store are captured in link/dcline
         storage_storagedata["OutEff"] = 1
@@ -83,27 +83,23 @@ def _get_storage_storagedata(n, storage_type):
     return storage_storagedata
 
 
-def _get_storage_gencost(n, storage_type):
+def _get_storage_gencost(df, storage_type):
     """Get storage data from PyPSA for data frame "gencost" in PSD's storage
     dict.
 
-    :param pypsa.Network n: PyPSA network to read in.
+    :param pandas.DataFrame df: PyPSA component dataframe.
     :param str storage_type: key for PyPSA storage type.
     :return: (*pandas.DataFrame*) -- data frame with storage data.
     """
-    if storage_type == "storage_units":
-        df_gencost = n.storage_units
-    elif storage_type == "stores":
-        df_gencost = n.stores
-    else:
+    if storage_type not in ["storage_units", "stores"]:
         warnings.warn(
             "Inapplicable storage_type passed to function _get_storage_gencost."
         )
 
     # There are "type" columns in gen and gencost with "type" column reserved
     # for gen dataframe, hence drop it here before renaming
-    df_gencost = df_gencost.drop(columns="type", errors="ignore")
-    storage_gencost = _translate_df(df_gencost, "storage_gencost")
+    df = df.drop(columns="type", errors="ignore")
+    storage_gencost = _translate_df(df, "storage_gencost")
     storage_gencost.assign(type=2, n=3, c0=0, c2=0)
     if "type" in storage_gencost:
         storage_gencost["type"] = pd.to_numeric(storage_gencost.type, errors="ignore")
@@ -111,23 +107,21 @@ def _get_storage_gencost(n, storage_type):
     return storage_gencost
 
 
-def _get_storage_gen(n, storage_type):
+def _get_storage_gen(df, storage_type):
     """Get storage data from PyPSA for data frame "gen" in PSD's storage dict.
 
-    :param pypsa.Network n: PyPSA network to read in.
+    :param pandas.DataFrame df: PyPSA component dataframe.
     :param str storage_type: key for PyPSA storage type.
     :return: (*pandas.DataFrame*) -- data frame with storage data.
     """
     if storage_type == "storage_units":
-        df_gen = n.storage_units
-        p_nom = n.storage_units["p_nom"]
+        p_nom = df["p_nom"]
     elif storage_type == "stores":
-        df_gen = n.stores
         p_nom = np.inf
     else:
         warnings.warn("Inapplicable storage_type passed to function _get_storage_gen.")
 
-    storage_gen = _translate_df(df_gen, "storage_gen")
+    storage_gen = _translate_df(df, "storage_gen")
     storage_gen["Pmax"] = +p_nom
     storage_gen["Pmin"] = -p_nom
     storage_gen["ramp_30"] = p_nom
@@ -297,12 +291,12 @@ class FromPyPSA(AbstractGrid):
         dcline["to_bus_id"] = pd.to_numeric(dcline.to_bus_id, errors="ignore")
 
         # storage
-        storage_gen_storageunits = _get_storage_gen(n, "storage_units")
-        storage_gencost_storageunits = _get_storage_gencost(n, "storage_units")
-        storage_storagedata_storageunits = _get_storage_storagedata(n, "storage_units")
-        storage_gen_stores = _get_storage_gen(n, "stores")
-        storage_gencost_stores = _get_storage_gencost(n, "stores")
-        storage_storagedata_stores = _get_storage_storagedata(n, "stores")
+        storage_gen_storageunits = _get_storage_gen(n.storage_units, "storage_units")
+        storage_gencost_storageunits = _get_storage_gencost(n.storage_units, "storage_units")
+        storage_storagedata_storageunits = _get_storage_storagedata(n.storage_units, "storage_units")
+        storage_gen_stores = _get_storage_gen(n.stores, "stores")
+        storage_gencost_stores = _get_storage_gencost(n.stores, "stores")
+        storage_storagedata_stores = _get_storage_storagedata(n.stores, "stores")
         storage_genfuel = list(n.storage_units.carrier) + list(n.stores.carrier)
 
         # Pull operational properties into grid object
