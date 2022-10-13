@@ -63,7 +63,7 @@ def linearize_gencost(input_grid, num_segments=1):
                 dispatchable_gens
             ]
     else:
-        grid.gencost["after"] = gencost_before.copy()
+        gencost_after = gencost_before.copy()
 
     # Convert non-dispatchable gens to fixed values
     nondispatchable_gens = ~dispatchable_gens
