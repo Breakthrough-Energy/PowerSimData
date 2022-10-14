@@ -2,7 +2,7 @@ from powersimdata.network.constants.carrier.plants import get_plants
 from powersimdata.network.constants.carrier.storage import get_storage
 from powersimdata.network.constants.model import model2region
 from powersimdata.network.constants.region.mapping import get_mapping
-from powersimdata.network.constants.region.zones import from_csv
+from powersimdata.network.constants.region.zones import check_zone, from_csv
 from powersimdata.network.helpers import (
     check_and_format_interconnect,
     check_model,
@@ -32,7 +32,10 @@ class ModelImmutables:
             if interconnect is None
             else check_and_format_interconnect(interconnect, model=model)
         )
-        zone = from_csv(self.model) if zone is None else zone
+        if zone is None:
+            zone = from_csv(self.model)
+        else:
+            check_zone(model, zone)
 
         self.plants = get_plants(model)
         self.storage = get_storage(model)

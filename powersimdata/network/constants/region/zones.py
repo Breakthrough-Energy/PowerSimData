@@ -1,3 +1,5 @@
+import pandas as pd
+
 from powersimdata.network.constants.region.geography import get_geography
 from powersimdata.network.helpers import get_zone_info
 
@@ -38,3 +40,30 @@ def from_pypsa(model, info):
     info.rename_axis(index="zone_id")
 
     return info
+
+
+def check_zone(model, zone):
+    """Validate data frame used in :class:`powersimdata.network.model.ModelImmutables`
+    class.
+
+    :param str model: grid model.
+    :param pandas.DataFrame zone: data frame to be tested.
+    :raises TypeError: if ``zone`` is not a pandas.DataFrame
+    :raises ValueError:
+        if index name is not *'zone_id'*
+        if *'zone_name'*, *'state'*/*'country'* (model dependent), *'interconnect'*,
+        *'time_zone'* and *'abv'* are not in columns.
+    """
+    if not isinstance(zone, pd.DataFrame):
+        raise TypeError("zone must be a pandas.DataFrame")
+    if zone.index.name != "zone_id":
+        raise ValueError("index must be named zone_id")
+
+    geo = get_geography(model)
+    missing = list(
+        {"zone_name", geo["division"], "interconnect", "time_zone", "abv"}
+        - set(zone.columns)
+    )
+
+    if len(missing) != 0:
+        raise ValueError(f"zone must have: {' | '.join(sorted(missing))} as columns")
