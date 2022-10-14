@@ -1,10 +1,11 @@
 import pandas as pd
-from pandas.testing import assert_series_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 from powersimdata.design.generation.cost_curves import (
     build_supply_curve,
     get_supply_data,
     ks_test,
+    linearize_gencost,
     lower_bound_index,
 )
 from powersimdata.tests.mock_grid import MockGrid
@@ -140,6 +141,72 @@ grid_attrs = {"plant": mock_plant, "gencost_before": mock_gencost}
 grid = MockGrid(grid_attrs)
 grid.interconnect = "Western"
 grid.zone2id = {"Utah": 210, "Colorado": 212, "Washington": 201}
+
+mock_gc = {
+    "plant_id": range(3),
+    "type": [2, 2, 2],
+    "startup": [0, 0, 0],
+    "shutdown": [0, 0, 0],
+    "n": [3, 3, 3],
+    "c2": [1, 2, 3],
+    "c1": [4, 5, 6],
+    "c0": [7, 8, 9],
+    "interconnect": ["Western"] * 3,
+}
+mock_plant_gc = {"plant_id": range(3), "Pmin": [20, 40, 60], "Pmax": [50, 100, 150]}
+grid_attrs_gc = {
+    "plant": mock_plant_gc,
+    "gencost_before": mock_gc,
+}
+mock_grid_gc = MockGrid(grid_attrs_gc)
+
+expected_one_segment = pd.DataFrame(
+    {
+        "plant_id": range(3),
+        "type": [1, 1, 1],
+        "startup": [0, 0, 0],
+        "shutdown": [0, 0, 0],
+        "n": [2, 2, 2],
+        "c2": [1, 2, 3],
+        "c1": [4, 5, 6],
+        "c0": [7, 8, 9],
+        "p1": [20, 40, 60],
+        "f1": [
+            (1 * 20**2 + 4 * 20 + 7),
+            (2 * 40**2 + 5 * 40 + 8),
+            (3 * 60**2 + 6 * 60 + 9),
+        ],
+        "p2": [50, 100, 150],
+        "f2": [
+            (1 * 50**2 + 4 * 50 + 7),
+            (2 * 100**2 + 5 * 100 + 8),
+            (3 * 150**2 + 6 * 150 + 9),
+        ],
+        "interconnect": ["Western"] * 3,
+    }
+).set_index("plant_id")
+
+expected_two_segment = expected_one_segment.copy()
+expected_two_segment.n = 3
+expected_two_segment["p3"] = expected_one_segment["p2"].copy()
+expected_two_segment["f3"] = expected_one_segment["f2"].copy()
+expected_two_segment.p2 = [35, 70, 105]
+expected_two_segment.f2 = [
+    1 * 35**2 + 4 * 35 + 7,
+    2 * 70**2 + 5 * 70 + 8,
+    3 * 105**2 + 6 * 105 + 9,
+]
+expected_two_segment["interconnect"] = expected_two_segment.pop("interconnect")
+
+
+def test_linearize_gencost():
+    actual = linearize_gencost(mock_grid_gc)
+    assert_frame_equal(expected_one_segment, actual, check_dtype=False)
+
+
+def test_linearize_gencost_two_segment():
+    actual = linearize_gencost(mock_grid_gc, num_segments=2)
+    assert_frame_equal(expected_two_segment, actual, check_dtype=False)
 
 
 def test_get_supply_data():
