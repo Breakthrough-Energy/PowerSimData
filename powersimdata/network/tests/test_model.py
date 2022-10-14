@@ -5,10 +5,10 @@ from powersimdata.network.model import area_to_loadzone
 
 def test_area_to_loadzone_argument_type():
     with pytest.raises(TypeError, match="area must be a str"):
-        area_to_loadzone("europe_tub", 3)
+        area_to_loadzone("usa_tamu", 3)
 
     with pytest.raises(TypeError, match="area_type must be either None or str"):
-        area_to_loadzone("europe_tub", "all", area_type=["interconnect"])
+        area_to_loadzone("usa_tamu", "all", area_type=["interconnect"])
 
 
 def test_area_to_loadzone_argument_value():
@@ -22,7 +22,7 @@ def test_area_to_loadzone_argument_value():
         area_to_loadzone("usa_tamu", "WA", area_type="interconnect")
 
     with pytest.raises(ValueError, match="Invalid area / area_type combination"):
-        area_to_loadzone("europe_tub", "France", area_type="country_abbr")
+        area_to_loadzone("usa_tamu", "Utah", area_type="state_abbr")
 
 
 def test_area_to_loadzone():

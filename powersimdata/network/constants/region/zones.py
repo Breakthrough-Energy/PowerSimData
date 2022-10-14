@@ -1,21 +1,40 @@
-from importlib import import_module
-
-from powersimdata.network.constants.model import model2region
-from powersimdata.network.helpers import check_model
+from powersimdata.network.constants.region.geography import get_geography
+from powersimdata.network.helpers import get_zone_info
 
 
-def get_zones(interconnect, model):
-    """Return zone constants.
+def from_csv(model):
+    """Returns geographical and timezone information of a grid model from a CSV file.
 
-    :para list interconnect: interconnect(s).
-    :param str model: the grid model.
-    :return: (*func*) -- function returning information on zones for a given model.
+    :param str model: grid model.
+    :return: (*pandas.DataFrame*) -- a data frame with loadzone name (*'zone_name'*),
+        division name (e.g. *'state'* name for USA grid models), interconnect name
+        (*'interconnect'*), time zone of loadzone (*'time_zone'*), division abbreviation
+        (*'abv'*) as columns and loadzone id (*'zone_id'*) as indices.
     """
-    check_model(model)
+    geo = get_geography(model)
+    info = get_zone_info(model=model)
+    info["abv"] = info[geo["division"]].map(geo[f"{geo['division']}2abv"])
 
-    mod = import_module(
-        f"powersimdata.network.constants.region.{model2region[model].lower()}"
-    )
-    zones = getattr(mod, "get_zones")
+    return info
 
-    return zones(interconnect, model)
+
+def from_pypsa(model, info):
+    """Returns geographical and timezone information of a grid model from a PyPSA
+    Network object.
+
+    :param str model: grid model.
+    :param pd.DataFrame info: a data frame with loadzone id as index and loadzone name
+        (*'zone_name'*) and division abbreviation (*'abv'*) as columns.
+    :return: (*pandas.DataFrame*) -- a data frame with loadzone name (*'zone_name'*),
+        division name (e.g. *'country'* name for EU grid models), interconnect name
+        (*'interconnect'*), time zone of loadzone (*'time_zone'*), division abbreviation
+        (*'abv'*) as columns and loadzone id (*'zone_id'*) as indices.
+    """
+    geo = get_geography(model)
+    info[geo["division"]] = info["abv"].map(geo[f"abv2{geo['division']}"])
+    info["interconnect"] = info["abv"].map(geo["abv2interconnect"])
+    info["time_zone"] = info["abv"].map(geo["abv2timezone"])
+
+    info.rename_axis(index="zone_id")
+
+    return info

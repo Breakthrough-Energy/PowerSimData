@@ -2,11 +2,8 @@ import os
 import shutil
 from zipfile import ZipFile
 
-from powersimdata.network.constants.region.europe import (
-    abv2country,
-    abv2timezone,
-    interconnect2abv,
-)
+from powersimdata.network.constants.region.geography import get_geography
+from powersimdata.network.constants.region.zones import from_pypsa
 from powersimdata.network.helpers import (
     check_and_format_interconnect,
     interconnect_to_name,
@@ -73,8 +70,9 @@ class TUB:
             self.id2zone = id2zone
             self.zone2id = zone2id
         else:
+            geo = get_geography(self.grid_model)
             filter = list(  # noqa: F841
-                interconnect2abv[
+                geo["interconnect2abv"][
                     interconnect_to_name(self.interconnect, model=self.grid_model)
                 ]
             )
@@ -82,58 +80,15 @@ class TUB:
             self.zone2id = {l: zone2id[l] for l in self.network.buses.index}
             self.id2zone = {i: l for l, i in self.zone2id.items()}
 
-        self.model_immutables = self._generate_model_immutables()
-
-    def _generate_model_immutables(self):
-        """Generate the model immutables"""
-        mapping = ModelImmutables(self.grid_model, interconnect=self.interconnect)
-
-        # loadzone
-        mapping.zones["loadzone"] = set(self.zone2id)
-        mapping.zones["id2loadzone"] = self.id2zone
-        mapping.zones["loadzone2id"] = self.zone2id
-        mapping.zones["loadzone2abv"] = self.network.buses["country"].to_dict()
-        mapping.zones["loadzone2country"] = (
-            self.network.buses["country"].map(abv2country).to_dict()
+        zone = (
+            self.network.buses["country"]
+            .reset_index()
+            .set_axis(self.id2zone)
+            .rename(columns={"Bus": "zone_name", "country": "abv"})
+            .rename_axis(index="zone_id")
         )
-        mapping.zones["loadzone2interconnect"] = {
-            l: mapping.zones["abv2interconnect"][a]
-            for l, a in mapping.zones["loadzone2abv"].items()
-        }
-        mapping.zones["id2timezone"] = {
-            self.zone2id[l]: abv2timezone[a]
-            for l, a in mapping.zones["loadzone2abv"].items()
-        }
-        mapping.zones["timezone2id"] = {
-            t: i for i, t in mapping.zones["id2timezone"].items()
-        }
-
-        # country
-        mapping.zones["country2loadzone"] = {
-            abv2country[a]: set(l)
-            for a, l in self.network.buses.groupby("country").groups.items()
-        }
-        mapping.zones["abv2loadzone"] = {
-            a: set(l) for a, l in self.network.buses.groupby("country").groups.items()
-        }
-        mapping.zones["abv2id"] = {
-            a: {self.zone2id[l] for l in l_in_country}
-            for a, l_in_country in mapping.zones["abv2loadzone"].items()
-        }
-        mapping.zones["id2abv"] = {
-            i: mapping.zones["loadzone2abv"][l] for i, l in self.id2zone.items()
-        }
-
-        # interconnect
-        mapping.zones["interconnect2loadzone"] = {
-            i: set().union(
-                *(mapping.zones["abv2loadzone"][a] for a in a_in_interconnect)
-            )
-            for i, a_in_interconnect in mapping.zones["interconnect2abv"].items()
-        }
-        mapping.zones["interconnect2id"] = {
-            i: set().union(*({self.zone2id[l]} for l in l_in_interconnect))
-            for i, l_in_interconnect in mapping.zones["interconnect2loadzone"].items()
-        }
-
-        return mapping
+        self.model_immutables = ModelImmutables(
+            self.grid_model,
+            interconnect=self.interconnect,
+            zone=from_pypsa(self.grid_model, zone),
+        )
