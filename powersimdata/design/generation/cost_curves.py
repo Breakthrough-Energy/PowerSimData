@@ -7,7 +7,7 @@ from powersimdata.input.grid import Grid
 from powersimdata.utility.helpers import _check_import
 
 
-def linearize_gencost(gencost_before, plant, num_segments=1):
+def _linearize_gencost(gencost_before, plant, num_segments=1):
     """Updates the generator cost information to include piecewise linear cost curve
     information. Allows the user to specify the number of piecewise segments into which
     the cost curve should be split.
@@ -77,7 +77,7 @@ def linearize_gencost(gencost_before, plant, num_segments=1):
     return gencost_after
 
 
-def _linearize_gencost(input_grid, num_segments=1):
+def linearize_gencost(input_grid, num_segments=1):
     """Updates the generator cost information to include piecewise linear cost curve
     information. Allows the user to specify the number of piecewise segments into which
     the cost curve should be split.
@@ -92,7 +92,7 @@ def _linearize_gencost(input_grid, num_segments=1):
     # Access the generator cost and plant information components
     grid = copy.deepcopy(input_grid)
     gencost_before = grid.gencost["before"]
-    gencost_after = linearize_gencost(gencost_before, grid.plant, num_segments)
+    gencost_after = _linearize_gencost(gencost_before, grid.plant, num_segments)
     gencost_after["interconnect"] = gencost_before["interconnect"]
     return gencost_after
 
@@ -120,7 +120,7 @@ def get_supply_data(grid, num_segments=1, save=None):
     grid = copy.deepcopy(grid)
 
     # Access the generator cost and plant information data
-    gencost_df = _linearize_gencost(grid, num_segments)
+    gencost_df = linearize_gencost(grid, num_segments)
     plant_df = grid.plant
 
     # Create a new DataFrame with the desired columns
