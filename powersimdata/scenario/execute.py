@@ -221,7 +221,10 @@ class SimulationInput:
         """Prepare grid for simulation."""
         print("--> Preparing grid data")
         self._adjust_pmin()
-        self.grid.gencost["after"] = linearize_gencost(self.grid)
+        grid = self.grid
+        storage = grid.storage
+        grid.gencost["after"] = linearize_gencost(grid.gencost["before"], grid.plant)
+        storage["gencost"] = linearize_gencost(storage["gencost"], storage["gen"])
 
         dest_path = "/".join([self.REL_TMP_DIR, "grid.pkl"])
         with self._data_access.write(dest_path, save_local=False) as f:

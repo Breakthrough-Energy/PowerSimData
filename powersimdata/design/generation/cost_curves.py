@@ -7,24 +7,19 @@ from powersimdata.input.grid import Grid
 from powersimdata.utility.helpers import _check_import
 
 
-def linearize_gencost(input_grid, num_segments=1):
+def linearize_gencost(gencost_before, plant, num_segments=1):
     """Updates the generator cost information to include piecewise linear cost curve
     information. Allows the user to specify the number of piecewise segments into which
     the cost curve should be split.
 
-    :param powersimdata.inout.grid.Grid input_grid: Grid object.
+    :param pandas.DataFrame gencost_before: the original gencost
+    :param pandas.DataFrame plant: the generator information containing Pmin/Pmax
     :param int num_segments: The number of segments into which the piecewise linear
         cost curve will be split.
     :return: (*pandas.DataFrame*) -- An updated DataFrame containing the piecewise
         linear cost curve parameters.
     :raises ValueError: if the generator cost curve is not of an acceptable form.
     """
-
-    # Access the generator cost and plant information components
-    grid = copy.deepcopy(input_grid)
-    gencost_before = grid.gencost["before"]
-    plant = grid.plant
-
     # Raise errors if the provided cost curves are not in a form that can be handled
     if len(gencost_before[gencost_before.type != 2]):
         raise ValueError("gencost currently limited to polynomial")
@@ -79,9 +74,26 @@ def linearize_gencost(input_grid, num_segments=1):
         gencost_after.loc[nondispatchable_gens, ["c2", "c1"]] = 0
         gencost_after.loc[nondispatchable_gens, "c0"] = price_data[nondispatchable_gens]
 
-    gencost_after["interconnect"] = gencost_before["interconnect"]
+    return gencost_after
 
-    # Return the updated generator cost information
+
+def _linearize_gencost(input_grid, num_segments=1):
+    """Updates the generator cost information to include piecewise linear cost curve
+    information. Allows the user to specify the number of piecewise segments into which
+    the cost curve should be split.
+
+    :param powersimdata.inout.grid.Grid input_grid: Grid object.
+    :param int num_segments: The number of segments into which the piecewise linear
+        cost curve will be split.
+    :return: (*pandas.DataFrame*) -- An updated DataFrame containing the piecewise
+        linear cost curve parameters.
+    :raises ValueError: if the generator cost curve is not of an acceptable form.
+    """
+    # Access the generator cost and plant information components
+    grid = copy.deepcopy(input_grid)
+    gencost_before = grid.gencost["before"]
+    gencost_after = linearize_gencost(gencost_before, grid.plant, num_segments)
+    gencost_after["interconnect"] = gencost_before["interconnect"]
     return gencost_after
 
 
@@ -108,7 +120,7 @@ def get_supply_data(grid, num_segments=1, save=None):
     grid = copy.deepcopy(grid)
 
     # Access the generator cost and plant information data
-    gencost_df = linearize_gencost(grid, num_segments)
+    gencost_df = _linearize_gencost(grid, num_segments)
     plant_df = grid.plant
 
     # Create a new DataFrame with the desired columns

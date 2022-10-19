@@ -10,7 +10,7 @@ def test_get_file_components():
     ct_file = _input_data._get_file_path(s_info, "ct")
     grid_file = _input_data._get_file_path(s_info, "grid")
     assert "data/input/123_ct.pkl" == ct_file
-    assert "data/input/123_grid.mat" == grid_file
+    assert "data/input/123_grid.pkl" == grid_file
 
 
 def test_check_field():
