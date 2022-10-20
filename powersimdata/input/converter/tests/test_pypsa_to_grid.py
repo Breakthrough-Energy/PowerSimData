@@ -33,6 +33,13 @@ def test_import_network_including_storages_from_pypsa_to_grid():
 
     assert not grid.bus.empty
     assert len(n.buses) + has_inflow.sum() == len(grid.bus)
+    assert len(n.generators) + has_inflow.sum() == len(grid.plant)
+    assert all(
+        [
+            "inflow" in i
+            for i in grid.plant.iloc[len(grid.plant) - has_inflow.sum() :].index
+        ]
+    )
     assert not grid.storage["gen"].empty
     assert not grid.storage["gencost"].empty
     assert not grid.storage["StorageData"].empty
