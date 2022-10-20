@@ -222,27 +222,24 @@ class FromPyPSA(AbstractGrid):
 
             bus2sub = bus[["substation", "interconnect"]].copy()
             bus2sub["sub_id"] = pd.to_numeric(
-                bus2sub.pop("substation").str[3:], errors="ignore"
+                bus2sub.pop("substation").str[3:], errors="coerce"
             )
         else:
             # try to parse typical pypsa-eur(-sec) pattern for substations
             sub_pattern = "[A-Z][A-Z]\d+\s\d+$"
-            interconnect_pattern = "([A-Z][A-Z])"
 
             sub = bus[bus.index.str.match(sub_pattern)].reindex(columns=sub_cols)
-            sub["interconnect"] = sub.index.str.extract(interconnect_pattern).values
-            sub["name"] = sub.index
+            sub["interconnect"] = np.nan
+            sub["sub_id"] = sub.index
             sub_pypsa = bus_pypsa[bus_pypsa.index.str.match(sub_pattern)][
                 sub_pypsa_cols
             ]
 
-            sub_pattern = "([A-Z][A-Z]\d+\s\d+)$"
+            sub_pattern = "([A-Z][A-Z]\d+\s\d+).*"
             bus2sub = pd.DataFrame(
                 {
-                    "name": bus.index.str.extract(sub_pattern)[0].values,
-                    "interconnect": bus.index.str.extract(interconnect_pattern)[
-                        0
-                    ].values,
+                    "sub_id": bus.index.str.extract(sub_pattern)[0].values,
+                    "interconnect": np.nan,
                 },
                 index=bus.index,
             )
