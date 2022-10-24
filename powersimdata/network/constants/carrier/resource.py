@@ -132,7 +132,7 @@ class EUResource:
             "CCGT": None,
             "coal": None,
             "geothermal": None,
-            "hydro": 0.9,
+            "hydro": 0,
             "lignite": None,
             "nuclear": None,
             "OCGT": None,
@@ -140,8 +140,8 @@ class EUResource:
             "offwind-ac": 0,
             "offwind-dc": 0,
             "onwind": 0,
-            "PHS": 0.9,
-            "ror": None,
+            "PHS": 0,
+            "ror": 0,
             "solar": 0,
         }
 
