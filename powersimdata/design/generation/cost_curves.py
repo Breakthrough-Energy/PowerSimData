@@ -74,7 +74,7 @@ def _linearize_gencost(gencost_before, plant, num_segments=1):
         gencost_after.loc[nondispatchable_gens, ["c2", "c1"]] = 0
         gencost_after.loc[nondispatchable_gens, "c0"] = price_data[nondispatchable_gens]
 
-    return gencost_after
+    return gencost_after.fillna(0)
 
 
 def linearize_gencost(input_grid, num_segments=1):
