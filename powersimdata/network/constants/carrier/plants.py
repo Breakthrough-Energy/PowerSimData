@@ -1,8 +1,8 @@
-from powersimdata.network.constants.color import get_color
-from powersimdata.network.constants.efficiency import get_efficiency
-from powersimdata.network.constants.emission import get_emission
-from powersimdata.network.constants.label import get_label
-from powersimdata.network.constants.resource import get_resource
+from powersimdata.network.constants.carrier.color import get_color
+from powersimdata.network.constants.carrier.efficiency import get_efficiency
+from powersimdata.network.constants.carrier.emission import get_emission
+from powersimdata.network.constants.carrier.label import get_label
+from powersimdata.network.constants.carrier.resource import get_resource
 from powersimdata.network.helpers import check_model
 
 

@@ -1,7 +1,7 @@
 import os
 
 from powersimdata.input.converter.csv_to_grid import FromCSV
-from powersimdata.network.constants.storage import get_storage
+from powersimdata.network.constants.carrier.storage import get_storage
 from powersimdata.network.helpers import check_and_format_interconnect
 from powersimdata.network.model import ModelImmutables
 

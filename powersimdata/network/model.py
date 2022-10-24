@@ -1,7 +1,8 @@
+from powersimdata.network.constants.carrier.plants import get_plants
+from powersimdata.network.constants.carrier.storage import get_storage
 from powersimdata.network.constants.model import model2region
-from powersimdata.network.constants.plants import get_plants
-from powersimdata.network.constants.storage import get_storage
-from powersimdata.network.constants.zones import get_zones
+from powersimdata.network.constants.region.mapping import get_mapping
+from powersimdata.network.constants.region.zones import check_zone, from_csv
 from powersimdata.network.helpers import (
     check_and_format_interconnect,
     check_model,
@@ -14,9 +15,15 @@ class ModelImmutables:
 
     :param str model: grid model name.
     :param str interconnect: interconnect of grid model.
+    :param pandas.DataFrame zone: a data frame with loadzone name (*'zone_name'*),
+        division name (e.g. *'state'* name for USA grid models), interconnect name
+        (*'interconnect'*), time zone of loadzone (*'time_zone'*) and division
+        abbreviation (*'abv'*) as columns; and loadzone id (*'zone_id'*) as indices. If
+        None, it will be assumed that the data frame can be built from a CSV file
+        stored on disk.
     """
 
-    def __init__(self, model, interconnect=None):
+    def __init__(self, model, interconnect=None, zone=None):
         """Constructor."""
         check_model(model)
         self.model = model
@@ -25,10 +32,14 @@ class ModelImmutables:
             if interconnect is None
             else check_and_format_interconnect(interconnect, model=model)
         )
+        if zone is None:
+            zone = from_csv(self.model)
+        else:
+            check_zone(model, zone)
 
         self.plants = get_plants(model)
         self.storage = get_storage(model)
-        self.zones = get_zones(interconnect, model)
+        self.zones = get_mapping(model, interconnect, zone)
 
         self.check_and_format_interconnect = check_and_format_interconnect
         self.interconnect_to_name = interconnect_to_name
@@ -38,7 +49,7 @@ class ModelImmutables:
         return area_to_loadzone(self.model, *args, **kwargs)
 
 
-def area_to_loadzone(model, area, area_type=None):
+def area_to_loadzone(model, area, area_type=None, zone=None):
     """Map the query area to a list of loadzones.
 
     :param str model: grid model to use to look up constants for mapping.
@@ -48,6 +59,12 @@ def area_to_loadzone(model, area, area_type=None):
         *'state_abbr'*/'*country_abbr*', *'interconnect'*. If None, ``area`` will be
         searched successively into *'state'*/*'country'*, *'loadzone'*,
         *'state abbreviation'*/*'country abbreviation'*, *'interconnect'* and *'all'*.
+    :param pandas.DataFrame zone: a data frame with loadzone name (*'zone_name'*),
+        division name (e.g. *'state'* name for USA grid models), interconnect name
+        (*'interconnect'*), time zone of loadzone (*'time_zone'*) and division
+        abbreviation (*'abv'*) as columns; and loadzone id (*'zone_id'*) as indices. If
+        None, it will be assumed that the data frame can be built from a CSV file
+        stored on disk.
     :return: (*set*) -- set of loadzone names located in the query area.
     :raises TypeError:
         if ``area`` is not a str.
@@ -56,7 +73,7 @@ def area_to_loadzone(model, area, area_type=None):
         if ``area`` is invalid
         if combination of ``area`` and ``area_type`` is invalid.
     """
-    zones = ModelImmutables(model).zones
+    zones = ModelImmutables(model, zone=zone).zones
     mappings = zones["mappings"]
     division = zones["division"]
 
