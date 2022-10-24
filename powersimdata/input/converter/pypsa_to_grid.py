@@ -307,8 +307,9 @@ class FromPyPSA(AbstractGrid):
 
             storage_gen_inflow = storage_gen_storageunits[has_inflow]
             buses_old = storage_gen_inflow.bus_id.astype(str)
-            buses_new = buses_old + suffix
-            bus_inflow = bus.reindex(buses_old).rename(index=add_suffix)
+            buses_new = storage_gen_inflow.index
+            bus_rename = dict(zip(buses_old, buses_new))
+            bus_inflow = bus.reindex(buses_old).rename(index=bus_rename)
 
             # add discharging dcline (has same index as inflow storages)
             dcline_inflow = pd.DataFrame(
