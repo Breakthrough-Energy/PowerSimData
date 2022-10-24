@@ -48,7 +48,7 @@ class USAResource:
             "coal": None,
             "dfo": 0,
             "geothermal": 0.95,
-            "hydro": 0.9,
+            "hydro": 1,
             "ng": 0,
             "nuclear": 0.95,
             "other": 0,
@@ -111,6 +111,7 @@ class EUResource:
             "offwind-ac",
             "offwind-dc",
             "onwind",
+            "PHS",
             "ror",
             "solar",
         }
@@ -131,7 +132,7 @@ class EUResource:
             "CCGT": None,
             "coal": None,
             "geothermal": None,
-            "hydro": 0.9,
+            "hydro": 0,
             "lignite": None,
             "nuclear": None,
             "OCGT": None,
@@ -139,8 +140,8 @@ class EUResource:
             "offwind-ac": 0,
             "offwind-dc": 0,
             "onwind": 0,
-            "PHS": 0.9,
-            "ror": None,
+            "PHS": 0,
+            "ror": 0,
             "solar": 0,
         }
 
