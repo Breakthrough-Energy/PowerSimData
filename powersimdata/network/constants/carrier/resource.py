@@ -111,6 +111,7 @@ class EUResource:
             "offwind-ac",
             "offwind-dc",
             "onwind",
+            "PHS",
             "ror",
             "solar",
         }
