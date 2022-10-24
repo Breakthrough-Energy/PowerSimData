@@ -48,7 +48,7 @@ class USAResource:
             "coal": None,
             "dfo": 0,
             "geothermal": 0.95,
-            "hydro": 0.9,
+            "hydro": 1,
             "ng": 0,
             "nuclear": 0.95,
             "other": 0,
