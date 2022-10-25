@@ -89,11 +89,6 @@ def _get_storage_gencost(df, storage_type):
     :param str storage_type: key for PyPSA storage type.
     :return: (*pandas.DataFrame*) -- data frame with storage data.
     """
-    if storage_type not in ["storage_units", "stores"]:
-        warnings.warn(
-            "Inapplicable storage_type passed to function _get_storage_gencost."
-        )
-
     # There are "type" columns in gen and gencost with "type" column reserved
     # for gen dataframe, hence drop it here before renaming
     df = df.drop(columns="type", errors="ignore")
@@ -329,9 +324,6 @@ class FromPyPSA(AbstractGrid):
             gen_inflow["committable"] = False
             gen_inflow["type"] = "inflow"
             gen_inflow = gen_inflow.reindex(columns=plant.columns)
-            gencost_inflow = storage_gencost_storageunits[has_inflow].rename(
-                index=add_suffix
-            )
             gencost_inflow = storage_gencost_storageunits[has_inflow].rename(
                 index=add_suffix
             )
