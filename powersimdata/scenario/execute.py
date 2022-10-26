@@ -210,10 +210,13 @@ class SimulationInput:
     def _adjust_pmin(self):
         mi = self.grid.model_immutables
         plant = self.grid.plant
-        pmin_factor = {
-            k: v for k, v in mi.plants["pmin_as_share_of_pmax"].items() if v is not None
-        }
-        plant.Pmin = plant.apply(lambda x: pmin_factor.get(x.type, 1) * x.Pmax, axis=1)
+        pmin_factor = mi.plants["pmin_as_share_of_pmax"]
+
+        def _scale(x):
+            factor = pmin_factor.get(x.type)
+            return x.Pmin if factor is None else factor * x.Pmax
+
+        plant.Pmin = plant.apply(_scale, axis=1)
 
         # set Pmin to 0 for generators that are off or profile based
         profile_resource = list(mi.plants["profile_resources"])
