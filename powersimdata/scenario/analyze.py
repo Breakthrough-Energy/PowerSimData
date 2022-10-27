@@ -58,9 +58,7 @@ class Analyze(Ready):
     def _set_ct_and_grid(self):
         """Sets change table and grid."""
         input_data = InputData()
-        grid_path = input_data.get_data(self._scenario_info, "grid")
-        with open(grid_path, "rb") as f:
-            self.grid = pickle.load(f)
+        self.grid = input_data.get_data(self._scenario_info, "grid")
 
         if self._scenario_info["change_table"] == "Yes":
             self.ct = input_data.get_data(self._scenario_info, "ct")
