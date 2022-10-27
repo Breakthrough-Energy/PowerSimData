@@ -11,9 +11,9 @@
 ![GitHub last commit (branch)](https://img.shields.io/github/last-commit/Breakthrough-Energy/PowerSimData/develop?logo=GitHub)
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/Breakthrough-Energy/PowerSimData?logo=GitHub)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Code of Conduct](https://img.shields.io/badge/code%20of-conduct-ff69b4.svg?style=flat)](https://breakthrough-energy.github.io/docs/communication/code_of_conduct.html)
+[![Code of Conduct](https://img.shields.io/badge/Code_of_conduct-ff69b4.svg)](https://breakthrough-energy.github.io/docs/communication/code_of_conduct.html)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4538590.svg)](https://doi.org/10.5281/zenodo.4538590)
-
+[![Slack](https://img.shields.io/badge/Community_Slack-sign_up-1f425f.svg?logo=slack)](https://science.breakthroughenergy.org/#get-updates)
 
 # PowerSimData
 **PowerSimData** is part of a Python software ecosystem developed by [Breakthrough
