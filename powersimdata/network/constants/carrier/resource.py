@@ -63,27 +63,25 @@ class EUResource:
 
     def __init__(self):
         self.profile_resources = {
-            "hydro",
+            "inflow",
             "offwind-ac",
             "offwind-dc",
             "onwind",
-            "PHS",
             "ror",
             "solar",
         }
         self.group_profile_resources = {
-            "hydro": {"hydro", "PHS", "ror"},
+            "hydro": {"inflow", "ror"},
             "solar": {"solar"},
             "wind": {"onwind", "offwind-ac", "offwind-dc"},
         }
         self.curtailable_resources = {
-            "hydro",
-            "PHS",
-            "ror",
-            "solar",
+            "inflow",
             "offwind-ac",
             "offwind-dc",
             "onwind",
+            "ror",
+            "solar",
         }
         self.thermal_resources = {
             "biomass",
@@ -106,12 +104,11 @@ class EUResource:
         }
         self.clean_resources = {
             "geothermal",
-            "hydro",
+            "inflow",
             "nuclear",
             "offwind-ac",
             "offwind-dc",
             "onwind",
-            "PHS",
             "ror",
             "solar",
         }
@@ -119,7 +116,7 @@ class EUResource:
             "biomass": {"biomass"},
             "coal": {"coal", "lignite"},
             "geothermal": {"geothermal"},
-            "hydro": {"hydro", "PHS", "ror"},
+            "hydro": {"inflow", "ror"},
             "ng": {"CCGT", "OCGT"},
             "nuclear": {"nuclear"},
             "oil": {"oil"},
@@ -132,7 +129,7 @@ class EUResource:
             "CCGT": None,
             "coal": None,
             "geothermal": None,
-            "hydro": 0,
+            "inflow": 0,
             "lignite": None,
             "nuclear": None,
             "OCGT": None,
@@ -140,7 +137,6 @@ class EUResource:
             "offwind-ac": 0,
             "offwind-dc": 0,
             "onwind": 0,
-            "PHS": 0,
             "ror": 0,
             "solar": 0,
         }
