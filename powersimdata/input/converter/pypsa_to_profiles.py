@@ -36,12 +36,18 @@ def get_pypsa_gen_profile(network, profile2carrier):
     }
     profile = {}
     for p, c in profile2carrier.items():
+        c = [c] if isinstance(c, str) else list(c)
         profile[p] = pd.DataFrame()
         for component, ts in component2timeseries.items():
-            id_carrier = network.df(component).query("carrier==list(@c)").index
+            id_carrier = network.df(component).query("carrier==@c").index
             ts_carrier = get_switchable_as_dense(network, component, ts)[id_carrier]
             if not ts_carrier.empty:
-                norm = ts_carrier.max().replace(0, 1) if ts == "inflow" else 1
+                if ts == "inflow":
+                    has_inflow = ts_carrier.any().index[ts_carrier.any()]
+                    ts_carrier = ts_carrier[has_inflow].add_suffix(" inflow")
+                    norm = ts_carrier.max().replace(0, 1)
+                else:
+                    norm = 1
                 profile[p] = pd.concat([profile[p], ts_carrier / norm], axis=1)
 
         profile[p].rename_axis(index="UTC", columns=None, inplace=True)
