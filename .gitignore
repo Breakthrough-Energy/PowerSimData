@@ -1,7 +1,7 @@
 # This is specific to this package
 powersimdata/utility/.server_user
 config.ini
-powersimdata/network/europe_tub/data/*
+powersimdata/network/europe_tub/data*
 
 # The remainder of this file taken from github/gitignore
 # https://github.com/github/gitignore/blob/master/Python.gitignore
