@@ -13,4 +13,3 @@ pytest
 coverage
 pytest-cov
 pypsa
-zenodo_get
