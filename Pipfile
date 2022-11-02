@@ -9,7 +9,6 @@ pytest = "*"
 coverage = "*"
 pytest-cov = "*"
 pypsa = "*"
-zenodo_get = "*"
 
 [packages]
 networkx = "~=2.5"

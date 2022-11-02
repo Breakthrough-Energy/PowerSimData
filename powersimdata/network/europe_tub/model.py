@@ -1,6 +1,4 @@
 import os
-import shutil
-from zipfile import ZipFile
 
 from powersimdata.network.constants.region.geography import get_geography
 from powersimdata.network.constants.region.zones import from_pypsa
@@ -9,59 +7,67 @@ from powersimdata.network.helpers import (
     interconnect_to_name,
 )
 from powersimdata.network.model import ModelImmutables
+from powersimdata.network.zenodo import Zenodo
 from powersimdata.utility.helpers import _check_import
 
 pypsa = _check_import("pypsa")
-zenodo_get = _check_import("zenodo_get")
 
 
 class TUB:
     """PyPSA Europe network.
 
     :param str/iterable interconnect: interconnect name(s).
+    :param str zenodo_record_id: the zenodo record id. If set to None, v0.6.1 will
+        be used. If set to latest, the latest version will be used.
     :param int reduction: reduction parameter (number of nodes in network). If None,
         the full network is loaded.
-    :param bool overwrite: the existing dataset is deleted and a new dataset is
-        downloaded from zenodo.
     """
 
-    def __init__(self, interconnect, reduction=None, overwrite=False):
+    def __init__(self, interconnect, zenodo_record_id=None, reduction=None):
         """Constructor."""
         self.grid_model = "europe_tub"
         self.interconnect = check_and_format_interconnect(
             interconnect, model=self.grid_model
         )
-        self.data_loc = os.path.join(os.path.dirname(__file__), "data")
-        self.zenodo_record_id = "3601881"
-        self.reduction = reduction
 
-        if overwrite:
-            self.remove_data()
+        if zenodo_record_id is None:
+            z = Zenodo("7251657")
+        elif zenodo_record_id == "latest":
+            z = Zenodo("3601881")
+        else:
+            z = Zenodo(zenodo_record_id)
 
-        self.retrieve_data()
+        z.load_data(os.path.dirname(__file__))
+        self.data_loc = os.path.join(z.dir, "networks")
+        self._set_reduction(reduction)
 
-    def remove_data(self):
-        """Remove data stored on disk"""
-        print("Removing PyPSA-Eur dataset")
-        shutil.rmtree(self.data_loc)
+    def _set_reduction(self, reduction):
+        """Validate and set reduction parameter
 
-    def retrieve_data(self):
-        """Fetch data"""
-        zenodo_get.zenodo_get([self.zenodo_record_id, "-o", f"{self.data_loc}"])
-        with ZipFile(os.path.join(self.data_loc, "networks.zip"), "r") as zip_network:
-            zip_network.extractall(self.data_loc)
+        :raises ValueError: if ``reduction`` is not available.
+        """
+        if reduction is None:
+            self.reduction = None
+        else:
+            available = [
+                s
+                for f in os.listdir(self.data_loc)
+                for s in f.split("_")
+                if s.isdigit()
+            ]
+            if str(reduction) in available:
+                self.reduction = reduction
+            else:
+                raise ValueError(f"Available reduced network: {' | '.join(available)}")
 
     def build(self):
         """Build network"""
-        path = os.path.join(self.data_loc, "networks", "elec_s")
+        path = os.path.join(self.data_loc, "elec_s")
         if self.reduction is None:
             network = pypsa.Network(path + ".nc")
-        elif os.path.exists(path + f"_{self.reduction}_ec.nc"):
-            network = pypsa.Network(path + f"_{self.reduction}_ec.nc")
         else:
-            raise ValueError(
-                "Invalid Resolution. Choose among: None | 1024 | 512 | 256 | 128 | 37"
-            )
+            network = pypsa.Network(path + f"_{self.reduction}_ec.nc")
+
         id2zone = {i: l for i, l in enumerate(network.buses.index)}
         zone2id = {l: i for i, l in id2zone.items()}
 
