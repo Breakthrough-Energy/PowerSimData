@@ -140,7 +140,9 @@ def _calculate_ac_inv_costs(grid_new, sum_results=True):
         # Average the multipliers for branches (transformer regions should match)
         regions = (x.from_region, x.to_region)
         region_mults = ac_reg_mult.loc[ac_reg_mult.name_abbr.isin(regions)]
-        region_mults = region_mults.groupby(["kV", "MW"]).mean().reset_index()
+        region_mults = (
+            region_mults.groupby(["kV", "MW"]).mean(numeric_only=True).reset_index()
+        )
 
         mult_lookup_kV = region_mults.loc[  # noqa: N806
             (region_mults.kV - max_kV).abs().idxmin()
