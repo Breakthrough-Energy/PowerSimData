@@ -22,12 +22,6 @@ class MockProfileInput:
     :return: (*powersimdata.tests.mock_profile_input.MockProfileInput*)
     """
 
-    _RESOURCES = {
-        "wind": {"wind", "wind_offshore"},
-        "solar": {"solar"},
-        "hydro": {"hydro"},
-    }
-
     def __init__(
         self,
         grid: Grid,
@@ -38,6 +32,7 @@ class MockProfileInput:
         random_seed=6669,
     ):
         self._grid = grid
+        self._resources = grid.model_immutables.plants["group_profile_resources"]
         self._start_time = start_time
         self._end_time = end_time
         self._periods = periods
@@ -48,7 +43,7 @@ class MockProfileInput:
             "demand": self._get_demand(),
             **{
                 resource: self._get_resource_profile(resource)
-                for resource in self._RESOURCES.keys()
+                for resource in sorted(self._resources.keys(), reverse=True)
             },
         }
         self._profiles.update(self._get_demand_flexibility())
@@ -109,7 +104,7 @@ class MockProfileInput:
         :param str resource_type: Can be any of *'hydro'*, *'solar'*, or *'wind'*.
         :return: (*list*) -- list of plant_ids
         """
-        resources = self._RESOURCES[resource_type]
+        resources = self._resources[resource_type]
         plant_ids = list(self._grid.plant[lambda ds: ds.type.isin(resources)].index)
         return plant_ids
 
