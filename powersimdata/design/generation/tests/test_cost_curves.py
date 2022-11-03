@@ -204,13 +204,18 @@ expected_all_equal.c1 = 0
 expected_all_equal.c0 = [2707, 20508, 68409]
 
 
+def _linearize_gencost(grid, num_segments=1):
+    before = grid.gencost["before"]
+    return linearize_gencost(before, grid.plant, num_segments)
+
+
 def test_linearize_gencost():
-    actual = linearize_gencost(mock_grid_gc)
+    actual = _linearize_gencost(mock_grid_gc)
     assert_frame_equal(expected_one_segment, actual, check_dtype=False)
 
 
 def test_linearize_gencost_two_segment():
-    actual = linearize_gencost(mock_grid_gc, num_segments=2)
+    actual = _linearize_gencost(mock_grid_gc, num_segments=2)
     assert_frame_equal(expected_two_segment, actual, check_dtype=False)
 
 
@@ -218,7 +223,7 @@ def test_linearize_gencost_pmin_equal_pmax():
     plant = mock_grid_gc.plant.copy()
     plant.Pmin = plant.Pmax
     grid = MockGrid({"plant": plant.reset_index().to_dict(), "gencost_before": mock_gc})
-    actual = linearize_gencost(grid, num_segments=3)
+    actual = _linearize_gencost(grid, num_segments=3)
     assert_frame_equal(expected_all_equal, actual, check_dtype=False)
 
 

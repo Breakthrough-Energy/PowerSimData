@@ -3,10 +3,7 @@ import pickle
 import pandas as pd
 
 from powersimdata.data_access.context import Context
-from powersimdata.design.generation.cost_curves import (
-    _linearize_gencost,
-    linearize_gencost,
-)
+from powersimdata.design.generation.cost_curves import linearize_gencost
 from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
@@ -227,9 +224,10 @@ class SimulationInput:
         """Prepare grid for simulation."""
         print("--> Preparing grid data")
         self._adjust_pmin()
-        storage = self.grid.storage
-        self.grid.gencost["after"] = linearize_gencost(self.grid)
-        storage["gencost"] = _linearize_gencost(storage["gencost"], storage["gen"])
+        grid = self.grid
+        storage = grid.storage
+        grid.gencost["after"] = linearize_gencost(grid.gencost["before"], grid.plant)
+        storage["gencost"] = linearize_gencost(storage["gencost"], storage["gen"])
 
         dest_path = "/".join([self.REL_TMP_DIR, "grid.pkl"])
         with self._data_access.write(dest_path, save_local=False) as f:
