@@ -3,7 +3,7 @@ import pickle
 import pandas as pd
 
 from powersimdata.data_access.context import Context
-from powersimdata.design.generation.cost_curves import linearize_gencost
+from powersimdata.input.configure import adjust_pmin, adjust_ramp30, linearize_gencost
 from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_grid import TransformGrid
@@ -204,28 +204,14 @@ class SimulationInput:
 
         self.REL_TMP_DIR = self._data_access.tmp_folder(self.scenario_id)
 
-    def _adjust_pmin(self):
-        mi = self.grid.model_immutables
-        plant = self.grid.plant
-        pmin_factor = mi.plants["pmin_as_share_of_pmax"]
-
-        def _scale(x):
-            factor = pmin_factor.get(x.type)
-            return x.Pmin if factor is None else factor * x.Pmax
-
-        plant.Pmin = plant.apply(_scale, axis=1)
-
-        # set Pmin to 0 for generators that are off or profile based
-        profile_resource = list(mi.plants["profile_resources"])
-        plant.loc[plant.type.isin(profile_resource), "Pmin"] = 0
-        plant.loc[plant.status == 0, "Pmin"] = 0
-
     def prepare_grid(self):
         """Prepare grid for simulation."""
         print("--> Preparing grid data")
-        self._adjust_pmin()
         grid = self.grid
         storage = grid.storage
+
+        adjust_pmin(grid)
+        adjust_ramp30(grid.plant)
         grid.gencost["after"] = linearize_gencost(grid.gencost["before"], grid.plant)
         storage["gencost"] = linearize_gencost(storage["gencost"], storage["gen"])
 
