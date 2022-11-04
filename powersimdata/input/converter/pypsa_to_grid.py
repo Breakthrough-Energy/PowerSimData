@@ -249,6 +249,8 @@ class FromPyPSA(AbstractGrid):
         plant = _translate_df(df, "generator")
         plant["ramp_30"] = n.generators["ramp_limit_up"].fillna(0)
         plant["Pmin"] *= plant["Pmax"]  # from relative to absolute value
+        plant["lat"] = plant.bus_id.map(bus.lat)
+        plant["lon"] = plant.bus_id.map(bus.lon)
         plant["bus_id"] = pd.to_numeric(plant.bus_id, errors="ignore")
 
         # generation costs
@@ -276,6 +278,10 @@ class FromPyPSA(AbstractGrid):
         # BE model assumes a 100 MVA base, pypsa "assumes" a 1 MVA base
         branch["x"] *= 100
         branch["r"] *= 100
+        branch["from_lat"] = branch.from_bus_id.map(bus.lat)
+        branch["from_lon"] = branch.from_bus_id.map(bus.lon)
+        branch["to_lat"] = branch.to_bus_id.map(bus.lat)
+        branch["to_lon"] = branch.to_bus_id.map(bus.lon)
         branch["from_bus_id"] = pd.to_numeric(branch.from_bus_id, errors="ignore")
         branch["to_bus_id"] = pd.to_numeric(branch.to_bus_id, errors="ignore")
 
