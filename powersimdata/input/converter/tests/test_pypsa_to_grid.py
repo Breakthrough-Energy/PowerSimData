@@ -28,8 +28,18 @@ def test_import_network_including_storages_from_pypsa_to_grid():
     n = pypsa.examples.storage_hvdc()
     grid = FromPyPSA(n)
 
+    inflow = n.get_switchable_as_dense("StorageUnit", "inflow")
+    has_inflow = inflow.any()
+
     assert not grid.bus.empty
-    assert len(n.buses) == len(grid.bus)
+    assert len(n.buses) + has_inflow.sum() == len(grid.bus)
+    assert len(n.generators) + has_inflow.sum() == len(grid.plant)
+    assert all(
+        [
+            "inflow" in i
+            for i in grid.plant.iloc[len(grid.plant) - has_inflow.sum() :].index
+        ]
+    )
     assert not grid.storage["gen"].empty
     assert not grid.storage["gencost"].empty
     assert not grid.storage["StorageData"].empty
