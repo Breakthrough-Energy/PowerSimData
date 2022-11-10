@@ -3,7 +3,6 @@ import pickle
 
 import pandas as pd
 
-from powersimdata.input.grid import Grid
 from powersimdata.input.input_data import InputData
 from powersimdata.input.transform_profile import TransformProfile
 from powersimdata.output.output_data import OutputData, construct_load_shed
@@ -59,12 +58,7 @@ class Analyze(Ready):
     def _set_ct_and_grid(self):
         """Sets change table and grid."""
         input_data = InputData()
-        grid_mat_path = input_data.get_data(self._scenario_info, "grid")
-        self.grid = Grid(
-            interconnect=[None],
-            source=grid_mat_path,
-            engine=self._scenario_info["engine"],
-        )
+        self.grid = input_data.get_data(self._scenario_info, "grid")
 
         if self._scenario_info["change_table"] == "Yes":
             self.ct = input_data.get_data(self._scenario_info, "ct")
