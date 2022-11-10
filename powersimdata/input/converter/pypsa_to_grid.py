@@ -311,6 +311,7 @@ class FromPyPSA(AbstractGrid):
             buses_new = storage_gen_inflow.index
             bus_rename = dict(zip(buses_old, buses_new))
             bus_inflow = bus.reindex(buses_old).rename(index=bus_rename)
+            bus2sub_inflow = bus2sub.reindex(buses_old).rename(index=bus_rename)
 
             # add discharging dcline (has same index as inflow storages)
             dcline_inflow = pd.DataFrame(
@@ -324,6 +325,7 @@ class FromPyPSA(AbstractGrid):
 
             # add inflow generator
             gen_inflow = storage_gen_inflow.rename(index=add_suffix)
+            gen_inflow["bus_id"] = buses_new
             gen_inflow["Pmax"] = n.storage_units_t.inflow.max().rename(add_suffix)
             gen_inflow["capital_cost"] = 0.0
             gen_inflow["p_nom_extendable"] = False
@@ -345,6 +347,7 @@ class FromPyPSA(AbstractGrid):
                 has_inflow, "Pmin"
             ] = -np.inf  # don't limit charging from inflow
             bus = pd.concat([bus, bus_inflow])
+            bus2sub = pd.concat([bus2sub, bus2sub_inflow])
             plant = pd.concat([plant, gen_inflow])
             gencost = pd.concat([gencost, gencost_inflow])
             dcline = pd.concat([dcline, dcline_inflow])
