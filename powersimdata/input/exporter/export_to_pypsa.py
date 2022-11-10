@@ -1,136 +1,28 @@
-import warnings
-
 import numpy as np
 import pandas as pd
 
+from powersimdata.input.const.pypsa_const import pypsa_const
 from powersimdata.input.grid import Grid
 from powersimdata.scenario.scenario import Scenario
 from powersimdata.utility.helpers import _check_import
 
-pypsa_const = {
-    "bus": {
-        "rename": {
-            "lat": "y",
-            "lon": "x",
-            "baseKV": "v_nom",
-            "type": "control",
-            "Gs": "g_pu",
-            "Bs": "b_pu",
-        },
-        "rename_t": {
-            "Pd": "p",
-            "Qd": "q",
-            "Vm": "v_mag_pu",
-            "Va": "v_ang",
-        },
-        "default_drop_cols": [
-            "Vmax",
-            "Vmin",
-            "lam_P",
-            "lam_Q",
-            "mu_Vmax",
-            "mu_Vmin",
-            "GenFuelCost",
-        ],
-    },
-    "generator": {
-        "rename": {
-            "bus_id": "bus",
-            "Pmax": "p_nom",
-            "Pmin": "p_min_pu",
-            "startup_cost": "start_up_cost",
-            "shutdown_cost": "shut_down_cost",
-            "ramp_30": "ramp_limit",
-            "type": "carrier",
-        },
-        "rename_t": {
-            "Pg": "p",
-            "Qg": "q",
-            "status": "status",
-        },
-        "default_drop_cols": [
-            "ramp_10",
-            "mu_Pmax",
-            "mu_Pmin",
-            "mu_Qmax",
-            "mu_Qmin",
-            "ramp_agc",
-            "Pc1",
-            "Pc2",
-            "Qc1min",
-            "Qc1max",
-            "Qc2min",
-            "Qc2max",
-            "GenIOB",
-            "GenIOC",
-            "GenIOD",
-        ],
-    },
-    "cost": {
-        "rename": {
-            "startup": "startup_cost",
-            "shutdown": "shutdown_cost",
-            "c1": "marginal_cost",
-        }
-    },
-    "branch": {
-        "rename": {
-            "from_bus_id": "bus0",
-            "to_bus_id": "bus1",
-            "rateA": "s_nom",
-            "ratio": "tap_ratio",
-            "x": "x_pu",
-            "r": "r_pu",
-            "g": "g_pu",
-            "b": "b_pu",
-        },
-        "rename_t": {
-            "Pf": "p0",
-            "Qf": "q0",
-            "Pt": "p1",
-            "Qt": "q1",
-        },
-        "default_drop_cols": [
-            "rateB",
-            "rateC",
-            "mu_St",
-            "mu_angmin",
-            "mu_angmax",
-        ],
-    },
-    "link": {
-        "rename": {
-            "from_bus_id": "bus0",
-            "to_bus_id": "bus1",
-            "rateA": "s_nom",
-            "ratio": "tap_ratio",
-            "x": "x_pu",
-            "r": "r_pu",
-            "g": "g_pu",
-            "b": "b_pu",
-            "Pmin": "p_min_pu",
-            "Pmax": "p_nom",
-        },
-        "rename_t": {
-            "Pf": "p0",
-            "Qf": "q0",
-            "Pt": "p1",
-            "Qt": "q1",
-        },
-        "default_drop_cols": [
-            "QminF",
-            "QmaxF",
-            "QminT",
-            "QmaxT",
-            "muPmin",
-            "muPmax",
-            "muQminF",
-            "muQmaxF",
-            "muQminT",
-            "muQmaxT",
-        ],
-    },
-}
+
+def restore_original_columns(df, overwrite=None):
+    """Restore original columns in data frame
+
+    :param pandas.DataFrame df: data frame to modify.
+    :param list/set/tuple overwrite: array of column(s) in ``df`` to overwrite.
+    :return: (*pandas.DataFrame*) -- data frame with original columns.
+    """
+    if not overwrite:
+        overwrite = []
+    prefix = "pypsa_"
+    for col in df.columns[df.columns.str.startswith(prefix)]:
+        target = col[len(prefix) :]
+        fallback = df.pop(col)
+        if target not in df or target in overwrite:
+            df[target] = fallback
+    return df
 
 
 def export_to_pypsa(
@@ -141,28 +33,25 @@ def export_to_pypsa(
 ):
     """Export a Scenario/Grid instance to a PyPSA network.
 
-    .. note::
-        This function does not export storages yet.
-
-    :param powersimdata.scenario.scenario.Scenario /\
-        powersimdata.input.grid.Grid scenario_or_grid: input object. If a Grid instance
-        is passed, operational values will be used for the single snapshot "now".
-        If a Scenario instance is passed, all available time-series will be
-        imported.
-    :param bool add_all_columns: whether to add all columns of the
-        corresponding component. If true, this will also import columns
-        that PyPSA does not process. The default is False.
-    :param bool add_substations: whether to export substations. If set
-        to True, artificial links of infinite capacity are added from each bus
-        to its substation. This is necessary as the substations are imported
-        as regualar buses in pypsa and thus require a connection to the network.
-        If set to False, the substations will not be exported. This is
-        helpful when there are no branches or dclinks connecting the
-        substations. Note that the voltage level of the substation buses is set
-        to the first bus connected to that substation. The default is False.
-    :param bool add_load_shedding: whether to add artificial load shedding
-        generators to the exported pypsa network. This ensures feasibility when
-        optimizing the exported pypsa network as is. The default is True.
+    :param powersimdata.scenario.scenario.Scenario/powersimdata.input.grid.Grid
+        scenario_or_grid: input object. If a Grid instance is passed, operational
+        values will be used for the single snapshot "now". If a Scenario instance is
+        passed, all available time-series will be imported.
+    :param bool add_all_columns: whether to add all columns of the corresponding
+        component. If true, this will also import columns that PyPSA does not process.
+        The default is False.
+    :param bool add_substations: whether to export substations. If set to True,
+        artificial links of infinite capacity are added from each bus to its
+        substation. This is necessary as the substations are imported as regualar buses in pypsa and thus require a connection to the network. If set to False, the
+        substations will not be exported. This is helpful when there are no branches or
+        dclinks connecting the substations. Note that the voltage level of the
+        substation buses is set to the first bus connected to that substation. The
+        default is False.
+    :param bool add_load_shedding: whether to add artificial load shedding generators
+        to the exported pypsa network. This ensures feasibility when optimizing the
+        exported pypsa network as is. The default is True.
+    :return: (*pypsa.components.Network*) -- the exported Network object.
+    :raises TypeError: if ``scenario_or_grid`` is not a Grid/Scenario object.
     """
     pypsa = _check_import("pypsa")
 
@@ -190,7 +79,7 @@ def export_to_pypsa(
             drop_cols += list(bus_rename_t)
 
     buses = grid.bus.rename(columns=bus_rename)
-    buses.control.replace([1, 2, 3, 4], ["PQ", "PV", "slack", ""], inplace=True)
+    buses.control.replace([1, 2, 3, 4], ["PQ", "PV", "Slack", ""], inplace=True)
     buses["zone_name"] = buses.zone_id.map({v: k for k, v in grid.zone2id.items()})
     buses["substation"] = "sub" + grid.bus2sub["sub_id"].astype(str)
 
@@ -201,7 +90,8 @@ def export_to_pypsa(
 
     loads = {"proportionality_factor": buses["Pd"]}
 
-    shunts = {k: buses.pop(k) for k in ["b_pu", "g_pu"]}
+    shunts = pd.DataFrame({k: buses.pop(k) for k in ["b_pu", "g_pu"]})
+    shunts = shunts.dropna(how="all")
 
     substations = grid.sub.copy().rename(columns={"lat": "y", "lon": "x"})
     substations.index = "sub" + substations.index.astype(str)
@@ -211,6 +101,7 @@ def export_to_pypsa(
     substations["v_nom"] = v_nom
 
     buses = buses.drop(columns=drop_cols, errors="ignore").sort_index(axis=1)
+    buses = restore_original_columns(buses)
 
     # now time-dependent
     if scenario:
@@ -245,20 +136,25 @@ def export_to_pypsa(
         grid.plant.loc[~fixed, "Pmax"] + grid.plant.loc[~fixed, "Pmin"]
     )
     gencost["c1"] = linearized.combine_first(gencost["c1"])
-    gencost = gencost.rename(columns=pypsa_const["cost"]["rename"])
-    gencost = gencost[pypsa_const["cost"]["rename"].values()]
+    gencost = gencost.rename(columns=pypsa_const["gencost"]["rename"])
+    gencost = gencost[pypsa_const["gencost"]["rename"].values()]
+
+    generators = generators.assign(**gencost)
+    generators = restore_original_columns(generators)
 
     carriers = pd.DataFrame(index=generators.carrier.unique(), dtype=object)
 
     cars = carriers.index
-    constants = grid.model_immutables.plants
-    carriers["color"] = pd.Series(constants["type2color"]).reindex(cars)
-    carriers["nice_name"] = pd.Series(constants["type2label"]).reindex(cars)
-    carriers["co2_emissions"] = (
-        pd.Series(constants["carbon_per_mwh"]).div(1e3)
-        * pd.Series(constants["efficiency"])
-    ).reindex(cars, fill_value=0)
-    generators["efficiency"] = generators.carrier.map(constants["efficiency"]).fillna(0)
+    if grid.model_immutables is not None:
+        constants = grid.model_immutables.plants
+        carriers["color"] = pd.Series(constants["type2color"]).reindex(cars)
+        carriers["nice_name"] = pd.Series(constants["type2label"]).reindex(cars)
+        carriers["co2_emissions"] = pd.Series(constants["carbon_per_mwh"]).div(
+            1e3
+        ) * pd.Series(constants["efficiency"]).reindex(cars, fill_value=0)
+        generators["efficiency"] = generators.carrier.map(
+            constants["efficiency"]
+        ).fillna(0)
 
     # now time-dependent
     if scenario:
@@ -294,6 +190,7 @@ def export_to_pypsa(
 
     lines = branches.query("branch_device_type == 'Line'")
     lines = lines.drop(columns="branch_device_type")
+    lines = restore_original_columns(lines)
 
     transformers = branches.query(
         "branch_device_type in ['TransformerWinding', 'Transformer']"
@@ -321,6 +218,7 @@ def export_to_pypsa(
 
     links = grid.dcline.rename(columns=link_rename).drop(columns=drop_cols)
     links.p_min_pu /= links.p_nom.where(links.p_nom != 0, 1)
+    links = restore_original_columns(links, overwrite=["p_min_pu", "p_max_pu"])
 
     # SUBSTATION CONNECTORS
     sublinks = dict(
@@ -334,9 +232,25 @@ def export_to_pypsa(
     else:
         links_t = {v: links.pop(k).to_frame("now").T for k, v in link_rename_t.items()}
 
-    # TODO: add storage export
-    if not grid.storage["gen"].empty:
-        warnings.warn("The export of storages are not implemented yet.")
+    # STORAGES
+    # TODO: make distinction to pypsa stores
+    storage_data_keys = ["StorageData", "gen", "gencost"]
+    storage = []
+    defaults = {k: v for k, v in grid.storage.items() if k not in storage_data_keys}
+    for k in storage_data_keys:
+        rename = pypsa_const["storage_" + k.lower()]["rename"]
+        if not add_all_columns:
+            drop_cols = pypsa_const["storage_" + k.lower()]["default_drop_cols"]
+        df = grid.storage[k].rename(columns=rename).drop(columns=drop_cols)
+        storage.append(df)
+        defaults = {rename.get(k, k): v for k, v in defaults.items()}
+
+    storage = pd.concat(storage, axis=1)
+    storage = storage.loc[:, ~storage.columns.duplicated()]
+    for k, v in defaults.items():
+        storage[k] = storage[k].fillna(v) if k in storage else v
+
+    storage = restore_original_columns(storage)
 
     # Import everything to a new pypsa network
     n = pypsa.Network()
@@ -344,12 +258,13 @@ def export_to_pypsa(
         n.snapshots = loads_t["p_set"].index
     n.madd("Bus", buses.index, **buses, **buses_t)
     n.madd("Load", buses.index, bus=buses.index, **loads, **loads_t)
-    n.madd("ShuntImpedance", buses.index, bus=buses.index, **shunts)
-    n.madd("Generator", generators.index, **generators, **gencost, **generators_t)
+    n.madd("ShuntImpedance", shunts.index, bus=shunts.index, **shunts)
+    n.madd("Generator", generators.index, **generators, **generators_t)
     n.madd("Carrier", carriers.index, **carriers)
     n.madd("Line", lines.index, **lines, **lines_t)
     n.madd("Transformer", transformers.index, **transformers, **transformers_t)
     n.madd("Link", links.index, **links, **links_t)
+    n.madd("StorageUnit", storage.index, **storage)
 
     if add_substations:
         n.madd("Bus", substations.index, **substations)
