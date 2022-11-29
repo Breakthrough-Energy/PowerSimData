@@ -1,6 +1,3 @@
-import os
-
-from powersimdata.input.converter.reise_to_grid import FromREISE, FromREISEjl
 from powersimdata.network.constants.carrier.storage import storage
 from powersimdata.network.hifld.model import HIFLD
 from powersimdata.network.usa_tamu.model import TAMU
@@ -12,7 +9,6 @@ _cache = MemoryCache()
 class Grid:
 
     SUPPORTED_MODELS = {"usa_tamu"}
-    SUPPORTED_ENGINES = {"REISE", "REISE.jl"}
 
     """Grid
 
@@ -21,24 +17,18 @@ class Grid:
         interconnects in the region. The full list of interconnects of the grid models
         is defined in :mod:`powersimdata.network.constants.model.model2interconnect`.
     :param str source: model used to build the network. Can be one of the supported
-        models, or a .mat file that represents a grid.
-    :param str engine: engine used to run scenario, if using ScenarioGrid.
+        models
     :raises TypeError: if source and engine are not both strings.
     :raises ValueError: if source or engine does not exist.
     """
 
-    def __init__(self, interconnect, source="usa_tamu", engine="REISE"):
+    def __init__(self, interconnect, source="usa_tamu"):
         """Constructor."""
         if not isinstance(source, str):
             raise TypeError("source must be a str")
-        if source not in self.SUPPORTED_MODELS and not source.endswith(".mat"):
+        if source not in self.SUPPORTED_MODELS:
             raise ValueError(
                 f"Source must be one of {','.join(self.SUPPORTED_MODELS)} "
-                "or the path to a .mat file that represents a grid "
-            )
-        if engine not in self.SUPPORTED_ENGINES:
-            raise ValueError(
-                f"Engine must be one of {','.join(self.SUPPORTED_ENGINES)}"
             )
 
         key = cache_key(interconnect, source)
@@ -49,11 +39,6 @@ class Grid:
             network = TAMU(interconnect)
         elif source == "hifld":
             network = HIFLD(interconnect)
-        elif os.path.splitext(source)[1] == ".mat":
-            if engine == "REISE":
-                network = FromREISE(source)
-            elif engine == "REISE.jl":
-                network = FromREISEjl(source)
         else:
             raise ValueError(f"Unknown source: {source}")
 
