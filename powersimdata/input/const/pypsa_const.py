@@ -22,6 +22,7 @@ pypsa_const = {
             "mu_Vmax",
             "mu_Vmin",
             "GenFuelCost",
+            "eia_id",
         ],
     },
     "generator": {
