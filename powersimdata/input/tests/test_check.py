@@ -30,7 +30,7 @@ from powersimdata.tests.mock_scenario import MockScenario
 
 @pytest.fixture
 def europe():
-    tub = TUB("Europe", reduction=128)
+    tub = TUB("Europe").from_zenodo(reduction=128)
     tub.build()
     return tub
 

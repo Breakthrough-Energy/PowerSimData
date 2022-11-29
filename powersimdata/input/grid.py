@@ -1,4 +1,5 @@
 from powersimdata.network.constants.carrier.storage import storage
+from powersimdata.network.europe_tub.model import TUB
 from powersimdata.network.hifld.model import HIFLD
 from powersimdata.network.usa_tamu.model import TAMU
 from powersimdata.utility.helpers import MemoryCache, cache_key
@@ -9,6 +10,7 @@ _cache = MemoryCache()
 class Grid:
 
     SUPPORTED_MODELS = {"usa_tamu"}
+    SUPPORTED_MODELS = {"usa_tamu", "europe_tub"}
 
     """Grid
 
@@ -22,7 +24,7 @@ class Grid:
     :raises ValueError: if source or engine does not exist.
     """
 
-    def __init__(self, interconnect, source="usa_tamu"):
+    def __init__(self, interconnect, source="usa_tamu", **kwargs):
         """Constructor."""
         if not isinstance(source, str):
             raise TypeError("source must be a str")
@@ -39,6 +41,8 @@ class Grid:
             network = TAMU(interconnect)
         elif source == "hifld":
             network = HIFLD(interconnect)
+        elif source == "europe_tub":
+            network = TUB(interconnect).from_zenodo(**kwargs)
         else:
             raise ValueError(f"Unknown source: {source}")
 
@@ -60,6 +64,19 @@ class Grid:
         self.model_immutables = network.model_immutables
 
         _cache.put(key, network)
+
+    def __repr__(self):
+        result = self.__class__.__name__
+        result += f"\ninterconnect: {self.interconnect}\n"
+        result += f"model: {self.model_immutables.model}\n"
+        result += f"data_loc: {self.data_loc}\n"
+        df_name = ["sub", "plant", "dcline", "bus2sub", "bus", "branch"]
+        for n in df_name:
+            shape = getattr(self, n).shape
+            result += f"{n}: {shape}\n"
+        result += f"id2zone: {len(self.id2zone)}\n"
+        result += f"zone2id: {len(self.zone2id)}"
+        return result
 
     def __eq__(self, other):
         """Used when 'self == other' is evaluated.
