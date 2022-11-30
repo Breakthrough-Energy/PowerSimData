@@ -42,7 +42,7 @@ class Grid:
         elif source == "hifld":
             network = HIFLD(interconnect)
         elif source == "europe_tub":
-            network = TUB(interconnect).from_zenodo(**kwargs)
+            network = TUB(interconnect, **kwargs)
         else:
             raise ValueError(f"Unknown source: {source}")
 

@@ -14,74 +14,21 @@ from powersimdata.utility.helpers import _check_import
 pypsa = _check_import("pypsa")
 
 
-class TUB(FromPyPSA):
-    """PyPSA Europe network.
+class PyPSABase(FromPyPSA):
+    """Arbitrary PyPSA network.
 
     :param str/iterable interconnect: interconnect name(s).
+    :param pypsa.Network network: a PyPSA network object
     """
 
-    def __init__(self, interconnect):
+    def __init__(self, interconnect, network):
         """Constructor."""
         super().__init__()
         self.grid_model = "europe_tub"
         self.interconnect = check_and_format_interconnect(
             interconnect, model=self.grid_model
         )
-
-    def from_pypsa(self, network):
-        """Create network from arbitrary PyPSA network
-
-        :param pypsa.Network network: a network object
-        """
         self.network = network
-        return self
-
-    def from_zenodo(self, zenodo_record_id=None, reduction=None):
-        """Create network from zenodo data
-
-        :param str zenodo_record_id: the zenodo record id. If set to None, v0.6.1 will
-            be used. If set to latest, the latest version will be used.
-        :param int reduction: reduction parameter (number of nodes in network). If None,
-            the full network is loaded.
-        """
-        if zenodo_record_id is None:
-            z = Zenodo("7251657")
-        elif zenodo_record_id == "latest":
-            z = Zenodo("3601881")
-        else:
-            z = Zenodo(zenodo_record_id)
-
-        z.load_data(os.path.dirname(__file__))
-        self.data_loc = os.path.join(z.dir, "networks")
-        self._set_reduction(reduction)
-        self._set_network()
-        return self
-
-    def _set_reduction(self, reduction):
-        """Validate and set reduction parameter
-
-        :raises ValueError: if ``reduction`` is not available.
-        """
-        if reduction is None:
-            self.reduction = None
-        else:
-            available = [
-                s
-                for f in os.listdir(self.data_loc)
-                for s in f.split("_")
-                if s.isdigit()
-            ]
-            if str(reduction) in available:
-                self.reduction = reduction
-            else:
-                raise ValueError(f"Available reduced network: {' | '.join(available)}")
-
-    def _set_network(self):
-        path = os.path.join(self.data_loc, "elec_s")
-        if self.reduction is None:
-            self.network = pypsa.Network(path + ".nc")
-        else:
-            self.network = pypsa.Network(path + f"_{self.reduction}_ec.nc")
 
     def build(self):
         """Build network"""
@@ -117,3 +64,64 @@ class TUB(FromPyPSA):
             zone=from_pypsa(self.grid_model, zone),
         )
         super().build(network)
+
+
+class TUB(PyPSABase):
+    """PyPSA Europe network.
+
+    :param str/iterable interconnect: interconnect name(s).
+    :param str zenodo_record_id: the zenodo record id. If set to None, v0.6.1 will
+        be used. If set to latest, the latest version will be used.
+    :param int reduction: reduction parameter (number of nodes in network). If None,
+        the full network is loaded.
+    """
+
+    def __init__(self, interconnect, zenodo_record_id=None, reduction=None):
+        self.from_zenodo(zenodo_record_id, reduction)
+        super().__init__(interconnect, self.network)
+
+    def from_zenodo(self, zenodo_record_id, reduction):
+        """Create network from zenodo data
+
+        :param str zenodo_record_id: the zenodo record id. If set to None, v0.6.1 will
+            be used. If set to latest, the latest version will be used.
+        :param int reduction: reduction parameter (number of nodes in network). If None,
+            the full network is loaded.
+        """
+        if zenodo_record_id is None:
+            z = Zenodo("7251657")
+        elif zenodo_record_id == "latest":
+            z = Zenodo("3601881")
+        else:
+            z = Zenodo(zenodo_record_id)
+
+        z.load_data(os.path.dirname(__file__))
+        self.data_loc = os.path.join(z.dir, "networks")
+        self._set_reduction(reduction)
+        self._set_network()
+
+    def _set_network(self):
+        path = os.path.join(self.data_loc, "elec_s")
+        if self.reduction is None:
+            self.network = pypsa.Network(path + ".nc")
+        else:
+            self.network = pypsa.Network(path + f"_{self.reduction}_ec.nc")
+
+    def _set_reduction(self, reduction):
+        """Validate and set reduction parameter
+
+        :raises ValueError: if ``reduction`` is not available.
+        """
+        if reduction is None:
+            self.reduction = None
+        else:
+            available = [
+                s
+                for f in os.listdir(self.data_loc)
+                for s in f.split("_")
+                if s.isdigit()
+            ]
+            if str(reduction) in available:
+                self.reduction = reduction
+            else:
+                raise ValueError(f"Available reduced network: {' | '.join(available)}")
