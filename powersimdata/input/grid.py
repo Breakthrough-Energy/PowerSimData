@@ -20,8 +20,8 @@ class Grid:
         is defined in :mod:`powersimdata.network.constants.model.model2interconnect`.
     :param str source: model used to build the network. Can be one of the supported
         models
-    :raises TypeError: if source and engine are not both strings.
-    :raises ValueError: if source or engine does not exist.
+    :raises TypeError: if source is not a string.
+    :raises ValueError: if source is not a supported grid model.
     """
 
     def __init__(self, interconnect, source="usa_tamu", **kwargs):

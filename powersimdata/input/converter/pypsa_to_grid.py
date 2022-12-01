@@ -158,6 +158,7 @@ class FromPyPSA(AbstractGrid):
     def build(self, n, add_pypsa_cols=True):
         """PyPSA Network reader.
 
+        :param pypsa.Network n: PyPSA network to read in.
         :param bool add_pypsa_cols: PyPSA data frames with renamed columns appended to
             Grid object data frames
         """
