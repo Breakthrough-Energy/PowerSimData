@@ -8,7 +8,6 @@ black = "*"
 pytest = "*"
 coverage = "*"
 pytest-cov = "*"
-pypsa = "*"
 
 [packages]
 networkx = "~=2.5"
@@ -21,3 +20,4 @@ requests = "~=2.25"
 fs = "==2.4.14"
 "fs.sshfs" = "*"
 fs-azureblob = ">=0.2.1"
+pypsa = "*"
