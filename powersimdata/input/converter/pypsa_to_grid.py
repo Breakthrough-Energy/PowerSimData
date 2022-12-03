@@ -3,8 +3,6 @@ import warnings
 import numpy as np
 import pandas as pd
 
-# Importing the module, not anything in it, to avid a circular import
-import powersimdata.input.grid as _grid
 from powersimdata.input.abstract_grid import AbstractGrid
 from powersimdata.input.const import grid_const
 from powersimdata.input.const.pypsa_const import pypsa_const
@@ -155,15 +153,15 @@ class FromPyPSA(AbstractGrid):
             )
             self.id2zone = _invert_dict(self.zone2id)
 
-    def build(self, n, add_pypsa_cols=True):
+    def build(self):
         """PyPSA Network reader.
 
         :param pypsa.Network n: PyPSA network to read in.
         :param bool add_pypsa_cols: PyPSA data frames with renamed columns appended to
             Grid object data frames
         """
-        # TODO: cleanup
-        self.network = n
+        n = self.network
+        add_pypsa_cols = self.add_pypsa_cols
 
         # Read in data from PyPSA
         bus_pypsa = n.buses
@@ -512,8 +510,3 @@ class FromPyPSA(AbstractGrid):
             {v: pnl[k].iloc[0] for k, v in translators.items() if k in pnl}, axis=1
         )
         return df
-
-    @property
-    def __class__(self):
-        """If anyone asks, I'm a Grid object!"""
-        return _grid.Grid

@@ -1,5 +1,7 @@
 import os
 
+import pypsa
+
 from powersimdata.input.converter.pypsa_to_grid import FromPyPSA
 from powersimdata.network.constants.region.geography import get_geography
 from powersimdata.network.constants.region.zones import from_pypsa
@@ -9,9 +11,6 @@ from powersimdata.network.helpers import (
 )
 from powersimdata.network.model import ModelImmutables
 from powersimdata.network.zenodo import Zenodo
-from powersimdata.utility.helpers import _check_import
-
-pypsa = _check_import("pypsa")
 
 
 class PyPSABase(FromPyPSA):
@@ -22,7 +21,7 @@ class PyPSABase(FromPyPSA):
     :param pypsa.Network network: a PyPSA network object
     """
 
-    def __init__(self, interconnect, grid_model, network):
+    def __init__(self, interconnect, grid_model, network, add_pypsa_cols=True):
         """Constructor."""
         super().__init__()
         self.grid_model = grid_model
@@ -30,26 +29,23 @@ class PyPSABase(FromPyPSA):
             interconnect, model=self.grid_model
         )
         self.network = network
+        self.add_pypsa_cols = add_pypsa_cols
 
-    def build(self):
-        """Build network"""
-        network = self.network
-        id2zone = {i: l for i, l in enumerate(network.buses.index)}
-        zone2id = {l: i for i, l in id2zone.items()}
+    def build_eur(self):
+        self.id2zone = {i: l for i, l in enumerate(self.network.buses.index)}
+        self.zone2id = {l: i for i, l in self.id2zone.items()}
 
-        if self.interconnect == ["Europe"]:
-            self.network = network
-            self.id2zone = id2zone
-            self.zone2id = zone2id
-        else:
+        if self.interconnect != ["Europe"]:
             geo = get_geography(self.grid_model)
             filter = list(  # noqa: F841
                 geo["interconnect2abv"][
                     interconnect_to_name(self.interconnect, model=self.grid_model)
                 ]
             )
-            self.network = network[network.buses.query("country == @filter").index]
-            self.zone2id = {l: zone2id[l] for l in self.network.buses.index}
+            self.network = self.network[
+                self.network.buses.query("country == @filter").index
+            ]
+            self.zone2id = {l: self.zone2id[l] for l in self.network.buses.index}
             self.id2zone = {i: l for l, i in self.zone2id.items()}
 
         zone = (
@@ -64,7 +60,17 @@ class PyPSABase(FromPyPSA):
             interconnect=self.interconnect,
             zone=from_pypsa(self.grid_model, zone),
         )
-        super().build(network)
+
+    def build(self):
+        """Build network"""
+        if self.grid_model == "europe_tub":
+            self.build_eur()
+        else:
+            self.model_immutables = ModelImmutables(
+                self.grid_model, interconnect=self.interconnect
+            )
+
+        super().build()
 
 
 class TUB(PyPSABase):

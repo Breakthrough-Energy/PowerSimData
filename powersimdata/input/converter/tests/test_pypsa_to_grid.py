@@ -1,6 +1,4 @@
-from importlib.util import find_spec
-
-import pytest
+import pypsa
 from pandas.testing import assert_series_equal
 
 from powersimdata.input.change_table import ChangeTable
@@ -10,23 +8,25 @@ from powersimdata.input.grid import Grid
 from powersimdata.input.transform_grid import TransformGrid
 
 
-@pytest.mark.skipif(find_spec("pypsa") is None, reason="Package PyPSA not available.")
 def test_import_arbitrary_network_from_pypsa_to_grid():
-    import pypsa
 
     n = pypsa.examples.ac_dc_meshed()
-    grid = FromPyPSA().build(n)
+    grid = FromPyPSA()
+    grid.network = n
+    grid.add_pypsa_cols = True
+    grid.build()
 
     assert not grid.bus.empty
     assert len(n.buses) == len(grid.bus)
 
 
-@pytest.mark.skipif(find_spec("pypsa") is None, reason="Package PyPSA not available.")
 def test_import_network_including_storages_from_pypsa_to_grid():
-    import pypsa
 
     n = pypsa.examples.storage_hvdc()
-    grid = FromPyPSA().build(n)
+    grid = FromPyPSA()
+    grid.network = n
+    grid.add_pypsa_cols = True
+    grid.build()
 
     inflow = n.get_switchable_as_dense("StorageUnit", "inflow")
     has_inflow = inflow.any()
@@ -45,7 +45,6 @@ def test_import_network_including_storages_from_pypsa_to_grid():
     assert not grid.storage["StorageData"].empty
 
 
-@pytest.mark.skipif(find_spec("pypsa") is None, reason="Package PyPSA not available.")
 def test_import_exported_network():
 
     grid = Grid("Western")
@@ -60,7 +59,13 @@ def test_import_exported_network():
 
     kwargs = dict(add_substations=True, add_load_shedding=False, add_all_columns=True)
     n = export_to_pypsa(ref, **kwargs)
-    test = FromPyPSA().build(n, add_pypsa_cols=False)
+    test = Grid(
+        "Western",
+        source="pypsa",
+        grid_model="usa_tamu",
+        network=n,
+        add_pypsa_cols=False,
+    )
 
     # Only a scaled version of linear cost term is exported to pypsa
     # Test whether the exported marginal cost is in the same order of magnitude

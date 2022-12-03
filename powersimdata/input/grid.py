@@ -1,5 +1,5 @@
 from powersimdata.network.constants.carrier.storage import storage
-from powersimdata.network.europe_tub.model import TUB
+from powersimdata.network.europe_tub.model import TUB, PyPSABase
 from powersimdata.network.hifld.model import HIFLD
 from powersimdata.network.usa_tamu.model import TAMU
 from powersimdata.utility.helpers import MemoryCache, cache_key
@@ -9,7 +9,7 @@ _cache = MemoryCache()
 
 class Grid:
 
-    SUPPORTED_MODELS = {"usa_tamu"}
+    SUPPORTED_IMPORTS = {"pypsa"}
     SUPPORTED_MODELS = {"usa_tamu", "europe_tub"}
 
     """Grid
@@ -28,10 +28,9 @@ class Grid:
         """Constructor."""
         if not isinstance(source, str):
             raise TypeError("source must be a str")
-        if source not in self.SUPPORTED_MODELS:
-            raise ValueError(
-                f"Source must be one of {','.join(self.SUPPORTED_MODELS)} "
-            )
+        supported = self.SUPPORTED_MODELS | self.SUPPORTED_IMPORTS
+        if source not in supported:
+            raise ValueError(f"Source must be one of {','.join(supported)} ")
 
         key = cache_key(interconnect, source)
         cached = _cache.get(key)
@@ -43,6 +42,8 @@ class Grid:
             network = HIFLD(interconnect)
         elif source == "europe_tub":
             network = TUB(interconnect, **kwargs)
+        elif source == "pypsa":
+            network = PyPSABase(interconnect, **kwargs)
         else:
             raise ValueError(f"Unknown source: {source}")
 
