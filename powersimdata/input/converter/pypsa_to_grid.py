@@ -131,6 +131,12 @@ def _get_storage_gen(df, storage_type):
 class FromPyPSA(AbstractGrid):
     """Grid builder for PyPSA network object."""
 
+    def __init__(self, network, add_pypsa_cols=True):
+        """Constructor."""
+        super().__init__()
+        self.network = network
+        self.add_pypsa_cols = add_pypsa_cols
+
     def _set_interconnect(self):
         if self.interconnect is None:
             self.interconnect = self.network.name.split(", ")

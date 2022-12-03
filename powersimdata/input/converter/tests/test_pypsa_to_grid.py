@@ -11,10 +11,7 @@ from powersimdata.input.transform_grid import TransformGrid
 def test_import_arbitrary_network_from_pypsa_to_grid():
 
     n = pypsa.examples.ac_dc_meshed()
-    grid = FromPyPSA()
-    grid.network = n
-    grid.add_pypsa_cols = True
-    grid.build()
+    grid = FromPyPSA(n).build()
 
     assert not grid.bus.empty
     assert len(n.buses) == len(grid.bus)
@@ -23,10 +20,7 @@ def test_import_arbitrary_network_from_pypsa_to_grid():
 def test_import_network_including_storages_from_pypsa_to_grid():
 
     n = pypsa.examples.storage_hvdc()
-    grid = FromPyPSA()
-    grid.network = n
-    grid.add_pypsa_cols = True
-    grid.build()
+    grid = FromPyPSA(n).build()
 
     inflow = n.get_switchable_as_dense("StorageUnit", "inflow")
     has_inflow = inflow.any()

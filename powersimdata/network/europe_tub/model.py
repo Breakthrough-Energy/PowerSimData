@@ -23,13 +23,11 @@ class PyPSABase(FromPyPSA):
 
     def __init__(self, interconnect, grid_model, network, add_pypsa_cols=True):
         """Constructor."""
-        super().__init__()
+        super().__init__(network, add_pypsa_cols)
         self.grid_model = grid_model
         self.interconnect = check_and_format_interconnect(
             interconnect, model=self.grid_model
         )
-        self.network = network
-        self.add_pypsa_cols = add_pypsa_cols
 
     def build_eur(self):
         self.id2zone = {i: l for i, l in enumerate(self.network.buses.index)}
