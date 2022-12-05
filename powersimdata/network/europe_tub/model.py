@@ -19,6 +19,8 @@ class PyPSABase(FromPyPSA):
     :param str/iterable interconnect: interconnect name(s).
     :param str grid_model: the grid model
     :param pypsa.Network network: a PyPSA network object
+    :param bool add_pypsa_cols: PyPSA data frames with renamed columns appended to
+        Grid object data frames.
     """
 
     def __init__(self, interconnect, grid_model, network, add_pypsa_cols=True):
@@ -121,6 +123,7 @@ class TUB(PyPSABase):
     def _check_reduction(self, reduction):
         """Validate reduction parameter
 
+        :param int reduction: reduction parameter (number of nodes in network).
         :raises ValueError: if ``reduction`` is not available.
         """
         if reduction is None:

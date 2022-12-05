@@ -129,10 +129,15 @@ def _get_storage_gen(df, storage_type):
 
 
 class FromPyPSA(AbstractGrid):
-    """Grid builder for PyPSA network object."""
+    """Grid builder for PyPSA network object.
+
+    :param pypsa.Network network: PyPSA network to read in.
+    :param bool add_pypsa_cols: PyPSA data frames with renamed columns appended to
+        Grid object data frames.
+    """
 
     def __init__(self, network, add_pypsa_cols=True):
-        """Constructor."""
+        """Constructor"""
         super().__init__()
         self.network = network
         self.add_pypsa_cols = add_pypsa_cols
@@ -160,12 +165,7 @@ class FromPyPSA(AbstractGrid):
             self.id2zone = _invert_dict(self.zone2id)
 
     def build(self):
-        """PyPSA Network reader.
-
-        :param pypsa.Network n: PyPSA network to read in.
-        :param bool add_pypsa_cols: PyPSA data frames with renamed columns appended to
-            Grid object data frames
-        """
+        """PyPSA Network reader."""
         n = self.network
         add_pypsa_cols = self.add_pypsa_cols
 
