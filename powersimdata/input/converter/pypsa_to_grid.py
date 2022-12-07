@@ -6,7 +6,6 @@ import pandas as pd
 from powersimdata.input.abstract_grid import AbstractGrid
 from powersimdata.input.const import grid_const
 from powersimdata.input.const.pypsa_const import pypsa_const
-from powersimdata.input.grid import Grid
 from powersimdata.network.constants.carrier.storage import storage as storage_const
 
 
@@ -132,7 +131,7 @@ def _get_storage_gen(df, storage_type):
 class FromPyPSA(AbstractGrid):
     """Grid builder for PyPSA network object.
 
-    :param pypsa.Network network: Network to read in.
+    :param pypsa.Network network: PyPSA network to read in.
     :param bool add_pypsa_cols: PyPSA data frames with renamed columns appended to
         Grid object data frames.
     """
@@ -140,23 +139,35 @@ class FromPyPSA(AbstractGrid):
     def __init__(self, network, add_pypsa_cols=True):
         """Constructor"""
         super().__init__()
-        self._read_network(network, add_pypsa_cols=add_pypsa_cols)
+        self.network = network
+        self.add_pypsa_cols = add_pypsa_cols
 
-    def _read_network(self, n, add_pypsa_cols=True):
-        """PyPSA Network reader.
+    def _set_interconnect(self):
+        if self.interconnect is None:
+            self.interconnect = self.network.name.split(", ")
 
-        :param pypsa.Network n: PyPSA network to read in.
-        :param bool add_pypsa_cols: PyPSA data frames with renamed columns appended to
-            Grid object data frames
-        """
-
-        # Interconnect and data location
-        # only relevant if the PyPSA network was originally created from PSD
-        interconnect = n.name.split(", ")
-        if len(interconnect) > 1:
-            data_loc = interconnect.pop(0)
+    def _set_data_loc(self):
+        if len(self.interconnect) > 1:
+            self.data_loc = self.interconnect[0]
         else:
-            data_loc = "pypsa"
+            self.data_loc = "pypsa"
+
+    def _set_zone_mapping(self):
+        n = self.network
+        if any(self.id2zone) and any(self.zone2id):
+            return
+        # only relevant if the PyPSA network was originally created from PSD
+        if "zone_id" in n.buses and "zone_name" in n.buses:
+            uniques = ~n.buses.zone_id.duplicated() * n.buses.zone_id.notnull()
+            self.zone2id = (
+                n.buses[uniques].set_index("zone_name").zone_id.astype(int).to_dict()
+            )
+            self.id2zone = _invert_dict(self.zone2id)
+
+    def build(self):
+        """PyPSA Network reader."""
+        n = self.network
+        add_pypsa_cols = self.add_pypsa_cols
 
         # Read in data from PyPSA
         bus_pypsa = n.buses
@@ -180,18 +191,6 @@ class FromPyPSA(AbstractGrid):
         bus["type"] = bus.type.replace(
             ["(?i)PQ", "(?i)PV", "(?i)Slack", ""], [1, 2, 3, 4], regex=True
         ).astype(int)
-
-        # zones mapping
-        # only relevant if the PyPSA network was originally created from PSD
-        if "zone_id" in n.buses and "zone_name" in n.buses:
-            uniques = ~n.buses.zone_id.duplicated() * n.buses.zone_id.notnull()
-            zone2id = (
-                n.buses[uniques].set_index("zone_name").zone_id.astype(int).to_dict()
-            )
-            id2zone = _invert_dict(zone2id)
-        else:
-            zone2id = {}
-            id2zone = {}
 
         # substations
         # only relevant if the PyPSA network was originally created from PSD
@@ -456,15 +455,18 @@ class FromPyPSA(AbstractGrid):
             df["pypsa_component"] = "stores"
 
         # Build PSD grid object
-        self.data_loc = data_loc
-        self.interconnect = interconnect
+
+        # Interconnect and data location
+        # only relevant if the PyPSA network was originally created from PSD
+        self._set_interconnect()
+        self._set_data_loc()
+        self._set_zone_mapping()
+
         self.bus = data["bus"]
         self.sub = data["sub"]
         self.bus2sub = data["bus2sub"]
         self.branch = data["branch"].sort_index()
         self.dcline = data["dcline"]
-        self.zone2id = zone2id
-        self.id2zone = id2zone
         self.plant = data["plant"]
         self.gencost["before"] = data["gencost"]
         self.gencost["after"] = data["gencost"]
@@ -498,6 +500,7 @@ class FromPyPSA(AbstractGrid):
         self.storage["gen"].index.name = "storage_id"
         self.storage["gencost"].index.name = "storage_id"
         self.storage["StorageData"].index.name = "storage_id"
+        return self
 
     def _translate_pnl(self, pnl, key):
         """Translate time-dependent data frames with one time step from PyPSA to static
@@ -513,8 +516,3 @@ class FromPyPSA(AbstractGrid):
             {v: pnl[k].iloc[0] for k, v in translators.items() if k in pnl}, axis=1
         )
         return df
-
-    @property
-    def __class__(self):
-        """If anyone asks, I'm a Grid object!"""
-        return Grid
