@@ -276,7 +276,7 @@ class TransformGrid:
             lat, lon = entry["lat"], entry["lon"]
             new_bus["lat"] = lat
             new_bus["lon"] = lon
-            new_bus_index = [self.grid.bus.index.max() + 1]
+            new_bus_index = pd.Index([self.grid.bus.index.max() + 1], name="bus_id")
             self.grid.bus = pd.concat(
                 [self.grid.bus, pd.DataFrame(new_bus, index=new_bus_index)]
             )
