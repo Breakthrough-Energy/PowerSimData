@@ -23,7 +23,7 @@ class PyPSABase(FromPyPSA):
         Grid object data frames.
     """
 
-    def __init__(self, interconnect, grid_model, network, add_pypsa_cols=True):
+    def __init__(self, interconnect, grid_model, network=None, add_pypsa_cols=True):
         """Constructor."""
         super().__init__(network, add_pypsa_cols)
         self.grid_model = grid_model
@@ -84,8 +84,8 @@ class TUB(PyPSABase):
     """
 
     def __init__(self, interconnect, zenodo_record_id=None, reduction=None):
-        network = self.from_zenodo(zenodo_record_id, reduction)
-        super().__init__(interconnect, "europe_tub", network)
+        super().__init__(interconnect, "europe_tub")
+        self.network = self.from_zenodo(zenodo_record_id, reduction)
 
     def from_zenodo(self, zenodo_record_id, reduction):
         """Create network from zenodo data
