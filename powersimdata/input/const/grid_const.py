@@ -1,3 +1,14 @@
+# The index name of each data frame
+indices = {
+    "sub": "sub_id",
+    "bus2sub": "bus_id",
+    "branch": "branch_id",
+    "bus": "bus_id",
+    "dcline": "dcline_id",
+    "plant": "plant_id",
+}
+
+# AC lines
 col_name_branch = [
     "from_bus_id",
     "to_bus_id",
@@ -20,6 +31,16 @@ col_name_branch = [
     "mu_St",
     "mu_angmin",
     "mu_angmax",
+    "branch_device_type",
+    "interconnect",
+    "from_zone_id",
+    "to_zone_id",
+    "from_zone_name",
+    "to_zone_name",
+    "from_lat",
+    "from_lon",
+    "to_lat",
+    "to_lon",
 ]
 col_type_branch = [
     "int",
@@ -43,10 +64,21 @@ col_type_branch = [
     "float",
     "float",
     "float",
+    "str",
+    "str",
+    "int",
+    "int",
+    "str",
+    "str",
+    "float",
+    "float",
+    "float",
+    "float",
 ]
 
+
+# bus
 col_name_bus = [
-    "bus_id",
     "type",
     "Pd",
     "Qd",
@@ -63,10 +95,12 @@ col_name_bus = [
     "lam_Q",
     "mu_Vmax",
     "mu_Vmin",
+    "interconnect",
+    "lat",
+    "lon",
 ]
 col_type_bus = [
     "int",
-    "int",
     "float",
     "float",
     "float",
@@ -80,13 +114,20 @@ col_type_bus = [
     "float",
     "float",
     "float",
+    "float",
+    "float",
+    "str",
     "float",
     "float",
 ]
 
+
+# bus to substations
 col_name_bus2sub = ["sub_id", "interconnect"]
 col_type_bus2sub = ["int", "str"]
 
+
+# DC lines
 col_name_dcline = [
     "from_bus_id",
     "to_bus_id",
@@ -111,6 +152,8 @@ col_name_dcline = [
     "muQmaxF",
     "muQminT",
     "muQmaxT",
+    "from_interconnect",
+    "to_interconnect",
 ]
 col_type_dcline = [
     "int",
@@ -136,15 +179,26 @@ col_type_dcline = [
     "float",
     "float",
     "float",
+    "str",
+    "str",
 ]
 
-col_name_gencost = ["type", "startup", "shutdown", "n", "c2", "c1", "c0"]
-col_type_gencost = ["int", "float", "float", "int", "float", "float", "float"]
 
-col_name_heat_rate_curve = ["GenIOB", "GenIOC", "GenIOD"]
-col_type_heat_rate_curve = ["float", "float", "float"]
+# Generation Cost
+col_name_gencost = [
+    "type",
+    "startup",
+    "shutdown",
+    "n",
+    "c2",
+    "c1",
+    "c0",
+    "interconnect",
+]
+col_type_gencost = ["int", "float", "float", "int", "float", "float", "float", "str"]
 
 
+# Generator
 col_name_plant = [
     "bus_id",
     "Pg",
@@ -171,6 +225,16 @@ col_name_plant = [
     "mu_Pmin",
     "mu_Qmax",
     "mu_Qmin",
+    "type",
+    "interconnect",
+    "GenFuelCost",
+    "GenIOB",
+    "GenIOC",
+    "GenIOD",
+    "zone_id",
+    "zone_name",
+    "lat",
+    "lon",
 ]
 col_type_plant = [
     "int",
@@ -198,8 +262,25 @@ col_type_plant = [
     "float",
     "float",
     "float",
+    "str",
+    "str",
+    "float",
+    "float",
+    "float",
+    "int",
+    "int",
+    "str",
+    "float",
+    "float",
 ]
 
+
+# substations
+col_name_sub = ["name", "interconnect_sub_id", "lat", "lon", "interconnect"]
+col_type_sub = ["str", "int", "float", "float", "str"]
+
+
+# storage
 col_name_storage_storagedata = [
     "UnitIdx",
     "InitialStorage",
@@ -215,6 +296,7 @@ col_name_storage_storagedata = [
     "rho",
     "ExpectedTerminalStorageMax",
     "ExpectedTerminalStorageMin",
+    "duration",
 ]
 col_type_storage_storagedata = [
     "int",
@@ -232,6 +314,3 @@ col_type_storage_storagedata = [
     "float",
     "float",
 ]
-
-col_name_sub = ["name", "interconnect_sub_id", "lat", "lon", "interconnect"]
-col_type_sub = ["str", "int", "float", "float", "str"]

@@ -25,7 +25,6 @@ from powersimdata.input.check import (
     check_grid,
 )
 from powersimdata.network.europe_tub.model import TUB
-from powersimdata.network.model import ModelImmutables
 from powersimdata.tests.mock_scenario import MockScenario
 
 
@@ -217,7 +216,7 @@ def test_check_areas_and_format_argument_type():
     )
     for a in arg:
         with pytest.raises(TypeError):
-            _check_areas_and_format()
+            _check_areas_and_format(a)
 
 
 def test_check_areas_and_format_argument_value():
@@ -227,6 +226,7 @@ def test_check_areas_and_format_argument_value():
             _check_areas_and_format(a)
 
 
+@pytest.mark.skip
 def test_check_areas_and_format(europe):
     _check_areas_and_format(["Western", "NY", "El Paso", "Arizona"])
     assert _check_areas_and_format(["California", "CA", "NY", "TX", "MT", "WA"]) == {
@@ -263,11 +263,11 @@ def test_check_resources_and_format_argument_value():
             _check_resources_and_format(a)
 
 
-def test_check_resources_and_format():
+def test_check_resources_and_format(europe):
     _check_resources_and_format(["dfo", "wind", "solar", "ng"])
-    _check_resources_and_format("wind_offshore", mi=ModelImmutables("europe_tub"))
+    _check_resources_and_format("offwind-ac", mi=europe.model_immutables)
     _check_resources_and_format({"nuclear"})
-    _check_resources_and_format("geothermal", mi=ModelImmutables("europe_tub"))
+    _check_resources_and_format("geothermal", mi=europe.model_immutables)
 
 
 def test_check_resources_are_renewable_and_format_argument_value():
@@ -275,13 +275,11 @@ def test_check_resources_are_renewable_and_format_argument_value():
         _check_resources_are_renewable_and_format({"solar", "nuclear"})
 
 
-def test_check_resources_are_renewable_and_format():
+def test_check_resources_are_renewable_and_format(europe):
     _check_resources_are_renewable_and_format(["wind_offshore", "wind"])
     _check_resources_are_renewable_and_format("solar")
     _check_resources_are_renewable_and_format({"wind"})
-    _check_resources_are_renewable_and_format(
-        {"solar"}, mi=ModelImmutables("europe_tub")
-    )
+    _check_resources_are_renewable_and_format({"solar"}, mi=europe.model_immutables)
 
 
 def test_check_areas_are_in_grid_and_format_argument_type(mock_grid):
@@ -428,7 +426,7 @@ def test_check_epsilon_argument_type():
     arg = ("1e-3", [0.0001])
     for a in arg:
         with pytest.raises(TypeError):
-            _check_epsilon()
+            _check_epsilon(a)
 
 
 def test_check_epsilon_argument_value():

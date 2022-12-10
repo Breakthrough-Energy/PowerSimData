@@ -1,7 +1,5 @@
-import os
-
-from powersimdata.input.converter.reise_to_grid import FromREISE, FromREISEjl
-from powersimdata.network.constants.storage import storage
+from powersimdata.network.constants.carrier.storage import storage
+from powersimdata.network.europe_tub.model import TUB, PyPSABase
 from powersimdata.network.hifld.model import HIFLD
 from powersimdata.network.usa_tamu.model import TAMU
 from powersimdata.utility.helpers import MemoryCache, cache_key
@@ -11,8 +9,8 @@ _cache = MemoryCache()
 
 class Grid:
 
-    SUPPORTED_MODELS = {"usa_tamu"}
-    SUPPORTED_ENGINES = {"REISE", "REISE.jl"}
+    SUPPORTED_IMPORTS = {"pypsa"}
+    SUPPORTED_MODELS = {"usa_tamu", "europe_tub"}
 
     """Grid
 
@@ -21,25 +19,18 @@ class Grid:
         interconnects in the region. The full list of interconnects of the grid models
         is defined in :mod:`powersimdata.network.constants.model.model2interconnect`.
     :param str source: model used to build the network. Can be one of the supported
-        models, or a .mat file that represents a grid.
-    :param str engine: engine used to run scenario, if using ScenarioGrid.
-    :raises TypeError: if source and engine are not both strings.
-    :raises ValueError: if source or engine does not exist.
+        models
+    :raises TypeError: if source is not a string.
+    :raises ValueError: if source is not a supported grid model.
     """
 
-    def __init__(self, interconnect, source="usa_tamu", engine="REISE"):
+    def __init__(self, interconnect, source="usa_tamu", **kwargs):
         """Constructor."""
         if not isinstance(source, str):
             raise TypeError("source must be a str")
-        if source not in self.SUPPORTED_MODELS and not source.endswith(".mat"):
-            raise ValueError(
-                f"Source must be one of {','.join(self.SUPPORTED_MODELS)} "
-                "or the path to a .mat file that represents a grid "
-            )
-        if engine not in self.SUPPORTED_ENGINES:
-            raise ValueError(
-                f"Engine must be one of {','.join(self.SUPPORTED_ENGINES)}"
-            )
+        supported = self.SUPPORTED_MODELS | self.SUPPORTED_IMPORTS
+        if source not in supported:
+            raise ValueError(f"Source must be one of {','.join(supported)} ")
 
         key = cache_key(interconnect, source)
         cached = _cache.get(key)
@@ -49,11 +40,10 @@ class Grid:
             network = TAMU(interconnect)
         elif source == "hifld":
             network = HIFLD(interconnect)
-        elif os.path.splitext(source)[1] == ".mat":
-            if engine == "REISE":
-                network = FromREISE(source)
-            elif engine == "REISE.jl":
-                network = FromREISEjl(source)
+        elif source == "europe_tub":
+            network = TUB(interconnect, **kwargs)
+        elif source == "pypsa":
+            network = PyPSABase(interconnect, **kwargs)
         else:
             raise ValueError(f"Unknown source: {source}")
 
@@ -75,6 +65,19 @@ class Grid:
         self.model_immutables = network.model_immutables
 
         _cache.put(key, network)
+
+    def __repr__(self):
+        result = self.__class__.__name__
+        result += f"\ninterconnect: {self.interconnect}\n"
+        result += f"model: {self.model_immutables.model}\n"
+        result += f"data_loc: {self.data_loc}\n"
+        df_name = ["sub", "plant", "dcline", "bus2sub", "bus", "branch"]
+        for n in df_name:
+            shape = getattr(self, n).shape
+            result += f"{n}: {shape}\n"
+        result += f"id2zone: {len(self.id2zone)}\n"
+        result += f"zone2id: {len(self.zone2id)}"
+        return result
 
     def __eq__(self, other):
         """Used when 'self == other' is evaluated.

@@ -14,7 +14,7 @@ class InputData(InputBase):
 
     def __init__(self):
         super().__init__()
-        self._file_extension = {"ct": "pkl", "grid": "mat"}
+        self._file_extension = {"ct": "pkl", "grid": "pkl"}
         self.data_access = Context.get_data_access(get_scenario_fs)
 
     def _get_file_path(self, scenario_info, field_name):
@@ -40,9 +40,6 @@ class InputData(InputBase):
         ext = os.path.basename(path).split(".")[-1]
         if ext == "pkl":
             data = pd.read_pickle(f)
-        elif ext == "mat":
-            # get fully qualified local path to matfile
-            data = os.path.abspath(path)
         else:
             raise ValueError("Unknown extension! %s" % ext)
 

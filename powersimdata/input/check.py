@@ -299,18 +299,20 @@ def _check_grid_type(grid):
         raise TypeError(f"grid must be a {_grid.Grid} object")
 
 
-def _check_areas_and_format(areas, mi=ModelImmutables("usa_tamu")):
-    """Ensure that areas are valid. Duplicates are removed and state abbreviations are
-    converted to their actual name.
+def _check_areas_and_format(areas, mi=None):
+    """Ensure that areas are valid. Duplicates are removed and state/country
+    abbreviations are converted to their actual name.
 
     :param str/list/tuple/set areas: areas(s) to check. Could be load zone name(s),
-        state name(s)/abbreviation(s) or interconnect(s).
+        state/country name(s)/abbreviation(s) or interconnect(s).
     :param powersimdata.network.model.ModelImmutables mi: immutables of a grid model.
     :raises TypeError: if ``areas`` is not a list/tuple/set of str.
     :raises ValueError: if ``areas`` is empty or not valid.
     :return: (*set*) -- areas as a set. State/Country abbreviations are converted to
         state/country names.
     """
+    if mi is None:
+        mi = ModelImmutables("usa_tamu")
     if isinstance(areas, str):
         areas = {areas}
     elif isinstance(areas, (list, set, tuple)):
@@ -334,7 +336,7 @@ def _check_areas_and_format(areas, mi=ModelImmutables("usa_tamu")):
     return areas
 
 
-def _check_resources_and_format(resources, mi=ModelImmutables("usa_tamu")):
+def _check_resources_and_format(resources, mi=None):
     """Ensure that resources are valid and convert variable to a set.
 
     :param str/list/tuple/set resources: resource(s) to check.
@@ -343,6 +345,8 @@ def _check_resources_and_format(resources, mi=ModelImmutables("usa_tamu")):
     :raises ValueError: if resources is empty or not valid.
     :return: (*set*) -- resources as a set.
     """
+    if mi is None:
+        mi = ModelImmutables("usa_tamu")
     if isinstance(resources, str):
         resources = {resources}
     elif isinstance(resources, (list, set, tuple)):
@@ -359,16 +363,17 @@ def _check_resources_and_format(resources, mi=ModelImmutables("usa_tamu")):
     return resources
 
 
-def _check_resources_are_renewable_and_format(
-    resources, mi=ModelImmutables("usa_tamu")
-):
+def _check_resources_are_renewable_and_format(resources, mi=None):
     """Ensure that resources are valid renewable resources and convert variable to
     a set.
+
     :param powersimdata.network.model.ModelImmutables mi: immutables of a grid model.
     :param str/list/tuple/set resources: resource(s) to analyze.
     :raises ValueError: if resources are not renewables.
     return: (*set*) -- resources as a set
     """
+    if mi is None:
+        mi = ModelImmutables("usa_tamu")
     resources = _check_resources_and_format(resources, mi=mi)
     if not resources <= mi.plants["renewable_resources"]:
         diff = resources - mi.plants["all_resources"]
@@ -379,24 +384,25 @@ def _check_resources_are_renewable_and_format(
 def _check_areas_are_in_grid_and_format(areas, grid):
     """Ensure that list of areas are in grid.
 
-    :param dict areas: keys are area types: '*loadzone*', '*state*' or '*interconnect*'.
-        Values are str/list/tuple/set of areas.
+    :param dict areas: keys are area types: '*loadzone*', '*state*'/'*country*'' or
+        '*interconnect*'. Values are str/list/tuple/set of areas.
     :param powersimdata.input.grid.Grid grid: Grid instance.
     :return: (*dict*) -- modified areas dictionary. Keys are area types ('*loadzone*',
-        '*state*' or '*interconnect*'). State abbreviations, if present, are converted
-        to state names. Values are areas as a set.
+        '*state*'/'*country*' or '*interconnect*'). State abbreviations, if present,
+        are converted to state names. Values are areas as a set.
     :raises TypeError: if areas is not a dict or its keys are not str.
-    :raises ValueError: if area type is invalid, an area in not in grid or an
-        invalid loadzone/state/interconnect is passed.
+    :raises ValueError: if area type is invalid, an area in not in ``grid`` or an
+        invalid loadzone, state/country or interconnect is passed.
     """
     _check_grid_type(grid)
     if not isinstance(areas, dict):
         raise TypeError("areas must be a dict")
 
     mi = grid.model_immutables
+    division_type = mi.zones["division"]
     areas_formatted = {}
     for a in areas.keys():
-        if a in ["loadzone", "state", "interconnect"]:
+        if a in ["loadzone", division_type, "interconnect"]:
             areas_formatted[a] = set()
 
     all_loadzones = set()
@@ -404,23 +410,23 @@ def _check_areas_are_in_grid_and_format(areas, grid):
         if not isinstance(k, str):
             raise TypeError("area type must be a str")
         elif k == "interconnect":
-            interconnects = _check_areas_and_format(v)
+            interconnects = _check_areas_and_format(v, mi)
             for i in interconnects:
                 try:
                     all_loadzones.update(mi.zones["interconnect2loadzone"][i])
                 except KeyError:
                     raise ValueError("invalid interconnect: %s" % i)
             areas_formatted["interconnect"].update(interconnects)
-        elif k == "state":
-            states = _check_areas_and_format(v)
-            for s in states:
+        elif k == division_type:
+            divisions = _check_areas_and_format(v, mi)
+            for s in divisions:
                 try:
-                    all_loadzones.update(mi.zones["state2loadzone"][s])
+                    all_loadzones.update(mi.zones[f"{division_type}2loadzone"][s])
                 except KeyError:
-                    raise ValueError("invalid state: %s" % s)
-            areas_formatted["state"].update(states)
+                    raise ValueError(f"invalid {division_type}: %s" % s)
+            areas_formatted[division_type].update(divisions)
         elif k == "loadzone":
-            loadzones = _check_areas_and_format(v)
+            loadzones = _check_areas_and_format(v, mi)
             for l in loadzones:
                 if l not in mi.zones["loadzone"]:
                     raise ValueError("invalid load zone: %s" % l)
@@ -447,7 +453,7 @@ def _check_resources_are_in_grid_and_format(resources, grid):
     :raises ValueError: if resources is not used in scenario.
     """
     _check_grid_type(grid)
-    resources = _check_resources_and_format(resources)
+    resources = _check_resources_and_format(resources, grid.model_immutables)
     valid_resources = set(grid.plant["type"].unique())
     if not resources <= valid_resources:
         diff = resources - valid_resources

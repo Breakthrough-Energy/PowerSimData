@@ -16,33 +16,19 @@ from powersimdata.input.changes import (
     remove_plant,
     scale_plant_pmin,
 )
+from powersimdata.input.profile_input import ProfileInput
 from powersimdata.input.transform_grid import TransformGrid
-
-_resources = (
-    "coal",
-    "dfo",
-    "geothermal",
-    "ng",
-    "nuclear",
-    "hydro",
-    "solar",
-    "wind",
-    "wind_offshore",
-    "biomass",
-    "other",
-)
 
 
 class ChangeTable:
-    """Create change table for changes that need to be applied to the original
-    grid as well as to the original demand, hydro, solar and wind profiles.
-    A pickle file enclosing the change table in form of a dictionary can be
-    created and transferred on the server. Keys are *'demand'*, *'branch'*, *'dcline'*,
-    '*new_branch*', *'new_dcline'*, *'new_plant'*, *'storage'*,
-    *'[resource]'*, *'[resource]_cost'*, and *'[resource]_pmin'*,; where 'resource'
-    is one of: {*'biomass'*, *'coal'*, *'dfo'*, *'geothermal'*, *'ng'*, *'nuclear'*,
-    *'hydro'*, *'solar'*, *'wind'*, *'wind_offshore'*, *'other'*}.
-    If a key is missing in the dictionary, then no changes will be applied.
+    """Create change table for changes that need to be applied to the original grid as
+    well as to the original demand, hydro, solar and wind profiles. A pickle file
+    enclosing the change table in form of a dictionary can be created and transferred
+    on the server. Keys are *'demand'*, *'branch'*, *'dcline'*, '*new_branch*',
+    *'new_dcline'*, *'new_plant'*, *'storage'*, *'[resource]'*, *'[resource]_cost'*,
+    and *'[resource]_pmin'*,; where 'resource' is defined in
+    :class:`powersimdata.network.constants.plants.Resource` and depends on the grid
+    model. If a key is missing in the dictionary, then no changes will be applied.
     The data structure is given below:
 
     * *'demand'*:
@@ -148,15 +134,15 @@ class ChangeTable:
                 "demand_flexibility",
             }
         }
+        self._profile_input = None
 
-    @staticmethod
-    def _check_resource(resource):
+    def _check_resource(self, resource):
         """Checks resource.
 
         :param str resource: type of generator.
         :raises ValueError: if resource cannot be changed.
         """
-        possible = _resources
+        possible = self.grid.model_immutables.plants["all_resources"]
         if resource not in possible:
             print("-----------------------")
             print("Possible Generator type")
@@ -248,7 +234,7 @@ class ChangeTable:
             for key in {"new_plant", "remove_plant"}:
                 if key in self.ct:
                     del self.ct[key]
-            for r in _resources:
+            for r in self.grid.model_immutables.plants["all_resources"]:
                 for suffix in {"", "_cost", "_pmin"}:
                     key = r + suffix
                     if key in self.ct:
@@ -478,6 +464,8 @@ class ChangeTable:
 
         See :func:`powersimdata.input.changes.demand_flex.add_demand_flexibility`
         """
+        if self._profile_input is None:
+            self._profile_input = ProfileInput()
         add_demand_flexibility(self, info)
 
     def add_electrification(self, kind, info):

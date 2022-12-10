@@ -11,3 +11,4 @@ build
 .venv
 .dockerignore
 config.ini
+powersimdata/network/europe_tub/data*

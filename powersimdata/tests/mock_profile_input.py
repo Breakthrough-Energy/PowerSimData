@@ -5,11 +5,11 @@ from powersimdata.input.grid import Grid
 
 
 class MockProfileInput:
-    """
-    MockInputData is a mock of powersimdata.input.profile_input.ProfileInput
+    """MockInputData is a mock of powersimdata.input.profile_input.ProfileInput
     that generates random profiles.
 
-    Exactly 3 of {`start_time`, `end_time`, `periods`, `freq`} must be specified. See <https://pandas.pydata.org/docs/reference/api/pandas.date_range.html>.
+    Exactly 3 of {`start_time`, `end_time`, `periods`, `freq`} must be specified. See
+    <https://pandas.pydata.org/docs/reference/api/pandas.date_range.html>.
 
     :param powersimdata.input.grid.Grid grid: instance of Grid object.
     :param str start_time: when profiles begin.
@@ -17,15 +17,10 @@ class MockProfileInput:
     :param int periods: number of times in profile.
     :param str freq: frequency of times in profile.
     :param int random_seed: used to initialize the random generator.
-    :raises ValueError: raised if `field_name` specified in `get_data()` is not specified by this mock
+    :raises ValueError: raised if `field_name` specified in `get_data()` is not
+        specified by this mock
     :return: (*powersimdata.tests.mock_profile_input.MockProfileInput*)
     """
-
-    _RESOURCES = {
-        "wind": {"wind", "wind_offshore"},
-        "solar": {"solar"},
-        "hydro": {"hydro"},
-    }
 
     def __init__(
         self,
@@ -37,6 +32,7 @@ class MockProfileInput:
         random_seed=6669,
     ):
         self._grid = grid
+        self._resources = grid.model_immutables.plants["group_profile_resources"]
         self._start_time = start_time
         self._end_time = end_time
         self._periods = periods
@@ -47,7 +43,7 @@ class MockProfileInput:
             "demand": self._get_demand(),
             **{
                 resource: self._get_resource_profile(resource)
-                for resource in self._RESOURCES.keys()
+                for resource in sorted(self._resources.keys(), reverse=True)
             },
         }
         self._profiles.update(self._get_demand_flexibility())
@@ -72,7 +68,7 @@ class MockProfileInput:
 
         :return: (*pandas.DataFrame*) -- fake demand data
         """
-        zone_ids = set(self._grid.plant["zone_id"])
+        zone_ids = self._grid.plant["zone_id"].unique()
         fake_demand_profile = self._create_fake_profile(zone_ids)
         return fake_demand_profile
 
@@ -81,7 +77,7 @@ class MockProfileInput:
 
         :return: (*dict*) -- dictionary of fake flexibile demand data
         """
-        zone_ids = set(self._grid.plant["zone_id"])
+        zone_ids = self._grid.plant["zone_id"].unique()
         demand_flexibility_profile_types = [
             "demand_flexibility_up",
             "demand_flexibility_dn",
@@ -108,7 +104,7 @@ class MockProfileInput:
         :param str resource_type: Can be any of *'hydro'*, *'solar'*, or *'wind'*.
         :return: (*list*) -- list of plant_ids
         """
-        resources = self._RESOURCES[resource_type]
+        resources = self._resources[resource_type]
         plant_ids = list(self._grid.plant[lambda ds: ds.type.isin(resources)].index)
         return plant_ids
 

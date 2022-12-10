@@ -1,139 +1,135 @@
 import os
-import shutil
-from zipfile import ZipFile
 
-from powersimdata.network.constants.region.europe import (
-    abv2country,
-    abv2timezone,
-    interconnect2abv,
-)
+import pypsa
+
+from powersimdata.input.converter.pypsa_to_grid import FromPyPSA
+from powersimdata.network.constants.region.geography import get_geography
+from powersimdata.network.constants.region.zones import from_pypsa
 from powersimdata.network.helpers import (
     check_and_format_interconnect,
     interconnect_to_name,
 )
 from powersimdata.network.model import ModelImmutables
-from powersimdata.utility.helpers import _check_import
-
-pypsa = _check_import("pypsa")
-zenodo_get = _check_import("zenodo_get")
+from powersimdata.network.zenodo import Zenodo
 
 
-class TUB:
-    """PyPSA Europe network.
+class PyPSABase(FromPyPSA):
+    """Arbitrary PyPSA network.
 
     :param str/iterable interconnect: interconnect name(s).
-    :param int reduction: reduction parameter (number of nodes in network). If None,
-        the full network is loaded.
-    :param bool overwrite: the existing dataset is deleted and a new dataset is
-        downloaded from zenodo.
+    :param str grid_model: the grid model
+    :param pypsa.Network network: a PyPSA network object
+    :param bool add_pypsa_cols: PyPSA data frames with renamed columns appended to
+        Grid object data frames.
     """
 
-    def __init__(self, interconnect, reduction=None, overwrite=False):
+    def __init__(self, interconnect, grid_model, network, add_pypsa_cols=True):
         """Constructor."""
-        self.grid_model = "europe_tub"
+        super().__init__(network, add_pypsa_cols)
+        self.grid_model = grid_model
         self.interconnect = check_and_format_interconnect(
             interconnect, model=self.grid_model
         )
-        self.data_loc = os.path.join(os.path.dirname(__file__), "data")
-        self.zenodo_record_id = "3601881"
-        self.reduction = reduction
 
-        if overwrite:
-            self.remove_data()
+    def build_eur(self):
+        self.id2zone = {i: l for i, l in enumerate(self.network.buses.index)}
+        self.zone2id = {l: i for i, l in self.id2zone.items()}
 
-        self.retrieve_data()
-
-    def remove_data(self):
-        """Remove data stored on disk"""
-        print("Removing PyPSA-Eur dataset")
-        shutil.rmtree(self.data_loc)
-
-    def retrieve_data(self):
-        """Fetch data"""
-        zenodo_get.zenodo_get([self.zenodo_record_id, "-o", f"{self.data_loc}"])
-        with ZipFile(os.path.join(self.data_loc, "networks.zip"), "r") as zip_network:
-            zip_network.extractall(self.data_loc)
-
-    def build(self):
-        """Build network"""
-        path = os.path.join(self.data_loc, "networks", "elec_s")
-        if self.reduction is None:
-            network = pypsa.Network(path + ".nc")
-        elif os.path.exists(path + f"_{self.reduction}_ec.nc"):
-            network = pypsa.Network(path + f"_{self.reduction}_ec.nc")
-        else:
-            raise ValueError(
-                "Invalid Resolution. Choose among: None | 1024 | 512 | 256 | 128 | 37"
-            )
-        id2zone = {i: l for i, l in enumerate(network.buses.index)}
-        zone2id = {l: i for i, l in id2zone.items()}
-
-        if self.interconnect == ["Europe"]:
-            self.network = network
-            self.id2zone = id2zone
-            self.zone2id = zone2id
-        else:
+        if self.interconnect != ["Europe"]:
+            geo = get_geography(self.grid_model)
             filter = list(  # noqa: F841
-                interconnect2abv[
+                geo["interconnect2abv"][
                     interconnect_to_name(self.interconnect, model=self.grid_model)
                 ]
             )
-            self.network = network[network.buses.query("country == @filter").index]
-            self.zone2id = {l: zone2id[l] for l in self.network.buses.index}
+            self.network = self.network[
+                self.network.buses.query("country == @filter").index
+            ]
+            self.zone2id = {l: self.zone2id[l] for l in self.network.buses.index}
             self.id2zone = {i: l for l, i in self.zone2id.items()}
 
-        self.model_immutables = self._generate_model_immutables()
-
-    def _generate_model_immutables(self):
-        """Generate the model immutables"""
-        mapping = ModelImmutables(self.grid_model, interconnect=self.interconnect)
-
-        # loadzone
-        mapping.zones["loadzone"] = set(self.zone2id)
-        mapping.zones["id2loadzone"] = self.id2zone
-        mapping.zones["loadzone2id"] = self.zone2id
-        mapping.zones["loadzone2abv"] = self.network.buses["country"].to_dict()
-        mapping.zones["loadzone2country"] = (
-            self.network.buses["country"].map(abv2country).to_dict()
+        zone = (
+            self.network.buses["country"]
+            .reset_index()
+            .set_axis(self.id2zone)
+            .rename(columns={"Bus": "zone_name", "country": "abv"})
+            .rename_axis(index="zone_id")
         )
-        mapping.zones["loadzone2interconnect"] = {
-            l: mapping.zones["abv2interconnect"][a]
-            for l, a in mapping.zones["loadzone2abv"].items()
-        }
-        mapping.zones["id2timezone"] = {
-            self.zone2id[l]: abv2timezone[a]
-            for l, a in mapping.zones["loadzone2abv"].items()
-        }
-        mapping.zones["timezone2id"] = {
-            t: i for i, t in mapping.zones["id2timezone"].items()
-        }
+        self.model_immutables = ModelImmutables(
+            self.grid_model,
+            interconnect=self.interconnect,
+            zone=from_pypsa(self.grid_model, zone),
+        )
 
-        # country
-        mapping.zones["country2loadzone"] = {
-            abv2country[a]: set(l)
-            for a, l in self.network.buses.groupby("country").groups.items()
-        }
-        mapping.zones["abv2loadzone"] = {
-            a: set(l) for a, l in self.network.buses.groupby("country").groups.items()
-        }
-        mapping.zones["abv2id"] = {
-            a: {self.zone2id[l] for l in l_in_country}
-            for a, l_in_country in mapping.zones["abv2loadzone"].items()
-        }
-        mapping.zones["id2abv"] = {
-            i: mapping.zones["loadzone2abv"][l] for i, l in self.id2zone.items()
-        }
-
-        # interconnect
-        mapping.zones["interconnect2loadzone"] = {
-            i: set().union(
-                *(mapping.zones["abv2loadzone"][a] for a in a_in_interconnect)
+    def build(self):
+        """Build network"""
+        if self.grid_model == "europe_tub":
+            self.build_eur()
+        else:
+            self.model_immutables = ModelImmutables(
+                self.grid_model, interconnect=self.interconnect
             )
-            for i, a_in_interconnect in mapping.zones["interconnect2abv"].items()
-        }
-        mapping.zones["interconnect2id"] = {
-            i: set().union(*({self.zone2id[l]} for l in l_in_interconnect))
-            for i, l_in_interconnect in mapping.zones["interconnect2loadzone"].items()
-        }
 
-        return mapping
+        super().build()
+
+
+class TUB(PyPSABase):
+    """PyPSA Europe network.
+
+    :param str/iterable interconnect: interconnect name(s).
+    :param str zenodo_record_id: the zenodo record id. If set to None, v0.6.1 will
+        be used. If set to latest, the latest version will be used.
+    :param int reduction: reduction parameter (number of nodes in network). If None,
+        the full network is loaded.
+    """
+
+    def __init__(self, interconnect, zenodo_record_id=None, reduction=None):
+        network = self.from_zenodo(zenodo_record_id, reduction)
+        super().__init__(interconnect, "europe_tub", network)
+
+    def from_zenodo(self, zenodo_record_id, reduction):
+        """Create network from zenodo data
+
+        :param str zenodo_record_id: the zenodo record id. If set to None, v0.6.1 will
+            be used. If set to latest, the latest version will be used.
+        :param int reduction: reduction parameter (number of nodes in network). If None,
+            the full network is loaded.
+        :return: (*pypsa.Network*) -- a PyPSA network object
+        """
+        if zenodo_record_id is None:
+            z = Zenodo("7251657")
+        elif zenodo_record_id == "latest":
+            z = Zenodo("3601881")
+        else:
+            z = Zenodo(zenodo_record_id)
+
+        z.load_data(os.path.dirname(__file__))
+        self.data_loc = os.path.join(z.dir, "networks")
+        return self._get_network(reduction)
+
+    def _get_network(self, reduction):
+        """Create a PyPSA network with the given reduction
+
+        :param int reduction: reduction parameter (number of nodes in network). If None,
+            the full network is loaded.
+        :return: (*pypsa.Network*) -- a PyPSA network object
+        """
+        path = os.path.join(self.data_loc, "elec_s")
+        self._check_reduction(reduction)
+        if reduction is None:
+            return pypsa.Network(path + ".nc")
+        return pypsa.Network(path + f"_{reduction}_ec.nc")
+
+    def _check_reduction(self, reduction):
+        """Validate reduction parameter
+
+        :param int reduction: reduction parameter (number of nodes in network).
+        :raises ValueError: if ``reduction`` is not available.
+        """
+        if reduction is None:
+            return
+        available = [
+            s for f in os.listdir(self.data_loc) for s in f.split("_") if s.isdigit()
+        ]
+        if str(reduction) not in available:
+            raise ValueError(f"Available reduced network: {' | '.join(available)}")

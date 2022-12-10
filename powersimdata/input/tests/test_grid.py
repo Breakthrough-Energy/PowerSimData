@@ -5,17 +5,11 @@ import pytest
 from powersimdata.input.grid import Grid
 
 INCORRECT_SOURCE = "invalid_source"
-INCORRECT_ENGINE = "invalid_engine"
 
 
 def test_grid_incorrect_source():
     with pytest.raises(ValueError):
         Grid(["USA"], source=INCORRECT_SOURCE)
-
-
-def test_grid_incorrect_engine():
-    with pytest.raises(ValueError):
-        Grid(["USA"], engine=INCORRECT_ENGINE)
 
 
 def test_grid_type():

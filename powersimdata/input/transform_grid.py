@@ -17,20 +17,6 @@ class TransformGrid:
         """
         self.grid = copy.deepcopy(grid)
         self.ct = copy.deepcopy(ct)
-        self.gen_types = [
-            "biomass",
-            "coal",
-            "dfo",
-            "geothermal",
-            "ng",
-            "nuclear",
-            "hydro",
-            "solar",
-            "wind",
-            "wind_offshore",
-            "other",
-        ]
-        self.thermal_gen_types = ["coal", "dfo", "geothermal", "ng", "nuclear"]
 
     def get_grid(self):
         """Returns the transformed grid.
@@ -44,7 +30,7 @@ class TransformGrid:
     def _apply_change_table(self):
         """Apply changes listed in change table to the grid."""
         # First scale by zones, so that zone factors are not applied to additions.
-        for g in self.gen_types:
+        for g in self.grid.model_immutables.plants["all_resources"]:
             if g in self.ct.keys():
                 self._scale_gen_by_zone(g)
             if f"{g}_cost" in self.ct.keys():
@@ -72,7 +58,7 @@ class TransformGrid:
             self._add_storage()
 
         # Scale by IDs, so that additions can be scaled.
-        for g in self.gen_types:
+        for g in self.grid.model_immutables.plants["all_resources"]:
             if g in self.ct.keys():
                 self._scale_gen_by_id(g)
             if f"{g}_cost" in self.ct.keys():
@@ -106,7 +92,7 @@ class TransformGrid:
                     .index.tolist()
                 )
                 self._scale_gen_capacity(plant_id, factor)
-                if gen_type in self.thermal_gen_types:
+                if gen_type in self.grid.model_immutables.plants["thermal_resources"]:
                     self._scale_gencost_by_capacity(plant_id, factor)
 
     def _scale_gen_by_id(self, gen_type):
@@ -118,7 +104,7 @@ class TransformGrid:
         if "plant_id" in self.ct[gen_type].keys():
             for plant_id, factor in self.ct[gen_type]["plant_id"].items():
                 self._scale_gen_capacity(plant_id, factor)
-                if gen_type in self.thermal_gen_types:
+                if gen_type in self.grid.model_immutables.plants["thermal_resources"]:
                     self._scale_gencost_by_capacity(plant_id, factor)
 
     def _scale_gencost_by_zone(self, gen_type):
@@ -263,7 +249,7 @@ class TransformGrid:
             new_branch["to_lon"] = to_lon
             new_branch["to_lat"] = to_lat
             new_branch["x"] = x
-            new_index = [self.grid.branch.index[-1] + 1]
+            new_index = pd.Index([self.grid.branch.index[-1] + 1], name="branch_id")
             self.grid.branch = pd.concat(
                 [self.grid.branch, pd.DataFrame(new_branch, index=new_index)]
             )
@@ -290,7 +276,7 @@ class TransformGrid:
             lat, lon = entry["lat"], entry["lon"]
             new_bus["lat"] = lat
             new_bus["lon"] = lon
-            new_bus_index = [self.grid.bus.index.max() + 1]
+            new_bus_index = pd.Index([self.grid.bus.index.max() + 1], name="bus_id")
             self.grid.bus = pd.concat(
                 [self.grid.bus, pd.DataFrame(new_bus, index=new_bus_index)]
             )
@@ -344,7 +330,7 @@ class TransformGrid:
             new_dcline["Pmax"] = entry["Pmax"]
             new_dcline["from_interconnect"] = from_interconnect
             new_dcline["to_interconnect"] = to_interconnect
-            new_index = [self.grid.dcline.index[-1] + 1]
+            new_index = pd.Index([self.grid.dcline.index[-1] + 1], name="dcline_id")
             self.grid.dcline = pd.concat(
                 [self.grid.dcline, pd.DataFrame(new_dcline, index=new_index)]
             )
@@ -375,7 +361,7 @@ class TransformGrid:
             new_plant["zone_name"] = zone_name
             new_plant["lon"] = lon
             new_plant["lat"] = lat
-            new_index = [self.grid.plant.index[-1] + 1]
+            new_index = pd.Index([self.grid.plant.index[-1] + 1], name="plant_id")
             self.grid.plant = pd.concat(
                 [self.grid.plant, pd.DataFrame(new_plant, index=new_index)]
             )
@@ -389,11 +375,11 @@ class TransformGrid:
             new_gencost["type"] = 2
             new_gencost["n"] = 3
             new_gencost["interconnect"] = self.grid.bus.loc[bus_id].interconnect
-            if entry["type"] in self.thermal_gen_types:
+            if entry["type"] in self.grid.model_immutables.plants["thermal_resources"]:
                 new_gencost["c0"] = entry["c0"]
                 new_gencost["c1"] = entry["c1"]
                 new_gencost["c2"] = entry["c2"]
-            new_index = [gencost["before"].index[-1] + 1]
+            new_index = pd.Index([gencost["before"].index[-1] + 1], name="plant_id")
             gencost["before"] = pd.concat(
                 [gencost["before"], pd.DataFrame(new_gencost, index=new_index)]
             )
