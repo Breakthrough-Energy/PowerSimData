@@ -7,6 +7,11 @@ from powersimdata.input.converter.helpers import (
     add_zone_to_grid_data_frames,
 )
 from powersimdata.input.converter.pypsa_to_grid import FromPyPSA
+from powersimdata.input.converter.pypsa_to_profiles import (
+    get_pypsa_demand_profile,
+    get_pypsa_gen_profile,
+)
+from powersimdata.input.profile_input import ProfileInput
 from powersimdata.network.constants.region.geography import get_geography
 from powersimdata.network.constants.region.zones import from_pypsa
 from powersimdata.network.helpers import (
@@ -110,34 +115,42 @@ class TUB(PyPSABase):
         z.load_data(os.path.dirname(__file__))
         self.data_loc = os.path.join(z.dir, "networks")
         self.version = z.version
-        return self._get_network(reduction)
+        self.reduction = reduction
+        return self._get_network()
 
-    def _get_network(self, reduction):
+    def _get_network(self):
         """Create a PyPSA network with the given reduction
 
-        :param int reduction: reduction parameter (number of nodes in network). If None,
-            the full network is loaded.
         :return: (*pypsa.Network*) -- a PyPSA network object
         """
         path = os.path.join(self.data_loc, "elec_s")
-        self._check_reduction(reduction)
-        if reduction is None:
+        self._check_reduction()
+        if self.reduction is None:
             return pypsa.Network(path + ".nc")
-        return pypsa.Network(path + f"_{reduction}_ec.nc")
+        return pypsa.Network(path + f"_{self.reduction}_ec.nc")
 
-    def _check_reduction(self, reduction):
+    def _check_reduction(self):
         """Validate reduction parameter
 
-        :param int reduction: reduction parameter (number of nodes in network).
         :raises ValueError: if ``reduction`` is not available.
         """
-        if reduction is None:
+        if self.reduction is None:
             return
         available = [
             s for f in os.listdir(self.data_loc) for s in f.split("_") if s.isdigit()
         ]
-        if str(reduction) not in available:
+        if str(self.reduction) not in available:
             raise ValueError(f"Available reduced network: {' | '.join(available)}")
+
+    @property
+    def _profile_version(self):
+        append = f"_{self.reduction}" if self.reduction is not None else ""
+        return f"{self.version}" + append
+
+    def _profile_exists(self, kind):
+        profile_input = ProfileInput()
+        available = profile_input.get_profile_version(self.grid_model, kind)
+        return self._profile_version in available
 
     def _add_information(self):
         """Add zone and interconnect columns to data frames"""
@@ -155,3 +168,16 @@ class TUB(PyPSABase):
     def build(self):
         super().build()
         self._add_information()
+        profile_input = ProfileInput()
+        profiles = {}
+        if not self._profile_exists("demand"):
+            demand = get_pypsa_demand_profile(self.network)
+            profiles[f"demand_{self._profile_version}"] = demand
+        p2c = self.model_immutables.plants["group_profile_resources"]
+        for k in p2c:
+            if not self._profile_exists(k):
+                profile = get_pypsa_gen_profile(self.network, {k: p2c[k]})
+                profiles[f"{k}_{self._profile_version}"] = profile[k]
+        print(f"Uploading profiles: {list(profiles.keys())}")
+        for k, v in profiles.items():
+            profile_input.upload(self.grid_model, k, v)

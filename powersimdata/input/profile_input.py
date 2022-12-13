@@ -1,8 +1,10 @@
 import pandas as pd
+from fs.multifs import MultiFS
 
 from powersimdata.data_access.context import Context
 from powersimdata.data_access.fs_helper import get_blob_fs
 from powersimdata.input.input_base import InputBase
+from powersimdata.utility import server_setup
 
 profile_kind = {
     "demand",
@@ -35,13 +37,20 @@ def get_profile_version(_fs, grid_model, kind):
     return [f.replace(f"{kind}_", "").replace(".csv", "") for f in matching]
 
 
+def _make_fs():
+    mfs = MultiFS()
+    writeable = server_setup.BLOB_TOKEN_RW is not None
+    mfs.add_fs("profile_fs", get_blob_fs("profiles"), write=writeable)
+    return mfs
+
+
 class ProfileInput(InputBase):
     """Loads profile data"""
 
     def __init__(self):
         super().__init__()
         self._file_extension = {k: "csv" for k in profile_kind}
-        self.data_access = Context.get_data_access(lambda: get_blob_fs("profiles"))
+        self.data_access = Context.get_data_access(_make_fs)
 
     def _get_file_path(self, scenario_info, field_name):
         """Get the path to the specified profile
@@ -86,3 +95,8 @@ class ProfileInput(InputBase):
             return get_profile_version(fs, grid_model, kind)
 
         return self.data_access.get_profile_version(_callback)
+
+    def upload(self, grid_model, name, profile):
+        path = "/".join(["raw", grid_model, f"{name}.csv"])
+        with self.data_access.write(path) as f:
+            profile.to_csv(f)

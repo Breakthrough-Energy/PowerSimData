@@ -15,6 +15,12 @@ MODEL_DIR = config.MODEL_DIR
 ENGINE_DIR = config.ENGINE_DIR
 DEPLOYMENT_MODE = get_deployment_mode()
 BLOB_TOKEN_RO = "?sv=2021-06-08&ss=b&srt=co&sp=rl&se=2050-08-06T01:31:08Z&st=2022-08-05T17:31:08Z&spr=https&sig=ORHiRQQCocyaHXV2phhSN92GFhRnaHuGOecskxsmG3U%3D"
+BLOB_TOKEN_RW = os.getenv("BLOB_ACCOUNT_KEY_V2")
+
+
+def get_blob_credential():
+    return BLOB_TOKEN_RW if BLOB_TOKEN_RW is not None else BLOB_TOKEN_RO
+
 
 os.makedirs(LOCAL_DIR, exist_ok=True)
 
