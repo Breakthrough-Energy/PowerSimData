@@ -1,4 +1,5 @@
 import pandas as pd
+from fs import errors
 from fs.multifs import MultiFS
 
 from powersimdata.data_access.context import Context
@@ -98,5 +99,13 @@ class ProfileInput(InputBase):
 
     def upload(self, grid_model, name, profile):
         path = "/".join(["raw", grid_model, f"{name}.csv"])
-        with self.data_access.write(path) as f:
-            profile.to_csv(f)
+        try:
+            with self.data_access.write(path) as f:
+                profile.to_csv(f)
+        except errors.ResourceReadOnly:
+            msg = (
+                f"Profile {path} missing from blob storage and no credential with "
+                f"write access provided. Please set the {server_setup.BLOB_KEY_NAME} "
+                "environment variable to enable automatic upload."
+            )
+            raise ValueError(msg)
