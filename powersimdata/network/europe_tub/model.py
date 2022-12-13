@@ -32,7 +32,7 @@ class PyPSABase(FromPyPSA):
         )
 
     def build_eur(self):
-        self.id2zone = {i: l for i, l in enumerate(self.network.buses.index)}
+        self.id2zone = {i: l for i, l in enumerate(self.network.loads.index)}
         self.zone2id = {l: i for i, l in self.id2zone.items()}
 
         if self.interconnect != ["Europe"]:
@@ -45,11 +45,11 @@ class PyPSABase(FromPyPSA):
             self.network = self.network[
                 self.network.buses.query("country == @filter").index
             ]
-            self.zone2id = {l: self.zone2id[l] for l in self.network.buses.index}
+            self.zone2id = {l: self.zone2id[l] for l in self.network.loads.index}
             self.id2zone = {i: l for l, i in self.zone2id.items()}
 
         zone = (
-            self.network.buses["country"]
+            self.network.buses.loc[self.network.loads["bus"]]["country"]
             .reset_index()
             .set_axis(self.id2zone)
             .rename(columns={"Bus": "zone_name", "country": "abv"})
