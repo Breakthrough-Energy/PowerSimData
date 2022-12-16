@@ -39,9 +39,10 @@ class Zenodo:
 
         content = json.loads(r.text)
         metadata = content["metadata"]
+        self.version = metadata["version"]
         print(f"Title: {metadata['title']}")
         print(f"Publication date: {metadata['publication_date']}")
-        print(f"Version: {metadata['version']}")
+        print(f"Version: {self.version}")
         print(f"DOI: {metadata['doi']}")
 
         return content

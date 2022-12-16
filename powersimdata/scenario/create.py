@@ -109,6 +109,10 @@ class Create(State):
             )
 
             # Add missing information
+            version = self.builder.base_grid.version
+            version = "" if version is None else version
+            self._scenario_info["grid_model_version"] = version
+
             self._scenario_info["state"] = "execute"
             self._scenario_info["runtime"] = ""
             self._scenario_info["infeasibilities"] = ""
@@ -145,7 +149,6 @@ class Create(State):
         )
 
         self.exported_methods |= self.builder.exported_methods
-
         self._scenario_info["grid_model"] = self.builder.grid_model
         self._scenario_info["interconnect"] = self.builder.interconnect
 
@@ -432,19 +435,36 @@ class FromPyPSA(_Builder):
         super().__init__(grid_model, interconnect, table)
 
         self.reduction = None if "reduction" not in kwargs else kwargs["reduction"]
+        self.zenodo_record_id = (
+            None if "zenodo_record_id" not in kwargs else kwargs["zenodo_record_id"]
+        )
 
         self.print_existing_study()
 
         self.set_base_grid()
+        self.set_base_profile()
         self.set_change_table()
 
     def set_base_grid(self):
         """Set base grid"""
-        raise NotImplementedError()
+        self.base_grid = Grid(
+            self.interconnect,
+            source=self.grid_model,
+            reduction=self.reduction,
+            zenodo_record_id=self.zenodo_record_id,
+        )
+
+    def set_base_profile(self):
+        """Set base profile."""
+        version = f"{self.base_grid.version}"
+        version = (
+            version + f"_{self.reduction}" if self.reduction is not None else version
+        )
+        self.demand = self.hydro = self.solar = self.wind = version
 
     def set_change_table(self):
         """Set change table"""
-        raise NotImplementedError()
+        self.change_table = ChangeTable(self.base_grid)
 
 
 def get_builder(grid_model, interconnect, table, **kwargs):

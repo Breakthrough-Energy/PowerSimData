@@ -147,6 +147,8 @@ class FromPyPSA(AbstractGrid):
             self.interconnect = self.network.name.split(", ")
 
     def _set_data_loc(self):
+        if self.data_loc is not None:
+            return
         if len(self.interconnect) > 1:
             self.data_loc = self.interconnect[0]
         else:
@@ -330,8 +332,8 @@ class FromPyPSA(AbstractGrid):
             gen_inflow["p_nom_extendable"] = False
             gen_inflow["committable"] = False
             gen_inflow["type"] = "inflow"
-            gen_inflow["lat"] = gen_inflow.bus_id.map(bus.lat)
-            gen_inflow["lon"] = gen_inflow.bus_id.map(bus.lon)
+            gen_inflow["lat"] = gen_inflow.bus_id.map(bus_inflow.lat)
+            gen_inflow["lon"] = gen_inflow.bus_id.map(bus_inflow.lon)
             gen_inflow = gen_inflow.reindex(columns=plant.columns)
             gencost_inflow = storage_gencost_storageunits[has_inflow].rename(
                 index=add_suffix
