@@ -338,7 +338,7 @@ class FromPyPSA(AbstractGrid):
             gencost_inflow = storage_gencost_storageunits[has_inflow].rename(
                 index=add_suffix
             )
-            gencost_inflow = storage_gencost_storageunits.assign(
+            gencost_inflow = gencost_inflow.assign(
                 c0=0, c1=0, c2=0, type=2, startup=0, shutdown=0, n=3
             )
 
