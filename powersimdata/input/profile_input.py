@@ -98,6 +98,13 @@ class ProfileInput(InputBase):
         return self.data_access.get_profile_version(_callback)
 
     def upload(self, grid_model, name, profile):
+        """Upload the given profile to blob storage and local cache
+
+        :param str grid_model: the grid model
+        :param str name: the file name for the profile, without extension
+        :param pandas.DataFrame profile: profile data frame
+        :raises ValueError: if no credential with write access is set
+        """
         path = "/".join(["raw", grid_model, f"{name}.csv"])
         try:
             with self.data_access.write(path) as f:

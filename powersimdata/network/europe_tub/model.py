@@ -144,12 +144,21 @@ class TUB(PyPSABase):
 
     @property
     def _profile_version(self):
+        """Get the profile version given the current record version from zenodo and the
+        reduction.
+
+        :return: (*str*) -- the version which is used to construct a file name
+        """
         append = f"_{self.reduction}" if self.reduction is not None else ""
         return f"{self.version}" + append
 
     def _profile_exists(self, kind):
-        profile_input = ProfileInput()
-        available = profile_input.get_profile_version(self.grid_model, kind)
+        """Check if a profile has been uploaded for the given version
+
+        :return: (*bool*) -- True if the profile is available
+        """
+        _profile_input = ProfileInput()
+        available = _profile_input.get_profile_version(self.grid_model, kind)
         return self._profile_version in available
 
     def _add_information(self):
@@ -165,10 +174,8 @@ class TUB(PyPSABase):
         self.sub.interconnect = self.sub.index.map(zone2ic)
         add_interconnect_to_grid_data_frames(self)
 
-    def build(self):
-        super().build()
-        self._add_information()
-        profile_input = ProfileInput()
+    def _extract_profiles(self):
+        """Extract and upload profiles if necessary"""
         profiles = {}
         if not self._profile_exists("demand"):
             demand = get_pypsa_demand_profile(self.network)
@@ -178,6 +185,16 @@ class TUB(PyPSABase):
             if not self._profile_exists(k):
                 profile = get_pypsa_gen_profile(self.network, {k: p2c[k]})
                 profiles[f"{k}_{self._profile_version}"] = profile[k]
-        print(f"Uploading profiles: {list(profiles.keys())}")
+        if any(profiles):
+            print(f"Uploading profiles: {list(profiles.keys())}")
+        _profile_input = ProfileInput()
         for k, v in profiles.items():
-            profile_input.upload(self.grid_model, k, v)
+            _profile_input.upload(self.grid_model, k, v)
+
+    def build(self):
+        """Construct the network used to build a grid object and extract/upload the
+        profiles if necessary.
+        """
+        super().build()
+        self._extract_profiles()
+        self._add_information()
