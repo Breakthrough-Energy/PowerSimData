@@ -2,6 +2,10 @@ import os
 
 import pypsa
 
+from powersimdata.input.converter.helpers import (
+    add_interconnect_to_grid_data_frames,
+    add_zone_to_grid_data_frames,
+)
 from powersimdata.input.converter.pypsa_to_grid import FromPyPSA
 from powersimdata.network.constants.region.geography import get_geography
 from powersimdata.network.constants.region.zones import from_pypsa
@@ -134,3 +138,20 @@ class TUB(PyPSABase):
         ]
         if str(reduction) not in available:
             raise ValueError(f"Available reduced network: {' | '.join(available)}")
+
+    def _add_information(self):
+        """Add zone and interconnect columns to data frames"""
+        bus = self.bus
+        bus2sub = self.bus2sub
+        bus["zone_name"] = bus.index.map(bus2sub.sub_id)
+        bus.zone_id = bus.zone_name.map(self.zone2id)
+        add_zone_to_grid_data_frames(self)
+
+        zone2ic = self.model_immutables.zones["loadzone2interconnect"]
+        bus2sub.interconnect = bus2sub.sub_id.map(zone2ic)
+        self.sub.interconnect = self.sub.index.map(zone2ic)
+        add_interconnect_to_grid_data_frames(self)
+
+    def build(self):
+        super().build()
+        self._add_information()
