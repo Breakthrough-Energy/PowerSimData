@@ -199,10 +199,12 @@ class TransformProfile:
             "demand_flexibility_dn",
             "demand_flexibility_cost_up",
             "demand_flexibility_cost_dn",
-        }.union(*self.scale_keys.values())
+        }.union(self.scale_keys.keys())
 
         if name not in possible:
-            raise ValueError("Choose from %s" % " | ".join(possible))
+            raise ValueError(
+                f"Invalid profile kind: {name}. Choose from %s" % " | ".join(possible)
+            )
         elif name == "demand":
             return self._slice_df(self._get_electrified_demand())
         elif "demand_flexibility" in name:
