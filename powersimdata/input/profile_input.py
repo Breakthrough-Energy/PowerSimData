@@ -78,8 +78,10 @@ class ProfileInput(InputBase):
         data = pd.read_csv(f, index_col=0, parse_dates=True)
         if "demand_flexibility" in path:
             data.columns = data.columns.astype(str)
-        else:
+        elif all(c.isdigit() for c in data.columns):
             data.columns = data.columns.astype(int)
+        else:
+            data.columns = data.columns.astype(str)
         return data
 
     def get_profile_version(self, grid_model, kind):

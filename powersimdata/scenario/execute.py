@@ -57,11 +57,21 @@ class Execute(Ready):
         self._set_ct_and_grid()
         self._launcher = Context.get_launcher(scenario)
 
+    def _get_kwargs(self):
+        info = self._scenario_info
+        if info["grid_model"] == "europe_tub":
+            version = info["base_demand"].split("_")
+            if len(version) > 1:
+                return {"reduction": version[1]}
+        return {}
+
     def _set_ct_and_grid(self):
         """Sets change table and grid."""
+        extra_args = self._get_kwargs()
         base_grid = Grid(
             self._scenario_info["interconnect"].split("_"),
             source=self._scenario_info["grid_model"],
+            **extra_args,
         )
         if self._scenario_info["change_table"] == "Yes":
             input_data = InputData()

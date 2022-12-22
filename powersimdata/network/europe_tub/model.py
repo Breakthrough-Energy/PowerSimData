@@ -179,8 +179,10 @@ class TUB(PyPSABase):
         profiles = {}
         if not self._profile_exists("demand"):
             demand = get_pypsa_demand_profile(self.network)
+            demand.columns = demand.columns.map(self.zone2id)
             profiles[f"demand_{self._profile_version}"] = demand
         p2c = self.model_immutables.plants["group_profile_resources"]
+        p2c["hydro"] = {"ror", "hydro"}
         for k in p2c:
             if not self._profile_exists(k):
                 profile = get_pypsa_gen_profile(self.network, {k: p2c[k]})

@@ -76,7 +76,10 @@ class TransformProfile:
             columns and UTC timestamp as indices. Values are for 1-W generators.
         :return: (*pandas.DataFrame*) -- scaled power output profile.
         """
-        plant_id = list(map(int, profile.columns))
+        try:
+            plant_id = list(map(int, profile.columns))
+        except:  # noqa: E722
+            plant_id = profile.columns
         return profile * self.grid.plant.loc[plant_id, "Pmax"]
 
     def _add_plant_profile(self, profile, resource):
