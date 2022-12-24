@@ -292,6 +292,15 @@ class _Builder:
         self.plan_name = plan_name
         self.scenario_name = scenario_name
 
+    def _check_time_range(self, start_date, end_date, interval):
+        """Validate time range and interval
+
+        :param str start_date: start date.
+        :param str end_date: start date.
+        :param str interval: interval.
+        """
+        pass
+
     def set_time(self, start_date, end_date, interval):
         """Sets scenario start and end dates as well as the interval that will
         be used to split the date range.
@@ -301,24 +310,10 @@ class _Builder:
         :param str interval: interval.
         :raises ValueError: if start date, end date or interval are invalid.
         """
-        min_ts = pd.Timestamp("2016-01-01 00:00:00")
-        max_ts = pd.Timestamp("2016-12-31 23:00:00")
-
-        start_ts = pd.Timestamp(start_date)
-        end_ts = pd.Timestamp(end_date)
-        hours = (end_ts - start_ts) / np.timedelta64(1, "h") + 1
-        if start_ts > end_ts:
-            raise ValueError("start_date > end_date")
-        elif start_ts < min_ts or start_ts > max_ts:
-            raise ValueError("start_date not in [%s,%s[" % (min_ts, max_ts))
-        elif end_ts < min_ts or end_ts > max_ts:
-            raise ValueError("end_date not in ]%s,%s]" % (min_ts, max_ts))
-        elif hours % int(interval.split("H", 1)[0]) != 0:
-            raise ValueError("Incorrect interval for start and end dates")
-        else:
-            self.start_date = start_date
-            self.end_date = end_date
-            self.interval = interval
+        self._check_time_range(start_date, end_date, interval)
+        self.start_date = start_date
+        self.end_date = end_date
+        self.interval = interval
 
     def set_engine(self, engine):
         """Sets simulation engine to be used for scenarion.
@@ -379,6 +374,29 @@ class FromCSV(_Builder):
             if len(possible) != 0:
                 print("%s: %s" % (p, " | ".join(possible)))
         print("<-- End: Available profiles")
+
+    def _check_time_range(self, start_date, end_date, interval):
+        """Validate time range and interval
+
+        :param str start_date: start date.
+        :param str end_date: start date.
+        :param str interval: interval.
+        :raises ValueError: if start date, end date or interval are invalid.
+        """
+        min_ts = pd.Timestamp("2016-01-01 00:00:00")
+        max_ts = pd.Timestamp("2016-12-31 23:00:00")
+
+        start_ts = pd.Timestamp(start_date)
+        end_ts = pd.Timestamp(end_date)
+        hours = (end_ts - start_ts) / np.timedelta64(1, "h") + 1
+        if start_ts > end_ts:
+            raise ValueError("start_date > end_date")
+        elif start_ts < min_ts or start_ts > max_ts:
+            raise ValueError("start_date not in [%s,%s[" % (min_ts, max_ts))
+        elif end_ts < min_ts or end_ts > max_ts:
+            raise ValueError("end_date not in ]%s,%s]" % (min_ts, max_ts))
+        elif hours % int(interval.split("H", 1)[0]) != 0:
+            raise ValueError("Incorrect interval for start and end dates")
 
     def set_base_grid(self):
         """Set base grid"""
