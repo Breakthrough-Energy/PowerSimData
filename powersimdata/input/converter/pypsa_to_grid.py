@@ -80,22 +80,18 @@ def _get_storage_storagedata(df, storage_type):
     return storage_storagedata
 
 
-def _get_storage_gencost(df, storage_type):
+def _get_storage_gencost(df):
     """Get storage data from PyPSA for data frame "gencost" in PSD's storage
     dict.
 
     :param pandas.DataFrame df: PyPSA component dataframe.
-    :param str storage_type: key for PyPSA storage type.
     :return: (*pandas.DataFrame*) -- data frame with storage data.
     """
     # There are "type" columns in gen and gencost with "type" column reserved
     # for gen dataframe, hence drop it here before renaming
     df = df.drop(columns="type", errors="ignore")
     storage_gencost = _translate_df(df, "storage_gencost")
-    storage_gencost.assign(type=2, n=3, c0=0, c2=0)
-    if "type" in storage_gencost:
-        storage_gencost["type"] = pd.to_numeric(storage_gencost.type, errors="ignore")
-
+    storage_gencost = storage_gencost.assign(type=2, n=3, c0=0, c2=0)
     return storage_gencost
 
 
@@ -295,7 +291,7 @@ class FromPyPSA(AbstractGrid):
         # storage units
         c = "storage_units"
         storage_gen_storageunits = _get_storage_gen(n.storage_units, c)
-        storage_gencost_storageunits = _get_storage_gencost(n.storage_units, c)
+        storage_gencost_storageunits = _get_storage_gencost(n.storage_units)
         storage_storagedata_storageunits = _get_storage_storagedata(n.storage_units, c)
 
         inflow = n.get_switchable_as_dense("StorageUnit", "inflow")
@@ -356,7 +352,7 @@ class FromPyPSA(AbstractGrid):
         # stores
         c = "stores"
         storage_gen_stores = _get_storage_gen(n.stores, c)
-        storage_gencost_stores = _get_storage_gencost(n.stores, c)
+        storage_gencost_stores = _get_storage_gencost(n.stores)
         storage_storagedata_stores = _get_storage_storagedata(n.stores, c)
         storage_genfuel = list(n.storage_units.carrier) + list(n.stores.carrier)
 
