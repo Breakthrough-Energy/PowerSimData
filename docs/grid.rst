@@ -4,6 +4,8 @@ Grid Object
 A ``Grid`` object contains data representing an electric power system. An object has various attributes that are listed below:
 
 - ``data_loc`` (``str``) gives the path to the data used to create a ``Grid`` object
+- ``grid_model`` (``str``) gives the name of the power system
+- ``version`` (``str``) gives the version of the grid model
 - ``model_immutables`` (``object``) contains static data specific to the power system
 - ``zone2id`` and ``id2zone`` (``dict``) map load zone name (id) to load zone id
   (name)
@@ -18,12 +20,13 @@ A ``Grid`` object contains data representing an electric power system. An object
 - ``dcline`` (``pandas.DataFrame``) encloses the characteristics of the HVDC lines
 - ``storage`` (``dict``) encloses information related to storage units
 
-Only the U.S. Test system presented `here <https://arxiv.org/pdf/2002.06155.pdf>`_  is
-available at this time. Thus, a ``Grid`` object can represent in addition to the full
-continental U.S., one of the three interconnections -- Eastern, Western or Texas-- or
-a combination of two interconnections.
+Two grid models representing the `U.S. <https://arxiv.org/pdf/2002.06155.pdf>`_ and
+the `European <https://arxiv.org/pdf/1806.01613.pdf>`_ power system at the transmission
+network level are available at this time. In addition to the full continental U.S.
+or Europe, a ``Grid`` object can represent one of the interconnection or a
+combination of interconnections.
 
-A ``Grid`` object can be created as follows:
+A ``Grid`` object can be created as follows for the U.S. grid model:
 
 - U.S. grid
 
@@ -47,5 +50,21 @@ A ``Grid`` object can be created as follows:
       eastern_western = Grid(["Eastern", "Western"])
       texas_western = Grid(["Texas", "Western"])
 
-A ``Grid`` object can be transformed, i.e., generators/lines can be scaled or added.
+While the for the European grid model, it can be achieved as follows:
+
+- European grid with 128 load zones
+
+  .. code-block:: python
+
+    from powersimdata import Grid
+    europe = Grid("Europe", source="europe_tub", reduction=128)
+
+- Nordic interconnection
+
+  .. code-block:: python
+
+    from powersimdata import Grid
+    europe = Grid("Nordic", source="europe_tub", reduction=128)
+
+Any ``Grid`` object can be transformed, i.e., generators/lines can be scaled or added.
 This is achieved in the scenario framework.
