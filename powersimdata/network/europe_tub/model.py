@@ -193,6 +193,11 @@ class TUB(PyPSABase):
         for k, v in profiles.items():
             _profile_input.upload(self.grid_model, k, v)
 
+    def _update_cols(self):
+        pd_mask = self.bus.index.isin(self.zone2id)
+        self.bus["Pd"] = [int(x) for x in pd_mask]
+        self.plant.status = 1
+
     def build(self):
         """Construct the network used to build a grid object and extract/upload the
         profiles if necessary.
@@ -200,3 +205,4 @@ class TUB(PyPSABase):
         super().build()
         self._extract_profiles()
         self._add_information()
+        self._update_cols()
