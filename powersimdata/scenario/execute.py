@@ -58,6 +58,10 @@ class Execute(Ready):
         self._launcher = Context.get_launcher(scenario)
 
     def _get_kwargs(self):
+        """Hack to determine reduction parameter for europe_tub
+
+        :return: (*dict*) -- additional kwargs to create a Grid object
+        """
         info = self._scenario_info
         if info["grid_model"] == "europe_tub":
             version = info["base_demand"].split("_")

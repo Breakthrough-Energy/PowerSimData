@@ -194,6 +194,7 @@ class TUB(PyPSABase):
             _profile_input.upload(self.grid_model, k, v)
 
     def _update_cols(self):
+        """Update columns with default values"""
         pd_mask = self.bus.index.isin(self.zone2id)
         self.bus["Pd"] = [int(x) for x in pd_mask]
         self.plant.status = 1
