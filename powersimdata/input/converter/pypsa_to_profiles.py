@@ -67,9 +67,9 @@ def get_pypsa_demand_profile(network):
         raise TypeError("network must be a Network object")
 
     if not network.loads_t.p.empty:
-        demand = network.loads_t.p.copy()
+        demand = network.get_switchable_as_dense("Load", "p_set")
     else:
-        demand = network.loads_t.p_set.copy()
+        demand = network.get_switchable_as_dense("Load", "p_set")
     if "zone_id" in network.buses:
         # Assume this is a PyPSA network originally created from powersimdata
         demand = demand.groupby(
