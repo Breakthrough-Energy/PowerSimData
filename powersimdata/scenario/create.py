@@ -316,7 +316,7 @@ class _Builder:
         self.interval = interval
 
     def set_engine(self, engine):
-        """Sets simulation engine to be used for scenarion.
+        """Sets simulation engine to be used for scenario.
 
         :param str engine: simulation engine
         """

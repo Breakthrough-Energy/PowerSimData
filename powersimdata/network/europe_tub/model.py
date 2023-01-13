@@ -155,6 +155,7 @@ class TUB(PyPSABase):
     def _profile_exists(self, kind):
         """Check if a profile has been uploaded for the given version
 
+        :param str kind: the kind of profile to check
         :return: (*bool*) -- True if the profile is available
         """
         _profile_input = ProfileInput()
@@ -179,7 +180,7 @@ class TUB(PyPSABase):
         profiles = {}
         if not self._profile_exists("demand"):
             demand = get_pypsa_demand_profile(self.network)
-            demand.columns = demand.columns.map(self.zone2id)
+            demand.columns = demand.columns.astype(str).map(self.zone2id)
             profiles[f"demand_{self._profile_version}"] = demand
         p2c = dict(self.model_immutables.plants["group_profile_resources"])
         p2c["hydro"] = {"ror", "hydro"}
@@ -205,5 +206,5 @@ class TUB(PyPSABase):
         """
         super().build()
         self._extract_profiles()
-        self._add_information()
         self._update_cols()
+        self._add_information()
