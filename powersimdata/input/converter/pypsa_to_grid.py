@@ -7,6 +7,7 @@ from powersimdata.input.abstract_grid import AbstractGrid
 from powersimdata.input.const import grid_const
 from powersimdata.input.const.pypsa_const import pypsa_const
 from powersimdata.network.constants.carrier.storage import storage as storage_const
+from powersimdata.utility.distance import haversine
 
 
 def _translate_df(df, key):
@@ -211,6 +212,31 @@ class FromPyPSA(AbstractGrid):
             bus2sub["sub_id"] = pd.to_numeric(
                 bus2sub.pop("substation").str[3:], errors="coerce"
             )
+        elif getattr(self, "reduction", None) is None:
+            bus_coord = bus[["lat", "lon"]]
+            load_coord = n.loads.merge(bus_coord, left_on="bus", right_index=True)
+            load_coord.set_index("bus", inplace=True)
+            load_coord = load_coord[["lat", "lon"]]
+
+            def find_closest(bus):
+                pos = bus.to_dict(orient="records")
+                return [
+                    load_coord.apply(
+                        lambda x: haversine((p["lat"], p["lon"]), (x.lat, x.lon)),
+                        axis=1,
+                    ).idxmin()
+                    for p in pos
+                ]
+
+            sub = bus[bus.index.isin(n.loads.index)].reindex(columns=sub_cols)
+            sub["interconnect"] = np.nan
+            bus2sub = pd.DataFrame(
+                {
+                    "sub_id": find_closest(bus_coord),
+                    "interconnect": np.nan,
+                },
+                index=bus.index,
+            )
         else:
             # try to parse typical pypsa-eur(-sec) pattern for substations
             sub_pattern = "[A-Z][A-Z]\d+\s\d+$"
@@ -249,7 +275,7 @@ class FromPyPSA(AbstractGrid):
         plant["Pmin"] *= plant["Pmax"]  # from relative to absolute value
         plant["lat"] = plant.bus_id.map(bus.lat)
         plant["lon"] = plant.bus_id.map(bus.lon)
-        plant["bus_id"] = pd.to_numeric(plant.bus_id, errors="ignore")
+        # plant["bus_id"] = pd.to_numeric(plant.bus_id, errors="ignore")
 
         # generation costs
         # for type: type of cost model (1 piecewise linear, 2 polynomial), n: number of parameters for total cost function, c(0) to c(n-1): parameters
@@ -280,14 +306,14 @@ class FromPyPSA(AbstractGrid):
         branch["from_lon"] = branch.from_bus_id.map(bus.lon)
         branch["to_lat"] = branch.to_bus_id.map(bus.lat)
         branch["to_lon"] = branch.to_bus_id.map(bus.lon)
-        branch["from_bus_id"] = pd.to_numeric(branch.from_bus_id, errors="ignore")
-        branch["to_bus_id"] = pd.to_numeric(branch.to_bus_id, errors="ignore")
+        # branch["from_bus_id"] = pd.to_numeric(branch.from_bus_id, errors="ignore")
+        # branch["to_bus_id"] = pd.to_numeric(branch.to_bus_id, errors="ignore")
 
         # DC lines
         dcline = _translate_df(dcline_pypsa, "link")
         dcline["Pmin"] *= dcline["Pmax"]  # convert relative to absolute
-        dcline["from_bus_id"] = pd.to_numeric(dcline.from_bus_id, errors="ignore")
-        dcline["to_bus_id"] = pd.to_numeric(dcline.to_bus_id, errors="ignore")
+        # dcline["from_bus_id"] = pd.to_numeric(dcline.from_bus_id, errors="ignore")
+        # dcline["to_bus_id"] = pd.to_numeric(dcline.to_bus_id, errors="ignore")
 
         # storage units
         c = "storage_units"

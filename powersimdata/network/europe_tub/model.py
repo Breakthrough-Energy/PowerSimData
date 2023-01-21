@@ -1,5 +1,6 @@
 import os
 
+import pandas as pd
 import pypsa
 
 from powersimdata.input.converter.helpers import (
@@ -206,4 +207,5 @@ class TUB(PyPSABase):
         super().build()
         self._extract_profiles()
         self._update_cols()
+        # self.bus.zone_id = pd.RangeIndex(stop=self.bus.shape[0])
         self._add_information()
