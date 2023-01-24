@@ -1,8 +1,13 @@
+import logging
+
 import fs
 from fs.multifs import MultiFS
 
 from powersimdata.data_access.ssh_fs import WrapSSHFS
 from powersimdata.utility import server_setup
+
+logger = logging.getLogger("azure.core.pipeline.policies.http_logging_policy")
+logger.setLevel(logging.WARNING)
 
 
 def get_blob_fs(container):
@@ -12,7 +17,7 @@ def get_blob_fs(container):
     :return: (*fs.base.FS*) -- filesystem instance
     """
     account = "esmi"
-    sas_token = server_setup.BLOB_TOKEN_RO
+    sas_token = server_setup.get_blob_credential()
     return fs.open_fs(f"azblobv2://{account}:{sas_token}@{container}")
 
 
