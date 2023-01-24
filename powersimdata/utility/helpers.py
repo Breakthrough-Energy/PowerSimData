@@ -77,7 +77,8 @@ class CacheKeyBuilder:
             return arg
         if isinstance(arg, (list, set, tuple)):
             return tuple(self._build(a) for a in arg)
-        raise ValueError(f"unsupported type for cache key = {type(arg)}")
+        print(f"cache key of type = {type(arg)} may result in unexpected behavior")
+        return f"obj:{type(arg)}:{id(arg)}"
 
 
 class PrintManager:
