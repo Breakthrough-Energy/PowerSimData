@@ -40,7 +40,7 @@ class MemoryCache:
         return keys
 
 
-def cache_key(*args):
+def cache_key(*args, **kwargs):
     """Creates a cache key from the given args. The user should ensure that the
     range of inputs will not result in key collisions.
 
@@ -48,7 +48,7 @@ def cache_key(*args):
     :return: (*tuple*) -- a tuple containing the input in heirarchical
         structure
     """
-    kb = CacheKeyBuilder(*args)
+    kb = CacheKeyBuilder(*args, **kwargs)
     return kb.build()
 
 
@@ -58,9 +58,10 @@ class CacheKeyBuilder:
     :param args: variable length arguments from which to build a key
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         """Constructor"""
-        self.args = args
+        self.args = list(args)
+        self.args.extend((k, v) for k, v in kwargs.items())
 
     def build(self):
         """Combine args into a tuple, preserving the structure of each element.

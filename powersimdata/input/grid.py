@@ -32,7 +32,7 @@ class Grid:
         if source not in supported:
             raise ValueError(f"Source must be one of {','.join(supported)} ")
 
-        key = cache_key(interconnect, source)
+        key = cache_key(interconnect, source, **kwargs)
         cached = _cache.get(key)
         if cached is not None:
             network = cached
