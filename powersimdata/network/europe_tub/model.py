@@ -127,7 +127,7 @@ class TUB(PyPSABase):
         self._check_reduction()
         if self.reduction is None:
             return pypsa.Network(path + ".nc")
-        return pypsa.Network(path + f"_{self.reduction}_ec.nc")
+        return pypsa.Network(path + f"_{self.reduction}.nc")
 
     def _check_reduction(self):
         """Validate reduction parameter
@@ -136,9 +136,8 @@ class TUB(PyPSABase):
         """
         if self.reduction is None:
             return
-        available = [
-            s for f in os.listdir(self.data_loc) for s in f.split("_") if s.isdigit()
-        ]
+        prefix = [f.split(".")[0] for f in os.listdir(self.data_loc)]
+        available = {s for f in prefix for s in f.split("_") if s.isdigit()}
         if str(self.reduction) not in available:
             raise ValueError(f"Available reduced network: {' | '.join(available)}")
 
