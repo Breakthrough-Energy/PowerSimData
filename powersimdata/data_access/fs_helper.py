@@ -42,7 +42,7 @@ def get_multi_fs(root):
     :param str root: root directory on server
     :return: (*fs.base.FS*) -- filesystem instance
     """
-    scenario_data = get_blob_fs("scenariodata")
+    scenario_data = get_blob_fs("test-eur-scenario")
     profiles = get_blob_fs("profiles")
     mfs = MultiFS()
     try:
@@ -63,7 +63,7 @@ def get_scenario_fs():
 
     :return: (*fs.base.FS*) -- filesystem instance
     """
-    scenario_data = get_blob_fs("scenariodata")
+    scenario_data = get_blob_fs("test-eur-scenario")
     mfs = MultiFS()
     try:
         ssh_fs = get_ssh_fs(server_setup.DATA_ROOT_DIR)
