@@ -1,6 +1,5 @@
 import os
 
-import pandas as pd
 import pypsa
 
 from powersimdata.input.converter.helpers import (

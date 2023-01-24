@@ -8,6 +8,9 @@ from powersimdata.input.const import grid_const
 from powersimdata.input.const.pypsa_const import pypsa_const
 from powersimdata.network.constants.carrier.storage import storage as storage_const
 from powersimdata.utility.distance import haversine
+from powersimdata.utility.helpers import MemoryCache
+
+_cache = MemoryCache()
 
 
 def _translate_df(df, key):
@@ -228,11 +231,18 @@ class FromPyPSA(AbstractGrid):
                     for p in pos
                 ]
 
+            key = "nn"
+            result = _cache.get(key)
+            if result is None:
+                print("Calculating nearest load for buses, this could take a while")
+                result = find_closest(bus_coord)
+                _cache.put(key, result)
+
             sub = bus[bus.index.isin(n.loads.index)].reindex(columns=sub_cols)
             sub["interconnect"] = np.nan
             bus2sub = pd.DataFrame(
                 {
-                    "sub_id": find_closest(bus_coord),
+                    "sub_id": result,
                     "interconnect": np.nan,
                 },
                 index=bus.index,
