@@ -1,5 +1,3 @@
-import pytest
-
 from powersimdata.utility.helpers import MemoryCache, PrintManager, cache_key
 
 
@@ -29,6 +27,9 @@ def test_cache_key_valid_types():
     key4 = cache_key(None)
     assert ("null",) == key4
 
+    key5 = cache_key(object())
+    assert "object" in key5[0]
+
 
 def test_no_collision():
     key1 = cache_key([["foo"], ["bar"]])
@@ -36,11 +37,6 @@ def test_no_collision():
     key3 = cache_key([["foo"], "bar"])
     keys = [key1, key2, key3]
     assert len(keys) == len(set(keys))
-
-
-def test_cache_key_unsupported_type():
-    with pytest.raises(ValueError):
-        cache_key(object())
 
 
 def test_cache_key_distinct_types():
