@@ -9,7 +9,6 @@ from powersimdata.input.transform_grid import TransformGrid
 
 
 def test_import_arbitrary_network_from_pypsa_to_grid():
-
     n = pypsa.examples.ac_dc_meshed()
     grid = FromPyPSA(n).build()
 
@@ -18,7 +17,6 @@ def test_import_arbitrary_network_from_pypsa_to_grid():
 
 
 def test_import_network_including_storages_from_pypsa_to_grid():
-
     n = pypsa.examples.storage_hvdc()
     grid = FromPyPSA(n).build()
 
@@ -40,7 +38,6 @@ def test_import_network_including_storages_from_pypsa_to_grid():
 
 
 def test_import_exported_network():
-
     grid = Grid("Western")
     ct = ChangeTable(grid)
     storage = [

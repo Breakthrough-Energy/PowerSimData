@@ -16,7 +16,7 @@ def _calculate_common_zone_factors(base_plant, ref_plant, plant_scaling, epsilon
     # Detect if any zones have all-zero plant scaling (e.g. wind_offshore)
     grouping = new_plant_scaling.groupby([base_plant.type, base_plant.zone_id])
     total_scale = grouping.sum()
-    for (fuel, zone_id) in total_scale.index:
+    for fuel, zone_id in total_scale.index:
         if total_scale.loc[(fuel, zone_id)] == 0:
             if fuel not in change_table:
                 change_table[fuel] = {"zone_id": {}}
