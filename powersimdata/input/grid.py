@@ -8,7 +8,6 @@ _cache = MemoryCache()
 
 
 class Grid:
-
     SUPPORTED_IMPORTS = {"pypsa"}
     SUPPORTED_MODELS = {"usa_tamu", "europe_tub"}
 

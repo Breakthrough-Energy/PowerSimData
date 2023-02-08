@@ -41,12 +41,10 @@ def _get_storage_storagedata(df, storage_type):
     storage_storagedata = _translate_df(df, "storage_storagedata")
 
     if storage_type == "storage_units":
-
         e_nom = df.eval("p_nom * max_hours")
         state_of_charge_initial = df["state_of_charge_initial"]
 
     elif storage_type == "stores":
-
         e_nom = df["e_nom"]
         state_of_charge_initial = df["e_initial"]
 
