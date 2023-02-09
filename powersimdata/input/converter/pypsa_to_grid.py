@@ -63,10 +63,10 @@ def _get_storage_storagedata(df, storage_type):
     storage_storagedata["InitialStorageCost"] = storage_const["energy_value"]
     storage_storagedata["TerminalStoragePrice"] = storage_const["energy_value"]
     storage_storagedata["rho"] = 1
+    storage_storagedata["InitialStorage"] = e_nom / 2
 
     # fill with heuristic defaults if non-existent
     defaults = {
-        "InitialStorage": e_nom / 2,
         "MinStorageLevel": e_nom * storage_const["min_stor"],
         "MaxStorageLevel": e_nom * storage_const["max_stor"],
         "ExpectedTerminalStorageMax": e_nom * storage_const["terminal_max"],
