@@ -96,6 +96,7 @@ col_name_bus = [
     "mu_Vmax",
     "mu_Vmin",
     "interconnect",
+    "eia_id",
     "lat",
     "lon",
 ]
