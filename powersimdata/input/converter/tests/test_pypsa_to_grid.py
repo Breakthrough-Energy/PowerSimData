@@ -79,9 +79,13 @@ def test_import_exported_network():
     test.branch.r = ref.branch.r
     test.bus.Va = ref.bus.Va
 
+    storage_data = test.storage["StorageData"]
     # storage specification is need in import but has to removed for testing
     test.storage["gencost"].drop(columns="pypsa_component", inplace=True)
     test.storage["gen"].drop(columns="pypsa_component", inplace=True)
-    test.storage["StorageData"].drop(columns="pypsa_component", inplace=True)
+    storage_data.drop(columns="pypsa_component", inplace=True)
+
+    # columns is overwritten in conversion to satisfy constraints set by engine
+    storage_data.InitialStorage = ref.storage["StorageData"].InitialStorage
 
     assert ref == test

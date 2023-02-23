@@ -52,7 +52,7 @@ def _get_storage_storagedata(df, storage_type):
         storage_storagedata["OutEff"] = 1
         storage_storagedata["InEff"] = 1
     else:
-        warnings.warn(
+        raise ValueError(
             "Inapplicable storage_type passed to function _get_storage_storagedata."
         )
 
@@ -63,13 +63,14 @@ def _get_storage_storagedata(df, storage_type):
     storage_storagedata["InitialStorageCost"] = storage_const["energy_value"]
     storage_storagedata["TerminalStoragePrice"] = storage_const["energy_value"]
     storage_storagedata["rho"] = 1
+    storage_storagedata["InitialStorage"] = e_nom / 2
 
     # fill with heuristic defaults if non-existent
     defaults = {
         "MinStorageLevel": e_nom * storage_const["min_stor"],
         "MaxStorageLevel": e_nom * storage_const["max_stor"],
-        "ExpectedTerminalStorageMax": 1,
-        "ExpectedTerminalStorageMin": 0,
+        "ExpectedTerminalStorageMax": e_nom * storage_const["terminal_max"],
+        "ExpectedTerminalStorageMin": e_nom * storage_const["terminal_min"],
     }
     for k, v in defaults.items():
         if k not in storage_storagedata:
@@ -107,7 +108,9 @@ def _get_storage_gen(df, storage_type):
         pmax = np.inf
         pmin = -np.inf
     else:
-        warnings.warn("Inapplicable storage_type passed to function _get_storage_gen.")
+        raise ValueError(
+            "Inapplicable storage_type passed to function _get_storage_gen."
+        )
 
     storage_gen = _translate_df(df, "storage_gen")
     storage_gen["Pmax"] = pmax
