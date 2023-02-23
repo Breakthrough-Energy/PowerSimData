@@ -22,7 +22,7 @@ jobs:
       - run: tox -e pytest-local -- --cov=powersimdata --cov-report=xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           name: codecov-powersimdata
           fail_ci_if_error: true
